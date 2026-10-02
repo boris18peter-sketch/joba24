@@ -71,7 +71,8 @@ export default function ReturnToTaskPopup() {
       `}</style>
       <div
         style={{
-          background: 'var(--surface-2)',
+          background: 'var(--brand-modal-bg, var(--surface-2))',
+          border: '1px solid var(--brand-modal-border, var(--border-1))',
           border: '1px solid var(--border-1)',
           borderRadius: 16,
           overflow: 'hidden',
@@ -110,7 +111,7 @@ export default function ReturnToTaskPopup() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
         >
-          <ArrowUp size={16} color="#1a6fd4" strokeWidth={2.2} />
+          <ArrowUp size={16} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={2.2} />
           {t('view_task')}{task?.title ? ` · ${task.title}` : ''}
         </button>
       </div>

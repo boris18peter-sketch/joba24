@@ -82,7 +82,7 @@ export default function TaskDetailSheet() {
       onClick={closeTaskSheet}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000000,
-        background: 'rgba(5,15,40,0.55)',
+        background: 'var(--overlay-bg)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
@@ -97,8 +97,11 @@ export default function TaskDetailSheet() {
         style={{
           width: '100%', maxWidth: 480,
           maxHeight: '92dvh',
-          background: 'var(--surface-1)',
-          borderRadius: '24px 24px 0 0',
+          background: 'var(--brand-modal-bg, var(--surface-1))',
+          borderRadius: 'var(--brand-modal-radius, 24px) var(--brand-modal-radius, 24px) 0 0',
+          border: '1px solid var(--brand-modal-border, var(--border-1))',
+          '--brand-btn-primary-bg': 'var(--brand-modal-cta-bg)',
+          '--brand-btn-primary-text': 'var(--brand-modal-cta-text)',
           boxShadow: '0 -12px 40px rgba(0,0,0,0.25)',
           overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
@@ -107,7 +110,7 @@ export default function TaskDetailSheet() {
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Drag handle */}
-        <div style={{ flexShrink: 0, paddingTop: 10, paddingBottom: 6, background: 'var(--surface-1)' }}>
+        <div style={{ flexShrink: 0, paddingTop: 10, paddingBottom: 6, background: 'var(--brand-modal-bg, var(--surface-1))' }}>
           <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto' }} />
         </div>
 
@@ -124,7 +127,7 @@ export default function TaskDetailSheet() {
         >
           <Suspense fallback={
             <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-              <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+              <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
             </div>
           }>
             <TaskDetail taskId={sheetTaskId} sheetMode onSheetClose={closeTaskSheet} />

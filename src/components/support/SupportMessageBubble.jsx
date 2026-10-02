@@ -33,7 +33,7 @@ export default function SupportMessageBubble({ msg }) {
         <div style={{
           padding: '10px 14px',
           borderRadius: isUser ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
-          background: isUser ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-2)',
+          background: isUser ? 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))' : 'var(--surface-2)',
           color: isUser ? 'white' : 'var(--text-1)',
           fontSize: 14.5,
           lineHeight: 1.55,

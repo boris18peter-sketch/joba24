@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchApplicantStats } from '@/lib/publicTasks';
 
 const MESSAGES = [
-  { icon: '👀', text: 'עובדים צופים במשימה', color: '#1a6fd4' },
+  { icon: '👀', text: 'עובדים צופים במשימה', color: 'var(--brand-primary)' },
   { icon: '📍', text: 'עובדים זמינים בקרבת מקום', color: '#059669' },
   { icon: '⚡', text: 'הג\'ובה פעילה ומחפשת עובד', color: '#d97706' },
   { icon: '🔔', text: 'התראות נשלחו לעובדים', color: '#7c3aed' },
@@ -116,7 +116,7 @@ export default function LiveActivityPulse({ task, compact }) {
       {/* Badge */}
       {applicationCount === 0 ? (
         <div style={{
-          background: '#1a6fd4', color: 'white',
+          background: 'var(--brand-primary)', color: 'white',
           fontSize: 10, fontWeight: 800,
           padding: '3px 9px', borderRadius: 20, flexShrink: 0, letterSpacing: 0.3,
         }}>חי</div>

@@ -77,7 +77,7 @@ export default function ChatPushNotification() {
         >
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)',
+            background: 'linear-gradient(135deg,var(--brand-primary),#3b82f6)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>

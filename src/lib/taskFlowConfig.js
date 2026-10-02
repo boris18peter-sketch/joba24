@@ -6,6 +6,7 @@
  */
 
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { globalCategoryFor } from '@/lib/brand/categoryRegistry';
 import { CATEGORY_REQUIREMENTS, DEFAULT_REQUIREMENT_CATEGORIES, getRequirementCategories } from '@/lib/requirements';
 
 export { CATEGORIES, getCategoryLabel, getRequirementCategories, CATEGORY_REQUIREMENTS, DEFAULT_REQUIREMENT_CATEGORIES };
@@ -1107,25 +1108,15 @@ export const TASK_FLOW_CONFIG = {
 
   // ── 🎉 אירועים ──────────────────────────────────────────────────────────────
   events: {
-    label: '🎉 אירועים',
+    label: '🎉 אחר / שירות אחר',
     keywords: ['אירוע', 'מסיבה', 'חתונה', 'בר מצווה', 'מלצר', 'שף', 'ברמן', 'הפעלה', 'ילדים', 'קייטרינג', 'הקמה', 'פירוק', 'סדרן', 'ויתרנים'],
     priceRange: { min: 150, max: 1000 },
     extraFields: [
       {
-        key: 'role_type',
-        type: 'multi',
-        label: 'איזה תפקיד נדרש? 🎉 (ניתן לבחור יותר מאחד)',
-        options: [
-          'מלצר / הגשה',
-          'ברמן',
-          'שף / טבח',
-          'הפעלת ילדים / אנימציה',
-          'עזרה בהקמה / פירוק',
-          'סדרן / אבטחה',
-          'DJ / מוזיקה',
-          'צלם (ראה קטגוריה צילום)',
-          'אחר',
-        ],
+        key: 'service_needed',
+        type: 'text',
+        label: 'איזה שירות דרוש?',
+        placeholder: 'תארו שירות שאינו מופיע ברשימת הקטגוריות',
       },
       {
         key: 'event_type',
@@ -1153,7 +1144,7 @@ export const TASK_FLOW_CONFIG = {
       },
     ],
     suggestedExtras: ['experience', 'two_people'],
-    chatQuestionOrder: ['role_type', 'event_type', 'guests_count', 'hours'],
+    chatQuestionOrder: ['service_needed', 'event_type', 'guests_count', 'hours'],
   },
 
   // ── 🤝 עזרה אישית ───────────────────────────────────────────────────────────
@@ -1291,7 +1282,13 @@ export const TASK_FLOW_CONFIG = {
 
 // ── Helper functions ──────────────────────────────────────────────────────────
 
-export const getCategoryConfig = (category) => TASK_FLOW_CONFIG[category] || TASK_FLOW_CONFIG.other;
+export const getCategoryConfig = (category) => {
+  const row = globalCategoryFor(category);
+  const legacy = TASK_FLOW_CONFIG[category] || TASK_FLOW_CONFIG.other;
+  if (!row?.fields?.length) return legacy;
+  const fields = row.fields.filter(f => f.enabled !== false).sort((a,b) => (a.order || 0) - (b.order || 0));
+  return { ...legacy, label: `${row.icon || '📋'} ${row.label}`, extraFields: fields.map(f => ({ ...f, type: ({ boolean:'toggle', multiselect:'multi' })[f.type] || f.type })), chatQuestionOrder: fields.map(f => f.key) };
+};
 
 export const getCategoryExtraFields = (category) => getCategoryConfig(category).extraFields || [];
 

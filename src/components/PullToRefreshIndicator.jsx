@@ -36,11 +36,11 @@ export default function PullToRefreshIndicator({ refreshing, pullProgress }) {
       }}>
         <Loader2
           size={15}
-          color="#1a6fd4"
+          color="var(--brand-primary)"
           style={{ animation: refreshing ? 'spin 0.8s linear infinite' : `rotate(${pullProgress * 360}deg)`, transform: refreshing ? undefined : `rotate(${Math.round(pullProgress * 360)}deg)` }}
           className={refreshing ? 'animate-spin' : ''}
         />
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)' }}>
           {refreshing ? 'מרענן...' : 'משוך לרענון'}
         </span>
       </div>

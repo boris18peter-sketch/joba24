@@ -53,7 +53,7 @@ export default function SupportComposer({
           cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.55 : 1,
         }}
       >
-        {uploading ? <Loader2 size={17} className="animate-spin" color="#1a6fd4" /> : <ImageIcon size={17} color="#64748b" />}
+        {uploading ? <Loader2 size={17} className="animate-spin" color="var(--brand-btn-primary-bg, var(--brand-primary))" /> : <ImageIcon size={17} color="#64748b" />}
       </button>
 
       {recording ? (
@@ -124,7 +124,7 @@ export default function SupportComposer({
           aria-label="send"
           style={{
             width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', border: 'none',
+            background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),#3b82f6)', border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: sending ? 'not-allowed' : 'pointer',
             boxShadow: '0 4px 12px rgba(26,111,212,0.3)',

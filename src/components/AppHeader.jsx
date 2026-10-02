@@ -92,7 +92,7 @@ export default function AppHeader({ onOpenMenu }) {
               objectFit: !isPlatformBrand && brandTheme.logoUrl ? 'contain' : 'cover',
             }}
           />
-          <span style={{ fontWeight: 900, fontSize: 18, color: 'var(--text-1)', letterSpacing: -0.6 }}>
+          <span style={{ fontWeight: 900, fontSize: 18, color: 'var(--brand-header-text, var(--text-1))', letterSpacing: -0.6 }}>
             {!isPlatformBrand && brandTheme.displayName
               ? brandTheme.displayName
               : <>Joba<span style={{ color: 'var(--brand-accent)' }}>24</span></>}
@@ -128,7 +128,7 @@ export default function AppHeader({ onOpenMenu }) {
             onClick={onOpenMenu}
             style={{
               width: 42, height: 42, borderRadius: 'var(--r-sm)',
-              background: 'var(--brand-primary)', border: 'none', cursor: 'pointer',
+              background: 'var(--brand-header-active, var(--brand-primary))', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, boxShadow: 'var(--shadow-sm)',
             }}

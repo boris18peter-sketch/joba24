@@ -40,12 +40,12 @@ function NextStep({ user, completedCount, trustScore, onVerify, color }) {
   let step = null;
   if (!verified) {
     step = {
-      icon: <Shield size={15} color="#1a6fd4" />,
+      icon: <Shield size={15} color="var(--brand-primary)" />,
       title: t('tc_verify_identity'),
       desc: t('tc_verify_desc'),
       ctaLabel: t('tc_verify_now'),
       cta: onVerify,
-      color: '#1a6fd4',
+      color: 'var(--brand-primary)',
     };
   } else if (tasksToMax > 0) {
     step = {
@@ -158,7 +158,7 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
             label={t('tc_identity_verify')}
             points={verified ? 40 : 0}
             max={40}
-            color="#1a6fd4"
+            color="var(--brand-primary)"
             done={verified}
             status={verified ? t('tc_identity_verified') : t('tc_identity_pending')}
           />

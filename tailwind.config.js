@@ -36,6 +36,16 @@ module.exports = {
         border:      'hsl(var(--border))',
         input:       'hsl(var(--input))',
         ring:        'hsl(var(--ring))',
+        // Legacy utility names consume the same semantic contract; no separate palette.
+        blue: {
+          50:'var(--brand-primary-light, #eff6ff)', 100:'var(--brand-primary-light, #dbeafe)',
+          200:'var(--border-2, #bfdbfe)', 300:'var(--border-2, #93c5fd)',
+          400:'var(--brand-primary, #60a5fa)', 500:'var(--brand-primary, #3b82f6)',
+          600:'var(--brand-primary, #2563eb)', 700:'var(--brand-primary-dark, #1d4ed8)',
+          800:'var(--brand-primary-dark, #1e40af)', 900:'var(--text-1, #1e3a8a)',
+        },
+        action: { DEFAULT:'var(--brand-btn-primary-bg, var(--brand-primary))', text:'var(--brand-btn-primary-text, #ffffff)' },
+        elevated:'var(--brand-surface-elevated, var(--surface-2))',
         success:     'hsl(var(--success))',
         warning:     'hsl(var(--warning))',
         brand: {

@@ -34,7 +34,7 @@ export default function ChatComposer({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
-        {uploading ? <Loader2 size={16} color="#1a6fd4" className="animate-spin" /> : <Image size={16} color="var(--text-2)" />}
+        {uploading ? <Loader2 size={16} color="var(--brand-btn-primary-bg, var(--brand-primary))" className="animate-spin" /> : <Image size={16} color="var(--text-2)" />}
       </button>
       <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={onFileChange} />
 
@@ -83,7 +83,7 @@ export default function ChatComposer({
 
       {uploadingVoice ? (
         <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Loader2 size={16} color="#1a6fd4" className="animate-spin" />
+          <Loader2 size={16} color="var(--brand-btn-primary-bg, var(--brand-primary))" className="animate-spin" />
         </div>
       ) : recording ? (
         <button
@@ -96,7 +96,7 @@ export default function ChatComposer({
             boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
           }}
         >
-          <Send size={16} color="white" />
+          <Send size={16} color="var(--brand-btn-primary-text, white)" />
         </button>
       ) : canSend ? (
         <button
@@ -105,12 +105,12 @@ export default function ChatComposer({
           aria-label="send"
           style={{
             width: 40, height: 40, minHeight: 0, minWidth: 0, borderRadius: '50%', flexShrink: 0, border: 'none', cursor: 'pointer',
-            background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)',
+            background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary)))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(26,111,212,0.32)',
           }}
         >
-          <Send size={16} color="white" />
+          <Send size={16} color="var(--brand-btn-primary-text, white)" />
         </button>
       ) : (
         <button

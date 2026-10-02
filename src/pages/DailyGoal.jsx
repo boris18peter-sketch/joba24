@@ -29,12 +29,12 @@ function RecommendedTaskCard({ task, isTop, aiReason, t, userLocation, onOpen })
           <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b', flex: 1, paddingLeft: 40 }}>
             {displayTask.title}
             {isTranslated && (
-              <span style={{ fontSize: 8, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 5, padding: '1px 5px', marginRight: 4, border: '1px solid #bfdbfe', verticalAlign: 'middle' }}>
+              <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--brand-primary)', background: '#eff6ff', borderRadius: 5, padding: '1px 5px', marginRight: 4, border: '1px solid #bfdbfe', verticalAlign: 'middle' }}>
                 {t('translated_badge')}
               </span>
             )}
           </div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#1a6fd4', flexShrink: 0 }}>₪{task.price}</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-primary)', flexShrink: 0 }}>₪{task.price}</div>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
           <span style={{ fontSize: 11, background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{getCategoryLabel(task.category, t)}</span>
@@ -54,7 +54,7 @@ function RecommendedTaskCard({ task, isTop, aiReason, t, userLocation, onOpen })
             </span>
           )}
           {dist != null && !isNaN(dist) && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#1a6fd4', fontWeight: 700 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--brand-primary)', fontWeight: 700 }}>
               <Navigation size={11} />
               {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
             </span>
@@ -208,7 +208,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
       <PageHeader title={t('daily_goal')} />
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '44px 20px 28px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, var(--brand-primary))', padding: '44px 20px 28px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -30, left: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -266,7 +266,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             {[300, 500, 800, 1000, 1500].map(amt => (
               <button key={amt} onClick={() => setGoal(String(amt))}
-                style={{ padding: '6px 14px', borderRadius: 20, border: `1px solid ${goal == amt ? '#1a6fd4' : '#dce8f5'}`, background: goal == amt ? '#eff6ff' : 'white', color: goal == amt ? '#1a6fd4' : '#666', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                style={{ padding: '6px 14px', borderRadius: 20, border: `1px solid ${goal == amt ? 'var(--brand-primary)' : '#dce8f5'}`, background: goal == amt ? '#eff6ff' : 'white', color: goal == amt ? 'var(--brand-primary)' : '#666', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
               >₪{amt}</button>
             ))}
           </div>
@@ -274,13 +274,13 @@ ${JSON.stringify(tasksSummary, null, 2)}
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 12, color: '#666', fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                <span>{t('task_search_radius')}</span>
-               <span style={{ color: '#1a6fd4', fontWeight: 800 }}>{radius} {t('km')}</span>
+               <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>{radius} {t('km')}</span>
              </label>
             <input
               type="range"
               min="1" max="50" value={radius}
               onChange={e => setRadius(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#1a6fd4' }}
+              style={{ width: '100%', accentColor: 'var(--brand-primary)' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa', marginTop: 4 }}>
               <span>1 {t('km')}</span><span>50 {t('km')}</span>
@@ -290,12 +290,12 @@ ${JSON.stringify(tasksSummary, null, 2)}
           {/* Category filter */}
           <div style={{ marginBottom: 16 }}>
             <button onClick={() => setShowCategoryFilter(v => !v)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 14, border: `1px solid ${selectedCategories.length > 0 ? '#1a6fd4' : '#dce8f5'}`, background: selectedCategories.length > 0 ? '#eff6ff' : '#f4f7fb', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: selectedCategories.length > 0 ? '#1a6fd4' : '#666' }}>
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 14, border: `1px solid ${selectedCategories.length > 0 ? 'var(--brand-primary)' : '#dce8f5'}`, background: selectedCategories.length > 0 ? '#eff6ff' : '#f4f7fb', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: selectedCategories.length > 0 ? 'var(--brand-primary)' : '#666' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Filter size={14} />
                 {selectedCategories.length > 0 ? `${selectedCategories.length} ${t('categories_selected')}` : t('filter_by_categories')}
               </span>
-              <span style={{ fontSize: 11, color: selectedCategories.length > 0 ? '#1a6fd4' : '#aaa' }}>{selectedCategories.length > 0 ? '✓' : '+'}</span>
+              <span style={{ fontSize: 11, color: selectedCategories.length > 0 ? 'var(--brand-primary)' : '#aaa' }}>{selectedCategories.length > 0 ? '✓' : '+'}</span>
             </button>
             {showCategoryFilter && (
               <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 200, overflowY: 'auto', padding: 4 }}>
@@ -304,7 +304,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
                   return (
                     <button key={cat.value} onClick={() => setSelectedCategories(prev => active ? prev.filter(c => c !== cat.value) : [...prev, cat.value])}
                       style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-                        background: active ? '#1a6fd4' : 'white', color: active ? 'white' : '#666', border: `1px solid ${active ? '#1a6fd4' : '#dce8f5'}` }}>
+                        background: active ? 'var(--brand-primary)' : 'white', color: active ? 'white' : '#666', border: `1px solid ${active ? 'var(--brand-primary)' : '#dce8f5'}` }}>
                       {active && '✓ '}{getCategoryLabel(cat.value, t)}
                     </button>
                   );
@@ -314,7 +314,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
           </div>
 
           <button onClick={handleSetGoal} disabled={!goal || loadingPlan}
-            style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: !goal ? 0.5 : 1 }}
+            style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, var(--brand-primary), #0a52b0)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: !goal ? 0.5 : 1 }}
           >
             {loadingPlan ? (
                <><div style={{ width: 20, height: 20, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />{t('building_plan')}</>
@@ -328,7 +328,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
         {aiPlan?.summary && (
           <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe' }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Zap size={16} color="#1a6fd4" /> {t('ai_recommendation')}
+              <Zap size={16} color="var(--brand-primary)" /> {t('ai_recommendation')}
             </div>
             <p style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.65, margin: 0 }}>{aiPlan.summary}</p>
             {aiPlan.tip && (
@@ -350,7 +350,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b' }}>{t('recommended_tasks')}</div>
               <button onClick={generatePlan} disabled={loadingPlan}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#1a6fd4', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--brand-primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 <RefreshCw size={14} /> {t('refresh')}
               </button>

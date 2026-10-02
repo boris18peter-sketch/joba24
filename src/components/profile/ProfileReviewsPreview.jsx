@@ -31,7 +31,7 @@ export default function ProfileReviewsPreview({ reviews = [], rating, onViewAll 
     }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-        <MessageCircle size={14} color="#1a6fd4" />
+        <MessageCircle size={14} color="var(--brand-primary)" />
         <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('pr_reviews')}</span>
       </div>
 
@@ -70,7 +70,7 @@ export default function ProfileReviewsPreview({ reviews = [], rating, onViewAll 
               </div>
             )}
             {roleLabel && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 6, padding: '2px 8px' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-primary)', background: '#eff6ff', borderRadius: 6, padding: '2px 8px' }}>
                 {roleLabel}
               </span>
             )}
@@ -85,7 +85,7 @@ export default function ProfileReviewsPreview({ reviews = [], rating, onViewAll 
           style={{
             width: '100%', marginTop: 14, padding: '11px 0', borderRadius: 12,
             background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-            color: '#1a6fd4', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+            color: 'var(--brand-primary)', fontWeight: 800, fontSize: 13, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
           }}
         >

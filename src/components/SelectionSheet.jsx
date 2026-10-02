@@ -48,17 +48,19 @@ export default function SelectionSheet({ value, options, onChange, placeholder =
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 999999,
-            background: 'rgba(5,15,40,0.60)', backdropFilter: 'blur(6px)',
+            background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)',
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
         >
           <div
             dir="rtl"
+            className="j-modal-surface"
             onClick={e => e.stopPropagation()}
             style={{
               background: 'var(--sheet-bg)',
-              borderRadius: '28px 28px 0 0',
+              borderRadius: 'var(--brand-modal-radius, 28px) var(--brand-modal-radius, 28px) 0 0',
+              border: '1px solid var(--brand-modal-border, var(--border-1))',
               width: '100%', maxWidth: 480,
               paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
               boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',

@@ -8,7 +8,7 @@ import {
 } from '@/components/admin/brand/brandUi';
 import BrandPreview from '@/components/admin/brand/BrandPreview';
 import {
-  TOKEN_GROUPS, TOKEN_DEFAULTS, SHADOW_PRESETS, resolveTheme,
+  ALL_TOKENS, TOKEN_GROUPS, TOKEN_DEFAULTS, SHADOW_PRESETS, resolveTheme,
 } from '@/lib/brand/themeTokens';
 
 /**
@@ -22,7 +22,7 @@ import {
  * wrapper, so it shows exactly what the Brand will look like before saving.
  */
 
-export default function BrandDesignTab({ brand, config, onSaved }) {
+export default function BrandDesignTab({ brand, config, inheritedTheme = {}, onSaved }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [state, setState] = useState('idle');
@@ -35,7 +35,7 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
 
   // A save elsewhere (or a refetch) must not silently discard unsaved edits.
   useEffect(() => {
-    if (state === 'dirty' || state === 'saving') return;
+    if (state === 'dirty' || state === 'saving' || state === 'error') return;
     setTheme({ ...(config?.theme || {}) });
     setAssets({
       logo_url: config?.logo_url || '',
@@ -49,8 +49,7 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
   const setToken = (key) => (value) => {
     setTheme((t) => {
       const next = { ...t };
-      if (value === '' || value === undefined || value === null) delete next[key];
-      else next[key] = value;
+      next[key] = value; // Only an explicit reset writes null; missing keys are never reset.
       return next;
     });
     markDirty();
@@ -61,16 +60,20 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
     markDirty();
   };
 
-  const effectiveTheme = useMemo(() => resolveTheme(theme), [theme]);
-  const overriddenCount = Object.keys(theme).length;
+  const ownTheme = Object.fromEntries(Object.entries(theme).filter(([, value]) => value !== null));
+  const inheritedDefaults = useMemo(() => resolveTheme(inheritedTheme), [inheritedTheme]);
+  const effectiveTheme = useMemo(() => resolveTheme(ownTheme, inheritedTheme), [theme, inheritedTheme]);
+  const overriddenCount = Object.keys(ownTheme).length;
 
   const save = async () => {
+    if (saving) return;
+    const submitted = { ...theme };
     setSaving(true);
     setState('saving');
     try {
       const res = await base44.functions.invoke('adminUpdateBrand', {
         brand_id: brand.id,
-        theme,
+        theme: submitted,
         logo_url: assets.logo_url,
         favicon_url: assets.favicon_url,
         display_name: assets.display_name,
@@ -87,9 +90,18 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
         );
         return;
       }
-      setState('saved');
+      const persisted = await base44.entities.BrandConfig.get(data.config.id);
+      const matches = Object.entries(submitted).every(([key, value]) => value === null
+        ? !(key in (persisted.theme || {}))
+        : ALL_TOKENS.find(token => token.key === key)?.type === 'number'
+          ? Number(persisted.theme?.[key]) === Number(value)
+          : String(persisted.theme?.[key]) === String(value).trim());
+      if (!matches) throw new Error('Theme persistence mismatch');
+      setTheme({ ...(persisted.theme || {}) });
+      queryClient.setQueryData(['adminBrand', brand.id], previous => previous ? { ...previous, config: persisted } : previous);
       refreshBrand(queryClient, brand.id);
-      onSaved?.(data);
+      await onSaved?.(data);
+      setState('saved');
       toast.success('מערכת העיצוב נשמרה');
     } catch (e) {
       setState('error');
@@ -101,13 +113,13 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
 
   const resetAll = () => {
     if (!window.confirm('לאפס את כל ערכי העיצוב של המותג?')) return;
-    setTheme({});
+    setTheme(Object.fromEntries(Object.keys(theme).map(key => [key, null])));
     markDirty();
   };
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 14 }}>
+      <fieldset disabled={saving} style={{ border: 0, padding: 0, minWidth: 0, display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 14 }}>
         <Section
           title="נכסים"
           desc="לוגו, favicon ושם התצוגה של המותג. הקבצים נשמרים באחסון ציבורי עם כתובת קבועה, כדי שייטענו לכל מבקר ללא התחברות."
@@ -144,7 +156,7 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
           }
         >
           <BrandPreview
-            theme={theme}
+            theme={effectiveTheme}
             logoUrl={assets.logo_url}
             displayName={assets.display_name || config?.display_name || brand.name}
           />
@@ -162,7 +174,8 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
                       label={token.label}
                       value={value || ''}
                       onChange={setToken(token.key)}
-                      fallback={TOKEN_DEFAULTS[token.key]}
+                      fallback={inheritedDefaults[token.key]}
+                      onReset={() => setToken(token.key)(null)}
                     />
                   );
                 }
@@ -172,7 +185,7 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
                       <select
                         style={inputStyle}
                         value={value || ''}
-                        onChange={(e) => setToken(token.key)(e.target.value)}
+                        onChange={(e) => setToken(token.key)(e.target.value || null)}
                       >
                         <option value="">ברירת מחדל ({TOKEN_DEFAULTS[token.key]})</option>
                         {Object.keys(SHADOW_PRESETS).map((k) => (
@@ -199,12 +212,16 @@ export default function BrandDesignTab({ brand, config, onSaved }) {
             </div>
           </Section>
         ))}
-      </div>
+      </fieldset>
 
       <SaveBar
         state={state}
         onSave={save}
-        onReset={() => { setTheme({ ...(config?.theme || {}) }); setState('idle'); }}
+        onReset={() => {
+          setTheme({ ...(config?.theme || {}) });
+          setAssets({ logo_url:config?.logo_url || '', favicon_url:config?.favicon_url || '', display_name:config?.display_name || '' });
+          setState('idle');
+        }}
         label={saving ? 'שומר…' : 'שמור מערכת עיצוב'}
       />
 

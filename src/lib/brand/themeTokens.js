@@ -29,6 +29,8 @@ export const TOKEN_GROUPS = [
       { key: 'text_muted', type: 'color', label: 'טקסט עמום' },
       { key: 'border', type: 'color', label: 'גבול' },
       { key: 'divider', type: 'color', label: 'קו מפריד' },
+      { key: 'hero_bg', type: 'color', label: 'רקע כותרת עמוד / Hero' },
+      { key: 'hero_text', type: 'color', label: 'טקסט כותרת עמוד / Hero' },
     ],
   },
   {
@@ -78,6 +80,8 @@ export const TOKEN_GROUPS = [
       { key: 'modal_border', type: 'color', label: 'גבול חלון' },
       { key: 'modal_title', type: 'color', label: 'כותרת בחלון' },
       { key: 'modal_text', type: 'color', label: 'טקסט בחלון' },
+      { key: 'modal_cta_bg', type: 'color', label: 'פעולה בחלון' },
+      { key: 'modal_cta_text', type: 'color', label: 'טקסט פעולה בחלון' },
       { key: 'modal_radius', type: 'number', label: 'רדיוס חלון', unit: 'px' },
       { key: 'overlay', type: 'color', label: 'צבע רעלה' },
     ],
@@ -121,6 +125,10 @@ export const ALL_TOKENS = TOKEN_GROUPS.flatMap((g) => g.tokens);
 export const TOKEN_DEFAULTS = {
   primary: '#1a6fd4',
   primary_dark: '#0a52b0',
+  hero_bg: '#0a52b0',
+  hero_text: '#ffffff',
+  modal_cta_bg: '#1a6fd4',
+  modal_cta_text: '#ffffff',
   secondary: '#eef3fc',
   accent: '#fbbf24',
   background: '#f2f5fb',
@@ -217,18 +225,33 @@ export function hexToHsl(hex) {
   return `${Math.round(hue * 360)} ${Math.round(sat * 100)}% ${Math.round(l * 100)}%`;
 }
 
-/** A theme merged over the platform defaults — never a partial map. */
-export function resolveTheme(theme) {
+/** Defaults -> inherited overrides -> own overrides. Dependent defaults follow core tokens. */
+export function resolveTheme(theme, inherited = {}) {
+  const overrides = { ...inherited, ...theme };
   const t = { ...TOKEN_DEFAULTS };
-  if (theme && typeof theme === 'object') {
-    for (const token of ALL_TOKENS) {
-      const raw = theme[token.key];
-      if (raw === undefined || raw === null || raw === '') continue;
-      if (token.type === 'color' && !isColorValue(raw)) continue;
-      if (token.type === 'number' && !Number.isFinite(Number(raw))) continue;
-      t[token.key] = raw;
+  for (const token of ALL_TOKENS) {
+    const raw = overrides[token.key];
+    if (raw === undefined || raw === null || raw === '') continue;
+    if (token.type === 'color' && !isColorValue(raw)) continue;
+    if (token.type === 'number' && !Number.isFinite(Number(raw))) continue;
+    t[token.key] = token.type === 'number' ? Number(raw) : raw;
+  }
+  const links = {
+    button_primary_bg:'primary', button_secondary_bg:'surface_alt', button_secondary_text:'text_secondary',
+    card_bg:'surface', card_border:'border', surface_elevated:'surface', divider:'border',
+    input_border:'border', input_focus:'primary', input_text:'text_primary', input_placeholder:'text_muted',
+    modal_bg:'surface', modal_border:'border', modal_title:'text_primary', modal_text:'text_secondary',
+    modal_cta_bg:'button_primary_bg', modal_cta_text:'button_primary_text',
+    banner_bg_2:'banner_bg', banner_cta_bg:'accent', banner_accent:'accent',
+    header_active:'primary', nav_active:'primary', status_text:'text_secondary',
+    hero_bg:'header_bg', hero_text:'header_text',
+  };
+  for (const [key, source] of Object.entries(links)) {
+    if (overrides[key] === undefined || overrides[key] === null || overrides[key] === '') {
+      if (overrides[source] != null || t[source] !== TOKEN_DEFAULTS[source]) t[key] = t[source];
     }
   }
+  if (!overrides.hero_bg && !overrides.header_bg && overrides.primary) t.hero_bg = t.primary_dark !== TOKEN_DEFAULTS.primary_dark ? t.primary_dark : t.primary;
   return t;
 }
 
@@ -267,6 +290,8 @@ export function themeToCssVars(theme) {
 
     '--brand-surface-elevated': t.surface_elevated,
     '--brand-text-muted': t.text_muted,
+    '--brand-text-primary': t.text_primary,
+    '--brand-text-secondary': t.text_secondary,
     '--brand-divider': t.divider,
     '--brand-success': t.success,
     '--brand-warning': t.warning,
@@ -280,8 +305,12 @@ export function themeToCssVars(theme) {
     '--brand-status-active-text': t.status_active_text,
 
     '--card-bg': t.card_bg,
-    '--sheet-bg': t.surface,
-    '--nav-bg': t.surface,
+    '--sheet-bg': t.modal_bg,
+    '--nav-bg': t.nav_bg,
+    '--brand-hero-bg': t.hero_bg,
+    '--brand-hero-text': t.hero_text,
+    '--brand-modal-cta-bg': t.modal_cta_bg,
+    '--brand-modal-cta-text': t.modal_cta_text,
     '--modal-bg': t.modal_bg,
     '--input-bg': t.input_bg,
     '--overlay-bg': t.overlay,
@@ -329,7 +358,7 @@ export function themeToCssVars(theme) {
   if (lightTint) vars['--brand-primary-light'] = lightTint;
 
   // shadcn semantic tokens follow the core colours.
-  const primaryHsl = hexToHsl(t.primary);
+  const primaryHsl = hexToHsl(t.button_primary_bg);
   if (primaryHsl) {
     vars['--primary'] = primaryHsl;
     vars['--accent'] = primaryHsl;
@@ -339,7 +368,7 @@ export function themeToCssVars(theme) {
   if (bgHsl) vars['--background'] = bgHsl;
   const fgHsl = hexToHsl(t.text_primary);
   if (fgHsl) vars['--foreground'] = fgHsl;
-  const cardHsl = hexToHsl(t.surface);
+  const cardHsl = hexToHsl(t.card_bg);
   if (cardHsl) {
     vars['--card'] = cardHsl;
     vars['--popover'] = cardHsl;
@@ -349,6 +378,15 @@ export function themeToCssVars(theme) {
     vars['--border'] = borderHsl;
     vars['--input'] = borderHsl;
   }
+
+  for (const [name, key] of Object.entries({
+    '--primary-foreground':'button_primary_text', '--secondary':'button_secondary_bg',
+    '--secondary-foreground':'button_secondary_text', '--card-foreground':'text_primary',
+    '--popover-foreground':'modal_title', '--muted':'surface_alt', '--muted-foreground':'text_muted',
+    '--success':'success', '--warning':'warning', '--destructive':'error',
+  })) { const hsl = hexToHsl(t[key]); if (hsl) vars[name] = hsl; }
+  const popoverHsl = hexToHsl(t.modal_bg);
+  if (popoverHsl) vars['--popover'] = popoverHsl;
 
   // System colours follow the Brand's own success / warning / error tokens, so
   // every status chip, badge and semantic surface re-themes with them.

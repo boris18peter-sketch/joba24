@@ -11,7 +11,8 @@ export default function PageHeader({ title, right, backTo }) {
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 50,
-      background: 'var(--header-bg)',
+      background: 'var(--brand-header-bg, var(--header-bg))',
+      color: 'var(--brand-header-text, var(--text-1))',
       backdropFilter: 'blur(8px)',
       // Small fixed top padding. Safe-area (notch) is handled by the Layout
       // wrapper on public pages that render WITHOUT AppHeader (Terms/Privacy/FAQ

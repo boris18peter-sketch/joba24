@@ -180,7 +180,7 @@ export default function SupportChat() {
   if (!isAuthenticated) {
     return (
       <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
-        <Loader2 size={24} className="animate-spin" color="#1a6fd4" />
+        <Loader2 size={24} className="animate-spin" color="var(--brand-primary)" />
       </div>
     );
   }
@@ -209,7 +209,7 @@ export default function SupportChat() {
       >
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-            <Loader2 size={24} className="animate-spin" color="#1a6fd4" />
+            <Loader2 size={24} className="animate-spin" color="var(--brand-primary)" />
           </div>
         ) : messages.length === 0 ? (
           <div style={{

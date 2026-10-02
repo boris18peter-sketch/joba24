@@ -42,7 +42,7 @@ const ICON_MAP = {
 
 // Quick Action config per step — uses category config for labels, icons, and confirm text
 function getQuickAction(config, stepIdx) {
-  if (stepIdx < 0)   return { ...config.actions.start,  nextKey: 'on_the_way', color: '#1a6fd4' };
+  if (stepIdx < 0)   return { ...config.actions.start,  nextKey: 'on_the_way', color: 'var(--brand-banner-bg, var(--brand-primary))' };
   if (stepIdx === 0) return { ...config.actions.arrive, nextKey: 'arrived',    color: '#059669' };
   if (stepIdx === 1) return { ...config.actions.done,   nextKey: 'done',       color: '#059669' };
   return null;
@@ -212,7 +212,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           const quickAction = tIsWorker && isTaskActive ? getQuickAction(catConfig, tStepIdx) : null;
           const QuickActionIcon = quickAction ? (ICON_MAP[quickAction.icon] || Navigation) : null;
 
-          const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
+          const gradient = 'linear-gradient(135deg, var(--brand-banner-bg, var(--brand-primary)) 0%, var(--brand-banner-bg-2, var(--brand-primary-dark)) 100%)';
 
           // ── Category-aware status hero (coordinated for worker & owner) ──
           // The status is the LARGEST, most prominent element on the banner.
@@ -349,7 +349,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                         boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.18)' : 'none',
                         transition: 'all 0.3s',
                       }}>
-                        <Icon size={13} color={done ? '#1a6fd4' : 'rgba(255,255,255,0.55)'} strokeWidth={active ? 2.5 : 1.8} />
+                        <Icon size={13} color={done ? 'var(--brand-banner-bg, var(--brand-primary))' : 'rgba(255,255,255,0.55)'} strokeWidth={active ? 2.5 : 1.8} />
                       </div>
                       <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.45)', marginTop: 4 }}>{label}</div>
                     </div>

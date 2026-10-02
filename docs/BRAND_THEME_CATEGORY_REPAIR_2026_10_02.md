@@ -1,0 +1,15 @@
+# Theme and actionable-form production repair, 2026-10-02
+
+Baseline: clean working tree before this change, revision c8be323380e822faa2e1ceee15e430fb77012024. BrandConfig SaveaDate 6abedd0d7d52c7a210efd16a has theme {"accent":"#d357fe","button_primary_bg":"#d357fe","input_focus":"#d357fe","primary":"#d357fe","primary_dark":"#d357fe","banner_accent":"#d357fe","header_active":"#d357fe","text_primary":"#000000","banner_bg":"#d357fe","header_bg":"#ffffff","header_text":"#d357fe"}. Default Joba24 config has no theme. Both configurations remain untouched by this repair.
+
+Before implementation: server token whitelist is shorter than Studio; unknown keys silently discarded. Studio deletes reset keys locally but server merges, resurrecting removed keys. Provider resolves only on mount. Defaults for dependent semantic tokens ignore core overrides. CreateTask mounts both legacy and global forms; legacy events.role_type repeats actionable siblings. Existing canonical event children have empty global fields.
+
+Changes: align token validation, reject unknown fields, explicit null reset, authoritative read-after-save confirmation, inherited defaults and live provider refresh; semantic consumption across Brand-facing UI; populate EXISTING canonical GlobalCategory forms and render one form. No new category/form entities. No marketplace records, payments, authentication or isolation logic changed.
+
+Rollback: restore modified source from the pre-repair revision. Restore only the eight GlobalCategory ids below to fields:[] and restore events label to 'עזרה באירועים / שירות נוסף'. Preserve tasks created while new forms are live; their category_details remain valid historical data. No schema/RLS changes. Online rollback possible, moderate complexity. Tranzila and purchase components/functions excluded.
+
+Global forms baseline (all fields:[]): waiters 6abf58af1d64d281da3478a4; bartenders 6abf58af1d64d281da3478a5; djs 6abf58af1d64d281da3478a6; event_producers 6abf58af1d64d281da3478a7; event_setup 6abf58af1d64d281da3478a8; event_decorations 6abf58af1d64d281da3478a9; photography 6abee8e557eac47bdbbdd8cb; events 6abee8e557eac47bdbbdd8cc. All parent_key:parent_events, node_type:service.
+
+Implementation record: existing eight canonical Event services now carry their own global fields, including events.service_needed. No BrandConfig production values were changed for testing. Invalid/unknown theme tokens and empty non-reset values are rejected with 400. Read-after-write confirmation and explicit-null resets are installed. Brand-facing theme consumers were migrated; source/build checks do not substitute for browser acceptance. No payment files or functions modified.
+
+Verification after rollback: compile, then Testing Agent goals: theme override save/reload/reopen; SaveaDate direct Waiters/DJs/Other; Joba24 Events -> child -> same global form. Browser acceptance is delegated to Testing Agent, not claimed by static inspection.

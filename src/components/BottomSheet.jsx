@@ -35,7 +35,8 @@ export default function BottomSheet({
   const sheetStyle = {
     position: 'relative',
     background: 'var(--sheet-bg)',
-    borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
+    borderRadius: 'var(--brand-modal-radius, var(--r-2xl)) var(--brand-modal-radius, var(--r-2xl)) 0 0',
+    border: '1px solid var(--brand-modal-border, var(--border-1))',
     width: '100%',
     maxWidth,
     paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
@@ -70,7 +71,7 @@ export default function BottomSheet({
       onPointerDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
     >
-      <div dir={dir} style={sheetStyle} onClick={(e) => e.stopPropagation()}>
+      <div dir={dir} className="j-modal-surface" style={sheetStyle} onClick={(e) => e.stopPropagation()}>
         {/* Drag handle */}
         {showHandle && (
           <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />

@@ -37,7 +37,7 @@ function SelectField({ field, value, onChange }) {
               style={{
                 padding: '8px 14px', borderRadius: 99, fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', border: 'none', transition: 'all 0.18s ease',
-                background: isActive ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-3)',
+                background: isActive ? 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))' : 'var(--surface-3)',
                 color: isActive ? 'white' : 'var(--text-2)',
                 boxShadow: isActive ? '0 3px 12px rgba(26,111,212,0.28)' : 'none',
                 WebkitTapHighlightColor: 'transparent',
@@ -53,7 +53,7 @@ function SelectField({ field, value, onChange }) {
           style={{
             marginTop: 6, background: 'none', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700,
-            color: '#1a6fd4', padding: 0,
+            color: 'var(--brand-primary)', padding: 0,
           }}
         >
           {showAll ? t('cef_show_less') : t('cef_more_options').replace('{n}', opts.length - 6)}
@@ -87,7 +87,7 @@ function MultiSelectField({ field, value, onChange }) {
             style={{
               padding: '8px 14px', borderRadius: 99, fontSize: 13, fontWeight: 600,
               cursor: 'pointer', border: isActive ? 'none' : '1px solid var(--border-1)', transition: 'all 0.18s ease',
-              background: isActive ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-3)',
+              background: isActive ? 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))' : 'var(--surface-3)',
               color: isActive ? 'white' : 'var(--text-2)',
               boxShadow: isActive ? '0 3px 12px rgba(26,111,212,0.28)' : 'none',
               WebkitTapHighlightColor: 'transparent',
@@ -100,7 +100,7 @@ function MultiSelectField({ field, value, onChange }) {
         );
       })}
       {selected.length > 0 && (
-        <button type="button" onClick={() => onChange([])} style={{ padding: '8px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-1)', background: 'transparent', color: '#94a3b8' }}>
+        <button type="button" onClick={() => onChange([])} style={{ padding: '8px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-1)', background: 'transparent', color: 'var(--text-3)' }}>
           {t('cef_clear').replace('{n}', selected.length)}
         </button>
       )}
@@ -125,15 +125,15 @@ function ToggleField({ field, value, onChange }) {
     >
       <div style={{
         width: 22, height: 22, borderRadius: 7, flexShrink: 0,
-        background: isActive ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-2)',
-        border: `2px solid ${isActive ? '#1a6fd4' : '#cbd5e1'}`,
+        background: isActive ? 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))' : 'var(--surface-2)',
+        border: `2px solid ${isActive ? 'var(--brand-primary)' : '#cbd5e1'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: isActive ? '0 2px 8px rgba(26,111,212,0.3)' : 'none',
         transition: 'all 0.18s ease',
       }}>
         {isActive && <span style={{ color: 'white', fontSize: 12, fontWeight: 900 }}>✓</span>}
       </div>
-      <span style={{ fontSize: 13.5, fontWeight: 600, color: isActive ? '#1e40af' : 'var(--text-2)' }}>{tTaskFlow(field.label, lang)}</span>
+      <span style={{ fontSize: 13.5, fontWeight: 600, color: isActive ? 'var(--brand-primary-dark)' : 'var(--text-2)' }}>{tTaskFlow(field.label, lang)}</span>
     </button>
   );
 }
@@ -154,7 +154,7 @@ function NumberField({ field, value, onChange }) {
           outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
           transition: 'border-color 0.15s',
         }}
-        onFocus={e => { e.target.style.borderColor = '#1a6fd4'; }}
+        onFocus={e => { e.target.style.borderColor = 'var(--brand-primary)'; }}
         onBlur={e => { e.target.style.borderColor = 'var(--border-1)'; }}
       />
     </div>
@@ -175,7 +175,7 @@ function TextField({ field, value, onChange }) {
         outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
         transition: 'border-color 0.15s',
       }}
-      onFocus={e => { e.target.style.borderColor = '#1a6fd4'; }}
+      onFocus={e => { e.target.style.borderColor = 'var(--brand-primary)'; }}
       onBlur={e => { e.target.style.borderColor = 'var(--border-1)'; }}
     />
   );
@@ -196,7 +196,7 @@ function TextareaField({ field, value, onChange }) {
         outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
         transition: 'border-color 0.15s', lineHeight: 1.5,
       }}
-      onFocus={e => { e.target.style.borderColor = '#1a6fd4'; }}
+      onFocus={e => { e.target.style.borderColor = 'var(--brand-primary)'; }}
       onBlur={e => { e.target.style.borderColor = 'var(--border-1)'; }}
     />
   );
@@ -306,14 +306,14 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
       }}>
         <div style={{
           width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-          background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
-          border: '1px solid #bfdbfe',
+          background: 'linear-gradient(135deg,var(--brand-primary-light),var(--brand-primary-light))',
+          border: '1px solid var(--border-2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 18,
         }}>{emoji}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.2 }}>{labelName}</div>
-          <div style={{ fontSize: 11, color: '#1a6fd4', fontWeight: 600, marginTop: 1 }}>{t('cef_pro_details')}</div>
+          <div style={{ fontSize: 11, color: 'var(--brand-primary)', fontWeight: 600, marginTop: 1 }}>{t('cef_pro_details')}</div>
         </div>
       </div>
 
@@ -372,21 +372,21 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
         {/* Distance display for moving/delivery/transportation */}
         {distance != null && (
           <div style={{
-            background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
-            border: '1px solid #bfdbfe', borderRadius: 14,
+            background: 'linear-gradient(135deg,var(--brand-primary-light),var(--brand-primary-light))',
+            border: '1px solid var(--border-2)', borderRadius: 14,
             padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10, flexShrink: 0,
               background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Navigation size={17} color="#1a6fd4" />
+              <Navigation size={17} color="var(--brand-primary)" />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#1e40af' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-primary-dark)' }}>
                 {distance < 1 ? `${Math.round(distance * 1000)} ${t('cef_meter')}` : `${distance.toFixed(1)} ${t('cef_km')}`}
               </div>
-              <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 1, fontWeight: 500 }}>
+              <div style={{ fontSize: 11, color: 'var(--brand-primary)', marginTop: 1, fontWeight: 500 }}>
                 {t('cef_travel_time').replace('{n}', Math.ceil(distance * 3))}
               </div>
             </div>

@@ -25,7 +25,7 @@ export default function ProtectedRoute({ fallback = <DefaultFallback /> }) {
             onClick={login}
             style={{
               padding: '14px 32px',
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              background: 'linear-gradient(135deg,var(--brand-primary),#0a52b0)',
               color: 'white',
               border: 'none',
               borderRadius: 16,

@@ -25,10 +25,10 @@ export default function ProfileActivityStats({ completedCount, postedCount }) {
           <div style={{ fontSize: 10, color: '#16a34a', marginTop: 3, lineHeight: 1.4 }}>{t('pr_tasks_done_expl')}</div>
         </div>
         <div style={{ flex: 1, background: '#eff6ff', borderRadius: 14, border: '1px solid #bfdbfe', padding: '14px 12px', textAlign: 'center' }}>
-          <Megaphone size={18} color="#1a6fd4" style={{ margin: '0 auto 6px' }} />
-          <div style={{ fontSize: 30, fontWeight: 900, color: '#1a6fd4', lineHeight: 1 }}>{postedCount}</div>
+          <Megaphone size={18} color="var(--brand-primary)" style={{ margin: '0 auto 6px' }} />
+          <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--brand-primary)', lineHeight: 1 }}>{postedCount}</div>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#1e40af', marginTop: 4 }}>{t('pr_tasks_posted_long')}</div>
-          <div style={{ fontSize: 10, color: '#1a6fd4', marginTop: 3, lineHeight: 1.4 }}>{t('pr_tasks_posted_expl')}</div>
+          <div style={{ fontSize: 10, color: 'var(--brand-primary)', marginTop: 3, lineHeight: 1.4 }}>{t('pr_tasks_posted_expl')}</div>
         </div>
       </div>
     </div>

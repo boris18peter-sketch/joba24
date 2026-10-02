@@ -54,7 +54,7 @@ export default function WorkerCancelledPopup({ task, onClose }) {
           onClick={onClose}
           style={{
             width: '100%', height: 54, borderRadius: 'var(--r-md)',
-            background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+            background: 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))',
             border: 'none', color: 'white', fontWeight: 900, fontSize: 16,
             cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)',
             marginBottom: 4,

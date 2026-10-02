@@ -11,7 +11,7 @@ import { chatMessagePreview } from '@/lib/chatPreview';
  * No cards, no boxes — a single hairline divider and spacing do the work.
  */
 const GRADIENTS = [
-  'linear-gradient(135deg,#1a6fd4,#3b82f6)',
+  'linear-gradient(135deg,var(--brand-primary),#3b82f6)',
   'linear-gradient(135deg,#0ea5e9,#0284c7)',
   'linear-gradient(135deg,#8b5cf6,#6d28d9)',
   'linear-gradient(135deg,#f59e0b,#d97706)',
@@ -72,7 +72,7 @@ export default function ConversationRow({ conv, meId, t }) {
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{name}</span>
           {verified && <VerifiedBadge size="sm" />}
-          <span style={{ marginInlineStart: 'auto', fontSize: 11, color: unread > 0 ? '#1a6fd4' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 500, flexShrink: 0 }}>
+          <span style={{ marginInlineStart: 'auto', fontSize: 11, color: unread > 0 ? 'var(--brand-primary)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 500, flexShrink: 0 }}>
             {stamp(last?.created_date || conv.task.updated_date, t)}
           </span>
         </div>
@@ -104,7 +104,7 @@ export default function ConversationRow({ conv, meId, t }) {
       {unread > 0 && (
         <div className="j-badge-pop" style={{
           minWidth: 20, height: 20, padding: '0 6px', borderRadius: 999, flexShrink: 0,
-          background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)',
+          background: 'linear-gradient(135deg,var(--brand-primary),#3b82f6)',
           color: '#fff', fontSize: 11, fontWeight: 800,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 2px 8px rgba(26,111,212,0.35)',

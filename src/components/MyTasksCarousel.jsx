@@ -59,9 +59,9 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate, t, isRTL }) {
           {/* Actions */}
           <div style={{ padding: '8px 12px 8px' }}>
             <button onClick={handleEdit}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#1a6fd4' }}>
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: 'var(--brand-primary)' }}>
               <div style={{ width: 38, height: 38, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Pencil size={16} color="#1a6fd4" />
+                <Pencil size={16} color="var(--brand-primary)" />
               </div>
               {t('mtc_edit_task')}
             </button>
@@ -132,7 +132,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
         <Link to="/create-task" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            background: 'linear-gradient(135deg, var(--brand-primary), #0a52b0)',
             borderRadius: 16, padding: '13px 20px',
             boxShadow: '0 4px 18px rgba(26,111,212,0.25)',
             cursor: 'pointer',
@@ -160,7 +160,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
           <span style={{ fontSize: 11, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', padding: '2px 7px', borderRadius: 20 }}>{relevantTasks.length}</span>
         </h2>
         <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
-        <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#1a6fd4', whiteSpace: 'nowrap' }}>
+        <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)', whiteSpace: 'nowrap' }}>
           {t('all_filter')} <ChevronLeft size={13} />
         </Link>
       </div>
@@ -208,7 +208,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                     {isTaken && (
                       <div onClick={e => { e.stopPropagation(); navigate(`/chat/${task.id}?with=${task.worker_id}`); }}>
                         <div style={{ width: 22, height: 22, borderRadius: 7, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <MessageCircle size={11} color="#1a6fd4" />
+                          <MessageCircle size={11} color="var(--brand-primary)" />
                         </div>
                       </div>
                     )}

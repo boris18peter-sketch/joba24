@@ -200,7 +200,7 @@ function EmailForm({ onBack, onSuccess }) {
           disabled={loading || otp.trim().length < 4}
           style={{
             width: '100%', height: 52, borderRadius: 16,
-            background: otp.trim().length >= 4 ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0',
+            background: otp.trim().length >= 4 ? 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))' : '#e2e8f0',
             color: otp.trim().length >= 4 ? 'white' : '#94a3b8',
             fontWeight: 800, fontSize: 15, border: 'none',
             cursor: otp.trim().length >= 4 ? 'pointer' : 'not-allowed',
@@ -212,7 +212,7 @@ function EmailForm({ onBack, onSuccess }) {
         <button
           onClick={handleResendOtp}
           disabled={loading}
-          style={{ background: 'none', border: 'none', color: '#1a6fd4', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', padding: 0, textAlign: 'center', width: '100%' }}
+          style={{ background: 'none', border: 'none', color: 'var(--brand-modal-cta-bg, var(--brand-primary))', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', padding: 0, textAlign: 'center', width: '100%' }}
         >
           שלח קוד נוסף
         </button>
@@ -243,7 +243,7 @@ function EmailForm({ onBack, onSuccess }) {
         disabled={loading || !validateEmail(email)}
         style={{
           width: '100%', height: 52, borderRadius: 16,
-          background: validateEmail(email) ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0',
+          background: validateEmail(email) ? 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))' : '#e2e8f0',
           color: validateEmail(email) ? 'white' : '#94a3b8',
           fontWeight: 800, fontSize: 15, border: 'none',
           cursor: validateEmail(email) ? 'pointer' : 'not-allowed',
@@ -291,7 +291,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
-      <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} />
+      <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: 'var(--brand-modal-cta-bg, var(--brand-primary))' }} />
       <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{`מתחבר ל-${brandName}...`}</div>
       <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
         סיים את ההתחברות בדפדפן. האפליקציה תזהה את ההתחברות אוטומטית ותחזור אליך.
@@ -304,7 +304,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             width: '100%', height: 48, borderRadius: 14, textDecoration: 'none',
-            background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: '#fff',
+            background: 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))', color: '#fff',
             fontWeight: 700, fontSize: 15, boxShadow: '0 4px 14px rgba(26,111,212,0.3)',
           }}
         >
@@ -466,7 +466,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
-        background: 'rgba(5,15,40,0.72)',
+        background: 'var(--overlay-bg)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(8px)',
         touchAction: 'none',
@@ -478,6 +478,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       <div
         style={{
           background: 'var(--sheet-bg)',
+          border: '1px solid var(--brand-modal-border, var(--border-1))',
           borderRadius: '32px 32px 0 0',
           width: '100%', maxWidth: 480,
           boxShadow: '0 -24px 120px rgba(0,0,0,0.3)',
@@ -534,8 +535,8 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                   onClick={() => setShowEmail(true)}
                   label={t('continue_with_email')}
                   border="#bfdbfe"
-                  color="#1a6fd4"
-                  icon={<Mail size={16} color="#1a6fd4" />}
+                  color="var(--brand-modal-cta-bg, var(--brand-primary))"
+                  icon={<Mail size={16} color="var(--brand-modal-cta-bg, var(--brand-primary))" />}
                 />
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

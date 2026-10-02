@@ -28,7 +28,7 @@ export default function InlineNameField({ value, onChange, error, placeholder })
         />
         <Pencil
           size={15}
-          color="#1a6fd4"
+          color="var(--brand-input-focus, var(--brand-primary))"
           style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', insetInlineEnd: 14, pointerEvents: 'none' }}
         />
       </div>

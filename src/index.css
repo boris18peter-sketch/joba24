@@ -274,7 +274,7 @@
 }
 .j-btn:active { opacity: 0.85; transform: scale(0.96); }
 .j-btn-primary {
-  background: linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-primary-dark));
+  background: linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)));
   color: var(--brand-btn-primary-text, white);
   border-radius: var(--brand-btn-radius, var(--r-md));
   box-shadow: 0 4px 14px rgba(26,111,212,0.3);
@@ -359,6 +359,27 @@
 .j-input { color: var(--brand-input-text, var(--text-1)); }
 .j-input::placeholder { color: var(--brand-input-placeholder, var(--text-3)); opacity: 1; }
 .j-input:focus { border-color: var(--brand-input-focus, var(--brand-primary)); }
+
+/* One input contract, including native controls in older Brand-facing forms. */
+html[data-brand-themed] :is(input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='color']), textarea, select) {
+  background-color: var(--brand-input-bg) !important;
+  border-color: var(--brand-input-border) !important;
+  color: var(--brand-input-text) !important;
+  border-radius: var(--brand-input-radius);
+}
+html[data-brand-themed] :is(input, textarea)::placeholder { color: var(--brand-input-placeholder); }
+html[data-brand-themed] :is(input, textarea, select):focus {
+  border-color: var(--brand-input-focus) !important;
+  outline-color: var(--brand-input-focus);
+}
+html[data-brand-themed] :is(input[type='checkbox'], input[type='radio']) { accent-color: var(--brand-input-focus); }
+
+/* Shared popup CTA/text scope survives React portals. */
+.j-modal-surface, .mobile-sheet, .mobile-modal-center {
+  --brand-btn-primary-bg: var(--brand-modal-cta-bg);
+  --brand-btn-primary-text: var(--brand-modal-cta-text);
+  color: var(--brand-modal-text, var(--text-2));
+}
 
 /* ── Disabled controls — a Brand can theme the disabled state ── */
 .j-btn:disabled,

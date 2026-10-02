@@ -13,6 +13,7 @@ import BrandDashboardTab from '@/components/admin/brand/BrandDashboardTab';
 import BrandDangerTab from '@/components/admin/brand/BrandDangerTab';
 import { Pill } from '@/components/admin/brand/brandUi';
 import { fetchGlobalCategories } from '@/lib/brand/globalCategories';
+import { loadInheritedTheme } from '@/lib/brand/brandResolver';
 
 /**
  * Brand Studio — everything about one Brand in one place.
@@ -57,6 +58,7 @@ export default function BrandManager() {
       return {
         brand: brands?.[0] || null,
         config: configs?.[0] || null,
+        inheritedTheme: brands?.[0] ? await loadInheritedTheme(brands[0], configs?.[0]) : {},
         domains: domains || [],
         categories: categories || [],
       };
@@ -75,7 +77,7 @@ export default function BrandManager() {
   const config = data?.config;
   const domains = data?.domains || [];
   const categories = data?.categories || [];
-  const onSaved = () => refetch();
+  const onSaved = async () => { window.dispatchEvent(new Event('brand-config-saved')); return refetch(); };
 
   if (isLoading) {
     return (
@@ -186,7 +188,7 @@ export default function BrandManager() {
 
       {tab === 'overview' && <BrandDashboardTab brand={brand} />}
       {tab === 'identity' && <BrandGeneralTab brand={brand} config={config} onSaved={onSaved} />}
-      {tab === 'design' && <BrandDesignTab brand={brand} config={config} onSaved={onSaved} />}
+      {tab === 'design' && <BrandDesignTab key={brand.id} brand={brand} config={config} inheritedTheme={data?.inheritedTheme} onSaved={onSaved} />}
       {tab === 'domains' && <BrandDomainsTab brand={brand} domains={domains} />}
       {tab === 'categories' && (
         <BrandCategoriesTab brand={brand} rows={categories} globalRows={globalCategories} />

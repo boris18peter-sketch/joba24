@@ -102,7 +102,7 @@ export default function LiveNotificationPopup({ notification, onClose }) {
         }}
       >
         <div style={{ height: 3, background: isCelebration ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.06)' }}>
-          <div style={{ height: '100%', background: isCelebration ? 'rgba(255,255,255,0.85)' : '#1a6fd4', width: `${progress}%`, transition: 'width 0.05s linear' }} />
+          <div style={{ height: '100%', background: isCelebration ? 'rgba(255,255,255,0.85)' : 'var(--brand-primary)', width: `${progress}%`, transition: 'width 0.05s linear' }} />
         </div>
 
         <div style={{ padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>

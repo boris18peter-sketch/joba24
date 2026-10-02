@@ -37,7 +37,7 @@ export default function Terms() {
           <div key={section.number} style={{ paddingX: 16, marginBottom: 16 }}>
             <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               {/* Section Header */}
-              <div style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', padding: '16px', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ background: 'linear-gradient(135deg, var(--brand-primary), #0a52b0)', padding: '16px', borderBottom: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <span style={{ color: 'white', fontWeight: 900, fontSize: 18 }}>{section.number}</span>
@@ -62,7 +62,7 @@ export default function Terms() {
         <p style={{ fontSize: 12, color: '#64748b', margin: 0, lineHeight: 1.6 }}>
           {t('terms_footer')}
            <br />
-           <strong style={{ color: '#1a6fd4' }}>{t('terms_footer_agree')}</strong>
+           <strong style={{ color: 'var(--brand-primary)' }}>{t('terms_footer_agree')}</strong>
         </p>
       </div>
     </div>

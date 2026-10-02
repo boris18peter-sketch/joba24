@@ -8,7 +8,7 @@ export default function TaskBadges({ badges = {} }) {
   const items = [];
 
   // Neutral gray style for all badges — only urgency gets color (handled in header)
-  const neutralStyle = { color: '#64748b', bg: '#f1f5f9' };
+  const neutralStyle = { color: 'var(--brand-status-text, #64748b)', bg: 'var(--brand-status-bg, #f1f5f9)' };
 
   if (isNew)            items.push({ label: 'חדש',         ...neutralStyle });
   if (isHighPay)        items.push({ label: 'שכר גבוה',    ...neutralStyle });

@@ -70,11 +70,11 @@ export default function SchedulePicker({ value = [], onChange }) {
             }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
-                border: '1px solid #bfdbfe',
+                background: 'linear-gradient(135deg,var(--brand-primary-light),var(--brand-primary-light))',
+                border: '1px solid var(--border-2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Calendar size={17} color="#1a6fd4" />
+                <Calendar size={17} color="var(--brand-primary)" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-1)' }}>
@@ -124,7 +124,7 @@ export default function SchedulePicker({ value = [], onChange }) {
             <button type="button" onClick={addSlot} disabled={!canAdd} style={{
               flex: 1, height: 44, borderRadius: 11, border: 'none',
               cursor: canAdd ? 'pointer' : 'not-allowed',
-              background: canAdd ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--border-1)',
+              background: canAdd ? 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))' : 'var(--border-1)',
               color: canAdd ? 'white' : 'var(--text-3)', fontWeight: 800, fontSize: 13,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             }}>
@@ -143,7 +143,7 @@ export default function SchedulePicker({ value = [], onChange }) {
         <button type="button" onClick={() => setShowForm(true)} style={{
           width: '100%', height: 48, borderRadius: 12,
           border: '1.5px dashed var(--border-2)', background: 'var(--surface-3)',
-          color: '#1a6fd4', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+          color: 'var(--brand-primary)', fontWeight: 700, fontSize: 13, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         }}>
           <Plus size={16} /> הוסף מועד נוסף

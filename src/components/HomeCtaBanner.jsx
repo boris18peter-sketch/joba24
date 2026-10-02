@@ -72,7 +72,7 @@ export default function HomeCtaBanner({ theme = 'green', iconType, icon: Icon, l
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        background: t.gradient,
+        background: `linear-gradient(135deg, var(--brand-banner-bg, transparent), var(--brand-banner-bg-2, transparent)), ${t.gradient}`,
         borderRadius: 14,
         padding: '12px 14px',
         boxShadow: `0 3px 14px ${t.glow}`,
@@ -84,10 +84,10 @@ export default function HomeCtaBanner({ theme = 'green', iconType, icon: Icon, l
       }}
     >
       <BannerIcon iconType={iconType} icon={Icon} />
-      <div style={{ flex: 1, minWidth: 0, color: 'white', textAlign: 'start' }}>
+      <div style={{ flex: 1, minWidth: 0, color: 'var(--brand-banner-text, white)', textAlign: 'start' }}>
         <div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.3 }}>{label}</div>
         {sublabel && (
-          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.85)', fontWeight: 500, marginTop: 2, lineHeight: 1.35 }}>
+          <div style={{ fontSize: 11.5, color: 'var(--brand-banner-text, rgba(255,255,255,0.85))', fontWeight: 500, marginTop: 2, lineHeight: 1.35 }}>
             {sublabel}
           </div>
         )}

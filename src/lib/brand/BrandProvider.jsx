@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { BRAND_STATE, resolveBrandContext, effectiveBrandConfig } from '@/lib/brand/brandResolver';
 import { setCurrentBrandId } from '@/lib/brand/currentBrand';
+import { base44 } from '@/api/base44Client';
 
 /**
  * BrandProvider — resolves the current Brand ONCE and shares it with the whole
@@ -29,26 +30,26 @@ export function BrandProvider({ children }) {
     let cancelled = false;
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
-    resolveBrandContext(hostname)
-      .then((resolved) => {
-        if (cancelled) return;
+    let revision = 0;
+    const refresh = () => {
+      const request = ++revision;
+      return resolveBrandContext(hostname).then(resolved => {
+        if (cancelled || request !== revision) return;
         setCurrentBrandId(resolved.brand?.id || null);
-        setCtx({
-          state: resolved.state,
-          hostname: resolved.hostname,
-          brand: resolved.brand,
-          brandId: resolved.brand?.id || null,
-          config: resolved.config,
-          isPlatformBrand: resolved.brand?.is_default === true,
-        });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        // A resolution failure must never silently expose the platform Brand.
-        setCtx({ ...INITIAL, state: BRAND_STATE.UNKNOWN, hostname });
+        setCtx({ ...resolved, brandId: resolved.brand?.id || null, isPlatformBrand: resolved.brand?.is_default === true });
       });
-
-    return () => { cancelled = true; };
+    };
+    refresh().catch(() => { if (!cancelled) setCtx({ ...INITIAL, state: BRAND_STATE.UNKNOWN, hostname }); });
+    const onSaved = () => { refresh(); };
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    const unsubscribe = base44.entities.BrandConfig.subscribe(onSaved);
+    window.addEventListener('brand-config-saved', onSaved);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true; unsubscribe();
+      window.removeEventListener('brand-config-saved', onSaved);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   const value = useMemo(() => {

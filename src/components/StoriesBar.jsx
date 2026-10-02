@@ -52,7 +52,7 @@ function StoryCard({ task, isViewed, isOwn, onClick, t }) {
     ? 'linear-gradient(135deg, #fbbf24, #f97316)'
     : isViewed
       ? 'linear-gradient(135deg, #9ca3af, #d1d5db)'
-      : 'linear-gradient(135deg, #f97316, #ec4899, #1a6fd4)';
+      : 'linear-gradient(135deg, #f97316, #ec4899, var(--brand-primary))';
   return (
     <button
       onClick={onClick}
@@ -74,7 +74,7 @@ function StoryCard({ task, isViewed, isOwn, onClick, t }) {
             {task.images?.[0] ? (
               <img src={task.images[0]} alt={task.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f2b6b, var(--brand-primary))' }}>
                 <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
               </div>
             )}
@@ -84,7 +84,7 @@ function StoryCard({ task, isViewed, isOwn, onClick, t }) {
           <div style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#fbbf24', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#7c2d12' }}>{t('story_me_pill')}</div>
         )}
       </div>
-      <div style={{ background: isOwn ? 'linear-gradient(135deg,#f97316,#ea580c)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 800, color: 'white' }}>₪{Math.round(currentPrice)}</div>
+      <div style={{ background: isOwn ? 'linear-gradient(135deg,#f97316,#ea580c)' : 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))', borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 800, color: 'white' }}>₪{Math.round(currentPrice)}</div>
       <span style={{ fontSize: 10, color: isViewed && !isOwn ? '#94a3b8' : '#475569', fontWeight: 600, textAlign: 'center', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {task.title}
       </span>
@@ -350,13 +350,13 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
             onClick={(e) => { handleTaskClick(e); onClose(); openTaskSheet(task.id); }}
             onMouseDown={e => e.stopPropagation()}
             onTouchStart={e => e.stopPropagation()}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none', cursor: 'pointer' }}
           >
             {t('story_check_task')}
             {!isOwnerStory && (
               <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 9px', fontSize: 12, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 3 }}>
                 {applyCost}
-                <svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
+                <svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="var(--brand-primary)">J</text></svg>
               </span>
             )}
           </div>

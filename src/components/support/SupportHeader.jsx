@@ -10,7 +10,7 @@ export default function SupportHeader() {
   return (
     <div style={{
       flexShrink: 0,
-      background: 'var(--surface-2)',
+      background: 'var(--brand-header-bg, var(--surface-2))',
       borderBottom: '1px solid var(--border-1)',
       paddingTop: 'max(12px, env(safe-area-inset-top))',
       paddingBottom: 12,
@@ -26,7 +26,7 @@ export default function SupportHeader() {
 
       <div style={{
         width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-        background: 'linear-gradient(135deg, #1a6fd4, #3b82f6)',
+        background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: '0 3px 10px rgba(26,111,212,0.28)',
       }}>
@@ -35,7 +35,7 @@ export default function SupportHeader() {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: 15, fontWeight: 800, color: 'var(--text-1)',
+          fontSize: 15, fontWeight: 800, color: 'var(--brand-header-text, var(--text-1))',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {brandText(t('support_title'))}

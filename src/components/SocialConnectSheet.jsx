@@ -452,10 +452,10 @@ export default function SocialConnectSheet({ user, onClose }) {
                   <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderRadius: 14, border: '1.5px solid #bfdbfe', padding: '16px', textAlign: 'center', marginBottom: 16 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>{t('sl_your_code')}</div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                      <code style={{ fontSize: 28, fontWeight: 900, color: '#1a6fd4', letterSpacing: 4 }}>{code || existingCode}</code>
+                      <code style={{ fontSize: 28, fontWeight: 900, color: 'var(--brand-primary)', letterSpacing: 4 }}>{code || existingCode}</code>
                       <button onClick={async (e) => { e.stopPropagation(); const ok = await copyToClipboard(code || existingCode); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
                         style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: `1.5px solid ${copied ? '#16a34a' : '#bfdbfe'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.15s' }}>
-                        {copied ? <Check size={16} color="#16a34a" /> : <Copy size={16} color="#1a6fd4" />}
+                        {copied ? <Check size={16} color="#16a34a" /> : <Copy size={16} color="var(--brand-primary)" />}
                       </button>
                     </div>
                     {copied && (
@@ -470,30 +470,30 @@ export default function SocialConnectSheet({ user, onClose }) {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand-primary)', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_copy_code')}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand-primary)', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_open_platform', { platform: p.label })}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{t(p.bioHintKey)}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand-primary)', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_paste_bio')}</div>
                         <a href={p.editBioUrl} target="_blank" rel="noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: '#1a6fd4', textDecoration: 'none' }}>
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)', textDecoration: 'none' }}>
                           {t('sl_edit_profile')} <ExternalLink size={12} />
                         </a>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>4</span>
+                      <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--brand-primary)', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>4</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_back_and_verify')}</div>
                       </div>

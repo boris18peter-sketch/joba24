@@ -25,7 +25,7 @@ export function normalizeTaskCategory(task, map) {
   if (!row || row.node_type === 'parent') return task;
   return { ...task,category:key,category_id:row.id,parent_category_key:row.parent_key || '' };
 }
-export function validateGlobalForm(row, values) {
+export function validateGlobalForm(row, values = {}) {
   for (const field of (row.fields || []).filter(f => f.enabled !== false)) {
     const value = values[field.key], empty = value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length);
     if (field.required && empty) return `יש למלא: ${field.label || field.key}`;

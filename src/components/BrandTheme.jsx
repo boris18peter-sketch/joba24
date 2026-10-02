@@ -31,8 +31,9 @@ export default function BrandTheme() {
     const vars = themeToCssVars(theme);
     const names = Object.keys(vars);
     for (const name of names) root.style.setProperty(name, vars[name]);
+    root.dataset.brandThemed = 'true';
 
-    return () => { for (const name of names) root.style.removeProperty(name); };
+    return () => { for (const name of names) root.style.removeProperty(name); delete root.dataset.brandThemed; };
   }, [isResolved, theme]);
 
   // Favicon

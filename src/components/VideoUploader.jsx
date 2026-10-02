@@ -55,13 +55,13 @@ export default function VideoUploader({ videoUrl, onChange }) {
         >
           {uploading ? (
             <>
-              <Loader2 size={24} className="animate-spin" style={{ color: '#1a6fd4' }} />
-              <span style={{ fontSize: 13, color: '#1a6fd4', fontWeight: 600 }}>מעלה סרטון...</span>
+              <Loader2 size={24} className="animate-spin" style={{ color: 'var(--brand-primary)' }} />
+              <span style={{ fontSize: 13, color: 'var(--brand-primary)', fontWeight: 600 }}>מעלה סרטון...</span>
             </>
           ) : (
             <>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Video size={22} color="#1a6fd4" />
+                <Video size={22} color="var(--brand-primary)" />
               </div>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b' }}>הוסף סרטון</div>

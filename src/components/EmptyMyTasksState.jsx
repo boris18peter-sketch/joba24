@@ -166,7 +166,7 @@ export default function EmptyMyTasksState() {
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             width: '100%', height: 58, borderRadius: 18, border: 'none',
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            background: 'linear-gradient(135deg, var(--brand-primary), #0a52b0)',
             color: 'white', fontWeight: 800, fontSize: 17, cursor: 'pointer',
             boxShadow: '0 14px 34px rgba(26,111,212,0.42)',
             letterSpacing: 0.2,

@@ -246,7 +246,7 @@ export default function TaskApplicants({ task, onApprove }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
                 onClick={() => setShowCancelWorkerConfirm(false)}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer' }}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,var(--brand-primary),#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer' }}
               >
                 {t('ta_keep_worker')}
               </button>
@@ -301,7 +301,7 @@ export default function TaskApplicants({ task, onApprove }) {
                 onClick={() => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`); }}
                 style={{
                   width: 48, height: 48, borderRadius: '50%',
-                  background: photo ? 'var(--surface-3)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  background: photo ? 'var(--surface-3)' : 'linear-gradient(135deg,var(--brand-primary),#0a52b0)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 18, fontWeight: 900, color: 'white', cursor: 'pointer', flexShrink: 0,
                   overflow: 'hidden', position: 'relative',
@@ -373,7 +373,7 @@ export default function TaskApplicants({ task, onApprove }) {
                   cursor: 'pointer',
                 }}
               >
-                <MessageCircle size={16} color="#1a6fd4" />
+                <MessageCircle size={16} color="var(--brand-primary)" />
               </button>
             </div>
 

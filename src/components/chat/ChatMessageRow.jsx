@@ -44,7 +44,7 @@ export default function ChatMessageRow({ msg, isMe, isContinuation, isLastInGrou
       {!isMe && isLastInGroup && (
         <div style={{
           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)',
+          background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, #3b82f6))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 12, fontWeight: 700, color: 'white', overflow: 'hidden',
         }}>
@@ -77,7 +77,7 @@ export default function ChatMessageRow({ msg, isMe, isContinuation, isLastInGrou
             style={{
               padding: '9px 14px',
               borderRadius: tail,
-              background: isMe ? 'linear-gradient(135deg,#1a6fd4,#3b82f6)' : 'var(--surface-2)',
+              background: isMe ? 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, #3b82f6))' : 'var(--surface-2)',
               color: isMe ? '#fff' : 'var(--text-1)',
               fontSize: 14.5,
               lineHeight: 1.5,
@@ -104,7 +104,7 @@ export default function ChatMessageRow({ msg, isMe, isContinuation, isLastInGrou
             {isMe && !failed && (
               sending
                 ? <Check size={12} color="var(--text-3)" />
-                : (msg.read ? <CheckCheck size={12} color="#3b82f6" /> : <Check size={12} color="var(--text-3)" />)
+                : (msg.read ? <CheckCheck size={12} color="var(--brand-btn-primary-bg, #3b82f6)" /> : <Check size={12} color="var(--text-3)" />)
             )}
           </div>
         )}

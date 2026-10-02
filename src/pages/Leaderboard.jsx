@@ -72,7 +72,7 @@ export default function Leaderboard() {
     .slice(0, 20);
 
   const medals = ['🥇', '🥈', '🥉'];
-  const podiumColors = ['#1a6fd4', '#3b8fe8', '#0a52b0'];
+  const podiumColors = ['var(--brand-primary)', '#3b8fe8', '#0a52b0'];
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -81,7 +81,7 @@ export default function Leaderboard() {
       {/* Top 3 Podium */}
       {sorted.length >= 3 && (
         <div className="px-4 pt-6 pb-2">
-          <div className="rounded-3xl p-5" style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
+          <div className="rounded-3xl p-5" style={{ background: 'linear-gradient(135deg, #0f2b6b, var(--brand-primary))' }}>
             <div className="text-center text-white/70 text-xs mb-4 font-semibold uppercase tracking-widest">⭐ {t('top_performers')}</div>
             <div className="flex items-end justify-center gap-3">
               {[1, 0, 2].map(i => {
@@ -137,7 +137,7 @@ export default function Leaderboard() {
           <div className="text-center py-16">
             <Trophy className="w-12 h-12 mx-auto mb-3" style={{ color: '#93c5fd' }} />
             <p className="font-semibold" style={{ color: 'var(--text-1)' }}>{t('no_data_yet')}</p>
-            <p className="text-sm mt-1" style={{ color: '#1a6fd4' }}>{t('complete_tasks_board')}</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--brand-primary)' }}>{t('complete_tasks_board')}</p>
           </div>
         ) : (
           sorted.map((user, idx) => (
@@ -146,11 +146,11 @@ export default function Leaderboard() {
               className="bg-card rounded-2xl p-4 flex items-center gap-3 shadow-sm"
               style={{ border: idx < 3 ? '1px solid #bfdbfe' : '1px solid var(--border-1)' }}
             >
-              <div className="text-lg font-black w-7 text-center" style={{ color: idx < 3 ? '#1a6fd4' : '#9ca3af' }}>
+              <div className="text-lg font-black w-7 text-center" style={{ color: idx < 3 ? 'var(--brand-primary)' : '#9ca3af' }}>
                 {idx < 3 ? medals[idx] : `${idx + 1}`}
               </div>
               <div className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-base text-white shrink-0 overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--brand-primary), #0a52b0)' }}>
                 {user.profile_photo
                   ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : user.avatar}

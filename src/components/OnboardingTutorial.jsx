@@ -9,7 +9,7 @@ function getSteps(t) {
     {
       targetId: 'onboarding-create-btn',
       tooltip: 'below',
-      icon: <Briefcase size={22} color="#1a6fd4" />,
+      icon: <Briefcase size={22} color="var(--brand-primary)" />,
       badge: t('ot_badge_post'),
       title: t('ot_title_post'),
       body: t('ot_body_post'),
@@ -161,7 +161,7 @@ export default function OnboardingTutorial({ onDone }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 32, height: 32, borderRadius: 10,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a3d82)',
+            background: 'linear-gradient(135deg, var(--brand-primary), #0a3d82)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ color: '#fbbf24', fontWeight: 900, fontSize: 16 }}>J</span>
@@ -218,7 +218,7 @@ export default function OnboardingTutorial({ onDone }) {
           <div style={{
             height: '100%',
             width: `${progress}%`,
-            background: 'linear-gradient(90deg, #1a6fd4, #fbbf24)',
+            background: 'linear-gradient(90deg, var(--brand-primary), #fbbf24)',
             transition: 'width 0.4s ease',
             borderRadius: 2,
           }} />
@@ -242,7 +242,7 @@ export default function OnboardingTutorial({ onDone }) {
           <div>
             <div style={{
               fontSize: 10, fontWeight: 800, letterSpacing: 0.8,
-              color: '#1a6fd4', textTransform: 'uppercase', marginBottom: 2,
+              color: 'var(--brand-primary)', textTransform: 'uppercase', marginBottom: 2,
             }}>
               {current.badge}
             </div>
@@ -298,7 +298,7 @@ export default function OnboardingTutorial({ onDone }) {
               transition: 'opacity 0.2s',
             }}
           >
-            <ArrowRight size={18} color="#1a6fd4" />
+            <ArrowRight size={18} color="var(--brand-primary)" />
           </button>
 
           {/* Next / Finish */}
@@ -308,7 +308,7 @@ export default function OnboardingTutorial({ onDone }) {
               flex: 1, height: 48, borderRadius: 14, border: 'none',
               background: current.isLast
                 ? 'linear-gradient(135deg, #16a34a, #15803d)'
-                : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                : 'linear-gradient(135deg, var(--brand-primary), #0a52b0)',
               color: 'white', fontWeight: 900, fontSize: 15,
               cursor: 'pointer', letterSpacing: -0.2,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -72,7 +72,7 @@ export default function TaskDetailsRows({ task, compact = false }) {
       icon: '📅', iconBg: '#eff6ff',
       label: t('tdr_service_slots'),
       value: scheduleSlots.map(s => `${s.dayLabel} · ${s.time}`).join('  ·  '),
-      valueColor: '#1a6fd4',
+      valueColor: 'var(--brand-primary)',
       multiline: true,
     });
   }
@@ -91,7 +91,7 @@ export default function TaskDetailsRows({ task, compact = false }) {
       else if (isTomorrow) dateLabel = `${t('tdr_tomorrow')}, ${timeStr}`;
       else dateLabel = sDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       const isPast = sDate < now;
-      detailRows.push({ icon: '📅', iconBg: isPast ? '#f1f5f9' : '#eff6ff', label: t('tdr_fixed_time'), value: dateLabel, valueColor: isPast ? '#94a3b8' : '#1a6fd4' });
+      detailRows.push({ icon: '📅', iconBg: isPast ? '#f1f5f9' : '#eff6ff', label: t('tdr_fixed_time'), value: dateLabel, valueColor: isPast ? '#94a3b8' : 'var(--brand-primary)' });
     }
   }
 

@@ -38,7 +38,7 @@ export default function ReportModal({ task, me, onClose }) {
 
   return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.65)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)', touchAction: 'none' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'var(--overlay-bg)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)', touchAction: 'none' }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 40px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -49,9 +49,9 @@ export default function ReportModal({ task, me, onClose }) {
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <CheckCircle2 size={32} color="#16a34a" />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('report_sent')}</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>{t('report_thanks')}</div>
-            <button onClick={onClose} style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-modal-title, #0f1e40)', marginBottom: 8 }}>{t('report_sent')}</div>
+            <div style={{ fontSize: 13, color: 'var(--brand-modal-text, #64748b)', marginBottom: 24 }}>{t('report_thanks')}</div>
+            <button onClick={onClose} style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))', border: 'none', color: 'var(--brand-modal-cta-text, white)', fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
               {t('close')}
             </button>
           </div>
@@ -63,7 +63,7 @@ export default function ReportModal({ task, me, onClose }) {
                   <Flag size={20} color="#dc2626" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 900, fontSize: 17, color: '#0f1e40' }}>{t('report_task')}</div>
+                  <div style={{ fontWeight: 900, fontSize: 17, color: 'var(--brand-modal-title, #0f1e40)' }}>{t('report_task')}</div>
                   <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{task.title}</div>
                 </div>
               </div>
@@ -80,8 +80,8 @@ export default function ReportModal({ task, me, onClose }) {
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: 12, textAlign: 'right',
                       background: reason === r.value ? '#eff6ff' : '#f9fafb',
-                      border: `1.5px solid ${reason === r.value ? '#1a6fd4' : '#e5e7eb'}`,
-                      color: reason === r.value ? '#1a6fd4' : '#374151',
+                      border: `1.5px solid ${reason === r.value ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : '#e5e7eb'}`,
+                      color: reason === r.value ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : '#374151',
                       fontWeight: reason === r.value ? 700 : 500,
                       fontSize: 14, cursor: 'pointer',
                     }}>
@@ -106,7 +106,7 @@ export default function ReportModal({ task, me, onClose }) {
               style={{
                 width: '100%', height: 52, borderRadius: 14,
                 background: reason ? 'linear-gradient(135deg,#dc2626,#b91c1c)' : '#e5e7eb',
-                border: 'none', color: 'white', fontWeight: 800, fontSize: 15,
+                border: 'none', color: 'var(--brand-modal-cta-text, white)', fontWeight: 800, fontSize: 15,
                 cursor: reason ? 'pointer' : 'not-allowed',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 boxShadow: reason ? '0 4px 16px rgba(220,38,38,0.3)' : 'none',

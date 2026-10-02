@@ -17,8 +17,8 @@ export default function BackButton({ to, style, iconColor }) {
         width: 28,
         height: 28,
         borderRadius: 10,
-        background: 'white',
-        border: '1.5px solid #dce8f5',
+        background: 'var(--brand-btn-secondary-bg, white)',
+        border: '1.5px solid var(--border-2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -36,7 +36,7 @@ export default function BackButton({ to, style, iconColor }) {
       onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
-      <ArrowRight size={14} color={iconColor || '#1a6fd4'} />
+      <ArrowRight size={14} color={iconColor || 'var(--brand-header-text, var(--brand-primary))'} />
     </button>
   );
 }

@@ -26,8 +26,7 @@ import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
-import CategoryExtraFields from '@/components/CategoryExtraFields';
-import BrandCategoryFields from '@/components/BrandCategoryFields';
+import SelectedCategoryForm from '@/components/SelectedCategoryForm';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { globalFormError } from '@/lib/brand/categoryTree';
@@ -70,7 +69,7 @@ function toLocalDatetimeInput(isoStr) {
 
 function SocialProofBar() {
   return (
-    <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+    <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-3)', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
       <span>איתות ישלח לכל העובדים הרלוונטיים באזור שלך - על בסיס קטגוריה, ניסיון והיסטוריית פעילות.</span>
     </div>
   );
@@ -129,12 +128,12 @@ function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChan
         type="button"
         onClick={() => fileRef.current?.click()}
         disabled={uploading}
-        style={{ width: '100%', borderRadius: 16, border: '2px dashed #bfdbfe', background: '#f0f7ff', cursor: uploading ? 'not-allowed' : 'pointer', padding: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        style={{ width: '100%', borderRadius: 16, border: '2px dashed var(--border-2)', background: '#f0f7ff', cursor: uploading ? 'not-allowed' : 'pointer', padding: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
       >
         {uploading
-          ? <Loader2 size={22} className="animate-spin" color="#1a6fd4" />
-          : <Plus size={22} color="#1a6fd4" strokeWidth={2.5} />}
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{t('add_photos_video')}</span>
+          ? <Loader2 size={22} className="animate-spin" color="var(--brand-primary)" />
+          : <Plus size={22} color="var(--brand-primary)" strokeWidth={2.5} />}
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-primary)' }}>{t('add_photos_video')}</span>
       </button>
       <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
     </div>
@@ -890,7 +889,7 @@ export default function CreateTask() {
     }
   };
 
-  const activeBtn = { background: '#2563EB', color: 'white', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
+  const activeBtn = { background: '#2563EB', color: 'var(--brand-btn-primary-text, white)', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
   const inactiveBtn = { background: 'var(--surface-3)', color: 'var(--text-2)', border: 'none' };
 
   // Publish from chat mode
@@ -1040,7 +1039,7 @@ export default function CreateTask() {
   // Chat mode rendering — available in all modes (create, edit, repost)
   if (chatMode) {
     return createPortal(
-      <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
         {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
         {showNoCreditsModal && <BuyCreditsModal creditsNeeded={10} onClose={() => setShowNoCreditsModal(false)} />}
         {showLoginPrompt && (
@@ -1109,11 +1108,11 @@ export default function CreateTask() {
         const filled = [form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
         const pct = Math.round((filled / 4) * 100);
         return (
-          <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', position: 'relative', zIndex: 5 }}>
+          <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--brand-hero-bg, #0f2b6b), var(--brand-hero-bg, var(--brand-primary)))', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
-              <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
-              <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
+              <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="var(--brand-hero-text, white)" />
+              <span style={{ fontWeight: 800, fontSize: 17, color: 'var(--brand-hero-text, white)', flex: 1 }}>
         {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
               {/* Chat feature button — temporarily disabled
@@ -1121,7 +1120,7 @@ export default function CreateTask() {
                 onClick={() => setChatMode(m => !m)}
                 style={{
                   display: 'none',
-                  fontSize: 11, fontWeight: 700, color: 'white',
+                  fontSize: 11, fontWeight: 700, color: 'var(--brand-btn-primary-text, white)',
                   background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
                   borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
                   whiteSpace: 'nowrap', boxShadow: 'none',
@@ -1130,7 +1129,7 @@ export default function CreateTask() {
                 {chatMode ? '📋 טופס' : '💬 צ\'אט'}
               </button>
               */}
-              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
+              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
             {/* Worker availability — unified into header */}
             <WorkerAvailabilityIndicator category={form.category} city={form.city} />
@@ -1199,20 +1198,15 @@ export default function CreateTask() {
 
         {/* Worker count hint — removed per design decision */}
 
-        {/* Smart Category Extra Fields — right below category picker */}
-        <CategoryExtraFields
+        {/* One selected actionable service, one global form; no parent form alongside it. */}
+        <SelectedCategoryForm
           key={form.category}
           category={form.category}
+          values={categoryDetails}
           originLat={form.lat}
           originLng={form.lng}
           initialValues={isEditMode ? form.category_details : undefined}
-          onChange={(data, text) => { setCategoryDetails(prev => ({ ...prev, ...data })); setExtraFieldsText(text); }}
-        />
-
-        {/* Brand-configured task fields for this category (BrandCategory.form_config) */}
-        <BrandCategoryFields
-          category={form.category}
-          values={categoryDetails}
+          onLegacyChange={(data, text) => { setCategoryDetails(prev => ({ ...prev, ...data })); setExtraFieldsText(text); }}
           onChange={(k, v) => setCategoryDetails(prev => ({ ...prev, [k]: v }))}
         />
 
@@ -1225,13 +1219,13 @@ export default function CreateTask() {
               type="button"
               onClick={recording ? stopRecording : startRecording}
               disabled={transcribing}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : '#eff6ff', color: recording ? '#dc2626' : '#1a6fd4' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : 'var(--brand-primary-light)', color: recording ? '#dc2626' : 'var(--brand-primary)' }}
             >
               {transcribing ? <Loader2 size={13} className="animate-spin" /> : recording ? <MicOff size={13} /> : <Mic size={13} />}
               {transcribing ? t('processing') : recording ? t('stop_recording') : t('record_description')}
             </button>
           </div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
             {t('ct_describe_helper')}
           </div>
           {recording && (
@@ -1251,17 +1245,17 @@ export default function CreateTask() {
             }}
             style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={5}
           />
-          {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>{t('ct_checking')}</p>}
+          {checkingModeration === 'description' && <p style={{ fontSize: 11, color: 'var(--brand-primary)', marginTop: 4 }}>{t('ct_checking')}</p>}
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{t('ct_required')}</p>}
           {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
 
           {/* Auto-detected category chip */}
           {form.description && form.category && form.category !== 'other' && (
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('ct_detected_cat')}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('ct_detected_cat')}</span>
               <span style={{
-                background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #bfdbfe',
-                borderRadius: 10, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: '#1a6fd4',
+                background: 'linear-gradient(135deg, var(--brand-primary-light), var(--brand-primary-light))', border: '1px solid var(--border-2)',
+                borderRadius: 10, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)',
               }}>
                 🏷️ {getCategoryLabel(form.category, t)}
               </span>
@@ -1300,7 +1294,7 @@ export default function CreateTask() {
           {/* Urgency tag */}
           <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-            <Zap size={14} color="#94a3b8" strokeWidth={1.8} />
+            <Zap size={14} color="var(--text-3)" strokeWidth={1.8} />
             <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{t('ct_when_worker')}</span>
           </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -1328,7 +1322,7 @@ export default function CreateTask() {
             {!hasScheduleField && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-                <Calendar size={14} color="#94a3b8" strokeWidth={1.8} />
+                <Calendar size={14} color="var(--text-3)" strokeWidth={1.8} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{t('ct_exact_dt')}</span>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -1356,7 +1350,7 @@ export default function CreateTask() {
                   </button>
                 )}
               </div>
-              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>{t('ct_exact_dt_help')}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.4 }}>{t('ct_exact_dt_help')}</p>
             </div>
             )}
             {hasScheduleField && scheduleMinutes != null && (
@@ -1397,19 +1391,19 @@ export default function CreateTask() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
             <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.is_story ? '#a855f7' : '#cbd5e1'}`, background: form.is_story ? '#a855f7' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {form.is_story && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+              {form.is_story && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 11 }}>✓</span>}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: form.is_story ? '#7e22ce' : '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Sparkles size={15} color="#a855f7" /> {t('ct_story')}
-                <span style={{ fontSize: 10, fontWeight: 800, background: '#f59e0b', color: 'white', padding: '2px 7px', borderRadius: 20, marginRight: 4 }}>{t('ct_recommended')}</span>
+                <span style={{ fontSize: 10, fontWeight: 800, background: '#f59e0b', color: 'var(--brand-btn-primary-text, white)', padding: '2px 7px', borderRadius: 20, marginRight: 4 }}>{t('ct_recommended')}</span>
               </div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : 'var(--surface-3)', borderRadius: 12, padding: '10px 12px' }}>
             <Zap size={18} color="#a855f7" />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>{t('ct_story_3x')}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : 'var(--text-1)' }}>{t('ct_story_3x')}</div>
               <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{t('ct_story_help')}</div>
             </div>
           </div>
@@ -1495,8 +1489,8 @@ export default function CreateTask() {
               <div style={{ fontSize: 11, color: '#f97316', fontWeight: 600, marginTop: 2 }}>{t('ct_req_warn')}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0) + (form.requires_invoice ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{t('ct_selected', { count })}</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('ct_click_add')}</span>; })()}
-              {showRequirements ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
+              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0) + (form.requires_invoice ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', borderRadius: 20, padding: '2px 8px', border: '1px solid var(--border-2)' }}>{t('ct_selected', { count })}</span> : <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('ct_click_add')}</span>; })()}
+              {showRequirements ? <ChevronUp size={16} color="var(--text-2)" /> : <ChevronDown size={16} color="var(--text-2)" />}
             </div>
           </button>
           {showRequirements && (
@@ -1510,19 +1504,19 @@ export default function CreateTask() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `1.5px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`,
                 }}>
-                  <FileText size={18} color={form.requires_invoice ? '#7c3aed' : '#94a3b8'} />
+                  <FileText size={18} color={form.requires_invoice ? '#7c3aed' : 'var(--text-3)'} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right' }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: form.requires_invoice ? '#7c3aed' : 'var(--text-1)' }}>{t('ct_invoice')}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>{t('ct_invoice_help')}</div>
                 </div>
                 <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.requires_invoice ? '#7c3aed' : 'var(--border-1)'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {form.requires_invoice && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+                  {form.requires_invoice && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 11 }}>✓</span>}
                 </div>
               </button>
               {getRequirementCategories(form.category, t).map(cat => (
                 <div key={cat.label}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                     {cat.items.map(({ key, label }) => {
                       const isSuggested = getSuggestedExtras(form.category).includes(key);
@@ -1531,14 +1525,14 @@ export default function CreateTask() {
                         <button key={key} onClick={() => setReq(key, !form.requirements[key])}
                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', position: 'relative',
                             background: isActive ? 'rgba(59,130,246,0.08)' : isSuggested ? '#fffbeb' : 'var(--surface-3)',
-                            border: `1px solid ${isActive ? '#bfdbfe' : isSuggested ? '#fde68a' : 'var(--border-1)'}`,
+                            border: `1px solid ${isActive ? 'var(--border-2)' : isSuggested ? '#fde68a' : 'var(--border-1)'}`,
                             transition: 'all 0.15s' }}>
-                          <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${isActive ? '#1a6fd4' : isSuggested ? '#f59e0b' : 'var(--border-1)'}`, background: isActive ? '#1a6fd4' : isSuggested ? '#fffbeb' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {isActive && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
+                          <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${isActive ? 'var(--brand-primary)' : isSuggested ? '#f59e0b' : 'var(--border-1)'}`, background: isActive ? 'var(--brand-primary)' : isSuggested ? '#fffbeb' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {isActive && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 9, lineHeight: 1 }}>✓</span>}
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: isSuggested ? 700 : 600, color: isActive ? '#1e40af' : isSuggested ? '#92400e' : 'var(--text-2)' }}>{label}</span>
+                          <span style={{ fontSize: 12, fontWeight: isSuggested ? 700 : 600, color: isActive ? 'var(--brand-primary-dark)' : isSuggested ? '#92400e' : 'var(--text-2)' }}>{label}</span>
                           {isSuggested && !isActive && (
-                            <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'white', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>{t('ct_recommended')}</span>
+                            <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'var(--brand-btn-primary-text, white)', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>{t('ct_recommended')}</span>
                           )}
                         </button>
                       );
@@ -1547,7 +1541,7 @@ export default function CreateTask() {
                 </div>
               ))}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>{t('ct_custom_req')}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}>{t('ct_custom_req')}</div>
                 <input type="text" placeholder={t('ct_custom_req_ph')}
                   value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
@@ -1562,7 +1556,7 @@ export default function CreateTask() {
             <ShieldCheck size={14} color="#16a34a" strokeWidth={1.8} />
             <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_worker_verify')}</Label>
           </div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 10, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.5 }}>
             {t('ct_verify_help')}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -1691,7 +1685,7 @@ export default function CreateTask() {
             style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : 'var(--surface-3)', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : 'var(--border-1)'}` }}
           >
             <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+              {form.auto_bump_enabled && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 11 }}>✓</span>}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{t('ct_bump_title')}</div>
@@ -1721,7 +1715,7 @@ export default function CreateTask() {
         <SectionCard>
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-            <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
+            <CreditCard size={14} color="var(--text-3)" strokeWidth={1.8} />
             <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_how_pay')}</Label>
           </div>
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.5 }}>
@@ -1743,10 +1737,10 @@ export default function CreateTask() {
         {/* Contact Phone */}
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-            <Phone size={14} color="#94a3b8" strokeWidth={1.8} />
+            <Phone size={14} color="var(--text-3)" strokeWidth={1.8} />
             <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_contact')}</Label>
           </div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
             {t('ct_contact_help')}
           </div>
           <Input
@@ -1771,11 +1765,11 @@ export default function CreateTask() {
                 className="btn-tap"
                 style={{
                   width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
-                  color: 'white', border: 'none',
+                  color: 'var(--brand-btn-primary-text, white)', border: 'none',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   background: isReady
-                    ? 'linear-gradient(135deg, #059669, #047857)'
-                    : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                    ? 'linear-gradient(135deg, var(--brand-btn-primary-bg, #059669), var(--brand-btn-primary-bg, #047857))'
+                    : 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
                   boxShadow: isReady
                     ? '0 8px 28px rgba(5,150,105,0.4)'
                     : '0 8px 28px rgba(26,111,212,0.4)',

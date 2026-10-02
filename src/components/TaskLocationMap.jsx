@@ -31,7 +31,7 @@ function UserDot() {
   return (
     <div style={{ position: 'relative', width: 22, height: 22 }}>
       <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(59,130,246,0.22)', animation: 'userPulse 2s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 3, borderRadius: '50%', background: '#3b82f6', border: '2px solid white', boxShadow: '0 2px 8px rgba(59,130,246,0.6)' }} />
+      <div style={{ position: 'absolute', inset: 3, borderRadius: '50%', background: 'var(--brand-primary)', border: '2px solid white', boxShadow: '0 2px 8px rgba(59,130,246,0.6)' }} />
       <style>{`@keyframes userPulse{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
     </div>
   );
@@ -41,7 +41,7 @@ function TaskPin({ task, onClick }) {
   return (
     <div onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
       <div style={{
-        background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+        background: 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))',
         border: '3px solid white',
         borderRadius: '50%',
         width: 34, height: 34,
@@ -51,7 +51,7 @@ function TaskPin({ task, onClick }) {
       }}>📍</div>
       {task?.location_name && (
         <div style={{
-          background: '#1a6fd4', color: 'white', fontSize: 9, fontWeight: 800,
+          background: 'var(--brand-primary)', color: 'white', fontSize: 9, fontWeight: 800,
           padding: '2px 7px', borderRadius: 8, marginTop: 3,
           whiteSpace: 'nowrap', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis',
           boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
@@ -103,7 +103,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
         style={{
           position: 'absolute', top: topOffset, left: 10, zIndex: 10,
           width: 34, height: 34, borderRadius: 10,
-          background: 'white', border: '1px solid #e2e8f0',
+          background: 'var(--brand-surface-elevated, var(--surface-2))', border: '1px solid #e2e8f0',
           boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
         }}>
@@ -114,7 +114,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
       {pinInfoVisible && distKm !== null && (
         <div dir="rtl" style={{
           position: 'absolute', top: topOffset, right: 10, zIndex: 20,
-          background: 'white', borderRadius: 14, padding: '8px 12px',
+          background: 'var(--brand-surface-elevated, var(--surface-2))', borderRadius: 14, padding: '8px 12px',
           boxShadow: '0 4px 16px rgba(0,0,0,0.18)', border: '1px solid #e2e8f0',
           display: 'flex', alignItems: 'center', gap: 10, minWidth: 130,
         }}>
@@ -123,9 +123,9 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
             <X size={11} color="#94a3b8" />
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Navigation size={13} color="#1a6fd4" />
+            <Navigation size={13} color="var(--brand-primary)" />
             <div>
-              <div style={{ fontSize: 14, fontWeight: 900, color: '#1a6fd4', lineHeight: 1 }}>{formatDist(distKm)}</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--brand-primary)', lineHeight: 1 }}>{formatDist(distKm)}</div>
               <div style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>{formatTime(distKm)}</div>
             </div>
           </div>

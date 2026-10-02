@@ -12,7 +12,7 @@ const FIELD_STYLE = (error, focused) => ({
   width: '100%',
   height: 48,
   borderRadius: 12,
-  border: `1.5px solid ${error ? '#ef4444' : focused ? '#1a6fd4' : '#e5e7eb'}`,
+  border: `1.5px solid ${error ? '#ef4444' : focused ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : '#e5e7eb'}`,
   background: error ? '#fff5f5' : '#fff',
   padding: '0 14px',
   fontSize: 15,
@@ -178,12 +178,12 @@ export default function VerifyModal({ onClose, onSuccess }) {
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: 999999,
-      background: 'rgba(5,15,40,0.65)',
+      background: 'var(--overlay-bg)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       backdropFilter: 'blur(8px)',
     }} onClick={(e) => e.target === e.currentTarget && onClose()}>
     <div style={{
-        background: '#fafbff',
+        background: 'var(--brand-modal-bg, #fafbff)',
         borderRadius: '28px 28px 0 0',
         width: '100%', maxWidth: 480,
         maxHeight: '94vh', overflowY: 'auto',
@@ -196,14 +196,14 @@ export default function VerifyModal({ onClose, onSuccess }) {
         {step === 1 ? (
           <>
             {/* Header */}
-            <div style={{ padding: '24px 20px 12px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, background: '#fafbff', borderRadius: '28px 28px 0 0' }}>
+            <div style={{ padding: '24px 20px 12px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, background: 'var(--brand-modal-bg, #fafbff)', borderRadius: '28px 28px 0 0' }}>
               <div style={{ flex: 1 }}>
                 {/* Progress */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <div style={{
                       height: 4, width: 28, borderRadius: 99,
-                      background: '#1a6fd4',
+                      background: 'var(--brand-modal-cta-bg, var(--brand-primary))',
                       transition: 'all 0.3s',
                     }} />
                   </div>
@@ -219,7 +219,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>אימות זהות</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-modal-title, #0f1e40)', letterSpacing: -0.3 }}>אימות זהות</div>
                     <div style={{ fontSize: 12.5, color: '#6b7280', fontWeight: 500, marginTop: 2 }}>
                       אימות חד־פעמי לכל משתמשי Joba24
                     </div>
@@ -234,7 +234,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     { icon: <Star size={13} strokeWidth={1.8} />, text: 'קהילה מדורגת' },
                   ].map(({ icon, text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#6b7280', fontWeight: 500 }}>
-                      <span style={{ color: '#1a6fd4' }}>{icon}</span>
+                      <span style={{ color: 'var(--brand-modal-cta-bg, var(--brand-primary))' }}>{icon}</span>
                       {text}
                     </div>
                   ))}
@@ -275,7 +275,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                       'כולם עוברים אימות זהה',
                     ].map((item, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
-                        <CheckCircle size={14} color="#1a6fd4" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+                        <CheckCircle size={14} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
                         <span style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.5 }}>{item}</span>
                       </div>
                     ))}
@@ -362,7 +362,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                       </div>
                       <div style={{ fontSize: 11, color: '#6ee7b7', marginTop: 1 }}>לחץ להחלפה</div>
                     </div>
-                    <button onClick={() => idPhotoRef.current?.click()} style={{ fontSize: 12, color: '#1a6fd4', background: 'none', border: '1px solid #bfdbfe', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>החלף</button>
+                    <button onClick={() => idPhotoRef.current?.click()} style={{ fontSize: 12, color: 'var(--brand-modal-cta-bg, var(--brand-primary))', background: 'none', border: '1px solid var(--border-2)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>החלף</button>
                   </div>
                 ) : (
                   <div
@@ -371,9 +371,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
                     style={{
-                      border: `2px dashed ${errors.id_photo ? '#ef4444' : dragOver ? '#1a6fd4' : '#d1dde8'}`,
+                      border: `2px dashed ${errors.id_photo ? '#ef4444' : dragOver ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : '#d1dde8'}`,
                       borderRadius: 14,
-                      background: dragOver ? '#eff6ff' : errors.id_photo ? '#fff5f5' : '#f8faff',
+                      background: dragOver ? 'var(--brand-primary-light)' : errors.id_photo ? '#fff5f5' : '#f8faff',
                       padding: '24px 16px',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
                       cursor: 'pointer',
@@ -381,14 +381,14 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     }}
                   >
                     {uploadingId ? (
-                      <Loader2 size={24} color="#1a6fd4" className="animate-spin" />
+                      <Loader2 size={24} color="var(--brand-modal-cta-bg, var(--brand-primary))" className="animate-spin" />
                     ) : (
                       <>
-                        <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Camera size={22} color="#1a6fd4" strokeWidth={1.8} />
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Camera size={22} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={1.8} />
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>העלאת תעודת זהות</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-modal-cta-bg, var(--brand-primary))' }}>העלאת תעודת זהות</div>
                           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>לחץ לבחירת תמונה או גרור לכאן</div>
                         </div>
                       </>
@@ -413,8 +413,8 @@ export default function VerifyModal({ onClose, onSuccess }) {
                 disabled={submitDisabled}
                 style={{
                   width: '100%', height: 52, borderRadius: 14,
-                  background: submitDisabled ? '#c9d6e8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
-                  color: 'white', fontWeight: 700, fontSize: 15,
+                  background: submitDisabled ? '#c9d6e8' : 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))',
+                  color: 'var(--brand-modal-cta-text, white)', fontWeight: 700, fontSize: 15,
                   border: 'none', cursor: submitDisabled ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   letterSpacing: 0.2,
@@ -447,7 +447,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
               <CheckCircle size={44} color="white" strokeWidth={2} />
             </div>
 
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#0f1e40', marginBottom: 8, letterSpacing: -0.3 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--brand-modal-title, #0f1e40)', marginBottom: 8, letterSpacing: -0.3 }}>
               הפרטים נשלחו לאימות
             </div>
             <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
@@ -474,7 +474,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
               style={{
                 width: '100%', height: 52, borderRadius: 14,
                 background: 'linear-gradient(135deg,#10b981,#059669)',
-                color: 'white', fontWeight: 700, fontSize: 15,
+                color: 'var(--brand-modal-cta-text, white)', fontWeight: 700, fontSize: 15,
                 border: 'none', cursor: 'pointer',
                 boxShadow: '0 4px 20px rgba(16,185,129,0.3)',
               }}

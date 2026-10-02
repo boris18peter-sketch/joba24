@@ -7,7 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
-const CHART_COLORS = ['#1a6fd4'];
+const CHART_COLORS = ['var(--brand-primary)'];
 
 export default function EarningsDashboard() {
   const { t, isRTL } = useLanguage();
@@ -120,7 +120,7 @@ export default function EarningsDashboard() {
   const periodTaskCount = chartData.reduce((s, d) => s + (d.count || 0), 0);
 
   const summaryCards = [
-    { label: t('today_earnings'), value: stats.today, icon: Calendar, bg: '#eff6ff', color: '#1a6fd4' },
+    { label: t('today_earnings'), value: stats.today, icon: Calendar, bg: '#eff6ff', color: 'var(--brand-primary)' },
     { label: t('this_week'), value: stats.week, icon: TrendingUp, bg: '#f0fdf4', color: '#059669' },
     { label: t('this_month'), value: stats.month, icon: Wallet, bg: '#fffbeb', color: '#d97706' },
     { label: t('avg_per_task'), value: stats.avg, icon: Target, bg: '#f5f3ff', color: '#7c3aed' },
@@ -131,7 +131,7 @@ export default function EarningsDashboard() {
       <PageHeader title={t('earnings_dashboard')} />
 
       {/* Hero — total earnings */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, var(--brand-primary))', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -40, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{t('total_earnings')}</div>
@@ -183,7 +183,7 @@ export default function EarningsDashboard() {
             ].map(p => (
               <button key={p.key} onClick={() => setPeriod(p.key)}
                 style={{ flex: 1, height: 34, borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: period === p.key ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'transparent',
+                  background: period === p.key ? 'linear-gradient(135deg,var(--brand-primary),#0a52b0)' : 'transparent',
                   color: period === p.key ? 'white' : 'var(--text-2)' }}>
                 {p.label}
               </button>
@@ -202,7 +202,7 @@ export default function EarningsDashboard() {
 
           {isLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-              <Loader2 size={24} className="animate-spin" color="#1a6fd4" />
+              <Loader2 size={24} className="animate-spin" color="var(--brand-primary)" />
             </div>
           ) : chartData.every(d => d.value === 0) ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -226,7 +226,7 @@ export default function EarningsDashboard() {
                 />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={50}>
                   {chartData.map((entry, idx) => (
-                    <Cell key={idx} fill={entry.value > 0 ? '#1a6fd4' : '#dbe4f0'} />
+                    <Cell key={idx} fill={entry.value > 0 ? 'var(--brand-primary)' : '#dbe4f0'} />
                   ))}
                 </Bar>
               </BarChart>

@@ -10,7 +10,7 @@ export default function ProfileWhyTrust({ isVerified, hasSocial, rating, reviewC
   if (isVerified) items.push({ icon: <ShieldCheck size={15} color="#16a34a" />, color: '#16a34a', text: t('pr_identity_verified') });
   if (hasSocial) items.push({ icon: <Link2 size={15} color="#d97706" />, color: '#d97706', text: t('pr_social_connected') });
   if (r > 0 && reviewCount > 0) items.push({ icon: <Star size={15} color="#d97706" fill="#fbbf24" />, color: '#d97706', text: `${r.toFixed(1)} / 5` });
-  if (reviewCount > 0) items.push({ icon: <MessageCircle size={15} color="#1a6fd4" />, color: '#1a6fd4', text: t('pr_reviews_count', { n: reviewCount }) });
+  if (reviewCount > 0) items.push({ icon: <MessageCircle size={15} color="var(--brand-primary)" />, color: 'var(--brand-primary)', text: t('pr_reviews_count', { n: reviewCount }) });
   if (reliabilityPct > 0) items.push({ icon: <ShieldCheck size={15} color="#16a34a" />, color: '#16a34a', text: `${reliabilityPct}% ${t('pr_reliability')}` });
   if (completedCount > 0) items.push({ icon: <Award size={15} color="#7c3aed" />, color: '#7c3aed', text: `${completedCount} ${t('pr_tasks_done_long')}` });
 

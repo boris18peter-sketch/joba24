@@ -19,7 +19,7 @@ export default function SupportChatButton() {
         gap: 5,
         padding: '6px 12px',
         borderRadius: 99,
-        background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+        background: 'linear-gradient(135deg, var(--brand-primary), #0a52b0)',
         color: 'white',
         fontSize: 12,
         fontWeight: 800,

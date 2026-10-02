@@ -146,7 +146,7 @@ export function SaveBar({ state = 'idle', onSave, onReset, label = 'שמור ש�
 }
 
 /** Colour picker + HEX value, kept in sync. */
-export function ColorField({ label, value, onChange, fallback }) {
+export function ColorField({ label, value, onChange, fallback, onReset }) {
   const current = value || fallback || '#1a6fd4';
   return (
     <div>
@@ -168,7 +168,7 @@ export function ColorField({ label, value, onChange, fallback }) {
           style={{ ...inputStyle, ...mono }}
         />
         {value && (
-          <button onClick={() => onChange('')} title="נקה"
+          <button onClick={() => onReset ? onReset() : onChange('')} title="איפוס לברירת מחדל"
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}>
             <X size={15} color="var(--text-3)" />
           </button>

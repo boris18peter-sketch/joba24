@@ -55,9 +55,9 @@ function getRelativeTime(date, t) {
 
 const URGENCY_TAG_CONFIG = {
   immediate: { emoji: '🔥', label: 'urgency_immediate', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
-  few_hours: { emoji: '⏰', label: 'urgency_few_hours', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
-  evening:   { emoji: '🌅', label: 'urgency_evening', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
-  flexible:  { emoji: '😌', label: 'urgency_flexible', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
+  few_hours: { emoji: '⏰', label: 'urgency_few_hours', color: 'var(--text-2)', bg: '#f1f5f9', border: '#e2e8f0' },
+  evening:   { emoji: '🌅', label: 'urgency_evening', color: 'var(--text-2)', bg: '#f1f5f9', border: '#e2e8f0' },
+  flexible:  { emoji: '😌', label: 'urgency_flexible', color: 'var(--text-2)', bg: '#f1f5f9', border: '#e2e8f0' },
 };
 
 // Scanning texts are now imported from translations via useLanguage() in the component
@@ -289,7 +289,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         onClick={() => { if (showMenu) { setShowMenu(false); return; } openTaskSheet(task.id); }}
         className="j-task-card"
         style={{
-          background: 'var(--surface-2)',
+          background: 'var(--brand-card-bg, var(--surface-2))',
           borderRadius: 'var(--r-lg)',
           border: isApproved
             ? '1.5px solid var(--color-success-border)'
@@ -353,7 +353,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
              {cardSuccessCredits > 0 && (
                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#b45309', fontWeight: 700, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '3px 10px', animation: 'coinBadgePop 0.35s 0.15s cubic-bezier(0.34,1.6,0.64,1) both' }}>
                  <span>{t('commitment_label')} {cardSuccessCredits}</span>
-                 <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
+                 <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="var(--brand-primary)">J</text></svg>
                  <span>{t('credits')}</span>
                </div>
              )}
@@ -423,13 +423,13 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               else label = sDate.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) + ' ' + timeStr;
               const slotCount = Array.isArray(task.category_details?.schedule) ? task.category_details.schedule.length : 0;
               return (
-                <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', color: '#1a6fd4', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'linear-gradient(135deg,var(--brand-primary-light),var(--brand-primary-light))', color: 'var(--brand-primary)', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                   📅 {label}{slotCount > 1 ? ` · ${slotCount} ${t('slots')}` : ''}
                 </span>
               );
             })()}
             {badgeLabels.slice(0, 1).map((label, i) => (
-              <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+              <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: 'var(--text-2)', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
                 {label}
               </span>
             ))}
@@ -475,27 +475,27 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                 {displayTask.title}
                 {isTranslated && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', borderRadius: 6, padding: '1px 5px', marginRight: 4, verticalAlign: 'middle', whiteSpace: 'nowrap', border: '1px solid #bfdbfe' }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', borderRadius: 6, padding: '1px 5px', marginRight: 4, verticalAlign: 'middle', whiteSpace: 'nowrap', border: '1px solid var(--border-2)' }}>
                     {t('translated_badge')}
                   </span>
                 )}
                 {isTranslating && (
-                  <span style={{ fontSize: 9, fontWeight: 600, color: '#94a3b8', marginRight: 4, verticalAlign: 'middle' }}>…</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', marginRight: 4, verticalAlign: 'middle' }}>…</span>
                 )}
               </h3>
               {displayTask.description && (
-                <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                <p style={{ color: 'var(--text-3)', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                   {parseDescription(displayTask.description).mainDescription}
                 </p>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-3)', flexWrap: 'wrap' }}>
                 {displayTask.location_name && (
                   <><MapPin size={10} strokeWidth={1.8} />
                   <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTask.location_name}</span></>
                 )}
                 {task.client_name && (
                   task.client_id === currentUserId ? (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>{t('me_pill')}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', borderRadius: 20, padding: '1px 6px' }}>{t('me_pill')}</span>
                   ) : (
                     <UserBadge
                       name={task.client_name}
@@ -523,7 +523,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               return (
                 <div
                   onClick={e => { e.stopPropagation(); setLightboxIndex(0); setLightboxOpen(true); }}
-                  style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-1)', position: 'relative', background: '#000', cursor: 'pointer' }}
+                  style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--brand-card-border, var(--border-1))', position: 'relative', background: '#000', cursor: 'pointer' }}
                 >
                   {cur.type === 'image' ? (
                     <img src={cur.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -552,14 +552,14 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap' }}>
               <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
-              {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</span>}
+              {task.payment_method && <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</span>}
             </div>
             {hourlyBreakdown && (
-              <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatHourlySublabel(task)}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatHourlySublabel(task)}</span>
             )}
             {dist != null && !isNaN(dist) && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'inline-flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
-                <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-primary)', display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--brand-primary-light)', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
+                <Navigation size={9} strokeWidth={2} color="var(--brand-primary)" />
                 {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
               </span>
             )}
@@ -601,21 +601,21 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     </span>
                   </div>
               ) : (
-                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${categoryKeyForTask(task)}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
+                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${categoryKeyForTask(task)}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid var(--border-2)', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
                    <RefreshCw size={11} /> {t('repost')}
                  </button>
               )
             ) : null}
 
             {isMyPublished && (
-              <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: '#94a3b8', whiteSpace: 'nowrap', paddingTop: 2 }}>
+              <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', paddingTop: 2 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <strong style={{ color: '#64748b', fontSize: 12 }}>{task.views_count || 0}</strong>
+                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.views_count || 0}</strong>
                   <span>{t('views')}</span>
                 </span>
                 <span style={{ color: '#e2e8f0' }}>|</span>
                 <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <strong style={{ color: '#64748b', fontSize: 12 }}>{task.clicks_count || 0}</strong>
+                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.clicks_count || 0}</strong>
                   <span>{t('clicks')}</span>
                 </span>
               </div>
@@ -624,7 +624,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               <>
                 {task.created_by === currentUserId && (
                   <div style={{ position: 'relative' }}>
-                    <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
+                    <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
                     {showMenu && (
                       <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }} style={{ position: 'absolute', bottom: 32, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 1000, minWidth: 140, overflow: 'hidden' }}>
                         <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }} style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}><Trash2 size={14} /> {t('delete_task')}</button>

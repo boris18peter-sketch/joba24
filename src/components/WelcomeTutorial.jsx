@@ -277,7 +277,7 @@ export default function WelcomeTutorial() {
           style={{
             position: 'fixed',
             ...cardStyle,
-            background: '#ffffff',
+            background: 'var(--brand-modal-bg, #ffffff)',
             borderRadius: 18,
             boxShadow: '0 12px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.12)',
             padding: 18,
@@ -296,17 +296,17 @@ export default function WelcomeTutorial() {
 
           {/* Header: badge (right) + icon box (left) */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.3 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--brand-modal-cta-bg, var(--brand-primary))', letterSpacing: 0.3 }}>
               {currentStep.badge}
             </span>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: '#e8f0fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={20} color="#1a6fd4" strokeWidth={1.9} />
+              <Sparkles size={20} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={1.9} />
             </div>
           </div>
 
           {/* Main heading */}
-          <h2 style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', margin: '0 0 8px', lineHeight: 1.3, letterSpacing: -0.3, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Icon size={18} color="#1a6fd4" strokeWidth={2} />
+          <h2 style={{ fontSize: 19, fontWeight: 900, color: 'var(--brand-modal-title, #0f1e40)', margin: '0 0 8px', lineHeight: 1.3, letterSpacing: -0.3, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon size={18} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={2} />
             {currentStep.title}
           </h2>
 
@@ -318,7 +318,7 @@ export default function WelcomeTutorial() {
           {/* Progress dots */}
           <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
             {steps.map((_, i) => (
-              <div key={i} style={{ width: i === stepIdx ? 22 : 6, height: 6, borderRadius: 99, background: i === stepIdx ? '#1a6fd4' : i < stepIdx ? 'rgba(26,111,212,0.4)' : '#e2e8f0', transition: 'all 0.3s' }} />
+              <div key={i} style={{ width: i === stepIdx ? 22 : 6, height: 6, borderRadius: 99, background: i === stepIdx ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : i < stepIdx ? 'rgba(26,111,212,0.4)' : '#e2e8f0', transition: 'all 0.3s' }} />
             ))}
           </div>
 
@@ -331,7 +331,7 @@ export default function WelcomeTutorial() {
             ) : (
               <div style={{ width: 48, height: 46, flexShrink: 0 }} />
             )}
-            <button onClick={next} style={{ flex: 1, height: 46, borderRadius: 13, border: 'none', background: '#1456a3', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(20,86,163,0.35)' }}>
+            <button onClick={next} style={{ flex: 1, height: 46, borderRadius: 13, border: 'none', background: 'var(--brand-modal-cta-bg, #1456a3)', color: 'var(--brand-modal-cta-text, white)', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(20,86,163,0.35)' }}>
               {isLast ? 'סיום' : 'הבא'}
               <ArrowLeft size={18} color="white" />
             </button>

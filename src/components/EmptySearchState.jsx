@@ -64,7 +64,7 @@ export default function EmptySearchState({ hasFilters, onReset }) {
             style={{
               padding: '11px 28px',
               borderRadius: 'var(--r-full)',
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              background: 'linear-gradient(135deg,var(--brand-primary),#0a52b0)',
               color: 'white', border: 'none',
               fontSize: 14, fontWeight: 800,
               cursor: 'pointer',

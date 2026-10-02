@@ -46,7 +46,7 @@ export default function ProfileMediaGallery({ media = [], isEditing, onChange, s
         {/* Add media button — always FIRST */}
         {isEditing && (
           <button onClick={() => inputRef.current?.click()} disabled={uploading}
-            style={{ flexShrink: 0, width: 130, height: 130, borderRadius: 14, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', color: '#1a6fd4' }}>
+            style={{ flexShrink: 0, width: 130, height: 130, borderRadius: 14, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', color: 'var(--brand-primary)' }}>
             {uploading ? <Loader2 size={20} className="animate-spin" /> : <><Plus size={22} /><span style={{ fontSize: 12, fontWeight: 700 }}>הוסף מדיה</span></>}
           </button>
         )}

@@ -88,7 +88,7 @@ export default function RatingModal({ task, me, onClose }) {
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
-        background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)',
+        background: 'var(--overlay-bg)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         touchAction: 'none',
       }}
@@ -100,7 +100,7 @@ export default function RatingModal({ task, me, onClose }) {
         dir={isRTL ? 'rtl' : 'ltr'}
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'var(--sheet-bg)', borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
+          background: 'var(--sheet-bg)', border:'1px solid var(--brand-modal-border, var(--border-1))', borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
           width: '100%', maxWidth: 480,
           padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
           boxShadow: 'var(--shadow-xl)',
@@ -117,7 +117,7 @@ export default function RatingModal({ task, me, onClose }) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: 'var(--brand-modal-title, #0f2b6b)', margin: 0 }}>
             {isOwner ? catConfig.rating.ownerHeader(revieweeName) : catConfig.rating.workerHeader}
           </h2>
           <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 'var(--r-sm)', background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -125,7 +125,7 @@ export default function RatingModal({ task, me, onClose }) {
           </button>
         </div>
 
-        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+        <p style={{ fontSize: 13, color: 'var(--brand-modal-text, #64748b)', marginBottom: 20 }}>
           {isOwner ? catConfig.rating.ownerSub : catConfig.rating.workerSub}
         </p>
 
@@ -140,7 +140,7 @@ export default function RatingModal({ task, me, onClose }) {
         </div>
 
         {rating > 0 && (
-          <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 14, fontWeight: 700, color: '#1a6fd4' }}>
+          <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 14, fontWeight: 700, color: 'var(--brand-modal-cta-bg, var(--brand-primary))' }}>
             {['', t('not_good'), t('mediocre'), t('ok'), t('very_good'), t('excellent')][rating]}
           </div>
         )}
@@ -148,7 +148,7 @@ export default function RatingModal({ task, me, onClose }) {
         {/* Chips */}
         {rating > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-modal-text, #64748b)', marginBottom: 10 }}>
               {isOwner ? catConfig.rating.ownerChipsLabel : catConfig.rating.workerChipsLabel}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
@@ -172,7 +172,7 @@ export default function RatingModal({ task, me, onClose }) {
             <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? '#065f46' : '#1e293b' }}>
               {isOwner ? catConfig.rating.ownerConfirmTitle : catConfig.rating.workerConfirmTitle}
             </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: 'var(--brand-modal-text, #64748b)', marginTop: 2 }}>
               {isOwner ? catConfig.rating.ownerConfirmSub : catConfig.rating.workerConfirmSub}
             </div>
           </div>

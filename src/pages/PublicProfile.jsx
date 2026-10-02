@@ -53,7 +53,7 @@ export default function PublicProfile() {
 
   if (isLoading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
-      <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+      <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
     </div>
   );
 
@@ -61,7 +61,7 @@ export default function PublicProfile() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: 12 }} dir={isRTL ? 'rtl' : 'ltr'}>
       <div style={{ fontSize: 36 }}>🔍</div>
       <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-2)' }}>{t('pp_user_not_found')}</p>
-      <button onClick={() => navigate(-1)} style={{ fontSize: 14, fontWeight: 700, color: '#1a6fd4', background: 'none', border: 'none', cursor: 'pointer' }}>{t('pp_back')}</button>
+      <button onClick={() => navigate(-1)} style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-primary)', background: 'none', border: 'none', cursor: 'pointer' }}>{t('pp_back')}</button>
     </div>
   );
 
@@ -99,7 +99,7 @@ export default function PublicProfile() {
 
       {/* ── SECTION 1 — IDENTITY ── */}
       <div style={{
-        background: 'linear-gradient(160deg, #0a52b0 0%, #1a6fd4 55%, #2563eb 100%)',
+        background: 'linear-gradient(160deg, var(--brand-primary-dark) 0%, var(--brand-primary) 55%, #2563eb 100%)',
         paddingBottom: 18, position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
@@ -193,7 +193,7 @@ export default function PublicProfile() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, #eff6ff)', color: 'var(--brand-primary, #1a6fd4)', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, #bfdbfe)' }}>
+                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, #eff6ff)', color: 'var(--brand-primary, var(--brand-primary))', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, #bfdbfe)' }}>
                   {scope.label(c, t)}
                 </span>
               ))}

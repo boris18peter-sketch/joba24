@@ -75,13 +75,13 @@ export default function Notifications() {
       <div style={{ padding: '10px 14px 32px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-            <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+            <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
           </div>
         ) : notifications.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
             <div style={{ fontSize: 56, marginBottom: 14 }}>🔔</div>
             <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>{t('no_notifications') || 'No notifications'}</div>
-            <div style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6 }}>{t('no_notifications_sub') || "When something happens, you'll see it here"}</div>
+            <div style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.6 }}>{t('no_notifications_sub') || "When something happens, you'll see it here"}</div>
           </div>
         ) : (
           notifications.map((notif, i) => {
@@ -110,7 +110,7 @@ export default function Notifications() {
               >
                 {/* Unread indicator */}
                 {isUnread && (
-                  <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 7, height: 7, borderRadius: '50%', background: '#1a6fd4' }} />
+                  <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 7, height: 7, borderRadius: '50%', background: 'var(--brand-primary)' }} />
                 )}
 
                 {/* Emoji */}
@@ -129,7 +129,7 @@ export default function Notifications() {
                     <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.25 }}>
                       {cfg.label}
                     </div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0, fontWeight: 500 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0, fontWeight: 500 }}>
                       {timeAgo(notif.timestamp)}
                     </div>
                   </div>

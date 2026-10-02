@@ -64,12 +64,31 @@ async function findDefaultBrand() {
 }
 
 async function loadConfig(brandId) {
-  try {
-    const rows = await base44.entities.BrandConfig.filter({ brand_id: brandId });
-    return rows?.[0] || null;
-  } catch {
-    return null;
+  const rows = await base44.entities.BrandConfig.filter({ brand_id: brandId });
+  return rows?.[0] || null;
+}
+
+export function configTheme(config) {
+  const legacy = {};
+  if (config?.primary_color) legacy.primary = config.primary_color;
+  if (config?.primary_dark_color) legacy.primary_dark = config.primary_dark_color;
+  if (config?.accent_color) legacy.accent = config.accent_color;
+  return { ...legacy, ...(config?.theme || {}) };
+}
+
+export async function loadInheritedTheme(brand, config) {
+  const fallback = brand.is_default ? null : await findDefaultBrand();
+  const seen = new Set([brand.id]);
+  const chain = [];
+  let parentId = config?.inherit_from_brand_id || fallback?.id;
+  while (parentId && !seen.has(parentId)) {
+    seen.add(parentId);
+    const parent = await loadConfig(parentId);
+    if (!parent) break;
+    chain.unshift(configTheme(parent));
+    parentId = parent.inherit_from_brand_id || (parentId !== fallback?.id ? fallback?.id : null);
   }
+  return Object.assign({}, ...chain);
 }
 
 /**
@@ -114,7 +133,8 @@ export async function resolveBrandContext(hostname) {
   }
 
   const config = await loadConfig(brand.id);
-  return { state: BRAND_STATE.RESOLVED, hostname: host, brand, config, matchedDomain };
+  const inheritedTheme = await loadInheritedTheme(brand, config);
+  return { state: BRAND_STATE.RESOLVED, hostname: host, brand, config, inheritedTheme, matchedDomain };
 }
 
 /**
@@ -139,6 +159,6 @@ export function effectiveBrandConfig(ctx) {
     defaultLocale: config.default_locale || null,
     marketplace: config.marketplace || {},
     /** Brand design tokens. Null when the Brand defines none (platform look). */
-    theme: config.theme || null,
+    theme: { ...(ctx?.inheritedTheme || {}), ...configTheme(config) },
   };
 }

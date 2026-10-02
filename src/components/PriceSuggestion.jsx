@@ -74,8 +74,8 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
   if (!result) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#f8faff', border: '1px solid #dbeafe', borderRadius: 14, marginTop: 8 }}>
-        <Loader2 size={14} color="#1a6fd4" className="animate-spin" />
-        <span style={{ fontSize: 12, color: '#1a6fd4', fontWeight: 600 }}>
+        <Loader2 size={14} color="var(--brand-primary)" className="animate-spin" />
+        <span style={{ fontSize: 12, color: 'var(--brand-primary)', fontWeight: 600 }}>
           {hasPhotos ? t('ps_analyzing') : t('ps_loading')}
         </span>
       </div>
@@ -104,10 +104,10 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       {/* Header — title + what the recommendation is based on */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-          <Wand2 size={16} color="#1a6fd4" style={{ flexShrink: 0 }} />
+          <Wand2 size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: '#1e40af', fontWeight: 800 }}>{t('ps_recommended')}</span>
         </div>
-        <span style={{ fontSize: 10, color: '#1a6fd4', fontWeight: 700, background: '#dbeafe', borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 10, color: 'var(--brand-primary)', fontWeight: 700, background: '#dbeafe', borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap' }}>
           {result.hasPhotos ? t('ps_based_on_photo') : t('ps_based_on_desc')}
         </span>
       </div>
@@ -117,7 +117,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
         <div dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: '#0f2b6b', letterSpacing: -0.5, unicodeBidi: 'isolate' }}>
           ₪{result.min}–₪{result.max}{isHourly ? t('ps_hourly_suffix') : ''}
         </div>
-        <div style={{ background: '#1a6fd4', color: 'white', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
+        <div style={{ background: 'var(--brand-primary)', color: 'white', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
           {t('ps_use')}
         </div>
       </div>

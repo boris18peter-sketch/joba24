@@ -57,7 +57,7 @@ export default function ApprovedPopup({ task, onClose }) {
         {/* Progress bar */}
         <div style={{ height: 4, background: 'var(--surface-3)', position: 'absolute', top: 0, left: 0, right: 0 }}>
           <div style={{
-            height: '100%', background: 'linear-gradient(90deg,#059669,#1a6fd4)',
+            height: '100%', background: 'linear-gradient(90deg,#059669,var(--brand-modal-cta-bg, var(--brand-primary)))',
             width: `${progress}%`, transition: 'width 1s linear', borderRadius: 2,
           }} />
         </div>

@@ -264,7 +264,7 @@ export default function PreLaunchWaitingPage({ me }) {
   return (
     <div dir="rtl" style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'linear-gradient(170deg, #0a1f4e 0%, #0f2b6b 40%, #1a6fd4 100%)',
+      background: 'linear-gradient(170deg, #0a1f4e 0%, #0f2b6b 40%, var(--brand-primary) 100%)',
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
     }}>
@@ -450,7 +450,7 @@ export default function PreLaunchWaitingPage({ me }) {
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{
                 width: 56, height: 56, borderRadius: 16,
-                background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                background: 'linear-gradient(135deg,var(--brand-primary),#0a52b0)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 14px',
                 boxShadow: '0 4px 16px rgba(26,111,212,0.3)',
@@ -480,7 +480,7 @@ export default function PreLaunchWaitingPage({ me }) {
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 width: '100%', height: 52, borderRadius: 16,
-                background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                background: 'linear-gradient(135deg,var(--brand-primary),#0a52b0)',
                 color: 'white', textDecoration: 'none',
                 fontWeight: 900, fontSize: 15,
                 boxShadow: '0 4px 16px rgba(26,111,212,0.35)',

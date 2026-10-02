@@ -15,6 +15,7 @@ import { getCategoryPluralLabel } from '@/lib/categories';
 import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRegistry';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
+import { BrandLogo } from '@/components/BrandIdentity';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
@@ -143,7 +144,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
             top: `${Math.random() * 100}%`,
             width: 1.5 + Math.random() * 2,
             height: 1.5 + Math.random() * 2,
-            borderRadius: '50%', background: '#60a5fa',
+            borderRadius: '50%', background: 'var(--brand-primary, #60a5fa)',
             animation: `lsoStarTwinkle ${1.5 + Math.random() * 3}s ease-in-out infinite`,
             animationDelay: `${Math.random() * 3}s`,
           }} />
@@ -226,7 +227,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                 <div style={{
                   position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
                   width: 6, height: 6, borderRadius: '50%',
-                  background: '#60a5fa', boxShadow: '0 0 7px #60a5fa',
+                  background: 'var(--brand-primary, #60a5fa)', boxShadow: '0 0 7px var(--brand-primary, #60a5fa)',
                 }} />
               </div>
             )}
@@ -260,7 +261,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                 position: 'relative',
               }}
             >
-              <img src={LOGO} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <BrandLogo size={92} radius={46} />
             </motion.div>
 
             {/* Flag */}
@@ -304,8 +305,8 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                 }}
               >
                 <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }}>
-                  {[22,44,66,88].map(y => <line key={y} x1="0" y1={y} x2="220" y2={y} stroke="#60a5fa" strokeWidth="1" />)}
-                  {[25,50,75,100,125,150,175,200].map(x => <line key={x} x1={x} y1="0" x2={x} y2={mapHeight} stroke="#60a5fa" strokeWidth="1" />)}
+                  {[22,44,66,88].map(y => <line key={y} x1="0" y1={y} x2="220" y2={y} stroke="var(--brand-primary, #60a5fa)" strokeWidth="1" />)}
+                  {[25,50,75,100,125,150,175,200].map(x => <line key={x} x1={x} y1="0" x2={x} y2={mapHeight} stroke="var(--brand-primary, #60a5fa)" strokeWidth="1" />)}
                 </svg>
                 <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.42 }}>
                   <path d="M0 57 Q55 45 110 57 Q165 69 220 57" stroke="#4ade80" strokeWidth="7" fill="none" strokeLinecap="round" />
@@ -377,7 +378,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                 const dist  = 40 + Math.random() * 80;
                 const tx    = Math.cos((angle * Math.PI) / 180) * dist;
                 const ty    = Math.sin((angle * Math.PI) / 180) * dist * 0.7 - 20;
-                const colors = ['#fbbf24', '#f59e0b', '#60a5fa', '#4ade80', '#a855f7', '#ef4444', '#fde68a'];
+                const colors = ['#fbbf24', '#f59e0b', 'var(--brand-primary, #60a5fa)', '#4ade80', '#a855f7', '#ef4444', '#fde68a'];
                 const color  = colors[i % colors.length];
                 const isCoin = i < 13;
                 const size   = isCoin ? 14 + Math.random() * 6 : 5 + Math.random() * 6;
@@ -391,7 +392,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                       position: 'absolute', width: size, height: size,
                       borderRadius: isCoin ? '50%' : 2,
                       background: isCoin ? `radial-gradient(circle at 35% 35%, #fde68a, ${color})` : color,
-                      boxShadow: isCoin ? `0 0 6px ${color}88` : 'none',
+                      boxShadow: isCoin ? `0 0 6px color-mix(in srgb, ${color} 53%, transparent)` : 'none',
                       top: 0, left: 0,
                       display: isCoin ? 'flex' : undefined,
                       alignItems: 'center', justifyContent: 'center',
@@ -438,7 +439,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
           >
             {/* Title */}
             <div style={{
-              fontSize: 28, fontWeight: 900, color: '#ffffff',
+              fontSize: 28, fontWeight: 900, color: 'var(--brand-hero-text, #ffffff)',
               letterSpacing: -0.5, lineHeight: 1.25, marginBottom: 12,
               textShadow: '0 0 24px rgba(251,191,36,.6)',
             }}>
@@ -484,10 +485,10 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
             transition={{ delay: 0.55, type: 'spring', damping: 12, stiffness: 180 }}
             onClick={onContinue}
             style={{
-              background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+              background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, #fbbf24), var(--brand-btn-primary-bg, #f59e0b))',
               border: 'none', borderRadius: 14,
               padding: '15px 0', width: 'calc(100% - 48px)',
-              color: '#5a1800', fontSize: 16, fontWeight: 900,
+              color: 'var(--brand-btn-primary-text, #5a1800)', fontSize: 16, fontWeight: 900,
               cursor: 'pointer', zIndex: 30,
               letterSpacing: 0.2,
               animation: 'lsoGlowPulse 2s ease-in-out infinite',
@@ -605,7 +606,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginBottom: 5, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' }}>
           {firstAppReceived ? t('lso_worker_found') : t('lso_live_market')}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', lineHeight: 1.25, marginBottom: 6 }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--brand-hero-text, #ffffff)', lineHeight: 1.25, marginBottom: 6 }}>
           {firstAppReceived
             ? <span style={{ animation: 'foundPop2 0.5s ease' }}>{t('lso_app_received')}</span>
             : t('lso_finding_perfect')}
@@ -640,8 +641,8 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
         </div>
         <div style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          width: 13, height: 13, borderRadius: '50%', background: '#60a5fa',
-          boxShadow: '0 0 16px #60a5fa, 0 0 36px rgba(96,165,250,.4)',
+          width: 13, height: 13, borderRadius: '50%', background: 'var(--brand-primary, #60a5fa)',
+          boxShadow: '0 0 16px var(--brand-primary, #60a5fa), 0 0 36px rgba(96,165,250,.4)',
         }} />
         {pulseWorkers.map(w => (
           <div key={w.id} style={{
@@ -666,14 +667,14 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%', padding: '0 24px' }}
       >
         <div key={statusMsg} style={{
-          fontSize: 14, fontWeight: 700, color: '#ffffff', textAlign: 'center',
+          fontSize: 14, fontWeight: 700, color: 'var(--brand-hero-text, #ffffff)', textAlign: 'center',
           animation: 'slideUpIn2 0.3s ease',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
         }}>
           {!firstAppReceived && (
             <span style={{ display: 'flex', gap: 3 }}>
               {[0.1, 0.3, 0.5].map((d, i) => (
-                <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: '#60a5fa', display: 'inline-block', animation: `dotBlink2 1.2s ${d}s infinite` }} />
+                <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--brand-primary, #60a5fa)', display: 'inline-block', animation: `dotBlink2 1.2s ${d}s infinite` }} />
               ))}
             </span>
           )}
@@ -705,7 +706,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           border: '1px solid rgba(96,165,250,.35)',
           borderRadius: 14, padding: '14px 0',
           width: 'calc(100% - 48px)',
-          color: '#ffffff', fontSize: 15, fontWeight: 700,
+          color: 'var(--brand-hero-text, #ffffff)', fontSize: 15, fontWeight: 700,
           cursor: 'pointer',
           WebkitTapHighlightColor: 'transparent',
         }}
@@ -736,7 +737,7 @@ export default function LiveSearchOverlay({
       dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999998,
-        background: 'linear-gradient(160deg, #05112e 0%, #0a1f4e 58%, #0d2a60 100%)',
+        background: 'linear-gradient(160deg, var(--brand-hero-bg, #05112e) 0%, var(--brand-hero-bg, #0a1f4e) 58%, var(--brand-hero-bg, #0d2a60) 100%)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',

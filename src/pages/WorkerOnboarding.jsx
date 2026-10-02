@@ -218,7 +218,7 @@ export default function WorkerOnboarding() {
   if (isLoadingAuth) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
-        <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+        <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
       </div>
     );
   }
@@ -226,7 +226,7 @@ export default function WorkerOnboarding() {
   // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
     return (
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(36px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', overflow: 'hidden' }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, background: 'linear-gradient(165deg, var(--brand-hero-bg, #0a1f4e) 0%, var(--brand-hero-bg, #0f2b6b) 35%, var(--brand-primary) 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(36px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', overflow: 'hidden' }}>
         {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
 
         {/* Decorative blurred glow circles */}
@@ -245,7 +245,7 @@ export default function WorkerOnboarding() {
 
         {/* Middle — Headline */}
         <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
-          <h1 style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, marginBottom: 16, lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--brand-hero-text, white)', margin: 0, marginBottom: 16, lineHeight: 1.2 }}>
             {t('wo_hero_title')}
           </h1>
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380 }}>
@@ -266,7 +266,7 @@ export default function WorkerOnboarding() {
         <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1, flexShrink: 0, paddingBottom: 8 }}>
           <button
             onClick={() => setShowLogin(true)}
-            style={{ width: '100%', padding: '20px 0', borderRadius: 18, background: 'white', color: '#0f2b6b', fontSize: 20, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
+            style={{ width: '100%', padding: '20px 0', borderRadius: 18, background: 'white', color: 'var(--brand-hero-bg, #0f2b6b)', fontSize: 20, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
           >
             {t('wo_register_btn')}
           </button>
@@ -276,7 +276,7 @@ export default function WorkerOnboarding() {
           {guestEnabled && (
             <button
               onClick={() => { enterGuestMode(); navigate('/'); }}
-              style={{ width: '100%', marginTop: 14, padding: '14px 0', borderRadius: 16, background: 'rgba(255,255,255,0.1)', color: 'white', fontSize: 16, fontWeight: 800, border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+              style={{ width: '100%', marginTop: 14, padding: '14px 0', borderRadius: 16, background: 'rgba(255,255,255,0.1)', color: 'var(--brand-hero-text, white)', fontSize: 16, fontWeight: 800, border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
             >
               {t('continue_as_guest')}
             </button>
@@ -307,7 +307,7 @@ export default function WorkerOnboarding() {
   if (step === -1) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
-        <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+        <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
       </div>
     );
   }
@@ -347,7 +347,7 @@ export default function WorkerOnboarding() {
         </div>
         <button
           onClick={handleGoToApp}
-          style={{ width: '100%', maxWidth: 340, padding: '18px 0', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 19, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)', marginTop: 28 }}
+          style={{ width: '100%', maxWidth: 340, padding: '18px 0', borderRadius: 18, background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))', color: 'var(--brand-hero-text, white)', fontSize: 19, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)', marginTop: 28 }}
         >
           {t('wo_go_to_app')}
         </button>
@@ -374,7 +374,7 @@ export default function WorkerOnboarding() {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ── Header with progress ── */}
-      <div style={{ padding: 'max(12px, env(safe-area-inset-top)) 16px 12px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
+      <div style={{ padding: 'max(12px, env(safe-area-inset-top)) 16px 12px', background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           {step > 0 ? (
             <button onClick={handleBack} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -395,7 +395,7 @@ export default function WorkerOnboarding() {
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            style={{ height: '100%', background: 'linear-gradient(90deg, #1a6fd4, #0a52b0)', borderRadius: 99 }}
+            style={{ height: '100%', background: 'linear-gradient(90deg, var(--brand-primary), var(--brand-primary-dark))', borderRadius: 99 }}
           />
         </div>
       </div>
@@ -428,14 +428,14 @@ export default function WorkerOnboarding() {
 
               {/* Selected count badge for chips */}
               {currentStep.type === 'chips' && (data.preferred_categories || []).length > 0 && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_categories || []).length} {t('wo_selected')}</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--brand-primary)' }}>✓ {(data.preferred_categories || []).length} {t('wo_selected')}</span>
                 </div>
               )}
               {/* Selected count badge for cities */}
               {currentStep.type === 'cities' && (data.preferred_cities || []).length > 0 && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_cities || []).length} {t('wo_selected')}</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--brand-primary)' }}>✓ {(data.preferred_cities || []).length} {t('wo_selected')}</span>
                 </div>
               )}
             </div>
@@ -450,7 +450,7 @@ export default function WorkerOnboarding() {
                   placeholder={currentStep.placeholder}
                   autoFocus
                   dir="rtl"
-                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--brand-card-bg, var(--surface-2))', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
                 />
               )}
 
@@ -461,7 +461,7 @@ export default function WorkerOnboarding() {
                   placeholder={currentStep.placeholder}
                   autoFocus
                   rows={5}
-                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'none', lineHeight: 1.6 }}
+                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--brand-card-bg, var(--surface-2))', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'none', lineHeight: 1.6 }}
                 />
               )}
 
@@ -473,7 +473,7 @@ export default function WorkerOnboarding() {
                   placeholder={currentStep.placeholder}
                   autoFocus
                   dir="ltr"
-                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', textAlign: 'right' }}
+                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--brand-card-bg, var(--surface-2))', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', textAlign: 'right' }}
                 />
               )}
 
@@ -497,9 +497,9 @@ export default function WorkerOnboarding() {
                         style={{
                           padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
                           fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-                          background: isSelected ? '#1a6fd4' : 'var(--surface-2)',
+                          background: isSelected ? 'var(--brand-primary)' : 'var(--surface-2)',
                           color: isSelected ? 'white' : 'var(--text-2)',
-                          border: `1.5px solid ${isSelected ? '#1a6fd4' : 'var(--border-1)'}`,
+                          border: `1.5px solid ${isSelected ? 'var(--brand-primary)' : 'var(--border-1)'}`,
                           boxShadow: isSelected ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
                           transition: 'all 0.15s',
                           minHeight: 'unset',
@@ -517,7 +517,7 @@ export default function WorkerOnboarding() {
                       placeholder={t('wo_type_profession')}
                       autoFocus
                       dir={isRTL ? 'rtl' : 'ltr'}
-                      style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', marginTop: 4 }}
+                      style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--brand-card-bg, var(--surface-2))', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', marginTop: 4 }}
                     />
                   )}
                 </div>
@@ -541,9 +541,9 @@ export default function WorkerOnboarding() {
                         style={{
                           padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
                           fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-                          background: active ? '#1a6fd4' : 'var(--surface-2)',
+                          background: active ? 'var(--brand-primary)' : 'var(--surface-2)',
                           color: active ? 'white' : 'var(--text-2)',
-                          border: `1.5px solid ${active ? '#1a6fd4' : 'var(--border-1)'}`,
+                          border: `1.5px solid ${active ? 'var(--brand-primary)' : 'var(--border-1)'}`,
                           boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
                           transition: 'all 0.15s',
                           minHeight: 'unset',
@@ -563,12 +563,12 @@ export default function WorkerOnboarding() {
                         placeholder={t('wo_type_city')}
                         autoFocus
                         dir={isRTL ? 'rtl' : 'ltr'}
-                        style={{ flex: 1, padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                        style={{ flex: 1, padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--brand-card-bg, var(--surface-2))', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
                       />
                       <button
                         onClick={addCustomCity}
                         disabled={!customCity.trim()}
-                        style={{ padding: '0 16px', borderRadius: 14, background: customCity.trim() ? '#1a6fd4' : 'var(--surface-3)', color: customCity.trim() ? 'white' : 'var(--text-3)', border: 'none', fontWeight: 700, fontSize: 14, cursor: customCity.trim() ? 'pointer' : 'not-allowed', minHeight: 'unset', minWidth: 'unset' }}
+                        style={{ padding: '0 16px', borderRadius: 14, background: customCity.trim() ? 'var(--brand-primary)' : 'var(--surface-3)', color: customCity.trim() ? 'white' : 'var(--text-3)', border: 'none', fontWeight: 700, fontSize: 14, cursor: customCity.trim() ? 'pointer' : 'not-allowed', minHeight: 'unset', minWidth: 'unset' }}
                       >
                         {t('wo_add')}
                         </button>
@@ -582,8 +582,8 @@ export default function WorkerOnboarding() {
                       style={{
                         padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
                         fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-                        background: '#1a6fd4', color: 'white',
-                        border: '1.5px solid #1a6fd4',
+                        background: 'var(--brand-primary)', color: 'var(--brand-hero-text, white)',
+                        border: '1.5px solid var(--brand-primary)',
                         boxShadow: '0 2px 8px rgba(26,111,212,0.25)',
                         minHeight: 'unset',
                       }}
@@ -607,9 +607,9 @@ export default function WorkerOnboarding() {
                         style={{
                           padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
                           fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-                          background: active ? 'var(--brand-primary, #1a6fd4)' : 'var(--surface-2)',
+                          background: active ? 'var(--brand-primary, var(--brand-primary))' : 'var(--surface-2)',
                           color: active ? 'white' : 'var(--text-2)',
-                          border: `1.5px solid ${active ? 'var(--brand-primary, #1a6fd4)' : 'var(--border-1)'}`,
+                          border: `1.5px solid ${active ? 'var(--brand-primary, var(--brand-primary))' : 'var(--border-1)'}`,
                           boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
                           transition: 'all 0.15s',
                           minHeight: 'unset',
@@ -635,7 +635,7 @@ export default function WorkerOnboarding() {
                     }}
                   >
                     {uploadingPhoto ? (
-                      <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+                      <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
                     ) : data.profile_photo ? (
                       <img src={data.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
@@ -645,7 +645,7 @@ export default function WorkerOnboarding() {
                   <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
                   <button
                     onClick={() => photoInputRef.current?.click()}
-                    style={{ padding: '10px 20px', borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '10px 20px', borderRadius: 12, background: 'var(--brand-card-bg, var(--surface-2))', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                   >
                     {data.profile_photo ? t('wo_change_photo') : t('wo_choose_photo')}
                   </button>
@@ -657,14 +657,14 @@ export default function WorkerOnboarding() {
       </div>
 
       {/* ── Footer with Next button — always visible ── */}
-      <div style={{ flexShrink: 0, padding: '12px 20px max(12px, env(safe-area-inset-bottom))', background: 'var(--surface-2)', borderTop: '1px solid var(--border-1)' }}>
+      <div style={{ flexShrink: 0, padding: '12px 20px max(12px, env(safe-area-inset-bottom))', background: 'var(--brand-card-bg, var(--surface-2))', borderTop: '1px solid var(--border-1)' }}>
         <button
           onClick={handleNext}
           disabled={saving || !canProceed}
           style={{
             width: '100%', padding: '15px 0', borderRadius: 16,
-            background: (saving || !canProceed) ? '#e2e8f0' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-            color: (saving || !canProceed) ? '#94a3b8' : 'white', fontSize: 17, fontWeight: 900, border: 'none',
+            background: (saving || !canProceed) ? '#e2e8f0' : 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
+            color: (saving || !canProceed) ? 'var(--text-3)' : 'white', fontSize: 17, fontWeight: 900, border: 'none',
             cursor: (saving || !canProceed) ? 'not-allowed' : 'pointer',
             boxShadow: (saving || !canProceed) ? 'none' : '0 8px 24px rgba(26,111,212,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

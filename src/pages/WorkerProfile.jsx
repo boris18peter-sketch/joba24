@@ -23,7 +23,7 @@ const INITIAL_CITIES_COUNT = 12;
 
 function SectionCard({ title, children, style }) {
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden', ...style }}>
+    <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden', ...style }}>
       {title && (
         <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border-1)' }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase' }}>{title}</div>
@@ -39,7 +39,7 @@ function ReviewChips({ review }) {
   const chips = [
     review.arrived_on_time && { label: t('arrived_on_time'), color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
     review.professional && { label: t('professional'), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    review.good_communication && { label: t('rc_communication'), color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+    review.good_communication && { label: t('rc_communication'), color: 'var(--brand-primary)', bg: 'var(--brand-primary-light)', border: 'var(--border-2)' },
     review.fair_pricing && { label: t('fair_pricing'), color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
     review.would_hire_again && { label: t('recommended'), color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
   ].filter(Boolean);
@@ -206,13 +206,13 @@ export default function WorkerProfile() {
 
   if (isViewingOther && !currentUser) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
-      <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+      <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
     </div>
   );
 
   if (!form) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
-      <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+      <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
     </div>
   );
 
@@ -235,18 +235,18 @@ export default function WorkerProfile() {
     <div style={{ background: 'var(--surface-1)', paddingBottom: 40 }} dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ── Header — sticky along the whole page ── */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'var(--brand-header-bg, var(--surface-2))', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => navigate(-1)} style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <ChevronLeft size={18} color="var(--text-2)" style={{ transform: 'rotate(180deg)' }} />
         </button>
-        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)', flex: 1 }}>
+        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--brand-header-text, var(--text-1))', flex: 1 }}>
           {isViewingOther ? (currentUser?.full_name || t('wp_worker_profile')) : t('wp_edit_profile')}
         </span>
         {!isViewingOther && (
           <button
             onClick={handleSave}
             disabled={saveMutation.isPending}
-            style={{ height: 36, paddingInline: 18, borderRadius: 20, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ height: 36, paddingInline: 18, borderRadius: 20, background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
           >
             {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> {t('wp_save')}</>}
           </button>
@@ -254,13 +254,13 @@ export default function WorkerProfile() {
       </div>
 
       {/* ── Avatar block (both view modes) ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 22px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 22px', background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{ position: 'relative', marginBottom: 14 }}>
           <div
             onClick={() => !isViewingOther && photoInputRef.current?.click()}
             style={{
               width: 88, height: 88, borderRadius: '50%',
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 30, fontWeight: 900, color: 'white',
               overflow: 'hidden', cursor: isViewingOther ? 'default' : 'pointer',
@@ -272,8 +272,8 @@ export default function WorkerProfile() {
               : initials}
           </div>
           {!isViewingOther && (
-            <button onClick={() => photoInputRef.current?.click()} style={{ position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', background: 'white', border: '2px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
-              {uploadingPhoto ? <Loader2 size={12} color="#1a6fd4" className="animate-spin" /> : <Camera size={12} color="#1a6fd4" />}
+            <button onClick={() => photoInputRef.current?.click()} style={{ position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', background: 'white', border: '2px solid var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
+              {uploadingPhoto ? <Loader2 size={12} color="var(--brand-primary)" className="animate-spin" /> : <Camera size={12} color="var(--brand-primary)" />}
             </button>
           )}
           <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
@@ -387,9 +387,9 @@ export default function WorkerProfile() {
                   disabled={isViewingOther}
                   style={{
                     padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
-                    background: sel ? 'var(--brand-primary, #1a6fd4)' : 'var(--brand-status-bg, var(--surface-3))',
-                    color: sel ? 'white' : 'var(--brand-status-text, var(--text-2))',
-                    borderColor: sel ? 'var(--brand-primary, #1a6fd4)' : 'var(--border-1)',
+                    background: sel ? 'var(--brand-primary)' : 'var(--brand-status-bg, var(--surface-3))',
+                    color: sel ? 'var(--brand-btn-primary-text, white)' : 'var(--brand-status-text, var(--text-2))',
+                    borderColor: sel ? 'var(--brand-primary)' : 'var(--border-1)',
                   }}
                 >{c.label}</button>
               );
@@ -443,7 +443,7 @@ export default function WorkerProfile() {
             {/* Upload button (edit mode) */}
             {!isViewingOther && (
               <button onClick={() => certDocRef.current?.click()} disabled={uploadingDoc}
-                style={{ width: '100%', height: 46, borderRadius: 12, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}>
+                style={{ width: '100%', height: 46, borderRadius: 12, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: 'var(--brand-primary)', fontWeight: 700, fontSize: 13 }}>
                 {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> {t('wp_upload_cert')}</>}
               </button>
             )}
@@ -470,9 +470,9 @@ export default function WorkerProfile() {
                       disabled={isViewingOther}
                       style={{
                         padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
-                        background: sel ? '#1a6fd4' : 'var(--surface-3)',
-                        color: sel ? 'white' : 'var(--text-2)',
-                        borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
+                        background: sel ? 'var(--brand-primary)' : 'var(--surface-3)',
+                        color: sel ? 'var(--brand-btn-primary-text, white)' : 'var(--text-2)',
+                        borderColor: sel ? 'var(--brand-primary)' : 'var(--border-1)',
                       }}
                     >{getCityLabel(c, lang)}</button>
                   );
@@ -482,7 +482,7 @@ export default function WorkerProfile() {
                     onClick={() => setShowAllCities(true)}
                     style={{
                       padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px dashed var(--border-2)', cursor: 'pointer', transition: 'all 0.15s',
-                      background: 'var(--surface-2)', color: '#1a6fd4',
+                      background: 'var(--brand-card-bg, var(--surface-2))', color: 'var(--brand-primary)',
                     }}
                   >{t('wp_more_cities')}</button>
                 )}
@@ -491,7 +491,7 @@ export default function WorkerProfile() {
                     onClick={() => setShowAllCities(false)}
                     style={{
                       padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px dashed var(--border-2)', cursor: 'pointer', transition: 'all 0.15s',
-                      background: 'var(--surface-2)', color: 'var(--text-3)',
+                      background: 'var(--brand-card-bg, var(--surface-2))', color: 'var(--text-3)',
                     }}
                   >{t('wp_show_less')}</button>
                 )}

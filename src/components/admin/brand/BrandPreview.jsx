@@ -25,7 +25,7 @@ export default function BrandPreview({ theme, logoUrl, displayName, compact }) {
     height: 42, padding: '0 18px', fontWeight: 800, fontSize: 13,
     borderRadius: v('--brand-btn-radius', '14px'), border: 'none', cursor: 'pointer',
     ...(kind === 'primary'
-      ? { background: `linear-gradient(135deg, ${v('--brand-btn-primary-bg', '#1a6fd4')}, ${v('--brand-primary-dark', '#0a52b0')})`, color: v('--brand-btn-primary-text', '#fff') }
+      ? { background: `linear-gradient(135deg, ${v('--brand-btn-primary-bg', '#1a6fd4')}, ${v('--brand-btn-primary-bg', '#0a52b0')})`, color: v('--brand-btn-primary-text', '#fff') }
       : { background: v('--brand-btn-secondary-bg', '#eef3fc'), color: v('--brand-btn-secondary-text', '#4b6083'), border: `1px solid ${v('--border-1', '#e4eaf5')}` }),
   });
   const input = {
@@ -179,7 +179,7 @@ export default function BrandPreview({ theme, logoUrl, displayName, compact }) {
                 חלון זה מציג את ערכת המותג — רקע, רדיוס וכפתורים.
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button style={{ ...btn('primary'), flex: 1 }}>אישור</button>
+                <button style={{ ...btn('primary'), flex: 1, background:v('--brand-modal-cta-bg', '#1a6fd4'), color:v('--brand-modal-cta-text', '#ffffff') }}>אישור</button>
                 <button style={{ ...btn('secondary'), flex: 1 }}>סגור</button>
               </div>
             </div>

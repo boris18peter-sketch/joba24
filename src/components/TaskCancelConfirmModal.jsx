@@ -24,7 +24,7 @@ export default function TaskCancelConfirmModal({ task, isLoading, onConfirm, onC
 
         {/* Explanation Box */}
         <div style={{ background: '#f8faff', border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, marginBottom: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-modal-cta-bg, var(--brand-primary))', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <AlertTriangle size={15} strokeWidth={2} /> מה קורה?
           </div>
           
@@ -33,7 +33,7 @@ export default function TaskCancelConfirmModal({ task, isLoading, onConfirm, onC
             <div style={{ fontWeight: 600, marginBottom: 4 }}>💰 החזר כספי:</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
               <span>סך הכל:</span>
-              <span style={{ fontWeight: 700, color: '#1a6fd4' }}>₪{totalPrice}</span>
+              <span style={{ fontWeight: 700, color: 'var(--brand-modal-cta-bg, var(--brand-primary))' }}>₪{totalPrice}</span>
             </div>
             {task.is_story && (
               <>
@@ -67,7 +67,7 @@ export default function TaskCancelConfirmModal({ task, isLoading, onConfirm, onC
               width: '100%',
               height: 52,
               borderRadius: 16,
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              background: 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),#0a52b0)',
               border: 'none',
               color: 'white',
               fontWeight: 900,

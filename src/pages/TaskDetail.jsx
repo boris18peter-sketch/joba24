@@ -81,7 +81,7 @@ function ScanningLabelDetail({ t }) {
 
   return (
     <div>
-      <div style={{ fontSize: 13, fontWeight: 800, color: 'white', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-btn-primary-text, white)', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
         {scanningTexts[textIdx]}
       </div>
       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
@@ -620,7 +620,7 @@ export default function TaskDetail(props) {
     if (sheetMode) {
       return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+          <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
         </div>
       );
     }
@@ -631,14 +631,14 @@ export default function TaskDetail(props) {
           {/* Price hero skeleton */}
           <div style={{ borderRadius: 20, background: '#dce8f5', height: 110 }} className="animate-pulse" />
           {/* Description skeleton */}
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ height: 14, width: '40%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
             <div style={{ height: 13, width: '95%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
             <div style={{ height: 13, width: '80%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
             <div style={{ height: 13, width: '60%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
           </div>
           {/* Details skeleton */}
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[1, 2, 3].map((i) =>
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5', flexShrink: 0 }} className="animate-pulse" />
@@ -656,14 +656,14 @@ export default function TaskDetail(props) {
   if (!task) return <div className="p-8 text-center text-muted-foreground">{t('task_not_found')}</div>;
 
   const STATUS_GRADIENT = {
-    OPEN: 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
-    TAKEN: task.worker_status === 'done' ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
+    OPEN: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
+    TAKEN: task.worker_status === 'done' ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
     COMPLETED: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-    CANCELLED: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
+    CANCELLED: 'linear-gradient(135deg, var(--text-2) 0%, var(--text-3) 100%)',
     EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
   };
   const STATUS_PILL = {
-    OPEN: { background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' },
+    OPEN: { background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', border: '1px solid var(--border-2)' },
     TAKEN: { background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d' },
     COMPLETED: { background: '#f0fdf4', color: '#059669', border: '1px solid #86efac' },
     CANCELLED: { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' },
@@ -752,16 +752,16 @@ export default function TaskDetail(props) {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚪</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('exit_task_title')}</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>{t('exit_task_title')}</div>
+              <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
                 {t('exit_task_body')}<br />
-                <strong style={{ color: '#0f1e40' }}>{t('exit_task_note')}</strong>
+                <strong style={{ color: 'var(--text-1)' }}>{t('exit_task_note')}</strong>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
                 onClick={() => setShowExitWarning(false)}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', border: 'none', color: 'var(--brand-btn-primary-text, white)', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
                 
                 {t('continue_in_task')}
               </button>
@@ -853,7 +853,7 @@ export default function TaskDetail(props) {
 
 
         {/* Main Task Banner — hidden when task is TAKEN and user is owner/worker (ActiveTaskBanner shown instead) */}
-        <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', display: (task.status === 'TAKEN' && (isOwner || isWorker)) ? 'none' : 'block' }}>
+        <div style={{ background: taskGradient, borderRadius: 22, color: 'var(--brand-btn-primary-text, white)', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', display: (task.status === 'TAKEN' && (isOwner || isWorker)) ? 'none' : 'block' }}>
           <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
 
@@ -870,7 +870,7 @@ export default function TaskDetail(props) {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
               {translatedTask.title && (
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.25 }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1.25 }}>
                     {translatedTask.title}
                     {isTranslating && <Loader2 size={13} className="animate-spin" style={{ display: 'inline-block', marginRight: 6, verticalAlign: 'middle', opacity: 0.7 }} />}
                   </div>
@@ -888,7 +888,7 @@ export default function TaskDetail(props) {
                     className="j-icon-btn"
                     onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
                     aria-label="More"
-                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--brand-btn-primary-text, white)', flexShrink: 0 }}>
                     <MoreVertical size={15} />
                   </button>
                 )}
@@ -896,7 +896,7 @@ export default function TaskDetail(props) {
                   className="j-icon-btn"
                   onClick={handleShare}
                   aria-label={t('share_task')}
-                  style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                  style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--brand-btn-primary-text, white)', flexShrink: 0 }}>
                   <Share size={15} />
                 </button>
                 {sheetMode && (
@@ -904,7 +904,7 @@ export default function TaskDetail(props) {
                     className="j-icon-btn"
                     onClick={onSheetClose}
                     aria-label="Close"
-                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--brand-btn-primary-text, white)', flexShrink: 0 }}>
                     <X size={15} />
                   </button>
                 )}
@@ -915,7 +915,7 @@ export default function TaskDetail(props) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
               {/* Price */}
               <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
+                <div style={{ color: 'var(--brand-btn-primary-text, white)', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
                 {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, marginTop: 3 }}>{sub}</div> : null; })()}
                 {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</div>}
               </div>
@@ -950,7 +950,7 @@ export default function TaskDetail(props) {
                         {allMedia.length <= 5 ? allMedia.map((_, i) => (
                           <span key={i} style={{ width: i === mediaIdx ? 10 : 5, height: 5, borderRadius: 3, background: i === mediaIdx ? 'white' : 'rgba(255,255,255,0.5)', transition: 'width 0.2s' }} />
                         )) : (
-                          <span style={{ fontSize: 9, color: 'white', fontWeight: 700, background: 'rgba(0,0,0,0.4)', borderRadius: 6, padding: '1px 5px' }}>{mediaIdx + 1}/{allMedia.length}</span>
+                          <span style={{ fontSize: 9, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, background: 'rgba(0,0,0,0.4)', borderRadius: 6, padding: '1px 5px' }}>{mediaIdx + 1}/{allMedia.length}</span>
                         )}
                       </div>
                     )}
@@ -1039,7 +1039,7 @@ export default function TaskDetail(props) {
                       background: 'linear-gradient(135deg,#f59e0b,#d97706)',
                       borderRadius: 14,
                       border: 'none',
-                      color: 'white', fontWeight: 800, fontSize: 13,
+                      color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 13,
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '0 14px',
                       cursor: 'pointer',
@@ -1049,7 +1049,7 @@ export default function TaskDetail(props) {
                   >
                     <span style={{ fontSize: 18, lineHeight: 1 }}>🟠</span>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{applicationCount} {t('applications')}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-btn-primary-text, white)' }}>{applicationCount} {t('applications')}</div>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', marginTop: 1 }}>{t('click_to_view_approve')}</div>
                     </div>
                   </button>
@@ -1067,15 +1067,15 @@ export default function TaskDetail(props) {
             {isOwner && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.views_count || 0}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1 }}>{task.views_count || 0}</div>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('views')}</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.clicks_count || 0}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1 }}>{task.clicks_count || 0}</div>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('clicks') || t('entries')}</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{applicationCount}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1 }}>{applicationCount}</div>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('applications')}</div>
                 </div>
               </div>
@@ -1091,7 +1091,7 @@ export default function TaskDetail(props) {
                 <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{t('your_app_approved')}</div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
-                style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   
                     {takeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : t('go_now_action')}
                   </button>
@@ -1106,7 +1106,7 @@ export default function TaskDetail(props) {
             {canApplyManual && !showApplyForm &&
             <button
               onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); } return; } setShowApplyForm(true);}}
-              style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
+              style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />
                 {t('apply_to_task')} — {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={14} />
@@ -1131,7 +1131,7 @@ export default function TaskDetail(props) {
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                 <button
                 onClick={() => setShowQuickChat(true)}
-                style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                 
                   <MessageCircle size={13} /> {t('message_to_publisher')}
                 </button>
@@ -1181,7 +1181,7 @@ export default function TaskDetail(props) {
             </div>
             <button
               onClick={() => setShowInvoiceView(true)}
-              style={{ height: 40, padding: '0 18px', borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 12px rgba(124,58,237,0.35)' }}
+              style={{ height: 40, padding: '0 18px', borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 12px rgba(124,58,237,0.35)' }}
             >
               <FileText size={15} /> {t('td_view_download')}
             </button>
@@ -1206,7 +1206,7 @@ export default function TaskDetail(props) {
           task.requirements ||
           task.category_details ||
           (isOwner && task.auto_bump_enabled && task.base_price && task.max_price)) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 11 }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 11 }}>
 
             {/* Auto-bump — owner only, at top */}
             {isOwner && task.auto_bump_enabled && task.base_price && task.max_price && (
@@ -1222,14 +1222,14 @@ export default function TaskDetail(props) {
             )}
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>{t('task_details_title')}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5 }}>{t('task_details_title')}</div>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(task.id);
                   setIdCopied(true);
                   setTimeout(() => setIdCopied(false), 2000);
                 }}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: idCopied ? '#059669' : '#94a3b8', fontFamily: 'monospace', background: idCopied ? '#f0fdf4' : 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: idCopied ? '1px solid #bbf7d0' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: idCopied ? '#059669' : 'var(--text-3)', fontFamily: 'monospace', background: idCopied ? '#f0fdf4' : 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: idCopied ? '1px solid #bbf7d0' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
                 title={t('td_copy_id')}
               >
                 {idCopied ? (
@@ -1248,7 +1248,7 @@ export default function TaskDetail(props) {
                   <Clock size={13} color="#ea580c" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('task_validity_label')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('task_validity_label')}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
                     <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline />
                   </div>
@@ -1259,14 +1259,14 @@ export default function TaskDetail(props) {
             {/* Schedule slots — prominent service times */}
             {formatScheduleSlots(task.category_details?.schedule).length > 0 && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Clock size={13} color="#1a6fd4" />
+                <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Clock size={13} color="var(--brand-primary)" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 3 }}>{t('td_service_slots')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginBottom: 3 }}>{t('td_service_slots')}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     {formatScheduleSlots(task.category_details.schedule).map((slot, i) => (
-                      <div key={i} style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{slot.dayLabel} · {slot.time}</div>
+                      <div key={i} style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-primary)' }}>{slot.dayLabel} · {slot.time}</div>
                     ))}
                   </div>
                 </div>
@@ -1289,12 +1289,12 @@ export default function TaskDetail(props) {
               else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Clock size={13} color="#1a6fd4" />
+                  <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Clock size={13} color="var(--brand-primary)" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('td_exact_time')}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('td_exact_time')}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-primary)' }}>{label}</div>
                   </div>
                 </div>
               );
@@ -1310,7 +1310,7 @@ export default function TaskDetail(props) {
                     {service?.icon || CATEGORY_EMOJI[serviceKey] || '🔨'}
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('category_label')}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('category_label')}</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{service?.label || getCategoryLabel(serviceKey, t)}</div>
                   </div>
                 </div>
@@ -1324,7 +1324,7 @@ export default function TaskDetail(props) {
                   <MapPin size={13} color="#ea580c" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>{t('address_details_label')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginBottom: 2 }}>{t('address_details_label')}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
                     {[
                       task.address_building && `${t('building_label')} ${task.address_building}`,
@@ -1351,7 +1351,7 @@ export default function TaskDetail(props) {
                     <CheckCircle2 size={13} color="#059669" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>{t('requirements_label')}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginBottom: 2 }}>{t('requirements_label')}</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
                       {reqs.join(' · ')}
                     </div>
@@ -1399,7 +1399,7 @@ export default function TaskDetail(props) {
                   <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', fontFamily: 'monospace', letterSpacing: 0.5, direction: 'ltr', textAlign: 'right' }}>{phone}</div>
                   <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2, fontWeight: 600 }}>{t('td_click_to_call')}</div>
                 </div>
-                <div style={{ height: 42, padding: '0 16px', borderRadius: 12, background: '#16a34a', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 10px rgba(22,163,74,0.35)' }}>
+                <div style={{ height: 42, padding: '0 16px', borderRadius: 12, background: '#16a34a', color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 10px rgba(22,163,74,0.35)' }}>
                   <Phone size={14} /> {t('td_call_btn')}
                 </div>
               </div>
@@ -1460,16 +1460,16 @@ export default function TaskDetail(props) {
         <div className="mobile-sheet-overlay" onClick={() => setShowOwnerMenu(false)}>
           <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-3)', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
             {(task.status === 'OPEN' || task.status === 'EXPIRED') &&
             <div onClick={() => { setShowOwnerMenu(false); window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/create-task?editId=${id}`); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Pencil size={17} color="#1a6fd4" />
+                  <div style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Pencil size={17} color="var(--brand-primary)" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f2b6b' }}>{t('edit_task_title')}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('edit_task_sub')}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{t('edit_task_title')}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('edit_task_sub')}</div>
                   </div>
                 </div>
               </div>
@@ -1489,7 +1489,7 @@ export default function TaskDetail(props) {
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>{t('cancel_task_title')}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('cancel_task_sub')}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('cancel_task_sub')}</div>
               </div>
             </div>
             <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />

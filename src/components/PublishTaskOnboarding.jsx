@@ -84,7 +84,7 @@ export default function PublishTaskOnboarding() {
             width: '100%',
             height: 52,
             borderRadius: 16,
-            background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+            background: 'linear-gradient(135deg,var(--brand-banner-bg, var(--brand-primary)),#0a52b0)',
             color: 'white',
             fontWeight: 900,
             fontSize: 16,
@@ -126,7 +126,7 @@ export default function PublishTaskOnboarding() {
               <span style={{ fontSize: 16 }}>{b.emoji}</span>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>{b.label}</div>
-                <div style={{ fontSize: 10, color: '#1a6fd4', fontWeight: 700 }}>{b.price}</div>
+                <div style={{ fontSize: 10, color: 'var(--brand-banner-bg, var(--brand-primary))', fontWeight: 700 }}>{b.price}</div>
               </div>
             </div>
           </div>

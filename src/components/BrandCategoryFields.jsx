@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 export default function BrandCategoryFields({ category, values = {}, onChange }) {
   const { formFieldsFor } = useBrandCategories();
   const fields = formFieldsFor(category);
+  // No parent or sibling fields are ever added to the selected global service.
 
   if (!fields.length) return null;
 

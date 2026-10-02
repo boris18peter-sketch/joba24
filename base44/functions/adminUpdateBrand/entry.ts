@@ -25,7 +25,7 @@ const OVERRIDABLE = [
   'boost_cost', 'loyalty_reward_percent', 'loyalty_reward_min',
 ];
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -124,6 +124,10 @@ Deno.serve(async (req) => {
         }, { status: 400 });
       }
       cfgPatch.theme = theme;
+      // Once managed in Design System, legacy palette fields cannot resurrect a reset.
+      for (const [token, legacy] of Object.entries({ primary:'primary_color', primary_dark:'primary_dark_color', accent:'accent_color' })) {
+        if (Object.hasOwn(body.theme, token)) cfgPatch[legacy] = '';
+      }
     }
 
     if (invalid.length) {
@@ -173,9 +177,16 @@ Deno.serve(async (req) => {
           });
     }
 
+    // Return the authoritative persisted row, not the submitted map or defaults.
+    if (updatedConfig) {
+      updatedConfig = await svc.entities.BrandConfig.get(updatedConfig.id);
+      if (cfgPatch.theme && (Object.keys(updatedConfig?.theme || {}).length !== Object.keys(cfgPatch.theme).length || Object.entries(cfgPatch.theme).some(([key, value]) => updatedConfig?.theme?.[key] !== value))) {
+        return Response.json({ error: 'theme_persistence_failed' }, { status: 500 });
+      }
+    }
     return Response.json({ success: true, brand: updatedBrand, config: updatedConfig });
   } catch (error: any) {
     console.error('adminUpdateBrand error:', error?.message);
     return Response.json({ error: 'update_failed', message: error?.message }, { status: 500 });
   }
-});
+}

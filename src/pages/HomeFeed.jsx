@@ -652,14 +652,14 @@ export default function HomeFeed() {
         // Red dot on "my_published" tab if client has active task or new applicants
         const myPubDot = isAuthenticated && (hasNewApplicants || hasActiveClientTaskForBadge);
         return (
-          <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
             <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
-              <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', ...(isRTL ? { right: activeTab === 'available' ? 3 : 'calc(50%)' } : { left: activeTab === 'available' ? 3 : 'calc(50%)' }), background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'all 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
-              <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
+              <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', ...(isRTL ? { right: activeTab === 'available' ? 3 : 'calc(50%)' } : { left: activeTab === 'available' ? 3 : 'calc(50%)' }), background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', borderRadius: 99, transition: 'all 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
+              <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
                 {t('all_tasks')}
                 {availableDot && activeTab !== 'available' && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid var(--surface-3)', animation: 'pulseRedDot 1.5s infinite' }} />}
               </button>
-              <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
+              <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
                 {myPubLabel}
                 {myPubDot && activeTab !== 'my_published' && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid var(--surface-3)', animation: 'pulseRedDot 1.5s infinite' }} />}
               </button>
@@ -690,8 +690,8 @@ export default function HomeFeed() {
             <div style={{ position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 4, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
             <div style={{ position: 'relative' }}>
               <div style={{
-                background: 'var(--surface-2)', borderRadius: 14,
-                border: `1.5px solid ${searchFocused ? '#1a6fd4' : 'var(--border-1)'}`,
+                background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14,
+                border: `1.5px solid ${searchFocused ? 'var(--brand-primary)' : 'var(--border-1)'}`,
                 display: 'flex', alignItems: 'center', gap: 0, minWidth: 0,
                 height: 44, boxSizing: 'border-box', overflow: 'hidden',
                 transition: 'border-color 0.15s',
@@ -699,7 +699,7 @@ export default function HomeFeed() {
               }}>
                 {/* Search icon + input + category chips */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, paddingRight: 8, paddingLeft: 8, minWidth: 0, overflow: 'hidden' }}>
-                  <Search size={14} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0 }} />
+                  <Search size={14} style={{ color: searchFocused ? 'var(--brand-primary)' : '#b0bec5', flexShrink: 0 }} />
                   <input
                     placeholder={t('search_placeholder')}
                     value={search}
@@ -721,7 +721,7 @@ export default function HomeFeed() {
                         borderRadius: '50%', display: 'flex', alignItems: 'center',
                         justifyContent: 'center', flexShrink: 0,
                       }}>
-                      <X size={14} color="#94a3b8" />
+                      <X size={14} color="var(--text-3)" />
                     </button>
                   )}
                 </div>
@@ -736,14 +736,14 @@ export default function HomeFeed() {
                   style={{
                   display: 'flex', alignItems: 'center', gap: 3,
                   padding: '0 10px', height: '100%',
-                  background: filters.categories?.length > 0 ? '#eff6ff' : 'transparent',
+                  background: filters.categories?.length > 0 ? 'var(--brand-primary-light)' : 'transparent',
                   border: 'none', cursor: tasks.some(t => t.status === 'OPEN') ? 'pointer' : 'not-allowed', flexShrink: 0,
-                  fontSize: 12, color: filters.categories?.length > 0 ? '#1a6fd4' : 'var(--text-2)',
+                  fontSize: 12, color: filters.categories?.length > 0 ? 'var(--brand-primary)' : 'var(--text-2)',
                   fontWeight: 600, whiteSpace: 'nowrap',
                   opacity: tasks.some(t => t.status === 'OPEN') ? 1 : 0.4,
                 }}>
                   {filters.categories?.length > 0
-                    ? <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
+                    ? <span style={{ background: 'var(--brand-primary)', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
                     : null}
                   {t('category')}
                   {showCategoryDropdown ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
@@ -755,11 +755,11 @@ export default function HomeFeed() {
                 {/* Filters button */}
                 <button onClick={() => setShowFilters(true)} style={{
                   flexShrink: 0, width: 44, height: '100%',
-                  border: 'none', background: hasSheetFilters ? '#1a6fd4' : 'transparent',
+                  border: 'none', background: hasSheetFilters ? 'var(--brand-primary)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', position: 'relative', transition: 'background 0.15s',
                 }}>
-                  <SlidersHorizontal size={14} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+                  <SlidersHorizontal size={14} color={hasSheetFilters ? 'white' : 'var(--text-2)'} strokeWidth={1.8} />
                   {hasSheetFilters && <span style={{ position: 'absolute', top: 6, right: 8, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
                 </button>
               </div>
@@ -774,7 +774,7 @@ export default function HomeFeed() {
                     <span key={cat} style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5, height: 28,
                       padding: '0 6px 0 10px', borderRadius: 999, flexShrink: 0,
-                      background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
+                      background: 'linear-gradient(135deg,var(--brand-primary-light),var(--brand-primary-light))',
                       border: '1px solid #93c5fd', fontSize: 12, color: '#1d4ed8',
                       fontWeight: 700, whiteSpace: 'nowrap',
                     }}>
@@ -783,7 +783,7 @@ export default function HomeFeed() {
                         onClick={() => setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) }))}
                         aria-label="remove"
                         style={{
-                          width: 18, height: 18, borderRadius: '50%', background: '#1a6fd4',
+                          width: 18, height: 18, borderRadius: '50%', background: 'var(--brand-primary)',
                           border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
                           justifyContent: 'center', color: 'white', padding: 0, flexShrink: 0,
                           minHeight: 'unset', minWidth: 'unset',
@@ -797,16 +797,16 @@ export default function HomeFeed() {
               )}
 
               {searchFocused && !search && recentSearches.length > 0 && (
-                <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
-                  {recentSearches.map((s, i) => (<button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }} style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Search size={9} color="#94a3b8" /> {s}</button>))}
+                <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
+                  {recentSearches.map((s, i) => (<button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }} style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Search size={9} color="var(--text-3)" /> {s}</button>))}
                 </div>
               )}
               {showCategoryDropdown && (
                 <>
                   <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
-                  <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 280, overflowY: 'auto' }}>
-                    <div style={{ position: 'sticky', top: 0, background: 'var(--surface-2)', padding: '8px 10px', borderBottom: '1px solid var(--border-1)', display: 'flex', justifyContent: 'flex-end', zIndex: 5 }}>
-                      <button className="j-icon-btn" onClick={() => setShowCategoryDropdown(false)} style={{ height: 32, paddingInline: 14, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
+                  <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 280, overflowY: 'auto' }}>
+                    <div style={{ position: 'sticky', top: 0, background: 'var(--brand-card-bg, var(--surface-2))', padding: '8px 10px', borderBottom: '1px solid var(--border-1)', display: 'flex', justifyContent: 'flex-end', zIndex: 5 }}>
+                      <button className="j-icon-btn" onClick={() => setShowCategoryDropdown(false)} style={{ height: 32, paddingInline: 14, borderRadius: 16, background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
                         <Check size={15} strokeWidth={3} />
                       </button>
                     </div>
@@ -868,15 +868,15 @@ export default function HomeFeed() {
                   return (
                     <button key={t.key} onClick={() => setMyPubTab(t.key)}
                       style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
-                        background: active ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-2)',
+                        background: active ? 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))' : 'var(--surface-2)',
                         color: active ? 'white' : 'var(--text-2)',
-                        borderColor: active ? '#1a6fd4' : 'var(--border-1)',
+                        borderColor: active ? 'var(--brand-primary)' : 'var(--border-1)',
                         boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : 'none',
                       }}
                     >
                       {t.label}
                       {count > 0 && (
-                        <span style={{ marginRight: 4, fontSize: 10, background: active ? 'rgba(255,255,255,0.25)' : '#e8edf5', color: active ? 'white' : '#64748b', padding: '1px 5px', borderRadius: 8 }}>
+                        <span style={{ marginRight: 4, fontSize: 10, background: active ? 'rgba(255,255,255,0.25)' : '#e8edf5', color: active ? 'white' : 'var(--text-2)', padding: '1px 5px', borderRadius: 8 }}>
                           {count}
                         </span>
                       )}
@@ -925,8 +925,8 @@ export default function HomeFeed() {
                           }}>
                             <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <circle cx="22" cy="22" r="20" fill="rgba(26,111,212,0.15)" stroke="rgba(26,111,212,0.4)" strokeWidth="1.5"/>
-                              <path d="M22 10 L22 26 M16 20 L22 26 L28 20" stroke="#1a6fd4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              <circle cx="22" cy="30" r="2.5" fill="#1a6fd4"/>
+                              <path d="M22 10 L22 26 M16 20 L22 26 L28 20" stroke="var(--brand-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <circle cx="22" cy="30" r="2.5" fill="var(--brand-primary)"/>
                             </svg>
                           </div>
                         )}

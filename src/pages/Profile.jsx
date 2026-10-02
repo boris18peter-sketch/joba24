@@ -133,7 +133,7 @@ export default function Profile() {
   if (isLoading) {
     return (
       <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+        <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
       </div>
     );
   }
@@ -156,7 +156,7 @@ export default function Profile() {
     <div style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ── SECTION 1 — IDENTITY (compact hero) ── */}
       <div style={{
-        background: 'linear-gradient(160deg, #0a52b0 0%, #1a6fd4 55%, #2563eb 100%)',
+        background: 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, var(--brand-hero-bg, #2563eb) 100%)',
         paddingBottom: 16, position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
@@ -164,12 +164,12 @@ export default function Profile() {
 
         {/* Top bar */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 0' }}>
-          <span style={{ fontSize: 17, fontWeight: 800, color: 'white' }}>{t('profile_title')}</span>
+          <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--brand-hero-text, white)' }}>{t('profile_title')}</span>
           <button
             onClick={() => navigate('/worker-profile')}
-            style={{ height: 34, paddingInline: 16, borderRadius: 20, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(6px)' }}
+            style={{ height: 34, paddingInline: 16, borderRadius: 20, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--brand-hero-text, white)', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(6px)' }}
           >
-            <Pencil size={13} color="white" /> {t('pr_edit')}
+            <Pencil size={13} color="var(--brand-hero-text, white)" /> {t('pr_edit')}
           </button>
         </div>
 
@@ -183,7 +183,7 @@ export default function Profile() {
                 background: 'rgba(255,255,255,0.15)',
                 border: '3px solid rgba(255,255,255,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, fontWeight: 900, color: 'white',
+                fontSize: 26, fontWeight: 900, color: 'var(--brand-hero-text, white)',
                 overflow: 'hidden', cursor: 'pointer',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
               }}
@@ -198,7 +198,7 @@ export default function Profile() {
           {/* Read-only here — the name is edited on the profile edit page
               (/worker-profile), which is the single place for profile edits. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, padding: '2px 8px' }}>
-            <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{me?.full_name || 'User'}</span>
+            <span style={{ fontSize: 19, fontWeight: 900, color: 'var(--brand-hero-text, white)' }}>{me?.full_name || 'User'}</span>
             {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
           </div>
 
@@ -221,7 +221,7 @@ export default function Profile() {
 
         {/* About */}
         {me?.bio && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>{t('pr_about')}</div>
             <p className="selectable-text" style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{me.bio}</p>
           </div>
@@ -229,7 +229,7 @@ export default function Profile() {
 
         {/* SECTION 6 — ABOUT ME (personal gallery, renamed) */}
         {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_about_me')}</span>
             </div>
@@ -245,14 +245,14 @@ export default function Profile() {
 
         {/* SECTION 7 — PROFESSIONAL AREAS */}
         {categories.length > 0 && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
               <span style={{ fontSize: 13 }}>🔧</span>
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_professions')}</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, #eff6ff)', color: 'var(--brand-primary, #1a6fd4)', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, #bfdbfe)' }}>
+                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, var(--brand-primary-light))', color: 'var(--brand-primary, var(--brand-primary))', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, var(--border-2))' }}>
                   {scope.label(c, t)}
                 </span>
               ))}
@@ -262,7 +262,7 @@ export default function Profile() {
 
         {/* Certificates — professional documents */}
         {(me?.certificate_files?.length > 0) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
               <FileText size={12} color="var(--text-3)" />
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_certs')}</span>
@@ -281,7 +281,7 @@ export default function Profile() {
 
         {/* SECTION 8 — SERVICE AREAS */}
         {cities.length > 0 && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
               <span style={{ fontSize: 13 }}>📍</span>
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_areas')}</span>
@@ -307,12 +307,12 @@ export default function Profile() {
 
         {/* Menu — single grouped list */}
         <div style={{
-          background: 'var(--surface-2)', borderRadius: 14,
+          background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14,
           border: '1px solid var(--border-1)', overflow: 'hidden',
         }}>
-          <MenuRow icon={Briefcase} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
+          <MenuRow icon={Briefcase} iconBg="var(--brand-primary-light)" iconColor="var(--brand-primary)" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
           <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
-          <MenuRow icon={BarChart3} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
+          <MenuRow icon={BarChart3} iconBg="var(--brand-primary-light)" iconColor="var(--brand-primary)" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
           <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('pr_history_reviews')} sub={t('pr_history_count', { n: completedCount + postedCount, m: reviews.length })} onClick={() => setShowUnifiedHistory(true)} />
           <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => logout()} chevronColor="#fca5a5" />
           <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
@@ -322,11 +322,11 @@ export default function Profile() {
       {/* Unified History & Reviews Sheet */}
       {showUnifiedHistory && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
-          <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('pr_history_reviews')}</span>
               <button onClick={() => setShowUnifiedHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={16} color="#64748b" />
+                <X size={16} color="var(--text-2)" />
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
@@ -341,7 +341,7 @@ export default function Profile() {
       {showDeleteConfirm && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
-          <div dir="rtl" style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', boxShadow: '0 -16px 60px rgba(0,0,0,0.25)' }}
+          <div dir="rtl" style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', boxShadow: '0 -16px 60px rgba(0,0,0,0.25)' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -353,7 +353,7 @@ export default function Profile() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button onClick={handleDeleteAccount} disabled={deleteLoading}
-                style={{ width: '100%', height: 48, borderRadius: 14, background: deleteLoading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: deleteLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                style={{ width: '100%', height: 48, borderRadius: 14, background: deleteLoading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: 'var(--brand-hero-text, white)', fontWeight: 900, fontSize: 15, cursor: deleteLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {deleteLoading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> {t('yes_delete')}</>}
               </button>
               <button onClick={() => setShowDeleteConfirm(false)} disabled={deleteLoading}

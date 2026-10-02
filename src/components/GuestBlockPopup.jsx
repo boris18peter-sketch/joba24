@@ -19,14 +19,14 @@ export default function GuestBlockPopup({ areaLabel, onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
-        background: 'rgba(5,15,40,0.66)', backdropFilter: 'blur(8px)',
+        background: 'var(--overlay-bg)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'var(--sheet-bg)', borderRadius: '32px 32px 0 0',
+          background: 'var(--sheet-bg)', border:'1px solid var(--brand-modal-border, var(--border-1))', borderRadius: '32px 32px 0 0',
           width: '100%', maxWidth: 460,
           boxShadow: '0 -24px 120px rgba(0,0,0,0.3)',
           paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
@@ -56,7 +56,7 @@ export default function GuestBlockPopup({ areaLabel, onClose }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18,
             boxShadow: '0 8px 28px rgba(26,111,212,0.18)',
           }}>
-            <Lock size={38} color="#1a6fd4" strokeWidth={2.2} />
+            <Lock size={38} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={2.2} />
           </div>
 
           <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8, lineHeight: 1.3 }}>
@@ -70,7 +70,7 @@ export default function GuestBlockPopup({ areaLabel, onClose }) {
             onClick={handleLogin}
             style={{
               width: '100%', height: 54, borderRadius: 16, border: 'none',
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white',
+              background: 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))', color: 'var(--brand-modal-cta-text, white)',
               fontWeight: 900, fontSize: 16, cursor: 'pointer',
               boxShadow: '0 6px 20px rgba(26,111,212,0.35)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

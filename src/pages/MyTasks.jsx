@@ -140,7 +140,7 @@ export default function MyTasks() {
     <div className="min-h-screen" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
       <PageHeader title={t('my_tasks_title')} right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tasks.length} {t('tasks')}</span>} />
       {/* Tabs bar */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px', position: 'sticky', top: 47, zIndex: 49 }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, var(--brand-primary))', padding: '12px 16px 14px', position: 'sticky', top: 47, zIndex: 49 }}>
         <div style={{ display: 'flex', gap: 8 }}>
           {TABS.map(tab => {
             const count = tasks.filter(x => tab.statuses.includes(x.status)).length;
@@ -153,7 +153,7 @@ export default function MyTasks() {
               >
                 {t(tab.i18nKey)}
                 {count > 0 && (
-                  <span style={{ marginRight: 4, fontSize: 10, background: activeTab === tab.key ? '#1a6fd4' : '#fbbf24', color: 'white', padding: '1px 5px', borderRadius: 8 }}>
+                  <span style={{ marginRight: 4, fontSize: 10, background: activeTab === tab.key ? 'var(--brand-primary)' : '#fbbf24', color: 'white', padding: '1px 5px', borderRadius: 8 }}>
                     {count}
                   </span>
                 )}

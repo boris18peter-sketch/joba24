@@ -27,8 +27,8 @@ function FAQItem({ q, a }) {
         onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: open ? 'var(--surface-3)' : 'none', border: 'none', cursor: 'pointer', textAlign: isRTL ? 'right' : 'left', gap: 12, transition: 'background 0.2s' }}
       >
-        <span style={{ fontSize: 14, fontWeight: 700, color: open ? '#1a6fd4' : 'var(--text-1)', flex: 1 }}>{q}</span>
-        <ChevronDown size={18} color="#1a6fd4" style={{ flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+        <span style={{ fontSize: 14, fontWeight: 700, color: open ? 'var(--brand-primary)' : 'var(--text-1)', flex: 1 }}>{q}</span>
+        <ChevronDown size={18} color="var(--brand-primary)" style={{ flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
       </button>
       {open && (
         <div style={{ padding: '0 16px 16px', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.85, whiteSpace: 'pre-line' }}>
@@ -51,7 +51,7 @@ export default function FAQ() {
       <PageHeader title={t('faq_title')} />
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '28px 20px 24px' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, var(--brand-primary))', padding: '28px 20px 24px' }}>
         <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
         <h1 style={{ color: 'white', fontSize: 22, fontWeight: 900, marginBottom: 6 }}>{t('faq_title')}</h1>
         <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>{t('faq_sub')}</p>
@@ -67,7 +67,7 @@ export default function FAQ() {
               style={{
                 flexShrink: 0, padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
                 border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                background: activeCategory === c.id ? '#1a6fd4' : 'var(--surface-3)',
+                background: activeCategory === c.id ? 'var(--brand-primary)' : 'var(--surface-3)',
                 color: activeCategory === c.id ? 'white' : 'var(--text-2)',
                 boxShadow: activeCategory === c.id ? '0 2px 8px rgba(26,111,212,0.3)' : 'none',
               }}

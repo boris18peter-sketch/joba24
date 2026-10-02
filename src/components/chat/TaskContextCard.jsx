@@ -33,7 +33,7 @@ export default function TaskContextCard({ task, isRTL, t, onOpen }) {
         background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <ClipboardList size={17} color="#1a6fd4" />
+        <ClipboardList size={17} color="var(--brand-primary)" />
       </div>
 
       <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
@@ -54,7 +54,7 @@ export default function TaskContextCard({ task, isRTL, t, onOpen }) {
         background: 'var(--brand-primary-light)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Chevron size={15} color="#1a6fd4" />
+        <Chevron size={15} color="var(--brand-primary)" />
       </span>
     </button>
   );

@@ -45,7 +45,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
         // Above the task-detail sheet (1000000) — the apply popup is opened FROM
         // inside that sheet, so it must sit on top of it, not behind it.
         position: 'fixed', inset: 0, zIndex: 1000002,
-        background: 'rgba(5,15,40,0.55)',
+        background: 'var(--overlay-bg)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',
         animation: 'fadeInBackdrop 0.18s ease',
@@ -60,6 +60,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--sheet-bg)',
+          border: '1px solid var(--brand-modal-border, var(--border-1))',
           borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
           width: '100%', maxWidth: 480,
           boxShadow: 'var(--shadow-xl)',
@@ -74,7 +75,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
         {/* Task + commitment header */}
-        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
+        <div style={{ background: 'linear-gradient(135deg, var(--brand-modal-title, #0f2b6b), var(--brand-modal-cta-bg, var(--brand-primary)))', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'var(--brand-modal-cta-text, white)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
             <span>{t('application_fee')}</span>
             <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -95,15 +96,15 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
         </div>
 
         {/* Message */}
-        <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>{t('add_message')}</p>
+        <div style={{ background: 'var(--brand-primary-light)', borderRadius: 16, padding: 14, border: '1px solid var(--border-2)', marginBottom: 14 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-modal-title, #0f2b6b)', margin: '0 0 8px' }}>{t('add_message')}</p>
           <textarea
             value={message}
             onChange={e => { setMessage(e.target.value); setMsgBlocked(false); }}
             placeholder={t('message_placeholder')}
             rows={3}
             style={{
-              width: '100%', borderRadius: 10, border: `1px solid ${msgBlocked ? '#fca5a5' : '#bfdbfe'}`,
+              width: '100%', borderRadius: 10, border: `1px solid ${msgBlocked ? '#fca5a5' : 'var(--border-2)'}`,
               padding: '10px 12px', fontSize: 16, fontFamily: 'inherit', resize: 'none',
               outline: 'none', color: '#1a2540', background: 'white', boxSizing: 'border-box',
               lineHeight: 1.5,
@@ -129,7 +130,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
             style={{
               flex: 1, height: 52, borderRadius: 'var(--r-md)',
               background: loading ? '#93b4d8' : 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))',
-              border: 'none', fontSize: 15, fontWeight: 900, color: 'white',
+              border: 'none', fontSize: 15, fontWeight: 900, color: 'var(--brand-modal-cta-text, white)',
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: loading ? 'none' : 'var(--shadow-md)',

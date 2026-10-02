@@ -168,7 +168,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
         }
       `}</style>
       <div style={{
-        background: 'var(--surface-2)',
+        background: 'var(--brand-modal-bg, var(--surface-2))',
         borderRadius: 22,
         overflow: 'hidden',
         boxShadow: '0 16px 60px rgba(0,0,0,0.2)',
@@ -209,7 +209,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
             <div style={{ fontSize: 11, fontWeight: 700, color: isUrgent ? '#ef4444' : isBoosted ? '#7c3aed' : '#f59e0b', marginBottom: 3 }}>
               {isBoosted ? t('match_boost_title') : t('match_new_title')} • {countdown}s
             </div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--brand-modal-title, #0f2b6b)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
               {task.title}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -246,10 +246,8 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
               width: '100%',
               height: 48,
               borderRadius: 14,
-              background: isUrgent
-                ? 'linear-gradient(135deg, #ef4444, #dc2626)'
-                : 'linear-gradient(135deg, #f59e0b, #d97706)',
-              color: 'white',
+              background: `linear-gradient(135deg, var(--brand-modal-cta-bg, ${isUrgent ? '#ef4444' : '#f59e0b'}), var(--brand-modal-cta-bg, ${isUrgent ? '#dc2626' : '#d97706'}))`,
+              color: 'var(--brand-modal-cta-text, white)',
               fontWeight: 900,
               fontSize: 15,
               border: 'none',

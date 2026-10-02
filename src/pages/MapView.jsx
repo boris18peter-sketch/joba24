@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import FilterSheet from '@/components/FilterSheet';
+import { useBrand } from '@/lib/brand/BrandProvider';
+import { resolveTheme } from '@/lib/brand/themeTokens';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
 const MAP_STYLE = 'mapbox://styles/mapbox/standard?language=he';
@@ -51,7 +53,7 @@ function NavArrowMarker({ bearing }) {
       width: 0, height: 0,
       borderLeft: '14px solid transparent',
       borderRight: '14px solid transparent',
-      borderBottom: '28px solid #1a6fd4',
+      borderBottom: '28px solid var(--brand-primary)',
       filter: 'drop-shadow(0 4px 12px rgba(26,111,212,0.8))',
       transform: `rotate(${bearing || 0}deg)`,
     }} />
@@ -59,8 +61,8 @@ function NavArrowMarker({ bearing }) {
 }
 
 function TaskPin({ task, selected, isMyTask }) {
-  const color = isMyTask ? '#f59e0b' : '#1a6fd4';
-  const colorDark = isMyTask ? '#d97706' : '#0a52b0';
+  const color = isMyTask ? '#f59e0b' : 'var(--brand-primary)';
+  const colorDark = isMyTask ? '#d97706' : 'var(--brand-primary-dark)';
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer',
@@ -86,7 +88,7 @@ function UserDot() {
   return (
     <div style={{ position: 'relative', width: 30, height: 30 }}>
       <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(59,130,246,0.22)', animation: 'userPulse 2s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', inset: 5, borderRadius: '50%', background: '#3b82f6', border: '2.5px solid white', boxShadow: '0 2px 12px rgba(59,130,246,0.65)' }} />
+      <div style={{ position: 'absolute', inset: 5, borderRadius: '50%', background: 'var(--brand-primary)', border: '2.5px solid white', boxShadow: '0 2px 12px rgba(59,130,246,0.65)' }} />
       <style>{`@keyframes userPulse{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
     </div>
   );
@@ -94,6 +96,8 @@ function UserDot() {
 
 export default function MapView() {
   const { globalMap: categoryMap } = useBrandCategories();
+  const { effective } = useBrand();
+  const mapTheme = effective?.theme && Object.keys(effective.theme).length ? resolveTheme(effective.theme) : null;
   const mapRef = useRef(null);
   const seedRef = useRef({});
   const navigate = useNavigate();
@@ -348,11 +352,11 @@ export default function MapView() {
                 <Layer id="route-shadow" type="line" layout={{ 'line-join': 'round', 'line-cap': 'round' }}
                   paint={{ 'line-color': '#000', 'line-width': 18, 'line-opacity': 0.12, 'line-blur': 4 }} />
                 <Layer id="route-casing" type="line" layout={{ 'line-join': 'round', 'line-cap': 'round' }}
-                  paint={{ 'line-color': '#1255c0', 'line-width': 16, 'line-opacity': 1 }} />
+                  paint={{ 'line-color': mapTheme?.primary_dark || '#1255c0', 'line-width': 16, 'line-opacity': 1 }} />
                 <Layer id="route-fill" type="line" layout={{ 'line-join': 'round', 'line-cap': 'round' }}
-                  paint={{ 'line-color': '#4a90ff', 'line-width': 10, 'line-opacity': 1 }} />
+                  paint={{ 'line-color': mapTheme?.primary || '#4a90ff', 'line-width': 10, 'line-opacity': 1 }} />
                 <Layer id="route-highlight" type="line" layout={{ 'line-join': 'round', 'line-cap': 'round' }}
-                  paint={{ 'line-color': '#a8caff', 'line-width': 3.5, 'line-opacity': 0.85 }} />
+                  paint={{ 'line-color': mapTheme?.accent || '#a8caff', 'line-width': 3.5, 'line-opacity': 0.85 }} />
               </Source>
             )}
 
@@ -408,10 +412,10 @@ export default function MapView() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,111,212,0.08)', flexShrink: 0,
               }}>
-                <ArrowRight size={15} color="#1a6fd4" />
+                <ArrowRight size={15} color="var(--brand-primary)" />
               </button>
-              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-1)', flex: 1 }}>{t('nav_map')}</span>
-              <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>
+              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--brand-header-text, var(--text-1))', flex: 1 }}>{t('nav_map')}</span>
+              <span style={{ background: 'var(--brand-primary)', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>
                 {displayTasks.length} {t('open_count')}
               </span>
             </div>
@@ -425,14 +429,14 @@ export default function MapView() {
                 style={{
                   flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                   borderRadius: 10, border: `1px solid ${filters.categories?.length > 0 ? '#93c5fd' : '#e8edf5'}`,
-                  background: filters.categories?.length > 0 ? '#eff6ff' : 'var(--surface-2)',
-                  color: filters.categories?.length > 0 ? '#1a6fd4' : '#64748b',
+                  background: filters.categories?.length > 0 ? 'var(--brand-primary-light)' : 'var(--surface-2)',
+                  color: filters.categories?.length > 0 ? 'var(--brand-primary)' : 'var(--text-2)',
                   fontSize: 13, fontWeight: 600, cursor: tasks.some(t => t.status === 'OPEN') ? 'pointer' : 'not-allowed',
                   opacity: tasks.some(t => t.status === 'OPEN') ? 1 : 0.4,
                 }}
               >
                 {filters.categories?.length > 0
-                  ? <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
+                  ? <span style={{ background: 'var(--brand-primary)', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
                   : null}
                 {filters.categories?.length === 1 ? categoryMap[filters.categories[0]]?.label || getCategoryLabel(filters.categories[0], t) : t('category')}
                 {showCategoryDropdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -444,12 +448,12 @@ export default function MapView() {
                 style={{
                   width: 36, height: 36, borderRadius: 8,
                   border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : '#e8edf5'}`,
-                  background: hasSheetFilters ? '#1a6fd4' : 'var(--surface-2)',
+                  background: hasSheetFilters ? 'var(--brand-primary)' : 'var(--surface-2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', position: 'relative', flexShrink: 0,
                 }}
               >
-                <SlidersHorizontal size={14} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+                <SlidersHorizontal size={14} color={hasSheetFilters ? 'white' : 'var(--text-2)'} strokeWidth={1.8} />
                 {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
               </button>
 
@@ -464,7 +468,7 @@ export default function MapView() {
                     maxHeight: 280, overflowY: 'auto',
                   }}>
                     <div style={{ position: 'sticky', top: 0, background: 'var(--card-bg)', padding: '8px 10px', borderBottom: '1px solid var(--border-1)', display: 'flex', justifyContent: 'flex-end', zIndex: 5 }}>
-                      <button className="j-icon-btn" onClick={() => setShowCategoryDropdown(false)} style={{ height: 32, paddingInline: 14, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
+                      <button className="j-icon-btn" onClick={() => setShowCategoryDropdown(false)} style={{ height: 32, paddingInline: 14, borderRadius: 16, background: 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
                         <Check size={15} strokeWidth={3} />
                       </button>
                     </div>
@@ -491,7 +495,7 @@ export default function MapView() {
             {/* TOP instruction bar */}
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
-              background: 'linear-gradient(160deg, #0a1a4a 0%, #1a3a8f 100%)',
+              background: 'linear-gradient(160deg, var(--brand-hero-bg, #0a1a4a) 0%, var(--brand-hero-bg, #1a3a8f) 100%)',
               paddingTop: 'max(18px, calc(env(safe-area-inset-top) + 10px))',
               paddingBottom: 16, paddingLeft: 18, paddingRight: 18,
               boxShadow: '0 6px 30px rgba(10,26,74,0.55)',
@@ -583,7 +587,7 @@ export default function MapView() {
                 </div>
                 {/* Remaining distance */}
                 <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#1a6fd4', letterSpacing: -0.5 }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--brand-primary)', letterSpacing: -0.5 }}>
                     {formatDist(remainDist)}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>{t('remaining')}</div>
@@ -630,14 +634,14 @@ export default function MapView() {
             </button>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-              <div style={{ background: 'linear-gradient(135deg,#0f2b6b,#1a6fd4)', borderRadius: 14, padding: '10px 15px', flexShrink: 0 }}>
+              <div style={{ background: 'linear-gradient(135deg,var(--brand-hero-bg, #0f2b6b),var(--brand-primary))', borderRadius: 14, padding: '10px 15px', flexShrink: 0 }}>
                 <div style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -1 }}>₪{selectedTask.price}</div>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-1)', marginBottom: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                   {translatedSelectedTask?.title || selectedTask.title}
                 </div>
-                <div style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                   {selectedTask.location_name && <><MapPin size={10} /><span>{translatedSelectedTask?.location_name || selectedTask.location_name}</span></>}
                   {selectedTask.estimated_time && <><Clock size={10} /><span>{selectedTask.estimated_time}</span></>}
                   <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{categoryMap[categoryKeyForTask(selectedTask)]?.label || getCategoryLabel(selectedTask.category, t)}</span>
@@ -649,15 +653,15 @@ export default function MapView() {
             {navLoading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8faff', border: '1px solid #dce8f5', borderRadius: 12, padding: '9px 12px', marginBottom: 12 }}>
                 <div className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
-                <span style={{ fontSize: 12, color: '#64748b' }}>{t('computing_route')}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{t('computing_route')}</span>
               </div>
             )}
             {!navLoading && routeMeta && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <div style={{ flex: 1, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Navigation size={13} color="#1a6fd4" />
+                <div style={{ flex: 1, background: 'var(--brand-primary-light)', border: '1px solid #bfdbfe', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Navigation size={13} color="var(--brand-primary)" />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1e40af' }}>{formatDist(routeMeta.totalDist)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-primary-dark)' }}>{formatDist(routeMeta.totalDist)}</div>
                     <div style={{ fontSize: 10, color: '#60a5fa' }}>{t('road_distance')}</div>
                   </div>
                 </div>
@@ -682,7 +686,7 @@ export default function MapView() {
                 disabled={navLoading || !route}
                 style={{
                   flex: 2, height: 46, borderRadius: 14,
-                  background: navLoading || !route ? '#93c5fd' : 'linear-gradient(135deg,#0a1a4a,#1a6fd4)',
+                  background: navLoading || !route ? '#93c5fd' : 'linear-gradient(135deg,var(--brand-hero-bg, #0a1a4a),var(--brand-primary))',
                   border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: navLoading || !route ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   boxShadow: navLoading || !route ? 'none' : '0 5px 18px rgba(26,111,212,0.45)',
@@ -692,7 +696,7 @@ export default function MapView() {
               </button>
               <button onClick={() => openTaskSheet(selectedTask.id)} style={{
                 flex: 1, height: 46, borderRadius: 14, background: 'var(--surface-3)',
-                border: '1.5px solid var(--border-1)', color: '#1a6fd4', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+                border: '1.5px solid var(--border-1)', color: 'var(--brand-primary)', fontWeight: 800, fontSize: 13, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               }}>
                 {t('details')} <ChevronRight size={14} />

@@ -246,7 +246,7 @@ export default function ChatInbox() {
               }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
-                  background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  background: 'linear-gradient(135deg,var(--brand-primary),#0a52b0)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 2px 8px rgba(15,40,107,0.14)',
                 }}>
@@ -272,7 +272,7 @@ export default function ChatInbox() {
                 {supportUnread > 0 && (
                   <div className="j-badge-pop" style={{
                     minWidth: 20, height: 20, padding: '0 6px', borderRadius: 999, flexShrink: 0,
-                    background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', color: '#fff',
+                    background: 'linear-gradient(135deg,var(--brand-primary),#3b82f6)', color: '#fff',
                     fontSize: 11, fontWeight: 800,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 2px 8px rgba(26,111,212,0.35)',

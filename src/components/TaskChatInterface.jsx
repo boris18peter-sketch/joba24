@@ -17,7 +17,7 @@ function TypingDots() {
     <div style={{ display: 'flex', gap: 4, padding: '2px 0' }}>
       {[0, 0.15, 0.3].map((delay, i) => (
         <div key={i} style={{
-          width: 5, height: 5, borderRadius: '50%', background: '#94a3b8',
+          width: 5, height: 5, borderRadius: '50%', background: 'var(--text-3)',
           animation: `typingBounce 0.6s ${delay}s infinite ease-in-out`
         }} />
       ))}
@@ -45,8 +45,8 @@ function AddressChatCard({ label, addressState, onChange, onConfirm }) {
   };
 
   return (
-    <div style={{ borderRadius: 16, background: 'white', border: '1px solid #e8edf5', padding: 12, display: 'flex', flexDirection: 'column', gap: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animation: 'messageIn 0.35s ease' }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b' }}>{label}</div>
+    <div style={{ borderRadius: 16, background: 'var(--brand-card-bg, var(--surface-2))', border: '1px solid #e8edf5', padding: 12, display: 'flex', flexDirection: 'column', gap: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animation: 'messageIn 0.35s ease' }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>{label}</div>
       <AddressAutocomplete value={addressState.location_name || ''} error={false} onSelect={handleAddressSelect} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         {[
@@ -56,7 +56,7 @@ function AddressChatCard({ label, addressState, onChange, onConfirm }) {
           { label: 'הערות', ph: 'כניסה צדדית', val: notes, set: (v) => { setNotes(v); onChange({ ...addressState, address_notes: v }); } },
         ].map((f, i) => (
           <div key={i}>
-            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 3 }}>{f.label}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginBottom: 3 }}>{f.label}</div>
             <input placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)}
               style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1px solid #dce8f5', background: '#f8fafc', fontSize: 16, outline: 'none', color: '#1f2937', boxSizing: 'border-box' }} />
           </div>
@@ -78,11 +78,11 @@ function LiveDraftCard({ taskState, completenessPct, enabledFeatures }) {
   if (!description && !category) return null;
 
   const fields = [
-    { show: !!category, icon: '🏷️', label: 'קטגוריה', value: category, color: '#3b82f6' },
+    { show: !!category, icon: '🏷️', label: 'קטגוריה', value: category, color: 'var(--brand-btn-primary-bg, #3b82f6)' },
     { show: !!description, icon: '📝', label: 'תיאור', value: description?.substring(0, 60) + (description?.length > 60 ? '...' : ''), color: '#8b5cf6' },
     { show: !!price, icon: '💰', label: 'תקציב', value: '₪' + price, color: '#16a34a' },
     { show: !!location_name, icon: '📍', label: 'מיקום', value: location_name, color: '#f97316' },
-    { show: !!payment_method, icon: '💳', label: 'תשלום', value: payment_method, color: '#2563eb' },
+    { show: !!payment_method, icon: '💳', label: 'תשלום', value: payment_method, color: 'var(--brand-btn-primary-bg, #2563eb)' },
     { show: !!estimated_time, icon: '⏱️', label: 'זמן', value: estimated_time, color: '#0891b2' },
     { show: !!urgency_tag, icon: '⚡', label: 'דחיפות', value: urgency_tag === 'immediate' ? 'דחוף 🔥' : urgency_tag === 'few_hours' ? 'שעות הקרובות' : urgency_tag === 'evening' ? 'ערב' : 'גמיש', color: '#ef4444' },
     { show: !!contactPhone, icon: '📞', label: 'טלפון', value: contactPhone, color: '#059669' },
@@ -99,12 +99,12 @@ function LiveDraftCard({ taskState, completenessPct, enabledFeatures }) {
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       style={{
         margin: '8px 16px', padding: '12px 14px',
-        background: 'white', border: '1px solid #e8edf5',
+        background: 'var(--brand-card-bg, var(--surface-2))', border: '1px solid #e8edf5',
         borderRadius: 16, boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: fields.length > 0 ? 10 : 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2b6b', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-1)', display: 'flex', alignItems: 'center', gap: 6 }}>
           <Sparkles size={13} color="#6366f1" />
           טיוטת משימה
         </div>
@@ -120,11 +120,11 @@ function LiveDraftCard({ taskState, completenessPct, enabledFeatures }) {
             }}>
               <div style={{
                 width: `${completenessPct || 0}%`, height: '100%',
-                background: (completenessPct || 0) >= 100 ? '#16a34a' : (completenessPct || 0) >= 50 ? '#2563eb' : '#f59e0b',
+                background: (completenessPct || 0) >= 100 ? '#16a34a' : (completenessPct || 0) >= 50 ? 'var(--brand-btn-primary-bg, #2563eb)' : '#f59e0b',
                 borderRadius: 99, transition: 'width 0.5s ease',
               }} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#64748b', minWidth: 28 }}>{completenessPct || 0}%</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-2)', minWidth: 28 }}>{completenessPct || 0}%</span>
           </div>
         </div>
       </div>
@@ -183,7 +183,7 @@ function FeatureCard({ pill, active, onToggle, extraConfig, onExtraChange }) {
           <input type="number" inputMode="numeric" placeholder="250"
             value={extraConfig?.max_price || ''}
             onChange={e => onExtraChange?.('max_price', e.target.value.replace(/[^0-9]/g, ''))}
-            style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1.5px solid #fcd34d', background: 'white', fontSize: 18, fontWeight: 800, outline: 'none', color: '#92400e', boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1.5px solid #fcd34d', background: 'var(--brand-card-bg, var(--surface-2))', fontSize: 18, fontWeight: 800, outline: 'none', color: '#92400e', boxSizing: 'border-box' }} />
         </div>
       )}
     </div>
@@ -223,21 +223,21 @@ function RequirementsCardGroup({ category, requirements, onToggle, onInvoiceTogg
       <button onClick={() => setIsOpen(!isOpen)} style={{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
-        border: `1.5px solid ${isOpen ? '#1a6fd4' : '#e5e7eb'}`,
-        background: isOpen ? '#eff6ff' : 'white',
+        border: `1.5px solid ${isOpen ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : '#e5e7eb'}`,
+        background: isOpen ? 'var(--brand-primary-light)' : 'white',
       }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: isOpen ? '#1a6fd4' : '#1f2937', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: isOpen ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : '#1f2937', display: 'flex', alignItems: 'center', gap: 6 }}>
           דרישות נוספות
-          {selectedCount > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'white', background: '#1a6fd4', borderRadius: 99, padding: '1px 6px' }}>{selectedCount}</span>}
+          {selectedCount > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'white', background: 'var(--brand-btn-primary-bg, var(--brand-primary))', borderRadius: 99, padding: '1px 6px' }}>{selectedCount}</span>}
         </div>
-        <ChevronDown size={16} color={isOpen ? '#1a6fd4' : '#9ca3af'} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        <ChevronDown size={16} color={isOpen ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : '#9ca3af'} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </button>
 
       {isOpen && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
           {cats.map(cat => (
             <div key={cat.label}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>{cat.label}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 4 }}>{cat.label}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                 {cat.items.map(({ key, label }) => {
                   const active = !!requirements[key];
@@ -245,9 +245,9 @@ function RequirementsCardGroup({ category, requirements, onToggle, onInvoiceTogg
                     <button key={key} onClick={() => onToggle(key)} style={{
                       padding: '5px 10px', borderRadius: 99, cursor: 'pointer',
                       fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
-                      background: active ? '#1a6fd4' : '#f8fafc',
+                      background: active ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : '#f8fafc',
                       color: active ? 'white' : '#6b7280',
-                      border: `1px solid ${active ? '#1a6fd4' : '#e5e7eb'}`,
+                      border: `1px solid ${active ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : '#e5e7eb'}`,
                     }}>
                       {active && '✓ '}{label}
                     </button>
@@ -686,7 +686,7 @@ export default function TaskChatInterface({
       
       {/* Header */}
       <div style={{ 
-        background: 'linear-gradient(135deg, #0f2b6b 0%, #1a6fd4 100%)',
+        background: 'linear-gradient(135deg, var(--text-1) 0%, var(--brand-btn-primary-bg, var(--brand-primary)) 100%)',
         flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px' }}>
@@ -749,7 +749,7 @@ export default function TaskChatInterface({
                   padding: msg.role === 'user' ? '10px 14px' : '12px 16px',
                   borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
                   background: msg.role === 'user' 
-                    ? 'linear-gradient(135deg, #1e40af, #1a6fd4)' 
+                    ? 'linear-gradient(135deg, var(--brand-primary-dark), var(--brand-btn-primary-bg, var(--brand-primary)))'
                     : 'white',
                   color: msg.role === 'user' ? 'white' : '#1f2937',
                   boxShadow: msg.role === 'user' 
@@ -763,7 +763,7 @@ export default function TaskChatInterface({
                   }}>
                     <ReactMarkdown components={{
                       p: ({node, ...props}) => <p style={{ margin: '0 0 4px 0' }} {...props} />,
-                      strong: ({node, ...props}) => <strong style={{ color: msg.role === 'user' ? 'white' : '#0f2b6b' }} {...props} />,
+                      strong: ({node, ...props}) => <strong style={{ color: msg.role === 'user' ? 'white' : 'var(--text-1)' }} {...props} />,
                     }}>{msg.content}</ReactMarkdown>
                   </div>
                   
@@ -795,13 +795,13 @@ export default function TaskChatInterface({
                   {msg.summary && (
                     <div style={{
                       marginTop: 8, padding: '12px 14px',
-                      background: 'linear-gradient(135deg, #eff6ff, #f0f7ff)',
-                      border: '1px solid #bfdbfe', borderRadius: 14,
+                      background: 'linear-gradient(135deg, var(--brand-primary-light), #f0f7ff)',
+                      border: '1px solid var(--border-2)', borderRadius: 14,
                     }}>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-btn-primary-bg, var(--brand-primary))', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Target size={12} /> סיכום המשימה
                       </div>
-                      <div style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-line' }}>
+                      <div style={{ fontSize: 13, color: 'var(--brand-primary-dark)', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-line' }}>
                         {msg.summary}
                       </div>
                     </div>
@@ -865,8 +865,8 @@ export default function TaskChatInterface({
         {/* Requirements */}
         {showRequirements && !showFeatures && (
           <div style={{ animation: 'messageIn 0.35s ease', padding: '12px 16px', borderRadius: '4px 16px 16px 16px',
-            background: 'white', border: '1px solid #e8edf5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: 800, marginBottom: 10, color: '#0f2b6b', fontSize: 14 }}>
+            background: 'var(--brand-card-bg, var(--surface-2))', border: '1px solid #e8edf5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 800, marginBottom: 10, color: 'var(--text-1)', fontSize: 14 }}>
               📋 דרישות מהעובד
               <span style={{ fontSize: 11, color: '#f97316', fontWeight: 600, display: 'block', marginTop: 2 }}>
                 ככל שתוסיף יותר — פחות עובדים יוכלו להגיש בקשה
@@ -881,7 +881,7 @@ export default function TaskChatInterface({
             />
             <button onClick={handleSkipRequirements} style={{
               width: '100%', marginTop: 14, padding: '11px 0', borderRadius: 14,
-              background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+              background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), #0a52b0)',
               color: 'white', border: 'none', fontSize: 13, fontWeight: 800,
               cursor: 'pointer', display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: 6,
@@ -902,7 +902,7 @@ export default function TaskChatInterface({
             ))}
             <button onClick={handleSkipFeatures} style={{
               width: '100%', padding: '11px 0', borderRadius: 14,
-              background: 'transparent', color: '#64748b',
+              background: 'transparent', color: 'var(--text-2)',
               border: '1.5px solid #e2e8f0', fontSize: 13, fontWeight: 700,
               cursor: 'pointer', display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: 6,
@@ -916,7 +916,7 @@ export default function TaskChatInterface({
             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #c7d2fe' }}>
               <Sparkles size={12} color="#6366f1" />
             </div>
-            <div style={{ padding: '12px 16px', borderRadius: '4px 16px 16px 16px', background: 'white', border: '1px solid #e8edf5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div style={{ padding: '12px 16px', borderRadius: '4px 16px 16px 16px', background: 'var(--brand-card-bg, var(--surface-2))', border: '1px solid #e8edf5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <TypingDots />
             </div>
           </div>
@@ -927,7 +927,7 @@ export default function TaskChatInterface({
 
       {/* Input area — bottom bar, browser handles keyboard resize via interactive-widget */}
       <div style={{
-        flexShrink: 0, background: 'white',
+        flexShrink: 0, background: 'var(--brand-card-bg, var(--surface-2))',
         borderTop: '1px solid #e8edf5',
         padding: '8px 16px',
         paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
@@ -944,9 +944,9 @@ export default function TaskChatInterface({
                   style={{
                     flexShrink: 0, padding: '7px 14px', borderRadius: 20,
                     fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    background: isConfirm ? 'linear-gradient(135deg,#059669,#047857)' : '#eff6ff',
-                    color: isConfirm ? 'white' : '#1a6fd4',
-                    border: isConfirm ? 'none' : '1.5px solid #bfdbfe',
+                    background: isConfirm ? 'linear-gradient(135deg,#059669,#047857)' : 'var(--brand-primary-light)',
+                    color: isConfirm ? 'white' : 'var(--brand-btn-primary-bg, var(--brand-primary))',
+                    border: isConfirm ? 'none' : '1.5px solid var(--border-2)',
                     boxShadow: isConfirm ? '0 4px 14px rgba(5,150,105,0.3)' : '0 1px 4px rgba(26,111,212,0.1)',
                     whiteSpace: 'nowrap',
                   }}>
@@ -962,7 +962,7 @@ export default function TaskChatInterface({
           <div style={{ marginBottom: 8, padding: '10px 14px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
               📞 טלפון ליצירת קשר
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8' }}>(יוצג לעובד המאושר בלבד)</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>(יוצג לעובד המאושר בלבד)</span>
             </div>
             <input
               type="tel"
@@ -971,7 +971,7 @@ export default function TaskChatInterface({
               placeholder="05X-XXXXXXX"
               value={taskDraft.contactPhone || ''}
               onChange={e => setTaskDraft(prev => ({ ...prev, contactPhone: e.target.value }))}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #86efac', background: 'white', fontSize: 16, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', color: '#1f2937' }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #86efac', background: 'var(--brand-card-bg, var(--surface-2))', fontSize: 16, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', color: '#1f2937' }}
             />
           </div>
         )}
@@ -1005,7 +1005,7 @@ export default function TaskChatInterface({
             style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0,
               background: '#f8fafc', border: '1px solid #e2e8f0',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            {uploading ? <Loader2 size={16} className="animate-spin" color="#94a3b8" /> : <Camera size={16} color="#64748b" />}
+            {uploading ? <Loader2 size={16} className="animate-spin" color="var(--text-3)" /> : <Camera size={16} color="var(--text-2)" />}
           </button>
           <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e.target.files)} />
 
@@ -1031,7 +1031,7 @@ export default function TaskChatInterface({
           {input.trim() ? (
             <button onClick={() => sendMessage(input)} disabled={loading}
               style={{ width: 38, height: 38, borderRadius: 19, flexShrink: 0,
-                background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', border: 'none',
+                background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), #0a52b0)', border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <ArrowUp size={16} color="white" />
             </button>
@@ -1041,8 +1041,8 @@ export default function TaskChatInterface({
                 background: recording ? '#fee2e2' : '#f8fafc',
                 border: recording ? '1.5px solid #fca5a5' : '1px solid #e2e8f0',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              {transcribing ? <Loader2 size={16} className="animate-spin" color="#94a3b8" />
-                : recording ? <MicOff size={16} color="#dc2626" /> : <Mic size={16} color="#64748b" />}
+              {transcribing ? <Loader2 size={16} className="animate-spin" color="var(--text-3)" />
+                : recording ? <MicOff size={16} color="#dc2626" /> : <Mic size={16} color="var(--text-2)" />}
             </button>
           )}
         </div>
@@ -1056,8 +1056,8 @@ export default function TaskChatInterface({
           </div>
         )}
         {transcribing && (
-          <div style={{ marginTop: 6, padding: '4px 10px', background: '#eff6ff', borderRadius: 8,
-            display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#1a6fd4', fontWeight: 700 }}>
+          <div style={{ marginTop: 6, padding: '4px 10px', background: 'var(--brand-primary-light)', borderRadius: 8,
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--brand-btn-primary-bg, var(--brand-primary))', fontWeight: 700 }}>
             <Loader2 size={10} className="animate-spin" /> מתמלל...
           </div>
         )}

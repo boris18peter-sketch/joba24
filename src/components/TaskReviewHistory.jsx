@@ -11,7 +11,7 @@ function ReviewChips({ review, t }) {
   const chips = [
     review.arrived_on_time && { label: t('arrived_on_time'), color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
     review.professional && { label: t('professional'), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    review.good_communication && { label: t('good_communication'), color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+    review.good_communication && { label: t('good_communication'), color: 'var(--brand-primary)', bg: '#eff6ff', border: '#bfdbfe' },
     review.fair_pricing && { label: t('fair_pricing'), color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
     review.would_hire_again && { label: t('would_hire_again'), color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
   ].filter(Boolean);
@@ -42,7 +42,7 @@ function RoleBadge({ userId, task, t }) {
   const isClient = task.client_id === userId;
   if (!isWorker && !isClient) return null;
   const cfg = isWorker
-    ? { label: t('role_doer'), icon: Briefcase, color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' }
+    ? { label: t('role_doer'), icon: Briefcase, color: 'var(--brand-primary)', bg: '#eff6ff', border: '#bfdbfe' }
     : { label: t('role_poster'), icon: User, color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' };
   const Icon = cfg.icon;
   return (
@@ -132,9 +132,9 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
               style={{
                 flex: 1, height: 42, borderRadius: 12, fontSize: 12.5, fontWeight: 800,
                 border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
-                background: active ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-2)',
+                background: active ? 'linear-gradient(135deg,var(--brand-primary),#0a52b0)' : 'var(--surface-2)',
                 color: active ? 'white' : 'var(--text-2)',
-                borderColor: active ? '#1a6fd4' : 'var(--border-1)',
+                borderColor: active ? 'var(--brand-primary)' : 'var(--border-1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : 'none',
               }}>

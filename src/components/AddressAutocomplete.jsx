@@ -222,7 +222,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
         />
         <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
           {loading
-            ? <Loader2 size={16} color="#1a6fd4" className="animate-spin" />
+            ? <Loader2 size={16} color="var(--brand-input-focus, var(--brand-primary))" className="animate-spin" />
             : confirmed
               ? <CheckCircle size={16} color="#16a34a" />
               : <MapPin size={16} color={error ? '#ef4444' : '#9ca3af'} />
@@ -258,23 +258,23 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
                 onMouseDown={(e) => { e.preventDefault(); locateMe(); }}
                 style={{
                   width: '100%', textAlign: 'right', padding: '12px 14px',
-                  background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: 'none',
-                  cursor: 'pointer', borderBottom: '1px solid #bfdbfe',
+                  background: 'linear-gradient(135deg,var(--brand-primary-light),var(--brand-primary-light))', border: 'none',
+                  cursor: 'pointer', borderBottom: '1px solid var(--border-2)',
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}
               >
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: '#1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--brand-input-focus, var(--brand-primary))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {locating ? <Loader2 size={15} color="white" className="animate-spin" /> : <Locate size={15} color="white" />}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#1a6fd4' }}>{locating ? 'מאתר מיקום...' : 'השתמש במיקום הנוכחי שלי'}</div>
-                  <div style={{ fontSize: 10.5, color: '#3b82f6', marginTop: 1 }}>מילוי אוטומטי לפי ה-GPS</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-input-focus, var(--brand-primary))' }}>{locating ? 'מאתר מיקום...' : 'השתמש במיקום הנוכחי שלי'}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--brand-primary)', marginTop: 1 }}>מילוי אוטומטי לפי ה-GPS</div>
                 </div>
               </button>
 
               {recent.length > 0 && (
                 <>
-                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.3 }}>כתובות אחרונות</div>
+                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>כתובות אחרונות</div>
                   {recent.map((addr, i) => (
                     <button
                       key={i}
@@ -319,7 +319,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
                 onMouseEnter={e => e.currentTarget.style.background = '#f0f7ff'}
                 onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                <MapPin size={14} color={inUserCity ? '#16a34a' : '#1a6fd4'} style={{ flexShrink: 0, marginTop: 2 }} />
+                <MapPin size={14} color={inUserCity ? '#16a34a' : 'var(--brand-input-focus, var(--brand-primary))'} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{label}</div>
                   <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>

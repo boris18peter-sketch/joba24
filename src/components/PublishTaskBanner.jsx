@@ -18,7 +18,7 @@ export default function PublishTaskBanner() {
       {/* Main banner card */}
       <div style={{
         width: '100%',
-        background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+        background: 'linear-gradient(135deg, var(--brand-banner-bg, #eff6ff), var(--brand-banner-bg-2, #dbeafe))',
         border: '1.5px solid #93c5fd',
         borderRadius: 24,
         padding: '28px 20px 24px',
@@ -26,10 +26,10 @@ export default function PublishTaskBanner() {
         boxShadow: '0 4px 20px rgba(26,111,212,0.1)'
       }}>
         
-        <div style={{ fontSize: 20, fontWeight: 900, color: '#0f2b6b', marginBottom: 8, lineHeight: 1.3 }}>
+        <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-banner-text, #0f2b6b)', marginBottom: 8, lineHeight: 1.3 }}>
           צריכים עזרה?
         </div>
-        <div style={{ fontSize: 14, color: '#1e40af', lineHeight: 1.7, marginBottom: 24, fontWeight: 500 }}>
+        <div style={{ fontSize: 14, color: 'var(--brand-banner-text, #1e40af)', lineHeight: 1.7, marginBottom: 24, fontWeight: 500 }}>
           פרסמו משימה תוך דקה בחינם<br />
           וקבלו בקשות מעובדים מתאימים<br />
           באזור שלכם.
@@ -39,8 +39,8 @@ export default function PublishTaskBanner() {
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             height: 52, paddingInline: 32, borderRadius: 16,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-            color: 'white', fontWeight: 900, fontSize: 16,
+            background: 'linear-gradient(135deg, var(--brand-banner-cta-bg, #1a6fd4), var(--brand-banner-cta-bg, #0a52b0))',
+            color: 'var(--brand-banner-cta-text, white)', fontWeight: 900, fontSize: 16,
             border: 'none', cursor: 'pointer',
             boxShadow: '0 6px 20px rgba(26,111,212,0.4)'
           }}>

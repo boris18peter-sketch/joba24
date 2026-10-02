@@ -66,10 +66,10 @@ function TaskInfoPopup({ task, onClose }) {
       <div dir="rtl" style={{ background: 'var(--surface-1)', borderRadius: '24px 24px 0 0', width: '100%', maxHeight: '85dvh', overflowY: 'auto', padding: '20px 16px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 16px' }} />
         <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>{task.title}</div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: '#1a6fd4', marginBottom: 16 }}>₪{task.price}</div>
+        <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--brand-primary)', marginBottom: 16 }}>₪{task.price}</div>
         <TaskDetailsRows task={task} compact={false} />
         <button onClick={() => { onClose(); openTaskSheet(task.id); }}
-          style={{ marginTop: 16, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
+          style={{ marginTop: 16, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
           פתח דף המשימה המלא
         </button>
       </div>
@@ -301,9 +301,9 @@ export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
         {/* Right: Avatar + back button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 10, background: 'white', border: '1.5px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a6fd4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-primary),#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}
             onClick={() => { if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`); }}>
             {otherUserData?.profile_photo
               ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -329,7 +329,7 @@ export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
         {/* Left: Task info button */}
         <button
           onClick={() => setShowTaskInfo(true)}
-          style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+          style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: 'var(--brand-primary)', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
         >
           <Info size={14} /> פרטי משימה
         </button>
@@ -365,7 +365,7 @@ export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
               }}
             >
               {!isMe && !isContinuation && (
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, marginBottom: 2, color: 'white', fontWeight: 700, overflow: 'hidden' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-primary),#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, marginBottom: 2, color: 'white', fontWeight: 700, overflow: 'hidden' }}>
                   {otherUserData?.profile_photo
                     ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : msg.sender_name?.[0] || '?'}
@@ -443,7 +443,7 @@ export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
           disabled={uploading || recording || uploadingVoice}
           style={{ width: 40, height: 40, borderRadius: 12, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
-          {uploading ? <Loader2 size={16} color="#1a6fd4" className="animate-spin" /> : <Image size={16} color="#64748b" />}
+          {uploading ? <Loader2 size={16} color="var(--brand-primary)" className="animate-spin" /> : <Image size={16} color="#64748b" />}
         </button>
         <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
 
@@ -487,7 +487,7 @@ export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
         {/* Mic / Send / Stop recording — identical to Chat.jsx */}
         {uploadingVoice ? (
           <button disabled style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: '#e2e8f0', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'not-allowed' }}>
-            <Loader2 size={16} color="#1a6fd4" className="animate-spin" />
+            <Loader2 size={16} color="var(--brand-primary)" className="animate-spin" />
           </button>
         ) : recording ? (
           <button
@@ -508,7 +508,7 @@ export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
             disabled={sending}
             style={{
               width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-              background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', border: 'none',
+              background: 'linear-gradient(135deg,var(--brand-primary),#3b82f6)', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
               boxShadow: '0 4px 12px rgba(26,111,212,0.3)',

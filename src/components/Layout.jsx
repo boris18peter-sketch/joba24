@@ -483,11 +483,11 @@ export default function Layout() {
       );
     }
     if (!effectiveGuest) {
-      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
+      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="var(--brand-nav-active, var(--brand-primary))" className="animate-spin" /></div>;
     }
     // Guest: only home is allowed. If not on home yet, wait for the redirect to fire.
     if (location.pathname !== '/') {
-      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
+      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="var(--brand-nav-active, var(--brand-primary))" className="animate-spin" /></div>;
     }
     // Guest on home: fall through to the full layout (feed browsing only)
   }
@@ -607,7 +607,7 @@ export default function Layout() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button onClick={() => setCancelWarningTask(null)}
-                style={{ width: '100%', height: 56, borderRadius: 'var(--r-md)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
+                style={{ width: '100%', height: 56, borderRadius: 'var(--r-md)', background: 'linear-gradient(135deg,var(--brand-nav-active, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
                 {t('keep_task_btn')}
               </button>
               <button
@@ -667,7 +667,7 @@ export default function Layout() {
                         <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
                           {tabPath === '/chats' ? t('login_required_chats') : t('login_required_profile')}
                         </div>
-                        <button onClick={login} style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
+                        <button onClick={login} style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,var(--brand-nav-active, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
                           {t('login_now')}
                         </button>
                       </div>
@@ -706,22 +706,22 @@ export default function Layout() {
                 return (
                   <button id="onboarding-create-btn" key={to} onClick={() => { if (effectiveGuest) { login(); return; } if (!isAuthenticated) { navigate(to); return; } navigate(to); }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent', justifySelf: 'center' }}>
-                    <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-nav-active, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
                       <Icon size={24} color="white" />
                     </div>
-                    <span style={{ fontSize: 9.5, color: '#1a6fd4', marginTop: 3, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
+                    <span style={{ fontSize: 9.5, color: 'var(--brand-nav-active, var(--brand-primary))', marginTop: 3, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
                   </button>
                 );
               }
               return (
                 <Link key={to} to={to} onClick={(e) => { if (effectiveGuest && to !== '/') { e.preventDefault(); login(); return; } if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={21} color={active ? '#1a6fd4' : '#9bb3d4'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
+                    <Icon size={21} color={active ? 'var(--brand-nav-active, var(--brand-primary))' : 'var(--brand-nav-text, #9bb3d4)'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
                     {badge > 0 && (
                       <div style={{ position: 'absolute', top: -5, right: -10, background: '#dc2626', color: 'white', fontSize: 9, fontWeight: 900, minWidth: 17, height: 17, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white', padding: '0 4px' }}>{badge}</div>
                     )}
                   </div>
-                  <span style={{ fontSize: 9.5, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500, transition: 'color 0.2s' }}>{label}</span>
+                  <span style={{ fontSize: 9.5, color: active ? 'var(--brand-nav-active, var(--brand-primary))' : 'var(--brand-nav-text, var(--text-3))', fontWeight: active ? 700 : 500, transition: 'color 0.2s' }}>{label}</span>
                 </Link>
               );
             })}

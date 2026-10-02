@@ -89,7 +89,7 @@ export default function HomeBannersCarousel({ me: meProp }) {
                 width: i === safeIdx ? 16 : 5,
                 height: 5,
                 borderRadius: 99,
-                background: i === safeIdx ? '#1a6fd4' : 'var(--border-2)',
+                background: i === safeIdx ? 'var(--brand-primary)' : 'var(--border-2)',
                 transition: 'all 0.28s ease',
                 display: 'inline-block',
               }} />
