@@ -335,34 +335,15 @@
     },
     "category": {
       "type": "string",
-      "enum": [
-        "plumbing",
-        "electricity",
-        "handyman",
-        "cleaning",
-        "moving",
-        "heavy_lifting",
-        "painting",
-        "carpentry",
-        "ac",
-        "locksmith",
-        "gardening",
-        "home_maintenance",
-        "car",
-        "transportation",
-        "delivery",
-        "shopping",
-        "pets",
-        "babysitting",
-        "elderly_care",
-        "tutoring",
-        "fitness",
-        "photography",
-        "events",
-        "personal_help",
-        "it_support",
-        "other"
-      ]
+      "description": "Canonical GlobalCategory.category_key of the actionable service, validated by the server. Never mapped to Other for a child service."
+    },
+    "category_id": {
+      "type": "string",
+      "description": "Canonical GlobalCategory.id of the actionable service."
+    },
+    "parent_category_key": {
+      "type": "string",
+      "description": "Global parent/niche context only, not the actionable service or a task visibility rule."
     },
     "worker_confirmed": {
       "type": "boolean",
@@ -419,7 +400,9 @@
       ]
     },
     "create": {
-      "data.client_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "update": {
       "$or": [
