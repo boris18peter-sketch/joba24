@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 
 /**
@@ -24,6 +25,11 @@ export function globalFormFields(row) {
 }
 
 export function useGlobalCategories() {
+  const cache = useQueryClient();
+  useEffect(() => base44.entities.GlobalCategory.subscribe(() => {
+    cache.invalidateQueries({ queryKey: ['globalCategories'] });
+    cache.invalidateQueries({ queryKey: ['brandDashboard'] });
+  }), [cache]);
   const { data, isLoading } = useQuery({
     queryKey: ['globalCategories'],
     queryFn: fetchGlobalCategories,
