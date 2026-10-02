@@ -14,7 +14,7 @@
 
 export const TOKEN_GROUPS = [
   {
-    id: 'core', title: 'ליבה', hint: 'הצבעים והמשטחים הבסיסיים של המותג.',
+    id: 'core', title: 'בסיס', hint: 'הצבעים והמשטחים הבסיסיים של המותג.',
     tokens: [
       { key: 'primary', type: 'color', label: 'צבע ראשי' },
       { key: 'primary_dark', type: 'color', label: 'ראשי כהה' },
@@ -22,19 +22,32 @@ export const TOKEN_GROUPS = [
       { key: 'accent', type: 'color', label: 'צבע הדגשה' },
       { key: 'background', type: 'color', label: 'רקע עמוד' },
       { key: 'surface', type: 'color', label: 'משטח / כרטיס' },
+      { key: 'surface_elevated', type: 'color', label: 'משטח מוגבה' },
       { key: 'surface_alt', type: 'color', label: 'משטח משני' },
       { key: 'text_primary', type: 'color', label: 'טקסט ראשי' },
       { key: 'text_secondary', type: 'color', label: 'טקסט משני' },
+      { key: 'text_muted', type: 'color', label: 'טקסט עמום' },
       { key: 'border', type: 'color', label: 'גבול' },
+      { key: 'divider', type: 'color', label: 'קו מפריד' },
     ],
   },
   {
-    id: 'buttons', title: 'כפתורים', hint: 'כפתור ראשי, משני ורדיוס.',
+    id: 'status', title: 'צבעי מערכת', hint: 'הצלחה, אזהרה ושגיאה — משפיעים על תגיות וסטטוסים.',
+    tokens: [
+      { key: 'success', type: 'color', label: 'הצלחה' },
+      { key: 'warning', type: 'color', label: 'אזהרה' },
+      { key: 'error', type: 'color', label: 'שגיאה' },
+    ],
+  },
+  {
+    id: 'buttons', title: 'כפתורים', hint: 'כפתור ראשי, משני, מצב מושבת ורדיוס.',
     tokens: [
       { key: 'button_primary_bg', type: 'color', label: 'רקע כפתור ראשי' },
       { key: 'button_primary_text', type: 'color', label: 'טקסט כפתור ראשי' },
       { key: 'button_secondary_bg', type: 'color', label: 'רקע כפתור משני' },
       { key: 'button_secondary_text', type: 'color', label: 'טקסט כפתור משני' },
+      { key: 'button_disabled_bg', type: 'color', label: 'רקע כפתור מושבת' },
+      { key: 'button_disabled_text', type: 'color', label: 'טקסט כפתור מושבת' },
       { key: 'button_radius', type: 'number', label: 'רדיוס כפתור', unit: 'px' },
     ],
   },
@@ -48,36 +61,56 @@ export const TOKEN_GROUPS = [
     ],
   },
   {
-    id: 'inputs', title: 'שדות קלט', hint: 'רקע, גבול, מיקוד ורדיוס.',
+    id: 'inputs', title: 'שדות קלט', hint: 'רקע, גבול, מיקוד, טקסט ורדיוס.',
     tokens: [
       { key: 'input_bg', type: 'color', label: 'רקע שדה' },
       { key: 'input_border', type: 'color', label: 'גבול שדה' },
       { key: 'input_focus', type: 'color', label: 'צבע מיקוד' },
+      { key: 'input_text', type: 'color', label: 'טקסט בשדה' },
+      { key: 'input_placeholder', type: 'color', label: 'טקסט מציין מקום' },
       { key: 'input_radius', type: 'number', label: 'רדיוס שדה', unit: 'px' },
     ],
   },
   {
-    id: 'modals', title: 'חלונות ופופ-אפים', hint: 'משטח, רעלה ורדיוס.',
+    id: 'modals', title: 'חלונות ופופ-אפים', hint: 'משטח, גבול, כותרת, טקסט, רעלה ורדיוס.',
     tokens: [
       { key: 'modal_bg', type: 'color', label: 'רקע חלון' },
+      { key: 'modal_border', type: 'color', label: 'גבול חלון' },
+      { key: 'modal_title', type: 'color', label: 'כותרת בחלון' },
+      { key: 'modal_text', type: 'color', label: 'טקסט בחלון' },
       { key: 'modal_radius', type: 'number', label: 'רדיוס חלון', unit: 'px' },
       { key: 'overlay', type: 'color', label: 'צבע רעלה' },
     ],
   },
   {
-    id: 'banners', title: 'באנרים', hint: 'רקע, טקסט והדגשה.',
+    id: 'banners', title: 'באנרים', hint: 'רקע (עם מעבר גרדיאנט), טקסט, הדגשה וכפתור.',
     tokens: [
       { key: 'banner_bg', type: 'color', label: 'רקע באנר' },
+      { key: 'banner_bg_2', type: 'color', label: 'רקע באנר (סיום גרדיאנט)' },
       { key: 'banner_text', type: 'color', label: 'טקסט באנר' },
       { key: 'banner_accent', type: 'color', label: 'הדגשת באנר' },
+      { key: 'banner_cta_bg', type: 'color', label: 'רקע כפתור בבאנר' },
+      { key: 'banner_cta_text', type: 'color', label: 'טקסט כפתור בבאנר' },
     ],
   },
   {
-    id: 'header', title: 'כותרת וניווט', hint: 'רקע, טקסט ומצב פעיל.',
+    id: 'header', title: 'כותרת וניווט', hint: 'רקע וטקסט לכותרת, לרקע הניווט ולמצב הפעיל.',
     tokens: [
       { key: 'header_bg', type: 'color', label: 'רקע כותרת' },
       { key: 'header_text', type: 'color', label: 'טקסט כותרת' },
-      { key: 'header_active', type: 'color', label: 'מצב פעיל' },
+      { key: 'header_active', type: 'color', label: 'מצב פעיל בכותרת' },
+      { key: 'nav_bg', type: 'color', label: 'רקע ניווט' },
+      { key: 'nav_text', type: 'color', label: 'טקסט ניווט' },
+      { key: 'nav_active', type: 'color', label: 'מצב פעיל בניווט' },
+    ],
+  },
+  {
+    id: 'badges', title: 'תגיות וסטטוסים', hint: 'תגית רגילה ותגית פעילה/מאושרת.',
+    tokens: [
+      { key: 'status_bg', type: 'color', label: 'רקע תגית' },
+      { key: 'status_text', type: 'color', label: 'טקסט תגית' },
+      { key: 'status_active_bg', type: 'color', label: 'רקע תגית פעילה' },
+      { key: 'status_active_text', type: 'color', label: 'טקסט תגית פעילה' },
     ],
   },
 ];
@@ -92,14 +125,22 @@ export const TOKEN_DEFAULTS = {
   accent: '#fbbf24',
   background: '#f2f5fb',
   surface: '#ffffff',
+  surface_elevated: '#ffffff',
   surface_alt: '#eef3fc',
   text_primary: '#0d1e40',
   text_secondary: '#4b6083',
+  text_muted: '#94a3b8',
   border: '#e4eaf5',
+  divider: '#e4eaf5',
+  success: '#059669',
+  warning: '#d97706',
+  error: '#dc2626',
   button_primary_bg: '#1a6fd4',
   button_primary_text: '#ffffff',
   button_secondary_bg: '#eef3fc',
   button_secondary_text: '#4b6083',
+  button_disabled_bg: '#e2e8f0',
+  button_disabled_text: '#94a3b8',
   button_radius: 14,
   card_bg: '#ffffff',
   card_border: '#e4eaf5',
@@ -108,16 +149,31 @@ export const TOKEN_DEFAULTS = {
   input_bg: '#f2f5fb',
   input_border: '#e4eaf5',
   input_focus: '#1a6fd4',
+  input_text: '#0d1e40',
+  input_placeholder: '#94a3b8',
   input_radius: 14,
   modal_bg: '#ffffff',
+  modal_border: '#e4eaf5',
+  modal_title: '#0d1e40',
+  modal_text: '#4b6083',
   modal_radius: 28,
   overlay: 'rgba(5,15,40,0.6)',
   banner_bg: '#0f2b6b',
+  banner_bg_2: '#1a6fd4',
   banner_text: '#ffffff',
   banner_accent: '#fbbf24',
+  banner_cta_bg: '#fbbf24',
+  banner_cta_text: '#1a3a6b',
   header_bg: 'rgba(248,250,254,0.96)',
   header_text: '#0d1e40',
   header_active: '#1a6fd4',
+  nav_bg: '#ffffff',
+  nav_text: '#4b6083',
+  nav_active: '#1a6fd4',
+  status_bg: '#eef3fc',
+  status_text: '#4b6083',
+  status_active_bg: '#dcfce7',
+  status_active_text: '#166534',
 };
 
 export const SHADOW_PRESETS = {
@@ -205,8 +261,23 @@ export function themeToCssVars(theme) {
     '--surface-4': t.surface_alt,
     '--text-1': t.text_primary,
     '--text-2': t.text_secondary,
+    '--text-3': t.text_muted,
     '--border-1': t.border,
-    '--border-2': t.border,
+    '--border-2': t.divider,
+
+    '--brand-surface-elevated': t.surface_elevated,
+    '--brand-text-muted': t.text_muted,
+    '--brand-divider': t.divider,
+    '--brand-success': t.success,
+    '--brand-warning': t.warning,
+    '--brand-error': t.error,
+    '--brand-nav-bg': t.nav_bg,
+    '--brand-nav-text': t.nav_text,
+    '--brand-nav-active': t.nav_active,
+    '--brand-status-bg': t.status_bg,
+    '--brand-status-text': t.status_text,
+    '--brand-status-active-bg': t.status_active_bg,
+    '--brand-status-active-text': t.status_active_text,
 
     '--card-bg': t.card_bg,
     '--sheet-bg': t.surface,
@@ -220,6 +291,8 @@ export function themeToCssVars(theme) {
     '--brand-btn-primary-text': t.button_primary_text,
     '--brand-btn-secondary-bg': t.button_secondary_bg,
     '--brand-btn-secondary-text': t.button_secondary_text,
+    '--brand-btn-disabled-bg': t.button_disabled_bg,
+    '--brand-btn-disabled-text': t.button_disabled_text,
     '--brand-btn-radius': `${t.button_radius}px`,
 
     '--brand-card-bg': t.card_bg,
@@ -230,14 +303,22 @@ export function themeToCssVars(theme) {
     '--brand-input-bg': t.input_bg,
     '--brand-input-border': t.input_border,
     '--brand-input-focus': t.input_focus,
+    '--brand-input-text': t.input_text,
+    '--brand-input-placeholder': t.input_placeholder,
     '--brand-input-radius': `${t.input_radius}px`,
 
     '--brand-modal-bg': t.modal_bg,
+    '--brand-modal-border': t.modal_border,
+    '--brand-modal-title': t.modal_title,
+    '--brand-modal-text': t.modal_text,
     '--brand-modal-radius': `${t.modal_radius}px`,
 
     '--brand-banner-bg': t.banner_bg,
+    '--brand-banner-bg-2': t.banner_bg_2,
     '--brand-banner-text': t.banner_text,
     '--brand-banner-accent': t.banner_accent,
+    '--brand-banner-cta-bg': t.banner_cta_bg,
+    '--brand-banner-cta-text': t.banner_cta_text,
 
     '--brand-header-bg': t.header_bg,
     '--brand-header-text': t.header_text,
@@ -268,6 +349,12 @@ export function themeToCssVars(theme) {
     vars['--border'] = borderHsl;
     vars['--input'] = borderHsl;
   }
+
+  // System colours follow the Brand's own success / warning / error tokens, so
+  // every status chip, badge and semantic surface re-themes with them.
+  vars['--color-success'] = t.success;
+  vars['--color-warning'] = t.warning;
+  vars['--color-danger'] = t.error;
 
   return vars;
 }

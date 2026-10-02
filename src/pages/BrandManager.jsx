@@ -24,10 +24,11 @@ import { fetchGlobalCategories } from '@/lib/brand/globalCategories';
 
 const TABS = [
   ['overview', 'סקירה'],
+  ['identity', 'זהות'],
   ['design', 'מערכת עיצוב'],
-  ['domains', 'דומיינים'],
   ['categories', 'קטגוריות'],
-  ['marketplace', 'הגדרות שוק'],
+  ['marketplace', 'שוק'],
+  ['domains', 'דומיינים'],
   ['dashboard', 'דשבורד'],
   ['danger', 'אזור מסוכן'],
 ];
@@ -183,7 +184,8 @@ export default function BrandManager() {
         </div>
       </div>
 
-      {tab === 'overview' && <BrandGeneralTab brand={brand} config={config} onSaved={onSaved} />}
+      {tab === 'overview' && <BrandDashboardTab brand={brand} />}
+      {tab === 'identity' && <BrandGeneralTab brand={brand} config={config} onSaved={onSaved} />}
       {tab === 'design' && <BrandDesignTab brand={brand} config={config} onSaved={onSaved} />}
       {tab === 'domains' && <BrandDomainsTab brand={brand} domains={domains} />}
       {tab === 'categories' && (

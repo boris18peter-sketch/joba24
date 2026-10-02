@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, ChevronLeft, Briefcase, User, MessageSquare } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
+import { brandContextCategoryLabel } from '@/lib/brand/professionalScope';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
@@ -66,7 +67,7 @@ function Stars({ rating, size = 14 }) {
  * clear tabs so the viewer can tell what they performed (as worker) vs what
  * they posted (as client), and the reviews received in each role.
  */
-export default function TaskReviewHistory({ tasks = [], reviews = [], userId, clickable = true, onTaskClick, hidePrices = false }) {
+export default function TaskReviewHistory({ tasks = [], reviews = [], userId, clickable = true, onTaskClick, hidePrices = false, scope = null }) {
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const [tab, setTab] = useState('worker'); // 'worker' | 'client'
@@ -188,7 +189,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
                     {item.task.category && (
                       <span style={{ fontSize: 11, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 8, padding: '2px 8px', fontWeight: 600 }}>
-                        {getCategoryLabel(item.task.category, t)}
+                        {brandContextCategoryLabel(item.task.category, scope, t)}
                       </span>
                     )}
                     {item.task.price > 0 && !hidePrices && (
@@ -235,6 +236,11 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
                     <MessageSquare size={10} /> {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')} · {formatDate(item.review.created_date, t, lang)}
                   </span>
                 </div>
+                {item.review.task_category && (
+                  <span style={{ fontSize: 11, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 8, padding: '2px 8px', fontWeight: 600, display: 'inline-block', marginBottom: 6 }}>
+                    {brandContextCategoryLabel(item.review.task_category, scope, t)}
+                  </span>
+                )}
                 {item.review.comment && (
                   <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
                     "{item.review.comment}"

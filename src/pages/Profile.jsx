@@ -18,6 +18,7 @@ import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
+import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
 import { computeLockedJobas } from '@/lib/jobaBalance';
 import { calculateTrustScore } from '@/lib/trustScore';
@@ -61,6 +62,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { t, isRTL, lang } = useLanguage();
   const { user: authUser, refreshUser, logout } = useAuth();
+  const scope = useProfessionalScope();
   const { openTaskSheet } = useTaskSheet();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
@@ -143,7 +145,9 @@ export default function Profile() {
   const avgRating = rating > 0 ? rating.toFixed(1) : '—';
   const initials = me?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   const cities = me?.preferred_cities || [];
-  const categories = me?.preferred_categories || [];
+  // Visibility only — the user's global categories are never modified, and a
+  // category outside this Brand's scope stays stored and simply is not shown.
+  const categories = scope.filter(me?.preferred_categories || []);
   const verified = isUserVerified(me);
   const social = hasSocialVerified(me);
   const trustScore = calculateTrustScore(me, { tasks: workerTasks, reviews });
@@ -248,8 +252,8 @@ export default function Profile() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
-                  {getCategoryLabel(c, t)}
+                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, #eff6ff)', color: 'var(--brand-primary, #1a6fd4)', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, #bfdbfe)' }}>
+                  {scope.label(c, t)}
                 </span>
               ))}
             </div>
@@ -326,7 +330,7 @@ export default function Profile() {
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
-              <TaskReviewHistory tasks={[...workerTasks, ...postedTasks]} reviews={reviews} userId={me.id} onTaskClick={openTaskSheet} />
+              <TaskReviewHistory tasks={[...workerTasks, ...postedTasks]} reviews={reviews} userId={me.id} onTaskClick={openTaskSheet} scope={scope} />
             </div>
           </div>
         </div>,

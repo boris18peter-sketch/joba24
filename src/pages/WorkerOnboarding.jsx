@@ -9,6 +9,8 @@ import {
   MapPin, FileText, Phone, Tag
 } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { useProfessionalScope } from '@/lib/brand/professionalScope';
+import { BrandLogo, BrandName, useBrandIdentity, useBrandText } from '@/components/BrandIdentity';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCityLabel } from '@/lib/cityLabels';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -38,6 +40,11 @@ export default function WorkerOnboarding() {
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoadingAuth, enterGuestMode } = useAuth();
   const { t, isRTL, lang } = useLanguage();
+  // Onboarding offers only the services the current Brand provides — a
+  // specialised Brand never exposes the whole Joba24 category universe.
+  const scope = useProfessionalScope();
+  const identity = useBrandIdentity();
+  const brandText = useBrandText();
   const STEPS = getSteps(t);
   const [showLogin, setShowLogin] = useState(false);
   const [step, setStep] = useState(-1); // -1 = welcome, 0..N-1 = steps, N = done
@@ -229,10 +236,10 @@ export default function WorkerOnboarding() {
         {/* Top — Brand */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1, flexShrink: 0 }}>
           <div style={{ width: 88, height: 88, borderRadius: 24, overflow: 'hidden', marginBottom: 20, border: '2px solid rgba(255,255,255,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}>
-            <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.7)', letterSpacing: 5, textTransform: 'uppercase' }}>
-            Joba24
+            <BrandName />
           </div>
         </div>
 
@@ -242,7 +249,7 @@ export default function WorkerOnboarding() {
             {t('wo_hero_title')}
           </h1>
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380 }}>
-            {t('wo_hero_body')}
+            {brandText(t('wo_hero_body'))}
           </p>
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.95)', margin: 0, lineHeight: 1.6, maxWidth: 380, fontWeight: 700 }}>
             {t('wo_hero_body2')}
@@ -250,7 +257,7 @@ export default function WorkerOnboarding() {
           <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '10px 24px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
               <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 900 }}>{regCount.toLocaleString()}</span>
-              <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700 }}>כבר הצטרפו ל-Joba24</span>
+              <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700 }}>{`כבר הצטרפו ל-${identity.name}`}</span>
             </span>
           </div>
         </div>
@@ -589,24 +596,26 @@ export default function WorkerOnboarding() {
 
               {currentStep.type === 'chips' && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {CATEGORIES.map(cat => {
-                    const active = (data.preferred_categories || []).includes(cat.value);
+                  {/* Only the services this Brand offers. A category the user
+                      already has outside this scope stays stored globally. */}
+                  {scope.services.map(cat => {
+                    const active = (data.preferred_categories || []).includes(cat.category_key);
                     return (
                       <button
-                        key={cat.value}
-                        onClick={() => toggleCategory(cat.value)}
+                        key={cat.category_key}
+                        onClick={() => toggleCategory(cat.category_key)}
                         style={{
                           padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
                           fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-                          background: active ? '#1a6fd4' : 'var(--surface-2)',
+                          background: active ? 'var(--brand-primary, #1a6fd4)' : 'var(--surface-2)',
                           color: active ? 'white' : 'var(--text-2)',
-                          border: `1.5px solid ${active ? '#1a6fd4' : 'var(--border-1)'}`,
+                          border: `1.5px solid ${active ? 'var(--brand-primary, #1a6fd4)' : 'var(--border-1)'}`,
                           boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
                           transition: 'all 0.15s',
                           minHeight: 'unset',
                         }}
                       >
-                        {active && '✓ '}{getCategoryLabel(cat.value, t)}
+                        {active && '✓ '}{cat.label}
                       </button>
                     );
                   })}

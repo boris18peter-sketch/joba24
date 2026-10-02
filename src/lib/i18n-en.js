@@ -954,6 +954,7 @@ export const en = {
     faq_sub: 'Everything you wanted to know about Joba24 — accurate and up to date',
     faq_contact: "Didn't find an answer? 📩 Contact our support",
     faq_cat_general: '📋 General',
+    category_general: 'General',
     faq_cat_publish: '📝 Posting',
     faq_cat_worker: '🔨 Workers',
     faq_cat_credits: '🪙 Jobas',

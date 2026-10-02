@@ -9,6 +9,7 @@ import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useBrandIdentity } from '@/components/BrandIdentity';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
   return (
@@ -258,6 +259,7 @@ function EmailForm({ onBack, onSuccess }) {
 }
 
 function WaitingForAuthScreen({ onCancel, loginUrl }) {
+  const { name: brandName } = useBrandIdentity();
   const [showManual, setShowManual] = useState(false);
   // Poll the server handshake directly from the modal. NativeAuthListener also
   // polls, but its event listeners (browserFinished / appStateChange) do not
@@ -290,7 +292,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
       <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} />
-      <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>מתחבר ל-Joba24...</div>
+      <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{`מתחבר ל-${brandName}...`}</div>
       <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
         סיים את ההתחברות בדפדפן. האפליקציה תזהה את ההתחברות אוטומטית ותחזור אליך.
       </div>

@@ -12,6 +12,7 @@ import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import { getCategoryLabel } from '@/lib/categories';
+import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
 import { calculateTrustScore } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
@@ -20,6 +21,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 export default function PublicProfile() {
   const navigate = useNavigate();
   const { t, isRTL, lang } = useLanguage();
+  const scope = useProfessionalScope();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get('id');
   const taskId = searchParams.get('taskId');
@@ -79,7 +81,10 @@ export default function PublicProfile() {
   const trustScore = calculateTrustScore(liveUser, { reviews });
 
   const cities = user.preferred_cities || [];
-  const categories = user.preferred_categories || [];
+  // Professional scope of the CURRENT Brand. The user's categories are global;
+  // this Brand only ever presents the ones it offers. Joba24 is broad and shows
+  // all of them.
+  const categories = scope.filter(user.preferred_categories || []);
   const initials = user.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
   return (
@@ -188,8 +193,8 @@ export default function PublicProfile() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
-                  {getCategoryLabel(c, t)}
+                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, #eff6ff)', color: 'var(--brand-primary, #1a6fd4)', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, #bfdbfe)' }}>
+                  {scope.label(c, t)}
                 </span>
               ))}
             </div>
@@ -309,7 +314,7 @@ export default function PublicProfile() {
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir={isRTL ? 'rtl' : 'ltr'}>
-              <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={reviews} userId={userId} clickable={false} hidePrices />
+              <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={reviews} userId={userId} clickable={false} hidePrices scope={scope} />
             </div>
           </div>
         </div>,

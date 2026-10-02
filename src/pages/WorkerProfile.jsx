@@ -9,7 +9,8 @@ import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { getCategoryLabel } from '@/lib/categories';
+import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCityLabel } from '@/lib/cityLabels';
 import { toast } from 'sonner';
@@ -56,6 +57,9 @@ export default function WorkerProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t, isRTL, lang } = useLanguage();
+  // The Brand's professional scope. Editing a profile offers only the services
+  // this Brand provides; viewing someone shows only the in-scope ones.
+  const scope = useProfessionalScope();
   const { refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const viewUserId = searchParams.get('id');
@@ -135,6 +139,10 @@ export default function WorkerProfile() {
 
   const removeCertDoc = (url) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).filter(c => c.url !== url) }));
   const updateCertDocName = (url, name) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).map(c => c.url === url ? { ...c, name } : c) }));
+
+  const categoryOptions = isViewingOther
+    ? scope.filter(currentUser?.preferred_categories || []).map(k => ({ value: k, label: scope.label(k, t) }))
+    : scope.services.map(s => ({ value: s.category_key, label: s.label }));
 
   if (currentUser && !form) {
     setForm({
@@ -369,7 +377,9 @@ export default function WorkerProfile() {
         {/* ── Categories ── */}
         <SectionCard title={t('wp_task_types')}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {CATEGORIES.map(c => {
+            {/* Only the categories this Brand offers. Editing here never removes
+                a global category the user already has outside this scope. */}
+            {categoryOptions.map(c => {
               const sel = form.preferred_categories.includes(c.value);
               return (
                 <button key={c.value}
@@ -377,11 +387,11 @@ export default function WorkerProfile() {
                   disabled={isViewingOther}
                   style={{
                     padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
-                    background: sel ? '#1a6fd4' : 'var(--surface-3)',
-                    color: sel ? 'white' : 'var(--text-2)',
-                    borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
+                    background: sel ? 'var(--brand-primary, #1a6fd4)' : 'var(--brand-status-bg, var(--surface-3))',
+                    color: sel ? 'white' : 'var(--brand-status-text, var(--text-2))',
+                    borderColor: sel ? 'var(--brand-primary, #1a6fd4)' : 'var(--border-1)',
                   }}
-                >{getCategoryLabel(c.value, t)}</button>
+                >{c.label}</button>
               );
             })}
           </div>

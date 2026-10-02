@@ -979,6 +979,7 @@ export const he = {
     faq_sub: 'כל מה שרצית לדעת על Joba24 — מדויק ומעודכן',
     faq_contact: 'לא מצאת תשובה? 📩 צור קשר עם התמיכה שלנו',
     faq_cat_general: '📋 כללי',
+    category_general: 'כללי',
     faq_cat_publish: '📝 פרסום',
     faq_cat_worker: '🔨 עובדים',
     faq_cat_credits: "🪙 ג'ובות",

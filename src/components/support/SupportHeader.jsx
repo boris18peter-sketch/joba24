@@ -1,9 +1,11 @@
 import { Headphones } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useBrandText } from '@/components/BrandIdentity';
 
 export default function SupportHeader() {
   const { t } = useLanguage();
+  const brandText = useBrandText();
 
   return (
     <div style={{
@@ -36,11 +38,11 @@ export default function SupportHeader() {
           fontSize: 15, fontWeight: 800, color: 'var(--text-1)',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {t('support_title')}
+          {brandText(t('support_title'))}
         </div>
         <div style={{ fontSize: 11.5, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-          {t('support_subtitle')}
+          {brandText(t('support_subtitle'))}
         </div>
       </div>
     </div>

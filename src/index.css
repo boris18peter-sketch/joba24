@@ -310,7 +310,8 @@
 .j-chip-green  { background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success-border); }
 .j-chip-amber  { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid var(--color-warning-border); }
 .j-chip-red    { background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger-border); }
-.j-chip-gray   { background: var(--surface-3); color: var(--text-2); border: 1px solid var(--border-1); }
+.j-chip-gray   { background: var(--brand-status-bg, var(--surface-3)); color: var(--brand-status-text, var(--text-2)); border: 1px solid var(--border-1); }
+.j-chip-active { background: var(--brand-status-active-bg, var(--color-success-bg)); color: var(--brand-status-active-text, var(--color-success)); border: 1px solid var(--color-success-border); }
 
 /* ── Sheets / Modals ── */
 .mobile-sheet {
@@ -355,15 +356,38 @@
   font-family: var(--font-inter); outline: none;
   transition: border-color 0.15s;
 }
+.j-input { color: var(--brand-input-text, var(--text-1)); }
+.j-input::placeholder { color: var(--brand-input-placeholder, var(--text-3)); opacity: 1; }
 .j-input:focus { border-color: var(--brand-input-focus, var(--brand-primary)); }
+
+/* ── Disabled controls — a Brand can theme the disabled state ── */
+.j-btn:disabled,
+.j-btn[disabled] {
+  background: var(--brand-btn-disabled-bg, var(--surface-3));
+  color: var(--brand-btn-disabled-text, var(--text-3));
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ── Modal / popup surface + typography ── */
+.j-modal-surface {
+  background: var(--brand-modal-bg, var(--sheet-bg));
+  border: 1px solid var(--brand-modal-border, var(--border-1));
+}
+.j-modal-title { color: var(--brand-modal-title, var(--text-1)); }
+.j-modal-text { color: var(--brand-modal-text, var(--text-2)); }
 
 /* ── Banners ── */
 .j-banner {
-  background: var(--brand-banner-bg, var(--brand-primary-dark));
+  background: linear-gradient(135deg, var(--brand-banner-bg, var(--brand-primary-dark)), var(--brand-banner-bg-2, var(--brand-primary)));
   color: var(--brand-banner-text, #ffffff);
   border-radius: var(--brand-card-radius, var(--r-lg));
 }
 .j-banner-accent { color: var(--brand-banner-accent, var(--brand-accent)); }
+.j-banner-cta {
+  background: var(--brand-banner-cta-bg, var(--brand-accent));
+  color: var(--brand-banner-cta-text, #1a3a6b);
+}
 
 /* ── Z-Index Hierarchy ── */
 /* Bottom nav: 30 | Sticky headers: 49-50 | Sheets/Modals: 9999+ | Portals: 99999+ */

@@ -10,6 +10,7 @@ import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import NewUserSimulator from '@/components/NewUserSimulator';
 import { isStandaloneApp } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { BrandLogo, BrandName } from '@/components/BrandIdentity';
 
 
 // navItems built inside component using t()
@@ -68,10 +69,10 @@ export default function SideMenu({ open, onClose }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               overflow: 'hidden'
             }}>
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8 }} />
+              <BrandLogo size={36} radius={8} style={{ objectFit: 'cover' }} />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></div>
+              <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}><BrandName accentStyle={{ color: 'var(--brand-accent)' }} /></div>
               <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 500, marginTop: 1 }}>{t('nav_subtitle')}</div>
             </div>
           </div>

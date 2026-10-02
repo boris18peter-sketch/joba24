@@ -75,6 +75,19 @@ Deno.serve(async (req) => {
     // public profile never depends on denormalized User fields that can drift
     // (e.g. wiped by the new-user simulator). Falls back to stored values.
     const reviews = await base44.asServiceRole.entities.Review.filter({ reviewee_id: userId }, '-created_date', 200);
+
+    // Canonical category attribution for each review, resolved from its Task.
+    // Presentation surfaces use it to keep a review's real category inside a
+    // Brand that offers it, and to fall back to a neutral "General" outside it.
+    // The stored Review is never rewritten — this is read-only context.
+    const [tasksAsWorker, tasksAsClient] = await Promise.all([
+      base44.asServiceRole.entities.Task.filter({ worker_id: userId }, '-created_date', 300),
+      base44.asServiceRole.entities.Task.filter({ client_id: userId }, '-created_date', 300),
+    ]);
+    const categoryByTaskId: Record<string, string> = {};
+    for (const tk of [...(tasksAsWorker || []), ...(tasksAsClient || [])]) {
+      categoryByTaskId[tk.id] = tk.category_details?.brand_category_key || tk.category || '';
+    }
     const reviewRatings = reviews.map(r => r.rating).filter(r => typeof r === 'number' && r > 0);
     const computedRating = reviewRatings.length > 0
       ? reviewRatings.reduce((a, b) => a + b, 0) / reviewRatings.length
@@ -111,6 +124,7 @@ Deno.serve(async (req) => {
           good_communication: r.good_communication,
           fair_pricing: r.fair_pricing,
           would_hire_again: r.would_hire_again,
+          task_category: categoryByTaskId[r.task_id] || '',
         })),
         bio: targetUser.bio,
         intro_video_url: targetUser.intro_video_url,
