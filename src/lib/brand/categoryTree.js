@@ -1,4 +1,4 @@
-export const categoryKeyForTask = task => task?.category_details?.brand_category_key || task?.category || 'other';
+export { actionableCategoryKey as categoryKeyForTask } from '@/lib/brand/categoryRegistry';
 export function ancestorsOf(row, map) {
   const chain = [], seen = new Set([row?.category_key]); let key = row?.parent_key;
   while (key && map[key] && !seen.has(key)) { seen.add(key); chain.push(map[key]); key = map[key].parent_key; }

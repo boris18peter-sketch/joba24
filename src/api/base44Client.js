@@ -15,8 +15,8 @@ const CANONICAL_API = 'https://joba24.base44.app';
 const isLocalBundle =
   typeof window !== 'undefined' &&
   (window.location.origin === 'null' ||
-   /localhost|127\.0\.0\.1/.test(window.location.origin) ||
-   /android|iphone|ipad|ipod/i.test(navigator.userAgent || ''));
+   ['localhost', '127.0.0.1'].includes(window.location.hostname) ||
+   ['file:', 'capacitor:'].includes(window.location.protocol));
 
 const serverUrl = isLocalBundle ? (appBaseUrl || CANONICAL_API) : '';
 

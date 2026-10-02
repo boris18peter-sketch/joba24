@@ -12,7 +12,7 @@ export async function fetchBrandCategoryRows(brandId) {
   return brandId ? await base44.entities.BrandCategory.filter({ brand_id:brandId }, 'sort_order',500) : [];
 }
 export function useBrandCategories() {
-  const { brandId,brand } = useBrand(), cache = useQueryClient();
+  const { brandId,brand,isPlatformBrand } = useBrand(), cache = useQueryClient();
   const scopeQuery = useQuery({ queryKey:['brandScope',brandId], queryFn:async () => (await base44.entities.Brand.filter({ id:brandId }))?.[0], enabled:!!brandId, staleTime:60000 });
   const effectiveBrand = scopeQuery.data || brand;
   const legacy = useQuery({ queryKey:['brandCategories',brandId], queryFn:() => fetchBrandCategoryRows(brandId), enabled:!!brandId && effectiveBrand?.category_model_version !== 2 });
@@ -20,10 +20,10 @@ export function useBrandCategories() {
   useEffect(() => base44.entities.Brand.subscribe(event => { if (event.id === brandId) cache.invalidateQueries({ queryKey:['brandScope',brandId] }); }), [brandId,cache]);
   const services = deriveServices(global.rows,effectiveBrand,legacy.data || []);
   const categories = services.map(g => ({ ...g,value:g.category_key,label:g.label || platformCategoryLabel(g.category_key),fields:globalFormFields(g),brandSpecific:isBrandSpecificKey(g.category_key) }));
-  return { categories,groups:serviceGroups(global.rows,categories),rows:legacy.data || [],globalRows:global.rows,globalMap:global.map,
+  return { categories,isPlatformBrand,groups:serviceGroups(global.rows,categories),rows:legacy.data || [],globalRows:global.rows,globalMap:global.map,
     configured:effectiveBrand?.category_model_version === 2 || !!legacy.data?.length,
     isLoading:scopeQuery.isLoading || global.isLoading || (effectiveBrand?.category_model_version !== 2 && legacy.isLoading),
-    taskCategoryFor:value => isBrandSpecificKey(value) ? 'other' : value,
+    taskCategoryFor:value => value,
     rowFor:value => (legacy.data || []).find(r => r.category_key === value) || null,
     formFieldsFor:value => globalFormFields(global.map[value]) };
 }

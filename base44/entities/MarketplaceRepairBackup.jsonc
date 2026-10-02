@@ -1,0 +1,51 @@
+{
+  "name": "MarketplaceRepairBackup",
+  "type": "object",
+  "properties": {
+    "repair_key": {
+      "type": "string"
+    },
+    "entity_name": {
+      "type": "string",
+      "enum": [
+        "Task",
+        "Brand"
+      ]
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "original": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "repair_key",
+    "entity_name",
+    "source_id",
+    "original"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
