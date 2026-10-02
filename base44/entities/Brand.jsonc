@@ -4,11 +4,10 @@
   "properties": {
     "slug": {
       "type": "string",
-      "description": "\u05de\u05d6\u05d4\u05d4 \u05d9\u05d9\u05d7\u05d5\u05d3\u05d9 \u05d5\u05d9\u05e6\u05d9\u05d1 \u05e9\u05dc \u05d4\u05de\u05d5\u05ea\u05d2 (\u05dc\u05de\u05e9\u05dc: joba24, events, pets). \u05d0\u05d9\u05e0\u05d5 \u05e0\u05d9\u05ea\u05df \u05dc\u05e9\u05d9\u05e0\u05d5\u05d9 \u05dc\u05d0\u05d7\u05e8 \u05d4\u05d9\u05e6\u05d9\u05e8\u05d4."
+      "description": "Unique stable Brand slug."
     },
     "name": {
-      "type": "string",
-      "description": "\u05e9\u05dd \u05d4\u05de\u05d5\u05ea\u05d2 \u05dc\u05ea\u05e6\u05d5\u05d2\u05d4."
+      "type": "string"
     },
     "status": {
       "type": "string",
@@ -17,8 +16,7 @@
         "suspended",
         "archived"
       ],
-      "default": "active",
-      "description": "\u05de\u05e6\u05d1 \u05de\u05d7\u05d6\u05d5\u05e8 \u05d4\u05d7\u05d9\u05d9\u05dd \u05e9\u05dc \u05d4\u05de\u05d5\u05ea\u05d2."
+      "default": "active"
     },
     "origin": {
       "type": "string",
@@ -26,13 +24,29 @@
         "platform",
         "partner"
       ],
-      "default": "platform",
-      "description": "platform = \u05de\u05d5\u05ea\u05d2 \u05d4\u05d1\u05d9\u05ea \u05e9\u05dc \u05d4\u05e4\u05dc\u05d8\u05e4\u05d5\u05e8\u05de\u05d4, partner = \u05de\u05d5\u05ea\u05d2 \u05e9\u05d5\u05ea\u05e3."
+      "default": "platform"
     },
     "is_default": {
       "type": "boolean",
-      "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d6\u05d4\u05d5 \u05de\u05d5\u05ea\u05d2 \u05d1\u05e8\u05d9\u05e8\u05ea \u05d4\u05de\u05d7\u05d3\u05dc \u05e9\u05dc \u05d4\u05e4\u05dc\u05d8\u05e4\u05d5\u05e8\u05de\u05d4. \u05de\u05d5\u05ea\u05d2 \u05d0\u05d7\u05d3 \u05d1\u05dc\u05d1\u05d3 \u05d0\u05de\u05d5\u05e8 \u05dc\u05d4\u05d9\u05d5\u05ea true."
+      "default": false
+    },
+    "category_model_version": {
+      "type": "number",
+      "description": "2 selects parent inheritance. Unset preserves legacy reads during migration."
+    },
+    "assigned_parent_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Assigned global parent categories. Their active descendant services are inherited dynamically."
+    },
+    "excluded_child_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional global service exclusions for this Brand only. No form copies."
     }
   },
   "required": [

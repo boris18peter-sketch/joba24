@@ -1,0 +1,52 @@
+{
+  "name": "CategoryMigrationBackup",
+  "type": "object",
+  "properties": {
+    "migration_key": {
+      "type": "string"
+    },
+    "entity_name": {
+      "type": "string",
+      "enum": [
+        "Brand",
+        "GlobalCategory",
+        "BrandCategory"
+      ]
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "original": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "One bounded source record per backup, captured before migration; never Task data or media."
+    }
+  },
+  "required": [
+    "migration_key",
+    "entity_name",
+    "source_id"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

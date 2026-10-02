@@ -85,7 +85,10 @@ export async function resolveBrandContext(hostname) {
   // 1. An explicitly registered domain always wins.
   if (host) {
     const domains = await base44.entities.BrandDomain.filter({ hostname: host });
-    const active = (domains || []).find((d) => d.status === 'active');
+    const active = (domains || []).find((d) => d.status === 'active' && (
+      ['joba24.com', 'www.joba24.com', 'joba24.base44.app'].includes(d.hostname) ||
+      (d.verification_version === 2 && d.platform_status === 'observed_connected' && d.dns_status === 'verified' && d.verified_at)
+    ));
     if (active) {
       matchedDomain = active;
       const brands = await base44.entities.Brand.filter({ id: active.brand_id });

@@ -3,17 +3,15 @@
   "type": "object",
   "properties": {
     "brand_id": {
-      "type": "string",
-      "description": "Brand.id (ADR-23). Never a slug. The canonical relational Brand identifier this hostname resolves to."
+      "type": "string"
     },
     "hostname": {
       "type": "string",
-      "description": "Lowercase hostname without protocol, port or trailing slash (e.g. joba24.com, events.joba24.com). Joba24-owned routing key."
+      "description": "Exact lowercase hostname, never a wildcard."
     },
     "is_primary": {
       "type": "boolean",
-      "default": false,
-      "description": "The Brand's canonical domain, used for absolute links and share URLs. At most one per Brand."
+      "default": false
     },
     "status": {
       "type": "string",
@@ -22,18 +20,47 @@
         "pending",
         "disabled"
       ],
-      "default": "active",
-      "description": "active = resolves to the Brand. pending = registered but not live. disabled = must not resolve."
+      "default": "pending",
+      "description": "Brand runtime mapping only, not hosting or DNS connection."
     },
     "verified_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Brand Manager: set only after a server-side check confirmed the hostname actually serves this app. A hostname typed into this entity is NEVER shown as connected without it. Activating a domain requires it."
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
     },
     "last_checked_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Brand Manager: when the reachability check last ran, whether or not it succeeded."
+      "format": "date-time"
+    },
+    "verification_version": {
+      "type": "number",
+      "description": "2 requires DNS and exact-app HTTPS evidence; older checks are not trusted."
+    },
+    "platform_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "observed_connected",
+        "not_confirmed"
+      ],
+      "default": "unknown"
+    },
+    "dns_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "verified",
+        "resolved",
+        "failed"
+      ],
+      "default": "unknown"
+    },
+    "check_details": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Last public DNS and same-host HTTPS observations, including failures and timestamp. Not a hosting management API status."
     }
   },
   "required": [

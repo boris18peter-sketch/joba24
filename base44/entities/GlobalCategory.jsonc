@@ -4,47 +4,54 @@
   "properties": {
     "category_key": {
       "type": "string",
-      "description": "Stable machine key. Matches the platform Task.category enum for a platform category, or a new global key (which is persisted on a Task as category 'other' with the key kept in category_details.brand_category_key). Unique across the platform."
+      "description": "Immutable global key. Existing Task enum keys remain unchanged; additional service keys are persisted in Task.category_details.brand_category_key."
     },
     "label": {
-      "type": "string",
-      "description": "Display name of the category across every Brand. A Brand may override the label for itself only (BrandCategory.label)."
+      "type": "string"
     },
     "icon": {
-      "type": "string",
-      "description": "Emoji or icon key shown in the category picker."
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
     },
     "description": {
+      "type": "string"
+    },
+    "parent_key": {
       "type": "string",
-      "description": "Short explanation shown to the publisher when choosing this category."
+      "description": "GlobalCategory.category_key of the parent, empty for roots. Supports future deeper nesting."
+    },
+    "node_type": {
+      "type": "string",
+      "enum": [
+        "parent",
+        "service"
+      ],
+      "default": "service"
     },
     "sort_order": {
       "type": "number",
-      "default": 0,
-      "description": "Default position in the category list. A Brand may reorder its own list (BrandCategory.sort_order)."
+      "default": 0
     },
     "active": {
       "type": "boolean",
-      "default": true,
-      "description": "Whether this category is offered anywhere on the platform. Inactive removes it from every Brand."
+      "default": true
     },
     "fields": {
       "type": "array",
-      "description": "THE GLOBAL TASK FORM for this category. One definition, shared by every Brand that uses the category \u2014 improving it here improves it everywhere. A Brand never owns a copy.",
+      "description": "Single global task form for an actionable service; never copied into a Brand.",
       "items": {
         "type": "object",
         "properties": {
           "key": {
-            "type": "string",
-            "description": "Stable field key, stored on the Task in category_details."
+            "type": "string"
           },
           "label": {
-            "type": "string",
-            "description": "Question shown to the publisher."
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "description": "Helper text under the field."
+            "type": "string"
           },
           "type": {
             "type": "string",
@@ -76,13 +83,11 @@
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Choices for select / multiselect fields."
+            }
           },
           "validation": {
             "type": "object",
-            "additionalProperties": true,
-            "description": "Optional constraints, e.g. { min, max, min_length, max_length, pattern }."
+            "additionalProperties": true
           }
         },
         "required": [
