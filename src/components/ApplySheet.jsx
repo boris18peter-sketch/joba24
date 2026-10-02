@@ -57,6 +57,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
     >
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
+        className="j-modal-surface"
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--sheet-bg)',

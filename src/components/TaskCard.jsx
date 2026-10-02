@@ -54,7 +54,7 @@ function getRelativeTime(date, t) {
 }
 
 const URGENCY_TAG_CONFIG = {
-  immediate: { emoji: '🔥', label: 'urgency_immediate', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  immediate: { emoji: '🔥', label: 'urgency_immediate', color: 'var(--color-danger)', bg: '#fef2f2', border: '#fca5a5' },
   few_hours: { emoji: '⏰', label: 'urgency_few_hours', color: 'var(--text-2)', bg: '#f1f5f9', border: '#e2e8f0' },
   evening:   { emoji: '🌅', label: 'urgency_evening', color: 'var(--text-2)', bg: '#f1f5f9', border: '#e2e8f0' },
   flexible:  { emoji: '😌', label: 'urgency_flexible', color: 'var(--text-2)', bg: '#f1f5f9', border: '#e2e8f0' },
@@ -386,7 +386,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
          {/* Pending banner */}
          {isPending && (
            <div onClick={e => e.stopPropagation()} style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-sm)', padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#d97706', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
+             <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-warning)', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
              <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#b45309' }}>{t('waiting_approval_short')}</div>
              <button onClick={handleCancelApp} disabled={cancelling}
                style={{ background: 'none', border: '1px solid #fde68a', borderRadius: 7, padding: '4px 10px', fontSize: 11, color: '#b45309', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
@@ -440,7 +440,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               <span style={{
                 fontSize: 10, fontWeight: 800,
                 padding: '2px 8px', borderRadius: 6,
-                background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+                background: 'linear-gradient(135deg,#f59e0b,var(--color-warning))',
                 color: 'white',
                 display: 'inline-flex', alignItems: 'center', gap: 3,
                 boxShadow: '0 2px 6px rgba(245,158,11,0.45)',
@@ -566,7 +566,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             <div style={{ display: 'none' }}>
             </div>
             {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
-             <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>
+             <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? 'var(--color-success)' : '#b45309', fontWeight: 600 }}>
                📈 ₪{task.base_price} {isRTL ? '←' : '→'} ₪{task.max_price}{liveApplicantCount > 0 ? ` · ${t('auto_bump_active')}` : ` · ${t('auto_bump_desc')}`}
              </span>
              )}
@@ -581,7 +581,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }} />}
                   <button
                    onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
-                   style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 'var(--r-sm)', background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: 'var(--shadow-sm)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
+                   style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 'var(--r-sm)', background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,var(--color-warning))' : 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: 'var(--shadow-sm)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
                   >
                     {liveApplicantCount > 0 ? (
                        <>
@@ -627,7 +627,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
                     {showMenu && (
                       <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }} style={{ position: 'absolute', bottom: 32, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 1000, minWidth: 140, overflow: 'hidden' }}>
-                        <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }} style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}><Trash2 size={14} /> {t('delete_task')}</button>
+                        <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }} style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 8 }}><Trash2 size={14} /> {t('delete_task')}</button>
                       </div>
                     )}
                   </div>

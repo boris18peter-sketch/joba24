@@ -64,7 +64,7 @@ function AddressChatCard({ label, addressState, onChange, onConfirm }) {
       </div>
       {confirmed && (
         <button onClick={onConfirm}
-          style={{ width: '100%', padding: '10px 0', borderRadius: 12, color: 'white', fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+          style={{ width: '100%', padding: '10px 0', borderRadius: 12, color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
           ✓ אישור כתובת — המשך
         </button>
       )}
@@ -228,7 +228,7 @@ function RequirementsCardGroup({ category, requirements, onToggle, onInvoiceTogg
       }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: isOpen ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : '#1f2937', display: 'flex', alignItems: 'center', gap: 6 }}>
           דרישות נוספות
-          {selectedCount > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'white', background: 'var(--brand-btn-primary-bg, var(--brand-primary))', borderRadius: 99, padding: '1px 6px' }}>{selectedCount}</span>}
+          {selectedCount > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--brand-btn-primary-text, white)', background: 'var(--brand-btn-primary-bg, var(--brand-primary))', borderRadius: 99, padding: '1px 6px' }}>{selectedCount}</span>}
         </div>
         <ChevronDown size={16} color={isOpen ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : '#9ca3af'} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </button>
@@ -691,12 +691,12 @@ export default function TaskChatInterface({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px' }}>
           <BackButton style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.20)', boxShadow: 'none' }} iconColor="white" />
-          <span style={{ fontWeight: 800, fontSize: 16, color: 'white', flex: 1 }}>
+          <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--brand-btn-primary-text, white)', flex: 1 }}>
             {isEditMode ? 'עריכת משימה' : 'יצירת משימה'}
           </span>
           {isFormMode && (
             <button onClick={onSwitchToForm} style={{
-              fontSize: 11, fontWeight: 700, color: 'white',
+              fontSize: 11, fontWeight: 700, color: 'var(--brand-btn-primary-text, white)',
               background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.20)',
               borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
             }}>📋 טופס</button>
@@ -882,7 +882,7 @@ export default function TaskChatInterface({
             <button onClick={handleSkipRequirements} style={{
               width: '100%', marginTop: 14, padding: '11px 0', borderRadius: 14,
               background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), #0a52b0)',
-              color: 'white', border: 'none', fontSize: 13, fontWeight: 800,
+              color: 'var(--brand-btn-primary-text, white)', border: 'none', fontSize: 13, fontWeight: 800,
               cursor: 'pointer', display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: 6,
               boxShadow: '0 4px 14px rgba(26,111,212,0.25)',
@@ -988,7 +988,7 @@ export default function TaskChatInterface({
               style={{
                 width: '100%', padding: '14px 0', borderRadius: 16,
                 background: publishing ? '#9ca3af' : 'linear-gradient(135deg, #059669, #047857)',
-                color: 'white', border: 'none', fontSize: 16, fontWeight: 900,
+                color: 'var(--brand-btn-primary-text, white)', border: 'none', fontSize: 16, fontWeight: 900,
                 cursor: publishing ? 'not-allowed' : 'pointer',
                 boxShadow: '0 6px 24px rgba(5,150,105,0.35)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -237,6 +237,7 @@ export function resolveTheme(theme, inherited = {}) {
     t[token.key] = token.type === 'number' ? Number(raw) : raw;
   }
   const links = {
+    primary_dark:'primary',
     button_primary_bg:'primary', button_secondary_bg:'surface_alt', button_secondary_text:'text_secondary',
     card_bg:'surface', card_border:'border', surface_elevated:'surface', divider:'border',
     input_border:'border', input_focus:'primary', input_text:'text_primary', input_placeholder:'text_muted',
@@ -251,6 +252,7 @@ export function resolveTheme(theme, inherited = {}) {
       if (overrides[source] != null || t[source] !== TOKEN_DEFAULTS[source]) t[key] = t[source];
     }
   }
+  if (!overrides.button_secondary_bg && overrides.secondary) t.button_secondary_bg = t.secondary;
   if (!overrides.hero_bg && !overrides.header_bg && overrides.primary) t.hero_bg = t.primary_dark !== TOKEN_DEFAULTS.primary_dark ? t.primary_dark : t.primary;
   return t;
 }
@@ -307,6 +309,7 @@ export function themeToCssVars(theme) {
     '--card-bg': t.card_bg,
     '--sheet-bg': t.modal_bg,
     '--nav-bg': t.nav_bg,
+    '--brand-muted-surface': t.surface_alt,
     '--brand-hero-bg': t.hero_bg,
     '--brand-hero-text': t.hero_text,
     '--brand-modal-cta-bg': t.modal_cta_bg,
@@ -393,6 +396,13 @@ export function themeToCssVars(theme) {
   vars['--color-success'] = t.success;
   vars['--color-warning'] = t.warning;
   vars['--color-danger'] = t.error;
+  for (const [kind, color] of Object.entries({ success:t.success, warning:t.warning, danger:t.error })) {
+    const background = tint(color, 0.94), border = tint(color, 0.55);
+    if (background) { vars[`--color-${kind}-bg`] = background; vars[`--${kind}-bg`] = background; }
+    if (border) vars[`--color-${kind}-border`] = border;
+  }
+  vars['--tag-bg'] = t.status_bg;
+  vars['--tag-muted'] = t.surface_alt;
 
   return vars;
 }

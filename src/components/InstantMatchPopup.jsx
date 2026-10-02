@@ -167,7 +167,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
-      <div style={{
+      <div className="j-modal-surface" style={{
         background: 'var(--brand-modal-bg, var(--surface-2))',
         borderRadius: 22,
         overflow: 'hidden',

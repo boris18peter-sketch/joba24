@@ -657,16 +657,16 @@ export default function TaskDetail(props) {
 
   const STATUS_GRADIENT = {
     OPEN: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
-    TAKEN: task.worker_status === 'done' ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
-    COMPLETED: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+    TAKEN: task.worker_status === 'done' ? 'linear-gradient(135deg, var(--color-success) 0%, #10b981 100%)' : 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
+    COMPLETED: 'linear-gradient(135deg, var(--color-success) 0%, #10b981 100%)',
     CANCELLED: 'linear-gradient(135deg, var(--text-2) 0%, var(--text-3) 100%)',
     EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
   };
   const STATUS_PILL = {
     OPEN: { background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', border: '1px solid var(--border-2)' },
-    TAKEN: { background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d' },
-    COMPLETED: { background: '#f0fdf4', color: '#059669', border: '1px solid #86efac' },
-    CANCELLED: { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' },
+    TAKEN: { background: '#fffbeb', color: 'var(--color-warning)', border: '1px solid #fcd34d' },
+    COMPLETED: { background: '#f0fdf4', color: 'var(--color-success)', border: '1px solid #86efac' },
+    CANCELLED: { background: '#fef2f2', color: 'var(--color-danger)', border: '1px solid #fca5a5' },
     EXPIRED: { background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }
   };
   const taskGradient = STATUS_GRADIENT[task.status] || STATUS_GRADIENT.OPEN;
@@ -768,7 +768,7 @@ export default function TaskDetail(props) {
               <button
                 onClick={() => {setShowExitWarning(false);cancelTakeMutation.mutate();}}
                 disabled={cancelTakeMutation.isPending}
-                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: 'var(--color-danger)', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 
                 {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> {t('yes_exit_task')}</>}
               </button>
@@ -1036,7 +1036,7 @@ export default function TaskDetail(props) {
                     onClick={() => document.getElementById('task-applicants-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     style={{
                       flex: 1,
-                      background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+                      background: 'linear-gradient(135deg,#f59e0b,var(--color-warning))',
                       borderRadius: 14,
                       border: 'none',
                       color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 13,
@@ -1215,7 +1215,7 @@ export default function TaskDetail(props) {
                 <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.5 }}>
                   {t('price_increase_detail')}
                   {applicationCount > 0
-                    ? <span style={{ color: '#059669', fontWeight: 700, display: 'block', marginTop: 2 }}>{t('price_frozen_label').replace('{price}', Math.round(calculateCurrentPrice(task)))} — {t('got_request_label')}</span>
+                    ? <span style={{ color: 'var(--color-success)', fontWeight: 700, display: 'block', marginTop: 2 }}>{t('price_frozen_label').replace('{price}', Math.round(calculateCurrentPrice(task)))} — {t('got_request_label')}</span>
                     : <span style={{ display: 'block', marginTop: 2 }}>{t('now_label')}: ₪{Math.round(calculateCurrentPrice(task))} · {t('auto_stops_label')}</span>}
                 </div>
               </div>
@@ -1229,11 +1229,11 @@ export default function TaskDetail(props) {
                   setIdCopied(true);
                   setTimeout(() => setIdCopied(false), 2000);
                 }}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: idCopied ? '#059669' : 'var(--text-3)', fontFamily: 'monospace', background: idCopied ? '#f0fdf4' : 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: idCopied ? '1px solid #bbf7d0' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: idCopied ? 'var(--color-success)' : 'var(--text-3)', fontFamily: 'monospace', background: idCopied ? '#f0fdf4' : 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: idCopied ? '1px solid #bbf7d0' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
                 title={t('td_copy_id')}
               >
                 {idCopied ? (
-                  <>{t('id_copied') || 'הועתק'} <CheckCircle2 size={11} color="#059669" /></>
+                  <>{t('id_copied') || 'הועתק'} <CheckCircle2 size={11} color="var(--color-success)" /></>
                 ) : (
                   <>#{task.id?.slice(-8)}
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></>
@@ -1348,7 +1348,7 @@ export default function TaskDetail(props) {
               return (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                   <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <CheckCircle2 size={13} color="#059669" />
+                    <CheckCircle2 size={13} color="var(--color-success)" />
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginBottom: 2 }}>{t('requirements_label')}</div>
@@ -1485,10 +1485,10 @@ export default function TaskDetail(props) {
               style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}>
               
               <div style={{ width: 40, height: 40, borderRadius: 13, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <X size={17} color="#dc2626" />
+                <X size={17} color="var(--color-danger)" />
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>{t('cancel_task_title')}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-danger)' }}>{t('cancel_task_title')}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('cancel_task_sub')}</div>
               </div>
             </div>

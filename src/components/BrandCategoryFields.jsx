@@ -26,7 +26,7 @@ export default function BrandCategoryFields({ category, values = {}, onChange })
     border: '1.5px solid var(--brand-input-border, var(--border-1))',
     background: 'var(--brand-input-bg, var(--surface-1))',
     fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-    color: 'var(--text-1)',
+    color: 'var(--brand-input-text, var(--text-1))',
   };
 
   return (

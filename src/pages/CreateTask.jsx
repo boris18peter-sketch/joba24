@@ -53,10 +53,10 @@ const EXPIRY_OPTIONS = [
 ];
 
 const URGENCY_TAGS = [
-  { value: 'immediate', emoji: '🔥', label: 'צריך עובד דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', i18n_key: 'urgency_immediate' },
-  { value: 'few_hours', emoji: '⏰', label: 'עובד לשעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a', i18n_key: 'urgency_few_hours' },
+  { value: 'immediate', emoji: '🔥', label: 'צריך עובד דחוף', color: 'var(--color-danger)', bg: '#fef2f2', border: '#fca5a5', i18n_key: 'urgency_immediate' },
+  { value: 'few_hours', emoji: '⏰', label: 'עובד לשעות הקרובות', color: 'var(--color-warning)', bg: '#fffbeb', border: '#fde68a', i18n_key: 'urgency_few_hours' },
   { value: 'evening',   emoji: '🌅', label: 'עובד לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd', i18n_key: 'urgency_evening' },
-  { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: '#16a34a', bg: '#f0fdf4', border: '#86efac', i18n_key: 'urgency_flexible' },
+  { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: 'var(--color-success)', bg: '#f0fdf4', border: '#86efac', i18n_key: 'urgency_flexible' },
 ];
 
 function toLocalDatetimeInput(isoStr) {
@@ -1154,15 +1154,15 @@ export default function CreateTask() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#166534', fontWeight: 700 }}>
               <Save size={14} /> {t('draft_restored')}
             </div>
-            <button onClick={() => { setForm(DEFAULT_FORM); localStorage.removeItem(DRAFT_KEY); }} style={{ fontSize: 11, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>{t('delete_task')}</button>
+            <button onClick={() => { setForm(DEFAULT_FORM); localStorage.removeItem(DRAFT_KEY); }} style={{ fontSize: 11, color: 'var(--color-danger)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>{t('delete_task')}</button>
           </div>
         )}
 
         {/* Error banner */}
         {showErrorBanner && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>
+            <AlertTriangle size={16} color="var(--color-danger)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: 'var(--color-danger)', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>
               {t('missing_fields_warning')}
             </p>
           </div>
@@ -1171,8 +1171,8 @@ export default function CreateTask() {
         {/* Moderation image error */}
         {moderationErrors.images && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>🛡️ {moderationErrors.images}</p>
+            <AlertTriangle size={16} color="var(--color-danger)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: 'var(--color-danger)', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>🛡️ {moderationErrors.images}</p>
           </div>
         )}
 
@@ -1219,7 +1219,7 @@ export default function CreateTask() {
               type="button"
               onClick={recording ? stopRecording : startRecording}
               disabled={transcribing}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : 'var(--brand-primary-light)', color: recording ? '#dc2626' : 'var(--brand-primary)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : 'var(--brand-primary-light)', color: recording ? 'var(--color-danger)' : 'var(--brand-primary)' }}
             >
               {transcribing ? <Loader2 size={13} className="animate-spin" /> : recording ? <MicOff size={13} /> : <Mic size={13} />}
               {transcribing ? t('processing') : recording ? t('stop_recording') : t('record_description')}
@@ -1229,8 +1229,8 @@ export default function CreateTask() {
             {t('ct_describe_helper')}
           </div>
           {recording && (
-            <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
+            <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--color-danger)', fontWeight: 700 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-danger)', display: 'inline-block' }} />
               {t('recording_press_stop')}
             </div>
           )}
@@ -1356,11 +1356,11 @@ export default function CreateTask() {
             {hasScheduleField && scheduleMinutes != null && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-                <Calendar size={14} color="#16a34a" strokeWidth={1.8} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>{t('ct_schedule_selected')}</span>
+                <Calendar size={14} color="var(--color-success)" strokeWidth={1.8} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-success)' }}>{t('ct_schedule_selected')}</span>
               </div>
               <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Clock size={13} color="#16a34a" />
+                <Clock size={13} color="var(--color-success)" />
                 {t('ct_total_time')} {formatDuration(scheduleMinutes)}{scheduleSlots.length > 1 ? ` · ${scheduleSlots.length} ${t('ct_slots')}` : ''}
               </div>
             </div>
@@ -1553,7 +1553,7 @@ export default function CreateTask() {
         {/* Verification Requirement */}
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-            <ShieldCheck size={14} color="#16a34a" strokeWidth={1.8} />
+            <ShieldCheck size={14} color="var(--color-success)" strokeWidth={1.8} />
             <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_worker_verify')}</Label>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.5 }}>
@@ -1567,7 +1567,7 @@ export default function CreateTask() {
                 flex: 1, padding: '10px 12px', borderRadius: 12, fontSize: 13, fontWeight: 700,
                 cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
                 background: !form.verification_required ? '#f0fdf4' : 'var(--surface-3)',
-                color: !form.verification_required ? '#16a34a' : 'var(--text-2)',
+                color: !form.verification_required ? 'var(--color-success)' : 'var(--text-2)',
                 border: `1.5px solid ${!form.verification_required ? '#bbf7d0' : 'var(--border-1)'}`,
               }}
             >
@@ -1580,7 +1580,7 @@ export default function CreateTask() {
                 flex: 1, padding: '10px 12px', borderRadius: 12, fontSize: 13, fontWeight: 700,
                 cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
                 background: form.verification_required ? '#f0fdf4' : 'var(--surface-3)',
-                color: form.verification_required ? '#16a34a' : 'var(--text-2)',
+                color: form.verification_required ? 'var(--color-success)' : 'var(--text-2)',
                 border: `1.5px solid ${form.verification_required ? '#bbf7d0' : 'var(--border-1)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
               }}
@@ -1631,7 +1631,7 @@ export default function CreateTask() {
                 scheduleDriven ? (
                   <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>{t('ct_auto_calc')}</span>
+                      <span style={{ fontSize: 11, color: 'var(--color-success)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>{t('ct_auto_calc')}</span>
                       <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>{scheduleMinutes < 60 ? formatDuration(scheduleMinutes) : `₪${form.hourly_rate} לשעה · ${formatDuration(scheduleMinutes)}`}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #bbf7d0' }}>
@@ -1662,7 +1662,7 @@ export default function CreateTask() {
               />
             </>
           )}
-          {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{t('ct_price_locked')}</p>}
+          {hasActiveApplications && <p style={{ fontSize: 12, color: 'var(--color-danger)', marginBottom: 6 }}>{t('ct_price_locked')}</p>}
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>{t('ct_required')}</p>}
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             {t('ct_price_note')}
