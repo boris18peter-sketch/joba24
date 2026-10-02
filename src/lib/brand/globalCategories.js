@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { registerCategoryCatalogue } from '@/lib/brand/categoryRegistry';
 
 /**
  * The GLOBAL category catalogue at runtime.
@@ -35,6 +36,10 @@ export function useGlobalCategories() {
     queryFn: fetchGlobalCategories,
     staleTime: 60000,
   });
+
+  // Publish the catalogue for non-React readers (labels, icons, filtering) so a
+  // child service keeps its identity everywhere without a per-component fetch.
+  useEffect(() => { registerCategoryCatalogue(data || []); }, [data]);
 
   const rows = data || [];
   const map = {};

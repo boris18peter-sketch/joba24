@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MapPin, Zap, X } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
+import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRegistry';
+import { useBrand } from '@/lib/brand/BrandProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -58,6 +60,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   const timerRef = useRef(null);
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
+  const { brandId } = useBrand();
 
   // Fetch current user profile + past activity for smart matching
   const { data: currentUser } = useQuery({
@@ -85,6 +88,8 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     const unsub = base44.entities.Task.subscribe(event => {
       const task = event.data;
       if (!task || task.status !== 'OPEN') return;
+      // The realtime stream is global — only this surface's Brand may be shown.
+      if (task.origin_brand_id && task.origin_brand_id !== brandId) return;
       if (task.client_id === currentUserId) return;
 
       const isNewTask = event.type === 'create';
@@ -135,7 +140,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
       setCountdown(DURATION);
     });
     return unsub;
-  }, [userLocation, currentUserId, currentUser, myApplications, myCompletedTasks, activeCategory]);
+  }, [userLocation, currentUserId, currentUser, myApplications, myCompletedTasks, activeCategory, brandId]);
 
   useEffect(() => {
     if (!popup) return;
@@ -217,7 +222,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
               )}
               {task.category && (
                 <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>
-                  {getCategoryLabel(task.category, t)}
+                  {globalCategoryFor(actionableCategoryKey(task))?.label || getCategoryLabel(actionableCategoryKey(task), t)}
                 </span>
               )}
             </div>

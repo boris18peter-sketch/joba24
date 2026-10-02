@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { autoDetectCategory } from '@/lib/taskFlowConfig';
 import { getCategoryPluralLabel } from '@/lib/categories';
+import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRegistry';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 
@@ -512,18 +513,18 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
   const [firstAppReceived,  setFirstAppReceived]   = useState(false);
   const [statusMsg,         setStatusMsg]           = useState(() => t('lso_sending_notifs'));
 
-  // When category is "other", detect the best matching worker type from the title
-  const effectiveCategory = taskCategory === 'other'
-    ? (autoDetectCategory(taskTitle || '') || 'other')
-    : taskCategory;
-  const workerLabel = getCategoryPluralLabel(effectiveCategory, t);
+  // The matching copy follows the task's ACTIONABLE category (e.g. DJs) — the
+  // title-based guess is a last resort for genuinely uncategorised tasks only.
+  const effectiveCategory = actionableCategoryKey(taskCategory)
+    || (taskCategory === 'other' ? (autoDetectCategory(taskTitle || '') || 'other') : taskCategory);
+  const workerLabel = globalCategoryFor(effectiveCategory)?.label || getCategoryPluralLabel(effectiveCategory, t);
 
   const goToTask = () => {
     onNavigate?.();
     navigate(`/?newTaskId=${taskId}`);
   };
 
-  const { count: categoryWorkerCount } = useWorkerStats(taskCategory, null);
+  const { count: categoryWorkerCount } = useWorkerStats(effectiveCategory, null);
 
   useEffect(() => {
     if (!taskId) return;
@@ -679,7 +680,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           {statusMsg}
         </div>
 
-        {!firstAppReceived && (
+        {!firstAppReceived && categoryWorkerCount > 0 && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
             background: 'rgba(74,222,128,.1)', border: '1px solid rgba(74,222,128,.28)',

@@ -23,7 +23,7 @@ export async function taskCatalogue(base44, brandId) {
 export function normalizeTaskCategory(task, map) {
   const key = categoryKeyForTask(task), row = map[key];
   if (!row || row.node_type === 'parent') return task;
-  return { ...task,category:key,category_id:row.id,parent_category_key:row.parent_key || '',category_label:row.label,category_icon:row.icon };
+  return { ...task,category:key,category_id:row.id,parent_category_key:row.parent_key || '' };
 }
 export function validateGlobalForm(row, values) {
   for (const field of (row.fields || []).filter(f => f.enabled !== false)) {

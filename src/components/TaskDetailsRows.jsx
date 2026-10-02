@@ -7,6 +7,8 @@
  * each row = [icon box] + [label (small gray) + value (bold)].
  */
 import { getCategoryLabel } from '@/lib/categories';
+import { actionableCategoryKey } from '@/lib/brand/categoryRegistry';
+import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { parseDescription } from '@/lib/descriptionParser';
 import { formatHoursLabel, formatScheduleSlots } from '@/lib/priceCalculator';
 import { getActiveRequirements } from '@/lib/requirements';
@@ -25,6 +27,7 @@ function getUrgencyConfig(urgency_tag, t) {
 
 export default function TaskDetailsRows({ task, compact = false }) {
   const { t } = useLanguage();
+  const { map: categoryMap } = useGlobalCategories();
   if (!task) return null;
 
   const iconSize = compact ? 28 : 30;
@@ -47,7 +50,8 @@ export default function TaskDetailsRows({ task, compact = false }) {
   }
 
   if (task.category) {
-    detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: t('tdr_category'), value: getCategoryLabel(task.category, t) });
+    const serviceKey = actionableCategoryKey(task);
+    detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: t('tdr_category'), value: categoryMap[serviceKey]?.label || getCategoryLabel(serviceKey, t) });
   }
 
   if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hourly_rate && task.category_details?.hours) {

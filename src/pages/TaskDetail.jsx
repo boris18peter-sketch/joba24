@@ -58,6 +58,8 @@ import ActiveTaskBannerFromCache from '@/components/ActiveTaskBannerFromCache';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import { fetchPublicTasks, fetchApplicantStats } from '@/lib/publicTasks';
+import { actionableCategoryKey } from '@/lib/brand/categoryRegistry';
+import { useGlobalCategories } from '@/lib/brand/globalCategories';
 
 const getScanningTexts = (t) => t('scanning_texts');
 
@@ -184,6 +186,7 @@ export default function TaskDetail(props) {
   }, []);
   const prevTaskStatusRef = useRef(null);
 
+  const { map: categoryMap } = useGlobalCategories();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   // Use the real-time auth user for verification gating (instantly synced via WebSocket + polling)
   const verifyUser = authUser || me;
@@ -1297,18 +1300,22 @@ export default function TaskDetail(props) {
               );
             })()}
 
-            {/* Category */}
-            {task.category && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
-                  {CATEGORY_EMOJI[task.category] || '🔨'}
+            {/* Category — the task's actionable global service (e.g. DJs) */}
+            {task.category && (() => {
+              const serviceKey = actionableCategoryKey(task);
+              const service = categoryMap[serviceKey];
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
+                    {service?.icon || CATEGORY_EMOJI[serviceKey] || '🔨'}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('category_label')}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{service?.label || getCategoryLabel(serviceKey, t)}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('category_label')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category, t)}</div>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Full address */}
             {(task.address_building || task.address_floor || task.address_apartment || task.address_notes) && (

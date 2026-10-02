@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
+import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRegistry';
 
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
@@ -148,7 +149,7 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
 
   const goToTask = () => { onNavigate?.(); };
 
-  const { count: categoryWorkerCount } = useWorkerStats(taskCategory, null);
+  const { count: categoryWorkerCount } = useWorkerStats(actionableCategoryKey(taskCategory), null);
 
   useEffect(() => {
     if (!taskId) return;
@@ -228,12 +229,14 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
           </span>
           {statusMsg}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(192,132,252,.1)', border: '1px solid rgba(192,132,252,.28)', borderRadius: 99, padding: '7px 16px' }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c084fc', display: 'inline-block', animation: 'dotBlinkB 1.2s .1s infinite' }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#c084fc' }}>
-            <span style={{ fontSize: 15, fontWeight: 900 }}>{categoryWorkerCount}</span> {t('bo_workers_receiving', { cat: CATEGORY_NAME_PLURAL[taskCategory] || t('bo_workers') })}
-          </span>
-        </div>
+        {categoryWorkerCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(192,132,252,.1)', border: '1px solid rgba(192,132,252,.28)', borderRadius: 99, padding: '7px 16px' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c084fc', display: 'inline-block', animation: 'dotBlinkB 1.2s .1s infinite' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#c084fc' }}>
+              <span style={{ fontSize: 15, fontWeight: 900 }}>{categoryWorkerCount}</span> {t('bo_workers_receiving', { cat: globalCategoryFor(actionableCategoryKey(taskCategory))?.label || t('bo_workers') })}
+            </span>
+          </div>
+        )}
       </motion.div>
 
       <motion.button initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}

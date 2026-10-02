@@ -20,6 +20,7 @@ import { getCategoryLabel } from '@/lib/categories';
 import MarketServiceFilter from '@/components/MarketServiceFilter';
 import { categoryKeyForTask } from '@/lib/brand/categoryTree';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
+import { useBrand } from '@/lib/brand/BrandProvider';
 import { useNavigate, useLocation } from 'react-router-dom';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
@@ -32,6 +33,7 @@ import { recoverIosSubscriptionCredits } from '@/lib/iosIap';
 
 export default function HomeFeed() {
   const { globalMap: categoryMap } = useBrandCategories();
+  const { brandId } = useBrand();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -227,6 +229,9 @@ export default function HomeFeed() {
         // Safety: if cache is empty (not yet loaded), don't touch it — let queryFn handle the initial load
         if (event.type === 'create') {
           if (!updatedTask?.id) return old;
+          // The realtime stream is global — a task from another Brand must never
+          // enter this feed, even for the moment before a refetch corrects it.
+          if (updatedTask.origin_brand_id && updatedTask.origin_brand_id !== brandId) return old;
           if (old.find((t) => t.id === event.id)) return old;
           // Only show OPEN tasks in feed
           if (updatedTask.status && updatedTask.status !== 'OPEN') return old;
@@ -415,7 +420,7 @@ export default function HomeFeed() {
     });
 
     return () => {unsubTask();unsubApp();};
-  }, [me?.id, queryClient, wsTick]);
+  }, [me?.id, queryClient, wsTick, brandId]);
 
   useEffect(() => {
     if (navigator.geolocation) {

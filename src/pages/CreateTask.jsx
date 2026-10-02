@@ -372,6 +372,13 @@ export default function CreateTask() {
   }, [editTask]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
+  // Publishing goes through the trusted server writer: it derives the origin
+  // Brand from the request host and resolves the actionable category itself, so
+  // a child service (e.g. DJs) is persisted as itself and never becomes 'other'.
+  const createTaskViaServer = async (payload) => {
+    const res = await base44.functions.invoke('createTask', { task: payload });
+    return res?.data?.task;
+  };
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const isHourly = isHourlyCategory(form.category);
   // Distance between origin and destination for moving/delivery/transportation —
@@ -803,7 +810,9 @@ export default function CreateTask() {
     const expiryHours = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
     const expires = expiryHours ? new Date(Date.now() + expiryHours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
-    const created = await base44.entities.Task.create({
+    let created;
+    try {
+      created = await createTaskViaServer({
       payment_method: form.payment_method,
       contactPhone: form.contactPhone || undefined,
       title: autoTitle,
@@ -842,7 +851,13 @@ export default function CreateTask() {
       client_rating: me?.rating || 0,
       client_verified: me?.is_verified || false,
       origin_brand_id: brandId,
-    });
+      });
+    } catch (err) {
+      setLoading(false);
+      submittingRef.current = false;
+      toast.error(err?.response?.data?.message || t('ct_publish_err'));
+      return;
+    }
 
     // Deduct story credits via backend (idempotent — safe to fire-and-forget)
     if (form.is_story && created?.id) {
@@ -950,7 +965,7 @@ export default function CreateTask() {
       const storyExpires = chatFormData.is_story 
         ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() 
         : undefined;
-      const created = await base44.entities.Task.create({
+      const created = await createTaskViaServer({
         payment_method: chatFormData.payment_method || 'Cash',
         contactPhone: chatFormData.contactPhone || form.contactPhone || undefined,
         title: chatFormData.title,

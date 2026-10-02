@@ -11,6 +11,7 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import { parseDescription } from '@/lib/descriptionParser';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useBrand } from '@/lib/brand/BrandProvider';
 
 function calcDistKm(userLoc, task) {
   if (!userLoc || !task.lat || !task.lng) return null;
@@ -372,6 +373,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
   const [userLocation, setUserLocation] = useState(null);
   const [viewedIds, setViewedIds] = useState(() => getViewedIds());
   const queryClient = useQueryClient();
+  const { brandId } = useBrand();
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -385,6 +387,9 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
 
   useEffect(() => {
     const unsub = base44.entities.Task.subscribe((event) => {
+      // A story from another Brand must never appear here — the realtime stream
+      // is global, so the surface's own Brand decides what it may show.
+      if (event.data?.origin_brand_id && event.data.origin_brand_id !== brandId) return;
       // Any task create/update/delete can affect stories — invalidate to refresh
       if (event.type === 'create' || event.type === 'delete') {
         queryClient.invalidateQueries({ queryKey: ['stories'] });
@@ -403,7 +408,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
       }
     });
     return unsub;
-  }, [queryClient]);
+  }, [queryClient, brandId]);
 
   const { data: rawStories = [] } = useQuery({
     queryKey: ['stories'],

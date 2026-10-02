@@ -6,6 +6,7 @@ import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import useTaskServiceLabel from '@/components/useTaskServiceLabel';
+import { categoryKeyForTask } from '@/lib/brand/categoryTree';
 import { trackEvent } from '@/lib/analytics';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
@@ -600,7 +601,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     </span>
                   </div>
               ) : (
-                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${task.category||''}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
+                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${categoryKeyForTask(task)}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
                    <RefreshCw size={11} /> {t('repost')}
                  </button>
               )

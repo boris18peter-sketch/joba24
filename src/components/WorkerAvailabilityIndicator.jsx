@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import { getCategoryLabel } from '@/lib/categories';
+import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { useLanguage } from '@/lib/LanguageContext';
 
 /**
@@ -13,6 +14,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 export default function WorkerAvailabilityIndicator({ category, city }) {
   const { t, isRTL } = useLanguage();
   const { count, hasCategory, hasCity } = useWorkerStats(category, city);
+  const { map: categoryMap } = useGlobalCategories();
 
   // Animated count-up
   const [displayCount, setDisplayCount] = useState(0);
@@ -33,7 +35,8 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
     requestAnimationFrame(animate);
   }, [count]); // eslint-disable-line
 
-  const catLabel = hasCategory ? getCategoryLabel(category, t) : '';
+  // The actionable category (e.g. DJs) owns the label — never the parent niche.
+  const catLabel = hasCategory ? (categoryMap[category]?.label || getCategoryLabel(category, t)) : '';
 
   const mainLabel = (() => {
     if (hasCategory && hasCity) {
@@ -44,6 +47,9 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
     }
     return t('worker_avail_professionals');
   })();
+
+  // Nothing to announce when nobody is available for this exact service.
+  if (count === 0) return null;
 
   const hint = (() => {
     if (hasCategory && hasCity) {
