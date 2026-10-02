@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getGlobalCategoryMap } from '../../shared/globalCategories.ts';
+import { rootKey, listAll } from '../../shared/categoryTree.ts';
 
 /**
  * getBrandDashboard — Brand-attributed operational statistics. Platform Admin only.
@@ -24,7 +25,7 @@ const inRange = (d: any, start: number, end: number) => {
   return Number.isFinite(t) && t >= start && t <= end;
 };
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
 
     const now = Date.now();
     const range = String(body?.range || '30d');
-    let start = now - 30 * DAY;
+    let start = range === 'all' ? 0 : now - 30 * DAY;
     if (range === 'today') start = new Date(new Date().setHours(0, 0, 0, 0)).getTime();
     else if (range === '7d') start = now - 7 * DAY;
     else if (range === '30d') start = now - 30 * DAY;
@@ -50,11 +51,11 @@ Deno.serve(async (req) => {
     const end = range === 'custom' && body?.to ? new Date(body.to).getTime() : now;
 
     const [tasks, apps, reviews, credits, members] = await Promise.all([
-      svc.entities.Task.filter({ origin_brand_id: brandId }, '-created_date', 5000),
-      svc.entities.TaskApplication.filter({ surface_brand_id: brandId }, '-created_date', 5000),
-      svc.entities.Review.filter({ surface_brand_id: brandId }, '-created_date', 5000),
-      svc.entities.CreditTransaction.filter({ brand_id: brandId }, '-created_date', 5000),
-      svc.entities.BrandMembership.filter({ brand_id: brandId }, '-created_date', 5000),
+      listAll(svc.entities.Task, { origin_brand_id: brandId }, '-created_date'),
+      listAll(svc.entities.TaskApplication, { surface_brand_id: brandId }, '-created_date'),
+      listAll(svc.entities.Review, { surface_brand_id: brandId }, '-created_date'),
+      listAll(svc.entities.CreditTransaction, { brand_id: brandId }, '-created_date'),
+      listAll(svc.entities.BrandMembership, { brand_id: brandId }, '-created_date'),
     ]);
 
     const T = tasks || [];
@@ -112,19 +113,15 @@ Deno.serve(async (req) => {
 
     // ── Categories ───────────────────────────────────────────────────────────
     const globalMap = await getGlobalCategoryMap(base44);
-    const catCounts: Record<string, number> = {};
+    const catCounts = {}, parentCounts = {};
     for (const t of tasksIn) {
-      const key = t.category || 'other';
+      const key = t.category_details?.brand_category_key || t.category || 'other';
       catCounts[key] = (catCounts[key] || 0) + 1;
+      const parent = rootKey(key, globalMap) || 'unmapped';
+      parentCounts[parent] = (parentCounts[parent] || 0) + 1;
     }
-    const byCategory = Object.entries(catCounts)
-      .map(([key, count]) => ({
-        key,
-        count,
-        label: globalMap[key]?.label || key,
-        icon: globalMap[key]?.icon || '',
-      }))
-      .sort((a, b) => b.count - a.count);
+    const shape = counts => Object.entries(counts).map(([key,count]) => ({ key, count, percentage: tasksIn.length ? Math.round(Number(count) / tasksIn.length * 1000) / 10 : 0, label: globalMap[key]?.label || (key === 'unmapped' ? 'לא משויך לאב' : key), icon: globalMap[key]?.icon || '' })).sort((a,b) => Number(b.count) - Number(a.count));
+    const byCategory = shape(catCounts), byParent = shape(parentCounts);
 
     // ── Honest availability ──────────────────────────────────────────────────
     const unavailable: { metric: string; reason: string }[] = [];
@@ -173,6 +170,7 @@ Deno.serve(async (req) => {
       },
       daily,
       by_category: byCategory,
+      by_parent: byParent,
       unavailable,
       unattributed_credit_transactions: unattributedCredits,
     });
@@ -180,4 +178,4 @@ Deno.serve(async (req) => {
     console.error('getBrandDashboard error:', error?.message);
     return Response.json({ error: 'dashboard_failed', message: error?.message }, { status: 500 });
   }
-});
+}

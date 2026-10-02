@@ -5,7 +5,7 @@ import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCir
 import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
-import { getCategoryLabel } from '@/lib/categories';
+import useTaskServiceLabel from '@/components/useTaskServiceLabel';
 import { trackEvent } from '@/lib/analytics';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
@@ -143,7 +143,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     return () => document.removeEventListener('click', handler);
   }, [showMenu]);
 
-  const catLabel = getCategoryLabel(task.category, t);
+  const catLabel = useTaskServiceLabel(task, t);
   const dist = task._distKm;
   const appStatus = myApp?.status;
   const hasActiveApp = appStatus === 'pending' || appStatus === 'approved';

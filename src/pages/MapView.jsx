@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -8,7 +8,10 @@ import { fetchPublicTasks } from '@/lib/publicTasks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
-import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
+import { getCategoryLabel } from '@/lib/categories';
+import MarketServiceFilter from '@/components/MarketServiceFilter';
+import { categoryKeyForTask } from '@/lib/brand/categoryTree';
+import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
@@ -90,6 +93,7 @@ function UserDot() {
 }
 
 export default function MapView() {
+  const { globalMap: categoryMap } = useBrandCategories();
   const mapRef = useRef(null);
   const seedRef = useRef({});
   const navigate = useNavigate();
@@ -168,7 +172,7 @@ export default function MapView() {
     if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
     if (filters.time && t.estimated_time !== filters.time) return false;
     if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
-    if (filters.categories?.length > 0 && !filters.categories.includes(t.category)) return false;
+    if (filters.categories?.length > 0 && !filters.categories.includes(categoryKeyForTask(t))) return false;
     if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
     if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
     return true;
@@ -430,7 +434,7 @@ export default function MapView() {
                 {filters.categories?.length > 0
                   ? <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
                   : null}
-                {filters.categories?.length === 1 ? getCategoryLabel(filters.categories[0], t) : t('category')}
+                {filters.categories?.length === 1 ? categoryMap[filters.categories[0]]?.label || getCategoryLabel(filters.categories[0], t) : t('category')}
                 {showCategoryDropdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
 
@@ -469,18 +473,7 @@ export default function MapView() {
                         {t('clear_categories')}
                       </button>
                     )}
-                    {CATEGORIES.map(c => {
-                      const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
-                      if (count === 0) return null;
-                      const isSelected = (filters.categories || []).includes(c.value);
-                      return (
-                        <button key={c.value} onClick={() => setFilters(f => { const cats = f.categories || []; return { ...f, categories: isSelected ? cats.filter(x => x !== c.value) : [...cats, c.value] }; })}
-                          style={{ width: '100%', padding: '8px 14px', background: isSelected ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: isSelected ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: isSelected ? 700 : 500 }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{isSelected && <span style={{ fontSize: 9, color: '#1a6fd4' }}>✓</span>}{getCategoryLabel(c.value, t)}</span>
-                          <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span>
-                        </button>
-                      );
-                    })}
+                    <MarketServiceFilter tasks={tasks} selected={filters.categories || []} onChange={categories => setFilters(f => ({ ...f,categories }))} />
                   </div>
                 </>
               )}
@@ -647,7 +640,7 @@ export default function MapView() {
                 <div style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                   {selectedTask.location_name && <><MapPin size={10} /><span>{translatedSelectedTask?.location_name || selectedTask.location_name}</span></>}
                   {selectedTask.estimated_time && <><Clock size={10} /><span>{selectedTask.estimated_time}</span></>}
-                  <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{getCategoryLabel(selectedTask.category, t)}</span>
+                  <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{categoryMap[categoryKeyForTask(selectedTask)]?.label || getCategoryLabel(selectedTask.category, t)}</span>
                 </div>
               </div>
             </div>

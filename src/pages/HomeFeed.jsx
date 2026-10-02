@@ -15,11 +15,12 @@ import EmptySearchState from '@/components/EmptySearchState';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
-import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
-import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
+import { getCategoryLabel } from '@/lib/categories';
+import MarketServiceFilter from '@/components/MarketServiceFilter';
+import { categoryKeyForTask } from '@/lib/brand/categoryTree';
+import { useBrandCategories } from '@/lib/brand/brandCategories';
+import { useNavigate, useLocation } from 'react-router-dom';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
 import SignupGiftModal from '@/components/SignupGiftModal';
@@ -30,6 +31,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { recoverIosSubscriptionCredits } from '@/lib/iosIap';
 
 export default function HomeFeed() {
+  const { globalMap: categoryMap } = useBrandCategories();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -492,7 +494,7 @@ export default function HomeFeed() {
       if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
       if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
       if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
-      if (filters.categories?.length > 0 && !filters.categories.includes(t.category)) return false;
+      if (filters.categories?.length > 0 && !filters.categories.includes(categoryKeyForTask(t))) return false;
       if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
       if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
       if (filters.payment_method && t.payment_method !== filters.payment_method) return false;
@@ -771,7 +773,7 @@ export default function HomeFeed() {
                       border: '1px solid #93c5fd', fontSize: 12, color: '#1d4ed8',
                       fontWeight: 700, whiteSpace: 'nowrap',
                     }}>
-                      {getCategoryLabel(cat, t)}
+                      {categoryMap[cat]?.label || getCategoryLabel(cat, t)}
                       <button
                         onClick={() => setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) }))}
                         aria-label="remove"
@@ -804,12 +806,7 @@ export default function HomeFeed() {
                       </button>
                     </div>
                     {(filters.categories?.length > 0) &&                    <button onClick={() => setFilters(f => ({ ...f, categories: [] }))} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}>{t('clear_categories')}</button>}
-                    {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN').length - tasks.filter(t => t.category === a.value && t.status === 'OPEN').length).map(c => {
-                     const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
-                      if (count === 0) return null;
-                      const isSelected = (filters.categories || []).includes(c.value);
-                      return (<button key={c.value} onClick={() => { setFilters(f => { const cats = f.categories || []; return { ...f, categories: isSelected ? cats.filter(x => x !== c.value) : [...cats, c.value] }; }); }} style={{ width: '100%', padding: '8px 14px', background: isSelected ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: isSelected ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: isSelected ? 700 : 500 }}><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{isSelected && <span style={{ fontSize: 9, color: '#1a6fd4' }}>✓</span>}{getCategoryLabel(c.value, t)}</span><span style={{ fontSize: 10, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 20, padding: '1px 6px' }}>{count}</span></button>);
-                    })}
+                    <MarketServiceFilter tasks={tasks} selected={filters.categories || []} onChange={categories => setFilters(f => ({ ...f,categories }))} />
                   </div>
                 </>
               )}

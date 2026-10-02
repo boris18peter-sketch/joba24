@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { listAll, rootKey } from '../../shared/categoryTree.ts';
 
 /**
  * adminCreateBrand — Package 4.5.
@@ -31,7 +32,7 @@ function normalizeHost(raw: string): string {
     .split('/')[0].split(':')[0].replace(/\.$/, '');
 }
 
-Deno.serve(async (req) => {
+export default async function(req) {
   const svc = createClientFromRequest(req).asServiceRole;
   const created: { entity: string; id: string }[] = [];
 
@@ -84,7 +85,10 @@ Deno.serve(async (req) => {
     const parent = (defaults || [])[0];
     if (!parent) return Response.json({ error: 'platform_brand_missing' }, { status: 500 });
 
-    const parentCategories = await svc.entities.BrandCategory.filter({ brand_id: parent.id });
+    const globalCategories = await listAll(svc.entities.GlobalCategory);
+    const categoryMap = Object.fromEntries(globalCategories.map(g => [g.category_key,g]));
+    const assignedParents = [...new Set(Array.isArray(body.parent_category_keys) ? body.parent_category_keys : parent.assigned_parent_keys || [])];
+    if (assignedParents.some(key => categoryMap[key]?.node_type !== 'parent')) return Response.json({ error: 'parent_invalid' }, { status: 400 });
 
     // ── Create (inactive until the final step) ──────────────────────────────
     const brand = await svc.entities.Brand.create({
@@ -93,6 +97,9 @@ Deno.serve(async (req) => {
       status: 'suspended',
       origin: 'partner',
       is_default: false,
+      category_model_version: 2,
+      assigned_parent_keys: assignedParents,
+      excluded_child_keys: [],
     });
     created.push({ entity: 'Brand', id: brand.id });
 
@@ -125,28 +132,8 @@ Deno.serve(async (req) => {
       domains.push(d);
     }
 
-    // Categories — the requested subset, else the parent's whole catalogue.
-    const requested = Array.isArray(body?.categories) ? body.categories.filter((c: string) => CATEGORY_KEYS.includes(c)) : null;
-    const source = parentCategories?.length
-      ? parentCategories
-      : CATEGORY_KEYS.map((k) => ({ category_key: k, label: '', icon: '', sort_order: 0 }));
-
-    const rows = source
-      .filter((c: any) => !requested || requested.includes(c.category_key))
-      .map((c: any) => ({
-        brand_id: brand.id,
-        category_key: c.category_key,
-        label: c.label || '',
-        icon: c.icon || '',
-        sort_order: c.sort_order || 0,
-        enabled: true,
-        form_config: {},
-      }));
-
-    if (rows.length) {
-      const made = await svc.entities.BrandCategory.bulkCreate(rows);
-      for (const m of (made || [])) created.push({ entity: 'BrandCategory', id: m.id });
-    }
+    // Derive services from parent assignments; never copy child definitions or forms.
+    const services = globalCategories.filter(g => g.node_type !== 'parent' && g.active !== false && assignedParents.includes(rootKey(g.category_key,categoryMap)));
 
     // ── Go live (final step) ────────────────────────────────────────────────
     // Domains deliberately stay 'pending' here. A hostname may only be
@@ -161,7 +148,7 @@ Deno.serve(async (req) => {
       brand: live,
       config,
       domains: domains.map((d) => ({ hostname: d.hostname, status: 'pending', is_primary: d.is_primary, verified: false })),
-      category_count: rows.length,
+      category_count: services.length,
       url: `https://${primary}`,
       next_step: 'verify_domain',
     });
@@ -170,4 +157,4 @@ Deno.serve(async (req) => {
     await rollback();
     return Response.json({ error: 'creation_failed', message: error?.message, rolled_back: true }, { status: 500 });
   }
-});
+}

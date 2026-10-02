@@ -28,11 +28,13 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import BrandCategoryFields from '@/components/BrandCategoryFields';
-import { useBrandCategories, isBrandSpecificKey } from '@/lib/brand/brandCategories';
+import { useBrandCategories } from '@/lib/brand/brandCategories';
+import { useBrand } from '@/lib/brand/BrandProvider';
+import { globalFormError } from '@/lib/brand/categoryTree';
+import CategoryServiceSelector from '@/components/CategoryServiceSelector';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
 import { trackEvent } from '@/lib/analytics';
-import { JOBA24_BRAND_ID } from '@/lib/jobaBrand';
 import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 
@@ -257,7 +259,8 @@ export default function CreateTask() {
   // BrandCategory is the authoritative source for the categories THIS Brand
   // offers (falls back to the platform catalogue). A brand-specific category is
   // persisted on the Task as 'other' with its brand key kept in category_details.
-  const { categories: brandCategories, taskCategoryFor } = useBrandCategories();
+  const { brandId } = useBrand();
+  const { categories: brandCategories, taskCategoryFor, formFieldsFor, isLoading: categoriesLoading } = useBrandCategories();
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
@@ -294,6 +297,14 @@ export default function CreateTask() {
     } catch (_) {}
     return DEFAULT_FORM;
   });
+
+  useEffect(() => {
+    if (categoriesLoading || isEditMode) return;
+    if (!brandCategories.some(c => c.value === form.category)) {
+      setForm(p => ({ ...p, category: brandCategories[0]?.value || '', category_details: {} }));
+      setCategoryDetails({});
+    }
+  }, [categoriesLoading, brandCategories.map(c => c.value).join('|'), isEditMode, form.category]);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -337,7 +348,7 @@ export default function CreateTask() {
       address_notes: editTask.address_notes || '',
       estimated_time: isCustomTime ? 'custom' : (editTask.estimated_time || '1h'),
       custom_time: isCustomTime ? editTask.estimated_time : '',
-      category: editTask.category || 'other',
+      category: editTask.category_details?.brand_category_key || editTask.category || 'other',
       contactPhone: editTask.contactPhone || '',
       approval_mode: 'manual',
       expiry_hours: editTask.expiry_duration_hours || null,
@@ -391,7 +402,7 @@ export default function CreateTask() {
   };
   const getFinalCategoryDetails = () => {
     const cd = { ...(Object.keys(categoryDetails).length > 0 ? categoryDetails : {}) };
-    if (isBrandSpecificKey(form.category)) cd.brand_category_key = form.category;
+    cd.brand_category_key = form.category;
     if (isHourly && form.hourly_rate && form.hours) {
       cd.hourly_rate = Number(form.hourly_rate);
       cd.hours = parseFloat(form.hours);
@@ -631,6 +642,11 @@ export default function CreateTask() {
 
   const doSubmit = async () => {
     if (submittingRef.current) return;
+    if (categoriesLoading || (!isEditMode && !brandCategories.some(c => c.value === form.category))) {
+      toast.error('יש לבחור שירות זמין במותג'); return;
+    }
+    const formError = globalFormError(formFieldsFor(form.category), categoryDetails);
+    if (formError) { toast.error(formError); return; }
     submittingRef.current = true;
     let submitted = false;
     const newErrors = {};
@@ -683,7 +699,7 @@ export default function CreateTask() {
         address_floor: form.address_floor || undefined,
         address_apartment: form.address_apartment || undefined,
         address_notes: form.address_notes || undefined,
-        category: form.category,
+        category: taskCategoryFor(form.category),
         category_details: getFinalCategoryDetails(),
         expiry_duration_hours: expiryHoursEdit,
         expires_at: expires,
@@ -825,7 +841,7 @@ export default function CreateTask() {
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
       client_verified: me?.is_verified || false,
-      origin_brand_id: JOBA24_BRAND_ID,
+      origin_brand_id: brandId,
     });
 
     // Deduct story credits via backend (idempotent — safe to fire-and-forget)
@@ -894,7 +910,7 @@ export default function CreateTask() {
           address_floor: chatFormData.address_floor || undefined,
           address_apartment: chatFormData.address_apartment || undefined,
           address_notes: chatFormData.address_notes || undefined,
-          category: chatFormData.category || 'other',
+          category: taskCategoryFor(chatFormData.category || 'other'),
           category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : (chatFormData.category_details || undefined),
           expiry_duration_hours: expiryHoursEdit,
           expires_at: expires,
@@ -953,7 +969,7 @@ export default function CreateTask() {
         address_floor: chatFormData.address_floor || undefined,
         address_apartment: chatFormData.address_apartment || undefined,
         address_notes: chatFormData.address_notes || undefined,
-        category: chatFormData.category || 'other',
+        category: taskCategoryFor(chatFormData.category || 'other'),
         category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : (chatFormData.category_details || undefined),
         approval_mode: 'manual',
         expiry_duration_hours: expiryHours || null,
@@ -972,7 +988,7 @@ export default function CreateTask() {
         client_name: me?.full_name,
         client_rating: me?.rating || 0,
         client_verified: me?.is_verified || false,
-        origin_brand_id: JOBA24_BRAND_ID,
+        origin_brand_id: brandId,
       });
 
       // Deduct story credits via backend
@@ -1149,18 +1165,13 @@ export default function CreateTask() {
         {/* Category */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
-          <SelectionSheet
-            value={form.category}
-            options={brandCategories.map(c => ({ value: c.value, label: c.label || getCategoryLabel(c.value, t) }))}
-            onChange={val => {
-              set('category', val);
-              // Re-validate mismatch immediately when category changes
-              if (form.title || form.description) {
-                const mismatch = checkCategoryDescriptionMatch(val, form.description, form.title);
-                setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
-              }
-            }}
-          />
+          <CategoryServiceSelector value={form.category} allowHistorical={isEditMode} onChange={val => {
+            set('category', val);
+            setCategoryDetails({});
+            setExtraFieldsText('');
+            set('category_details', {});
+            setModerationErrors(p => ({ ...p, categoryMismatch: null }));
+          }} />
         </SectionCard>
 
         {/* Category mismatch warning — shown right below category picker */}
@@ -1180,7 +1191,7 @@ export default function CreateTask() {
           originLat={form.lat}
           originLng={form.lng}
           initialValues={isEditMode ? form.category_details : undefined}
-          onChange={(data, text) => { setCategoryDetails(data); setExtraFieldsText(text); }}
+          onChange={(data, text) => { setCategoryDetails(prev => ({ ...prev, ...data })); setExtraFieldsText(text); }}
         />
 
         {/* Brand-configured task fields for this category (BrandCategory.form_config) */}
@@ -1741,7 +1752,7 @@ export default function CreateTask() {
             <div style={{ marginTop: 8, paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
               <button
                 onClick={handleSubmit}
-                disabled={loading || !!checkingModeration}
+                disabled={loading || !!checkingModeration || categoriesLoading || (!isEditMode && !brandCategories.length)}
                 className="btn-tap"
                 style={{
                   width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,

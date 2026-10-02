@@ -4,9 +4,9 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { fetchPublicTasks } from '@/lib/publicTasks';
-import { getCategoryLabel } from '@/lib/categories';
+import useTaskServiceLabel from '@/components/useTaskServiceLabel';
+import { categoryKeyForTask } from '@/lib/brand/categoryTree';
 import { X, MapPin, Navigation, Eye, MousePointerClick } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import { parseDescription } from '@/lib/descriptionParser';
@@ -44,7 +44,7 @@ function sortStories(stories) {
 }
 
 function StoryCard({ task, isViewed, isOwn, onClick, t }) {
-  const label = getCategoryLabel(task.category, t);
+  const label = useTaskServiceLabel(task, t);
   const emoji = label.split(' ')[0];
   const currentPrice = calculateCurrentPrice(task);
   const ringGradient = isOwn
@@ -236,9 +236,9 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
 
   const clickTrackedRef = useRef(new Set());
 
-  if (!task) return null;
+  const label = useTaskServiceLabel(task, t);
 
-  const label = getCategoryLabel(task.category, t);
+  if (!task) return null;
   const currentPrice = calculateCurrentPrice(task);
   const applyCost = Math.max(1, Math.round((currentPrice || 0) * 0.05));
   const distKm = calcDistKm(userLocation, task);
@@ -418,7 +418,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
 
   // Filter by category if specified; for 'all' (null), show stories matching user's context
   const filteredRaw = filterCategory
-    ? rawStories.filter(t => t.category === filterCategory)
+    ? rawStories.filter(t => categoryKeyForTask(t) === filterCategory)
     : rawStories;
 
   // Sort: own stories always first (with gold ring), then unviewed, then viewed

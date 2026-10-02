@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
 import { Loader2, Users, ListChecks, FileCheck2, Star, Coins, TrendingUp, Info } from 'lucide-react';
 import { Section, Pill, Btn, card, mono } from '@/components/admin/brand/brandUi';
+import BrandCategoryAnalytics from '@/components/admin/brand/BrandCategoryAnalytics';
 
 /**
  * Brand Dashboard — operational statistics attributable to THIS Brand.
@@ -164,37 +165,7 @@ export default function BrandDashboardTab({ brand }) {
         )}
       </Section>
 
-      <Section title="לפי קטגוריה" desc="משימות שנוצרו בטווח, לפי קטגוריה.">
-        {data.by_category.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-3)', padding: 16, textAlign: 'center' }}>
-            אין משימות בטווח
-          </div>
-        ) : (
-          <>
-            <div style={{ width: '100%', height: Math.max(180, data.by_category.length * 30) }}>
-              <ResponsiveContainer>
-                <BarChart data={data.by_category} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-1)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10 }} stroke="var(--text-3)" allowDecimals={false} />
-                  <YAxis type="category" dataKey="label" width={110} tick={{ fontSize: 11 }} stroke="var(--text-3)" />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border-1)' }} />
-                  <Bar dataKey="count" name="משימות" fill="var(--brand-primary)" radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {data.by_category.slice(0, 12).map((c) => (
-                <span key={c.key} style={{
-                  fontSize: 11, background: 'var(--surface-3)', borderRadius: 8,
-                  padding: '3px 8px', color: 'var(--text-2)',
-                }}>
-                  {c.icon} {c.label} · <b>{c.count}</b>
-                </span>
-              ))}
-            </div>
-          </>
-        )}
-      </Section>
+      <BrandCategoryAnalytics data={data} />
 
       <Section title="משיכת נתונים" desc="הטווח המדויק שממנו נספרים הנתונים.">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>

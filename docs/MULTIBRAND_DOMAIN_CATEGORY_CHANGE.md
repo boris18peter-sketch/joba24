@@ -3,7 +3,22 @@
 ## Baseline and rollback
 Before this package: 26 flat GlobalCategory records (all active, all fields empty); 2 existing Brands; 52 BrandCategory links; 4 BrandDomain records. Existing task category keys and all task records are retained. No Brand is created. No payment code is changed.
 
-Migration takes one backup record per GlobalCategory, Brand and BrandCategory in CategoryMigrationBackup before changes. The migration is idempotent and switches each Brand to model version 2 only after the global tree is structurally valid. Old BrandCategory links and form_config are retained, not deleted. To roll back reads, restore affected Brand records from the backup (especially category_model_version), restore the baseline global records, and deactivate newly introduced global nodes. Do not delete nodes referenced by tasks created after migration. Restore prior code through version history before restoring the old schema. No existing Task is rewritten.
+Migration takes one backup record per GlobalCategory, Brand and BrandCategory in CategoryMigrationBackup before changes (80 records written). It is idempotent and switches each Brand to model version 2 only after the global tree is structurally valid. Old BrandCategory links and form_config are retained, not deleted. To roll back reads, restore affected Brand records from the backup (especially category_model_version), restore the baseline global records, and deactivate newly introduced global nodes. Do not delete nodes referenced by tasks created after migration. Restore prior code through version history before restoring the old schema. No existing Task is rewritten.
+
+## Applied result (verified 2026-10-02)
+- 9 parent categories created; 32 services total, 0 orphans, 0 cycles.
+- Joba24: version 2, parents = all nine.
+- SaveaDate: version 2, parents = events + personal; excluded = other (matches its previous enabled set).
+- Tasks rewritten: 0. Brands created: 0.
+
+## Domain evidence recorded (verified 2026-10-02)
+The re-check compares the hostname's public DNS against the published entry bundles served over HTTPS from `joba24.base44.app`, on the same host, without following cross-brand redirects.
+- joba24.com — DNS verified, HTTPS 200, bundles match. Mapped, active, primary.
+- www.joba24.com — DNS verified, HTTPS 301 to https://joba24.com/ then bundles match. Mapped, active. The single redirect is reported, not altered.
+- joba24.base44.app — DNS verified, HTTPS 200, bundles match. Mapped, active.
+- saveadate.joba24.com — no safe public DNS resolution yet; not verified, not activated. Owner must complete the Base44 Domains connection and DNS records.
+
+A failed re-check clears the stored evidence and does not deactivate a protected canonical mapping.
 
 ## Infrastructure procedure (official documentation checked 2026-10-02)
 The current documented surface is the app dashboard's Domains page, not a BrandDomain record. Connect existing domain, enter the full hostname, Add, then use DNS instructions or approve Base44's provider-assisted DNS setup. The dashboard's displayed records are authoritative; this application cannot read or alter its control-plane connection state without a separately authorized management integration.

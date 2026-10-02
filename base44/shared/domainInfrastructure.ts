@@ -10,6 +10,15 @@ async function dns(host, type) {
   return { status: data.Status, answers: (data.Answer || []).map(a => ({ type: a.type, value: a.data })) };
 }
 function entries(html) { return [...html.matchAll(/(?:src|href)=["']([^"']*\/assets\/[^"']+\.js)["']/g)].map(m => new URL(m[1], 'https://joba24.base44.app').pathname).sort(); }
+const followableHost = host => CANONICAL_HOSTS.includes(host);
+async function fetchOnce(url) {
+  const res = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(10000) });
+  if (res.status >= 300 && res.status < 400) {
+    const loc = res.headers.get('location');
+    return { status: res.status, redirect: loc ? new URL(loc, url).toString() : null };
+  }
+  return { status: res.status, html: res.status === 200 ? await res.text() : '' };
+}
 export async function inspectDomain(hostname) {
   const checked = new Date().toISOString();
   try {
@@ -18,14 +27,20 @@ export async function inspectDomain(hostname) {
     const answers = [...a.answers, ...aaaa.answers, ...cname.answers];
     const addresses = answers.filter(r => r.type === 1 || r.type === 28).map(r => r.value);
     if (!addresses.length || !addresses.every(safeIP)) return { checked_at: checked, dns_status: 'failed', platform_status: 'not_confirmed', message: 'No safe public DNS resolution', answers };
-    const [candidate, baseline] = await Promise.all([
-      fetch(`https://${hostname}/`, { redirect: 'manual', signal: AbortSignal.timeout(10000) }),
-      fetch('https://joba24.base44.app/', { redirect: 'error', signal: AbortSignal.timeout(10000) }),
+    const [first, baseline] = await Promise.all([
+      fetchOnce(`https://${hostname}/`),
+      fetchOnce('https://joba24.base44.app/'),
     ]);
-    const [html, reference] = await Promise.all([candidate.text(), baseline.text()]);
-    const expected = entries(reference), observed = entries(html);
-    const servesApp = candidate.status === 200 && baseline.status === 200 && expected.length > 0 && expected.every(path => observed.includes(path));
-    return { checked_at: checked, dns_status: servesApp ? 'verified' : 'resolved', platform_status: servesApp ? 'observed_connected' : 'not_confirmed', serves_app: servesApp, answers, http_status: candidate.status, redirect_to: candidate.headers.get('location'), entry_bundles: observed, message: servesApp ? 'Same-host HTTPS serves this published app; DNS resolves publicly.' : 'HTTPS did not prove this published app. Check connection, redirects and publish the latest build.' };
+    let final = first, redirectChain = first.redirect ? [first.redirect] : [];
+    if (first.redirect) {
+      const target = new URL(first.redirect);
+      if (target.hostname === hostname || followableHost(target.hostname)) final = await fetchOnce(first.redirect);
+      else return { checked_at: checked, dns_status: 'resolved', platform_status: 'not_confirmed', serves_app: false, answers, redirect_to: first.redirect, message: `Redirects off-site to ${first.redirect}; this hostname does not serve the app directly.` };
+    }
+    const expected = entries(baseline.html || ''), observed = entries(final.html || '');
+    const servesApp = baseline.status === 200 && final.status === 200 && expected.length > 0 && expected.every(path => observed.includes(path));
+    const redirectNote = redirectChain.length ? ` Redirects once to ${redirectChain[0]}; confirm this is intended.` : '';
+    return { checked_at: checked, dns_status: servesApp ? 'verified' : 'resolved', platform_status: servesApp ? 'observed_connected' : 'not_confirmed', serves_app: servesApp, answers, http_status: first.status, redirect_to: redirectChain[0] || null, entry_bundles: observed, message: servesApp ? `Same-host HTTPS serves this published app; DNS resolves publicly.${redirectNote}` : `HTTPS did not prove this published app (status ${first.status}). Check connection, redirects and publish the latest build.` };
   } catch (error) { return { checked_at: checked, dns_status: 'unknown', platform_status: 'not_confirmed', serves_app: false, message: error.message }; }
 }
 export function externalStep(hostname) {
