@@ -6,7 +6,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
@@ -163,6 +163,24 @@ export default function TaskDetail(props) {
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [creditsNeeded, setCreditsNeeded] = useState(null);
   const [showOwnerMenu, setShowOwnerMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Delete is a permanent removal. Authorization is SERVER-AUTHORITATIVE: the
+  // Task RLS permits delete only for the owner (client_id) or an admin, so a
+  // non-owner request is rejected by the server even if the UI were bypassed.
+  const deleteMutation = useMutation({
+    mutationFn: () => base44.entities.Task.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success(t('task_deleted_toast') || 'המשימה נמחקה');
+      setShowDeleteConfirm(false);
+      window.dispatchEvent(new CustomEvent('close_task_sheet'));
+    },
+    onError: () => toast.error(t('delete_error_toast') || 'שגיאה במחיקה'),
+  });
   const [showQuickChat, setShowQuickChat] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showInvoiceView, setShowInvoiceView] = useState(false);
@@ -1457,7 +1475,7 @@ export default function TaskDetail(props) {
 
       {/* Owner 3-dot bottom sheet */}
       {showOwnerMenu && createPortal(
-        <div className="mobile-sheet-overlay" onClick={() => setShowOwnerMenu(false)}>
+        <div className="mobile-sheet-overlay" style={{ zIndex: 1000001 }} onClick={() => setShowOwnerMenu(false)}>
           <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-3)', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
@@ -1492,6 +1510,17 @@ export default function TaskDetail(props) {
                 <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('cancel_task_sub')}</div>
               </div>
             </div>
+            <div
+              onClick={() => { setShowOwnerMenu(false); setShowDeleteConfirm(true); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--color-danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={17} color="var(--color-danger)" />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-danger)' }}>{t('delete_task_title') || 'מחיקת משימה'}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('delete_task_sub') || 'מחיקה סופית — לא ניתן לשחזר'}</div>
+              </div>
+            </div>
             <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
           </div>
         </div>,
@@ -1499,6 +1528,28 @@ export default function TaskDetail(props) {
       )}
 
 
+
+      {showDeleteConfirm && task && createPortal(
+        <div className="mobile-sheet-overlay" style={{ zIndex: 1000002 }} onClick={() => setShowDeleteConfirm(false)}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
+            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>{t('delete_task_title') || 'מחיקת משימה'}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 18 }}>{t('delete_task_confirm') || 'המשימה תימחק לצמיתות. לא ניתן לשחזר פעולה זו.'}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}
+                style={{ width: '100%', height: 48, borderRadius: 14, background: 'var(--color-danger)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: deleteMutation.isPending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {deleteMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> {t('delete_task_btn') || 'מחק משימה'}</>}
+              </button>
+              <button onClick={() => setShowDeleteConfirm(false)} disabled={deleteMutation.isPending}
+                style={{ width: '100%', height: 44, borderRadius: 14, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                {t('cancel')}
+              </button>
+            </div>
+            <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
+          </div>
+        </div>,
+        document.body
+      )}
 
       {showQuickChat && task && me && (
         <QuickChatDrawer

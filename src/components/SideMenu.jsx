@@ -48,7 +48,7 @@ export default function SideMenu({ open, onClose }) {
       <div
         style={{
           position: 'fixed', top: 0, left: 0, bottom: 0, width: 272,
-          background: 'linear-gradient(165deg, #091b3e 0%, #0e2660 45%, #183673 100%)',
+          background: 'var(--brand-menu-bg, linear-gradient(165deg, #091b3e 0%, #0e2660 45%, #183673 100%))',
           zIndex: 10002,
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.26s cubic-bezier(0.32,0,0.2,1)',
@@ -105,8 +105,8 @@ export default function SideMenu({ open, onClose }) {
               width: 'calc(100% - 24px)',
               margin: '8px 12px',
               padding: '13px 16px',
-              background: '#fbbf24',
-              color: '#0a1f5c',
+              background: 'var(--brand-menu-btn-bg, #fbbf24)',
+              color: 'var(--brand-menu-btn-text, #0a1f5c)',
               border: 'none',
               borderRadius: 14,
               fontWeight: 800,
@@ -129,11 +129,11 @@ export default function SideMenu({ open, onClose }) {
               <Link key={to} to={to} onClick={onClose}
               style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
-                background: active ? 'rgba(96,165,250,0.15)' : 'transparent',
-                color: active ? '#60a5fa' : '#bfdbfe',
+                background: active ? 'var(--brand-menu-active-bg, rgba(96,165,250,0.15))' : 'transparent',
+                color: active ? 'var(--brand-menu-active-text, #60a5fa)' : 'var(--brand-menu-text, #bfdbfe)',
                 fontWeight: active ? 700 : 500, fontSize: 15,
                 textDecoration: 'none',
-                borderLeft: active ? '3px solid #60a5fa' : '3px solid transparent',
+                borderLeft: active ? '3px solid var(--brand-menu-active-text, #60a5fa)' : '3px solid transparent',
                 transition: 'all 0.15s'
               }}>
                 
@@ -186,7 +186,7 @@ export default function SideMenu({ open, onClose }) {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '13px 16px', borderRadius: 'var(--r-md)',
-              background: 'var(--brand-accent)', color: '#0a1f5c',
+              background: 'var(--brand-menu-btn-bg, var(--brand-accent))', color: 'var(--brand-menu-btn-text, #0a1f5c)',
               border: 'none', fontWeight: 900, fontSize: 15,
               textDecoration: 'none', marginBottom: 14,
               boxShadow: '0 4px 16px rgba(251,191,36,0.4)'

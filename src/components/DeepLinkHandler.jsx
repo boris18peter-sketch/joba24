@@ -16,12 +16,15 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { useAuth } from '@/lib/AuthContext';
+import { useBrand } from '@/lib/brand/BrandProvider';
+import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
 
 const PENDING_KEY = 'joba24_pending_task';
 
 export default function DeepLinkHandler() {
   const { openTaskSheet } = useTaskSheet();
   const { isAuthenticated, isLoadingAuth, user } = useAuth();
+  const { currentBrandId } = useBrand();
   const location = useLocation();
   const openedRef = useRef(false);
 
@@ -54,8 +57,13 @@ export default function DeepLinkHandler() {
     if (!pending) return;
     openedRef.current = true;
     sessionStorage.removeItem(PENDING_KEY);
-    openTaskSheet(pending);
-  }, [isAuthenticated, isLoadingAuth, isApproved, location.pathname, openTaskSheet]);
+    // Resolve the Task's own Brand: a link for a Task created on another Brand
+    // opens on THAT Brand's domain instead of failing here as "Task not found".
+    resolveTaskBrandUrl(pending, currentBrandId).then((brandUrl) => {
+      if (brandUrl) { window.location.href = brandUrl; return; }
+      openTaskSheet(pending);
+    });
+  }, [isAuthenticated, isLoadingAuth, isApproved, location.pathname, openTaskSheet, currentBrandId]);
 
   // Foreground notification click → open the sheet immediately
   useEffect(() => {
@@ -63,12 +71,16 @@ export default function DeepLinkHandler() {
       if (event.data?.type === 'OPEN_TASK_SHEET' && event.data?.taskId) {
         // Pre-launch gate: don't open task sheet for unapproved users
         if (!isApproved) return;
-        openTaskSheet(event.data.taskId);
+        const tid = event.data.taskId;
+        resolveTaskBrandUrl(tid, currentBrandId).then((brandUrl) => {
+          if (brandUrl) { window.location.href = brandUrl; return; }
+          openTaskSheet(tid);
+        });
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [openTaskSheet, isApproved]);
+  }, [openTaskSheet, isApproved, currentBrandId]);
 
   return null;
 }

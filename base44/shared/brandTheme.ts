@@ -16,8 +16,10 @@ export const BRAND_THEME_TOKENS = [
     'modal_bg','modal_border','modal_title','modal_text','modal_cta_bg','modal_cta_text','overlay',
     'banner_bg','banner_bg_2','banner_text','banner_accent','banner_cta_bg','banner_cta_text',
     'header_bg','header_text','header_active','nav_bg','nav_text','nav_active',
-    'status_bg','status_text','status_active_bg','status_active_text'].map(key => ({ key, type: 'color' })),
-  ...['button_radius','card_radius','input_radius','modal_radius'].map(key => ({ key, type: 'number' })),
+    'status_bg','status_text','status_active_bg','status_active_text',
+    'menu_bg','menu_surface','menu_text','menu_icon','menu_active_bg','menu_active_text','menu_btn_bg','menu_btn_text',
+    'glow_primary','glow_accent'].map(key => ({ key, type: 'color' })),
+  ...['button_radius','card_radius','input_radius','modal_radius','glow_opacity'].map(key => ({ key, type: 'number' })),
   { key: 'card_shadow', type: 'shadow' },
 ];
 

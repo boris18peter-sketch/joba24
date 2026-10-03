@@ -61,3 +61,25 @@ export function brandContextCategoryLabel(key, scope, t) {
   if (!scope?.has?.(key)) return generalLabel;
   return scope.label ? scope.label(key, t) : getCategoryLabel(key, t);
 }
+
+/** Is this canonical category OUTSIDE the current Brand's professional scope? */
+export function isOutOfScope(key, scope) {
+  if (!key || !scope) return false;
+  if (scope.isPlatformBrand) return false;
+  return !scope.has?.(key);
+}
+
+/**
+ * A Task title that respects the Brand context.
+ *
+ * A Task whose category is OUTSIDE this Brand's scope must not expose its
+ * unrelated title on this surface (a Plumbing task title inside an Events
+ * Brand). It is presented as the neutral "כללי" — presentation only. The stored
+ * Task is never changed, and on Joba24 (or a Brand where the category IS in
+ * scope) the real title is shown normally.
+ */
+export function brandContextTaskTitle(title, categoryKey, scope, t) {
+  if (!isOutOfScope(categoryKey, scope)) return title;
+  const general = t?.('category_general');
+  return general && general !== 'category_general' ? general : 'כללי';
+}

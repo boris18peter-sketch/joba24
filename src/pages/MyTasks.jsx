@@ -14,6 +14,7 @@ import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import { STATUS_GRADIENT, STATUS_LABEL, buildRepostUrl } from '@/lib/taskUtils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useBrand } from '@/lib/brand/BrandProvider';
 
 const TABS = [
   { key: 'active',    i18nKey: 'active',  statuses: ['OPEN', 'TAKEN'] },
@@ -26,6 +27,9 @@ export default function MyTasks() {
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const { t, isRTL } = useLanguage();
+  // My Published Tasks is Brand-contextual: a global account's Tasks must not
+  // leak between Brands. Scoping is by the Task's own origin_brand_id.
+  const { currentBrandId } = useBrand();
   const [activeTab, setActiveTab] = useState('active');
   const [cancelTask, setCancelTask] = useState(null);
 
@@ -33,8 +37,8 @@ export default function MyTasks() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['myTasksPage', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 100),
-    enabled: !!me?.id,
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, origin_brand_id: currentBrandId }, '-created_date', 100),
+    enabled: !!me?.id && !!currentBrandId,
     staleTime: 60000,
     refetchOnWindowFocus: false,
   });
@@ -47,6 +51,7 @@ export default function MyTasks() {
       queryClient.setQueryData(['myTasksPage', me.id], (old = []) => {
         if (event.type === 'create') {
           if (t.client_id !== me.id) return old;
+          if (t.origin_brand_id && t.origin_brand_id !== currentBrandId) return old;
           if (old.find(x => x.id === event.id)) return old;
           return [t, ...old];
         }
@@ -60,7 +65,7 @@ export default function MyTasks() {
       });
     });
     return unsub;
-  }, [me?.id, queryClient]);
+  }, [me?.id, queryClient, currentBrandId]);
 
   const openTaskIds = tasks.filter(t => t.status === 'OPEN').map(t => t.id);
 

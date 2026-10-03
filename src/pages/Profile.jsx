@@ -19,6 +19,7 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
+import { useBrand } from '@/lib/brand/BrandProvider';
 import { getCityLabel } from '@/lib/cityLabels';
 import { computeLockedJobas } from '@/lib/jobaBalance';
 import { calculateTrustScore } from '@/lib/trustScore';
@@ -63,6 +64,9 @@ export default function Profile() {
   const { t, isRTL, lang } = useLanguage();
   const { user: authUser, refreshUser, logout } = useAuth();
   const scope = useProfessionalScope();
+  // Profile task lists are Brand-contextual — a global account's Tasks must not
+  // leak between Brands. Scoped by the Task's own origin_brand_id.
+  const { currentBrandId } = useBrand();
   const { openTaskSheet } = useTaskSheet();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
@@ -110,15 +114,15 @@ export default function Profile() {
 
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'COMPLETED' }, '-created_date', 50),
-    enabled: !!me?.id,
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'COMPLETED', origin_brand_id: currentBrandId }, '-created_date', 50),
+    enabled: !!me?.id && !!currentBrandId,
     staleTime: 30000,
   });
 
   const { data: postedTasks = [] } = useQuery({
     queryKey: ['postedTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'COMPLETED' }, '-created_date', 50),
-    enabled: !!me?.id,
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'COMPLETED', origin_brand_id: currentBrandId }, '-created_date', 50),
+    enabled: !!me?.id && !!currentBrandId,
     staleTime: 30000,
   });
 

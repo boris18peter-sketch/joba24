@@ -109,6 +109,27 @@ export const TOKEN_GROUPS = [
     ],
   },
   {
+    id: 'menu', title: 'תפריט וניווט', hint: 'התפריט הצדדי — כולל מצב מנותק.',
+    tokens: [
+      { key: 'menu_bg', type: 'color', label: 'רקע תפריט' },
+      { key: 'menu_surface', type: 'color', label: 'משטח תפריט' },
+      { key: 'menu_text', type: 'color', label: 'טקסט תפריט' },
+      { key: 'menu_icon', type: 'color', label: 'אייקון תפריט' },
+      { key: 'menu_active_bg', type: 'color', label: 'רקע מצב פעיל' },
+      { key: 'menu_active_text', type: 'color', label: 'טקסט מצב פעיל' },
+      { key: 'menu_btn_bg', type: 'color', label: 'רקע כפתור בתפריט' },
+      { key: 'menu_btn_text', type: 'color', label: 'טקסט כפתור בתפריט' },
+    ],
+  },
+  {
+    id: 'glow', title: 'הילה / זוהר', hint: 'הילת כפתורים, כפתורים צפים ו-CTA מודגשים.',
+    tokens: [
+      { key: 'glow_primary', type: 'color', label: 'צבע הילה ראשי' },
+      { key: 'glow_accent', type: 'color', label: 'צבע הילת הדגשה' },
+      { key: 'glow_opacity', type: 'number', label: 'עוצמת הילה', unit: '%' },
+    ],
+  },
+  {
     id: 'badges', title: 'תגיות וסטטוסים', hint: 'תגית רגילה ותגית פעילה/מאושרת.',
     tokens: [
       { key: 'status_bg', type: 'color', label: 'רקע תגית' },
@@ -182,6 +203,17 @@ export const TOKEN_DEFAULTS = {
   status_text: '#4b6083',
   status_active_bg: '#dcfce7',
   status_active_text: '#166534',
+  menu_bg: 'linear-gradient(165deg, #091b3e 0%, #0e2660 45%, #183673 100%)',
+  menu_surface: 'rgba(255,255,255,0.08)',
+  menu_text: '#bfdbfe',
+  menu_icon: '#bfdbfe',
+  menu_active_bg: 'rgba(96,165,250,0.15)',
+  menu_active_text: '#60a5fa',
+  menu_btn_bg: '#fbbf24',
+  menu_btn_text: '#0a1f5c',
+  glow_primary: '#1a6fd4',
+  glow_accent: '#fbbf24',
+  glow_opacity: 55,
 };
 
 export const SHADOW_PRESETS = {
@@ -355,6 +387,19 @@ export function themeToCssVars(theme) {
     '--brand-header-bg': t.header_bg,
     '--brand-header-text': t.header_text,
     '--brand-header-active': t.header_active,
+
+    '--brand-menu-bg': t.menu_bg,
+    '--brand-menu-surface': t.menu_surface,
+    '--brand-menu-text': t.menu_text,
+    '--brand-menu-icon': t.menu_icon,
+    '--brand-menu-active-bg': t.menu_active_bg,
+    '--brand-menu-active-text': t.menu_active_text,
+    '--brand-menu-btn-bg': t.menu_btn_bg,
+    '--brand-menu-btn-text': t.menu_btn_text,
+
+    '--brand-glow-primary': t.glow_primary,
+    '--brand-glow-accent': t.glow_accent,
+    '--brand-glow-opacity': String((Number(t.glow_opacity) || 0) / 100),
   };
 
   const lightTint = tint(t.primary);

@@ -9,8 +9,7 @@ import { createPortal } from 'react-dom';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRegistry';
-
-const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+import { BrandLogo, BrandName } from '@/components/BrandIdentity';
 
 const CATEGORY_NAME_PLURAL = {
   plumbing: 'אינסטלטורים', electricity: 'חשמלאים', gardening: 'גננים',
@@ -21,7 +20,7 @@ const CATEGORY_NAME_PLURAL = {
 };
 
 const BOOST_CSS = `
-  @keyframes boostGlow   { 0%,100%{box-shadow:0 6px 28px rgba(168,85,247,0.45);}50%{box-shadow:0 10px 44px rgba(168,85,247,0.82);} }
+  @keyframes boostGlow   { 0%,100%{box-shadow:0 6px 28px color-mix(in srgb, var(--brand-glow-accent, #a855f7) calc(var(--brand-glow-opacity, 0.55) * 100%), transparent);}50%{box-shadow:0 10px 44px color-mix(in srgb, var(--brand-glow-accent, #a855f7) calc(var(--brand-glow-opacity, 0.9) * 100%), transparent);} }
   @keyframes boostFloat  { 0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-6px) scale(1.04);} }
   @keyframes boostStar   { 0%,100%{opacity:.12;}50%{opacity:.55;} }
   @keyframes radarBoost  { to{transform:rotate(360deg);} }
@@ -86,8 +85,8 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
             <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: '#a855f7', boxShadow: '0 0 7px #a855f7' }} />
           </div>
           {/* Logo */}
-          <div style={{ width: 92, height: 92, borderRadius: '50%', overflow: 'hidden', border: '2.5px solid #c084fc', boxShadow: '0 0 0 4px rgba(192,132,252,.22), 0 0 28px rgba(168,85,247,.55)', animation: 'boostFloat 2.2s ease-in-out infinite' }}>
-            <img src={LOGO} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ width: 92, height: 92, borderRadius: '50%', overflow: 'hidden', border: '2.5px solid var(--brand-glow-accent, #c084fc)', boxShadow: '0 0 0 4px color-mix(in srgb, var(--brand-glow-accent, #c084fc) 22%, transparent), 0 0 28px color-mix(in srgb, var(--brand-glow-accent, #a855f7) calc(var(--brand-glow-opacity, 0.55) * 100%), transparent)', animation: 'boostFloat 2.2s ease-in-out infinite' }}>
+            <BrandLogo size={92} radius="50%" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           {/* Particles burst */}
           {showParticles && (
@@ -193,7 +192,7 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%', width: '100%', padding: 'max(20px, env(safe-area-inset-top)) 0 24px' }}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ textAlign: 'center', padding: '0 24px', width: '100%' }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginBottom: 5, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' }}>Boost · Joba24</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginBottom: 5, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' }}>Boost · <BrandName /></div>
         <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', lineHeight: 1.25, marginBottom: 6 }}>{t('boost_expanding')}</div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           {taskTitle && <span style={{ fontWeight: 700, color: 'rgba(255,255,255,.75)' }}>"{taskTitle}"</span>}

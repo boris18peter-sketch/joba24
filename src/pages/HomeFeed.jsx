@@ -100,8 +100,8 @@ export default function HomeFeed() {
   // My published tasks — WS handles real-time; polling is safety net only
   const { data: myTasks = [], isLoading: myTasksLoading } = useQuery({
     queryKey: ['myTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
-    enabled: !!me?.id,
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, origin_brand_id: brandId }, '-created_date', 20),
+    enabled: !!me?.id && !!brandId,
     staleTime: 60000,
     refetchInterval: 60000,
     refetchOnWindowFocus: false,
@@ -110,8 +110,8 @@ export default function HomeFeed() {
   // Active task I'm working on as a worker — WS primary, 30s safety-net polling
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
-    enabled: !!me?.id,
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN', origin_brand_id: brandId }, '-created_date', 1).then(r => r?.[0] || null),
+    enabled: !!me?.id && !!brandId,
     staleTime: 30000,
     gcTime: 300000,
     placeholderData: (prev) => prev,
@@ -122,8 +122,8 @@ export default function HomeFeed() {
   // Active task I published that is currently TAKEN — WS primary, 30s safety-net polling
   const { data: activeClientTask } = useQuery({
     queryKey: ['activeClientTask', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
-    enabled: !!me?.id,
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN', origin_brand_id: brandId }, '-created_date', 1).then(r => r?.[0] || null),
+    enabled: !!me?.id && !!brandId,
     staleTime: 30000,
     gcTime: 300000,
     placeholderData: (prev) => prev,
@@ -255,6 +255,7 @@ export default function HomeFeed() {
         if (!old) return old;
         if (event.type === 'create') {
           if (updatedTask.client_id !== me.id) return old;
+          if (updatedTask.origin_brand_id && updatedTask.origin_brand_id !== brandId) return old;
           if (old.find((t) => t.id === event.id)) return old;
           return [updatedTask, ...old];
         }
@@ -266,8 +267,10 @@ export default function HomeFeed() {
       // 2b. Update myTasks cache — update status live, remove CANCELLED/COMPLETED
       queryClient.setQueryData(['myTasks', me.id], (old = []) => {
         if (event.type === 'create') {
-          // Add new task if I'm the client
-          if (updatedTask.client_id === me.id && !old.find((t) => t.id === event.id)) {
+          // Add new task if I'm the client AND it belongs to THIS Brand
+          if (updatedTask.client_id === me.id
+            && (!updatedTask.origin_brand_id || updatedTask.origin_brand_id === brandId)
+            && !old.find((t) => t.id === event.id)) {
             return [updatedTask, ...old];
           }
           return old;

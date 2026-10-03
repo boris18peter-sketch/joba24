@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, ChevronLeft, Briefcase, User, MessageSquare } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
-import { brandContextCategoryLabel } from '@/lib/brand/professionalScope';
+import { brandContextCategoryLabel, brandContextTaskTitle } from '@/lib/brand/professionalScope';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
@@ -183,7 +183,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
                   </div>
 
                   <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.35 }}>
-                    {item.task.title}
+                    {brandContextTaskTitle(item.task.title, item.task.category, scope, t)}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
