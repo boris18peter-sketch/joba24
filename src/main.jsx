@@ -77,6 +77,17 @@ window.addEventListener('error', (event) => {
   const msg = event?.message || '';
   if (STALE_IMPORT_RE.test(msg)) {
     healStaleImport();
+    return;
+  }
+  // A static module script that fails to load (stale index.html → hashed chunk
+  // that no longer exists after a deploy) fires a PLAIN error Event on the
+  // <script> element — no `message`, so the check above can't see it. This is
+  // the exact failure that surfaces as "TypeError: Importing a module script
+  // failed." and leaves the app unmounted on a blank screen. Detect the failing
+  // module entry script itself and self-heal.
+  const el = event?.target;
+  if (el && el !== window && el.tagName === 'SCRIPT' && el.type === 'module') {
+    healStaleImport();
   }
 }, true);
 
