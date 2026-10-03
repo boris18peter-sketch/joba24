@@ -33,7 +33,10 @@ import { recoverIosSubscriptionCredits } from '@/lib/iosIap';
 
 export default function HomeFeed() {
   const { globalMap: categoryMap } = useBrandCategories();
-  const { brandId } = useBrand();
+  const { brandId, isPlatformBrand } = useBrand();
+  // Joba24 (the platform Brand) is the marketplace-wide surface: it aggregates
+  // Tasks from every Brand. Any other Brand shows only its own Tasks.
+  const brandScope = isPlatformBrand ? {} : { origin_brand_id: brandId };
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -100,7 +103,7 @@ export default function HomeFeed() {
   // My published tasks — WS handles real-time; polling is safety net only
   const { data: myTasks = [], isLoading: myTasksLoading } = useQuery({
     queryKey: ['myTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, origin_brand_id: brandId }, '-created_date', 20),
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, ...brandScope }, '-created_date', 20),
     enabled: !!me?.id && !!brandId,
     staleTime: 60000,
     refetchInterval: 60000,
@@ -110,7 +113,7 @@ export default function HomeFeed() {
   // Active task I'm working on as a worker — WS primary, 30s safety-net polling
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN', origin_brand_id: brandId }, '-created_date', 1).then(r => r?.[0] || null),
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN', ...brandScope }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id && !!brandId,
     staleTime: 30000,
     gcTime: 300000,
@@ -122,7 +125,7 @@ export default function HomeFeed() {
   // Active task I published that is currently TAKEN — WS primary, 30s safety-net polling
   const { data: activeClientTask } = useQuery({
     queryKey: ['activeClientTask', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN', origin_brand_id: brandId }, '-created_date', 1).then(r => r?.[0] || null),
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN', ...brandScope }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id && !!brandId,
     staleTime: 30000,
     gcTime: 300000,
@@ -231,7 +234,7 @@ export default function HomeFeed() {
           if (!updatedTask?.id) return old;
           // The realtime stream is global — a task from another Brand must never
           // enter this feed, even for the moment before a refetch corrects it.
-          if (updatedTask.origin_brand_id && updatedTask.origin_brand_id !== brandId) return old;
+          if (!isPlatformBrand && updatedTask.origin_brand_id && updatedTask.origin_brand_id !== brandId) return old;
           if (old.find((t) => t.id === event.id)) return old;
           // Only show OPEN tasks in feed
           if (updatedTask.status && updatedTask.status !== 'OPEN') return old;
@@ -255,7 +258,7 @@ export default function HomeFeed() {
         if (!old) return old;
         if (event.type === 'create') {
           if (updatedTask.client_id !== me.id) return old;
-          if (updatedTask.origin_brand_id && updatedTask.origin_brand_id !== brandId) return old;
+          if (!isPlatformBrand && updatedTask.origin_brand_id && updatedTask.origin_brand_id !== brandId) return old;
           if (old.find((t) => t.id === event.id)) return old;
           return [updatedTask, ...old];
         }
@@ -269,7 +272,7 @@ export default function HomeFeed() {
         if (event.type === 'create') {
           // Add new task if I'm the client AND it belongs to THIS Brand
           if (updatedTask.client_id === me.id
-            && (!updatedTask.origin_brand_id || updatedTask.origin_brand_id === brandId)
+            && (isPlatformBrand || !updatedTask.origin_brand_id || updatedTask.origin_brand_id === brandId)
             && !old.find((t) => t.id === event.id)) {
             return [updatedTask, ...old];
           }
@@ -423,7 +426,7 @@ export default function HomeFeed() {
     });
 
     return () => {unsubTask();unsubApp();};
-  }, [me?.id, queryClient, wsTick, brandId]);
+  }, [me?.id, queryClient, wsTick, brandId, isPlatformBrand]);
 
   useEffect(() => {
     if (navigator.geolocation) {

@@ -66,7 +66,8 @@ export default function Profile() {
   const scope = useProfessionalScope();
   // Profile task lists are Brand-contextual — a global account's Tasks must not
   // leak between Brands. Scoped by the Task's own origin_brand_id.
-  const { currentBrandId } = useBrand();
+  const { currentBrandId, isPlatformBrand } = useBrand();
+  const completedScope = isPlatformBrand ? {} : { origin_brand_id: currentBrandId };
   const { openTaskSheet } = useTaskSheet();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
@@ -114,14 +115,14 @@ export default function Profile() {
 
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'COMPLETED', origin_brand_id: currentBrandId }, '-created_date', 50),
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'COMPLETED', ...completedScope }, '-created_date', 50),
     enabled: !!me?.id && !!currentBrandId,
     staleTime: 30000,
   });
 
   const { data: postedTasks = [] } = useQuery({
     queryKey: ['postedTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'COMPLETED', origin_brand_id: currentBrandId }, '-created_date', 50),
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'COMPLETED', ...completedScope }, '-created_date', 50),
     enabled: !!me?.id && !!currentBrandId,
     staleTime: 30000,
   });

@@ -29,7 +29,10 @@ export default function MyTasks() {
   const { t, isRTL } = useLanguage();
   // My Published Tasks is Brand-contextual: a global account's Tasks must not
   // leak between Brands. Scoping is by the Task's own origin_brand_id.
-  const { currentBrandId } = useBrand();
+  const { currentBrandId, isPlatformBrand } = useBrand();
+  // Joba24 (the platform Brand) aggregates every Brand's Tasks; any other Brand
+  // shows only its own.
+  const brandScope = isPlatformBrand ? {} : { origin_brand_id: currentBrandId };
   const [activeTab, setActiveTab] = useState('active');
   const [cancelTask, setCancelTask] = useState(null);
 
@@ -37,7 +40,7 @@ export default function MyTasks() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['myTasksPage', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, origin_brand_id: currentBrandId }, '-created_date', 100),
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, ...brandScope }, '-created_date', 100),
     enabled: !!me?.id && !!currentBrandId,
     staleTime: 60000,
     refetchOnWindowFocus: false,
@@ -51,7 +54,7 @@ export default function MyTasks() {
       queryClient.setQueryData(['myTasksPage', me.id], (old = []) => {
         if (event.type === 'create') {
           if (t.client_id !== me.id) return old;
-          if (t.origin_brand_id && t.origin_brand_id !== currentBrandId) return old;
+          if (!isPlatformBrand && t.origin_brand_id && t.origin_brand_id !== currentBrandId) return old;
           if (old.find(x => x.id === event.id)) return old;
           return [t, ...old];
         }
@@ -65,7 +68,7 @@ export default function MyTasks() {
       });
     });
     return unsub;
-  }, [me?.id, queryClient, currentBrandId]);
+  }, [me?.id, queryClient, currentBrandId, isPlatformBrand]);
 
   const openTaskIds = tasks.filter(t => t.status === 'OPEN').map(t => t.id);
 

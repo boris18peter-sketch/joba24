@@ -16,7 +16,7 @@ import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
 export default function TaskDetailRedirect() {
   const { id } = useParams();
   const { openTaskSheet } = useTaskSheet();
-  const { currentBrandId } = useBrand();
+  const { currentBrandId, isPlatformBrand } = useBrand();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function TaskDetailRedirect() {
     (async () => {
       // A Task that belongs to another Brand must open on THAT Brand's domain,
       // not fail here as "Task not found". Same-Brand tasks open in place.
-      const brandUrl = await resolveTaskBrandUrl(id, currentBrandId);
+      const brandUrl = await resolveTaskBrandUrl(id, currentBrandId, isPlatformBrand);
       if (cancelled) return;
       if (brandUrl) { window.location.href = brandUrl; return; }
       // ORDER MATTERS: navigate FIRST, then openTaskSheet.
@@ -38,7 +38,7 @@ export default function TaskDetailRedirect() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, currentBrandId]);
+  }, [id, currentBrandId, isPlatformBrand]);
 
   return null;
 }

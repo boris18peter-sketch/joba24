@@ -34,7 +34,9 @@ Deno.serve(async (req) => {
     const mode = body?.mode || 'open';
     const limit = Math.min(Number(body?.limit) || 100, MAX_LIMIT);
 
-    const scope = { origin_brand_id: brand.brandId };
+    // The platform Brand (Joba24) is the marketplace-wide surface: it shows Tasks
+    // from EVERY Brand. Any other Brand shows only its own Tasks.
+    const scope = brand.isPlatform ? {} : { origin_brand_id: brand.brandId };
 
     if (mode === 'single') {
       if (!body?.taskId) return Response.json({ tasks: [], brand_resolved: true });

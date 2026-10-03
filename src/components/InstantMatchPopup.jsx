@@ -60,7 +60,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   const timerRef = useRef(null);
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
-  const { brandId } = useBrand();
+  const { brandId, isPlatformBrand } = useBrand();
 
   // Fetch current user profile + past activity for smart matching
   const { data: currentUser } = useQuery({
@@ -88,8 +88,9 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     const unsub = base44.entities.Task.subscribe(event => {
       const task = event.data;
       if (!task || task.status !== 'OPEN') return;
-      // The realtime stream is global — only this surface's Brand may be shown.
-      if (task.origin_brand_id && task.origin_brand_id !== brandId) return;
+      // The realtime stream is global — on the platform Brand (Joba24) every
+      // Brand's Tasks may appear; any other Brand shows only its own.
+      if (!isPlatformBrand && task.origin_brand_id && task.origin_brand_id !== brandId) return;
       if (task.client_id === currentUserId) return;
 
       const isNewTask = event.type === 'create';
@@ -140,7 +141,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
       setCountdown(DURATION);
     });
     return unsub;
-  }, [userLocation, currentUserId, currentUser, myApplications, myCompletedTasks, activeCategory, brandId]);
+  }, [userLocation, currentUserId, currentUser, myApplications, myCompletedTasks, activeCategory, brandId, isPlatformBrand]);
 
   useEffect(() => {
     if (!popup) return;

@@ -16,8 +16,11 @@ Deno.serve(async (req) => {
       return Response.json({ tasks: [], brand_resolved: false, reason: brand.reason });
     }
 
+    // Platform Brand (Joba24) = marketplace-wide: every Brand's Tasks.
+    // Any other Brand = only its own Tasks.
+    const scope = brand.isPlatform ? {} : { origin_brand_id: brand.brandId };
     const tasks = await base44.asServiceRole.entities.Task.filter(
-      { status: 'OPEN', origin_brand_id: brand.brandId },
+      { status: 'OPEN', ...scope },
       '-created_date',
       200
     );

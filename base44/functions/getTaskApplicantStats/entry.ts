@@ -23,8 +23,13 @@ Deno.serve(async (req) => {
     const ids = Array.isArray(body?.taskIds) ? body.taskIds.filter(Boolean).slice(0, 100) : [];
     if (!ids.length) return Response.json({ counts: {}, brand_resolved: true });
 
-    // Only tasks that belong to this Brand may be counted.
-    const tasks = await svc.entities.Task.filter({ id: { $in: ids }, origin_brand_id: brand.brandId });
+    // Only tasks this surface may show may be counted. The platform Brand
+    // (Joba24) shows every Brand's Tasks; any other Brand only its own.
+    const tasks = await svc.entities.Task.filter(
+      brand.isPlatform
+        ? { id: { $in: ids } }
+        : { id: { $in: ids }, origin_brand_id: brand.brandId }
+    );
     const allowed = new Set((tasks || []).map((t: any) => t.id));
     if (!allowed.size) return Response.json({ counts: {}, brand_resolved: true });
 

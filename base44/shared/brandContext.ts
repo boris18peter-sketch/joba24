@@ -45,6 +45,8 @@ export function requestHost(req: Request): string {
 export interface ResolvedBrand {
   resolved: boolean;
   brandId: string | null;
+  /** True for the platform Brand (Joba24) — the marketplace-wide surface. */
+  isPlatform: boolean;
   hostname: string;
   reason: string;
 }
@@ -66,14 +68,14 @@ export async function resolveBrandFromRequest(base44: any, req: Request): Promis
     if (active) {
       const brands = await svc.entities.Brand.filter({ id: active.brand_id });
       const brand = (brands || [])[0];
-      if (!brand) return { resolved: false, brandId: null, hostname, reason: 'brand_missing' };
+      if (!brand) return { resolved: false, brandId: null, isPlatform: false, hostname, reason: 'brand_missing' };
       if (brand.status === 'suspended' || brand.status === 'archived') {
-        return { resolved: false, brandId: null, hostname, reason: 'brand_unavailable' };
+        return { resolved: false, brandId: null, isPlatform: false, hostname, reason: 'brand_unavailable' };
       }
-      return { resolved: true, brandId: brand.id, hostname, reason: 'domain' };
+      return { resolved: true, brandId: brand.id, isPlatform: brand.is_default === true, hostname, reason: 'domain' };
     }
     if ((domains || []).length) {
-      return { resolved: false, brandId: null, hostname, reason: 'domain_inactive' };
+      return { resolved: false, brandId: null, isPlatform: false, hostname, reason: 'domain_inactive' };
     }
   }
 
@@ -84,8 +86,8 @@ export async function resolveBrandFromRequest(base44: any, req: Request): Promis
       const active = await svc.entities.Brand.filter({ status: 'active' });
       brand = (active || [])[0];
     }
-    if (brand) return { resolved: true, brandId: brand.id, hostname, reason: 'platform' };
+    if (brand) return { resolved: true, brandId: brand.id, isPlatform: brand.is_default === true, hostname, reason: 'platform' };
   }
 
-  return { resolved: false, brandId: null, hostname, reason: 'unknown_host' };
+  return { resolved: false, brandId: null, isPlatform: false, hostname, reason: 'unknown_host' };
 }

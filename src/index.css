@@ -445,6 +445,14 @@ html[data-brand-themed] .j-modal-surface {
   z-index: 999999 !important;
 }
 
+/* A popup opened FROM the global Task Detail sheet must sit ABOVE that sheet
+   (which renders at z-index 1000000). Declared last so it wins for these two
+   classes without touching the attribute-selector rules above. */
+.mobile-sheet-overlay,
+.mobile-modal-center {
+  z-index: 2000000 !important;
+}
+
 /* ── Scrollbars ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

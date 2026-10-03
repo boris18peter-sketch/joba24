@@ -21,8 +21,12 @@ import { base44 } from '@/api/base44Client';
  * @returns {Promise<string|null>} absolute URL to the Task's Brand, or null when
  *   the Task should simply open on the current surface.
  */
-export async function resolveTaskBrandUrl(taskId, currentBrandId) {
+export async function resolveTaskBrandUrl(taskId, currentBrandId, isPlatformBrand = false) {
   if (!taskId) return null;
+
+  // The platform Brand (Joba24) is the marketplace-wide surface: it shows every
+  // Brand's Tasks, so a Task opens IN PLACE there — never a cross-Brand redirect.
+  if (isPlatformBrand) return null;
 
   let task = null;
   try {

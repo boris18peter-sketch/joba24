@@ -24,7 +24,7 @@ const PENDING_KEY = 'joba24_pending_task';
 export default function DeepLinkHandler() {
   const { openTaskSheet } = useTaskSheet();
   const { isAuthenticated, isLoadingAuth, user } = useAuth();
-  const { currentBrandId } = useBrand();
+  const { currentBrandId, isPlatformBrand } = useBrand();
   const location = useLocation();
   const openedRef = useRef(false);
 
@@ -59,11 +59,11 @@ export default function DeepLinkHandler() {
     sessionStorage.removeItem(PENDING_KEY);
     // Resolve the Task's own Brand: a link for a Task created on another Brand
     // opens on THAT Brand's domain instead of failing here as "Task not found".
-    resolveTaskBrandUrl(pending, currentBrandId).then((brandUrl) => {
+    resolveTaskBrandUrl(pending, currentBrandId, isPlatformBrand).then((brandUrl) => {
       if (brandUrl) { window.location.href = brandUrl; return; }
       openTaskSheet(pending);
     });
-  }, [isAuthenticated, isLoadingAuth, isApproved, location.pathname, openTaskSheet, currentBrandId]);
+  }, [isAuthenticated, isLoadingAuth, isApproved, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand]);
 
   // Foreground notification click → open the sheet immediately
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function DeepLinkHandler() {
         // Pre-launch gate: don't open task sheet for unapproved users
         if (!isApproved) return;
         const tid = event.data.taskId;
-        resolveTaskBrandUrl(tid, currentBrandId).then((brandUrl) => {
+        resolveTaskBrandUrl(tid, currentBrandId, isPlatformBrand).then((brandUrl) => {
           if (brandUrl) { window.location.href = brandUrl; return; }
           openTaskSheet(tid);
         });
@@ -80,7 +80,7 @@ export default function DeepLinkHandler() {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [openTaskSheet, isApproved, currentBrandId]);
+  }, [openTaskSheet, isApproved, currentBrandId, isPlatformBrand]);
 
   return null;
 }
