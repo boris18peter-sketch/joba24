@@ -81,6 +81,7 @@ export function resolveCategoryContent(globals, categoryKey, brand) {
 export function resolveBrandExamples(globals, services, brand, limit = 4) {
   const out = [];
   const seen = new Set();
+  const usedRoots = new Set();
   const push = (text, key) => {
     const t = String(text || '').trim();
     if (!t || seen.has(t) || out.length >= limit) return;
@@ -88,10 +89,22 @@ export function resolveBrandExamples(globals, services, brand, limit = 4) {
     out.push({ text: t, category_key: key });
   };
 
-  for (const svc of services || []) {
+  const items = (services || []).map((svc) => {
     const c = resolveCategoryContent(globals, svc.category_key, brand);
-    for (const ex of c.examples) push(ex, svc.category_key);
+    return { key: svc.category_key, root: c.rootKey || svc.category_key, examples: c.examples };
+  });
+
+  // Pass 1 — one example per canonical root, so a BROAD Brand shows breadth
+  // instead of draining the first category in the list. A single-niche Brand
+  // simply contributes its first example here and fills up in pass 2.
+  for (const it of items) {
+    if (usedRoots.has(it.root)) continue;
+    usedRoots.add(it.root);
+    if (it.examples[0]) push(it.examples[0], it.key);
   }
+  // Pass 2 — fill the remainder from every remaining example.
+  for (const it of items) for (const ex of it.examples) push(ex, it.key);
+
   // Fall back to generic examples only when the active scope has no content.
   for (const ex of GENERIC_TASK_EXAMPLES) push(ex, '');
   return out.slice(0, limit);
