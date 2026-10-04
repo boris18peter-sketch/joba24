@@ -1,14 +1,20 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
- * verifyTranzilaPayment — Called by the frontend after Tranzila redirects
- * the iframe to our callback page. Processes the payment result and grants credits.
+ * verifyTranzilaPayment — status check for an in-flight Tranzila payment.
  *
- * This is the PRIMARY mechanism for credit granting — it works entirely in the
- * browser via redirect + postMessage, without depending on the notify_url webhook.
+ * PHASE 1 — SERVER-SIDE AUTHORITY (security fix):
+ *   This function NO LONGER grants credits. It previously trusted a
+ *   client-supplied `response_code === '000'`, which allowed any signed-in user
+ *   to credit their own pending payment without ever paying.
  *
- * Input: { payment_id, response_code, index, token }
- * Returns: { success, credits_granted, new_balance }
+ *   Credits are now granted ONLY by `tranzilaNotify` — the server-to-server
+ *   notification Tranzila sends directly to our backend. This function only
+ *   reports the stored payment status so the client can render the right UX; it
+ *   can never change that status and never grants anything.
+ *
+ * Input:   { payment_id }   — any other field sent by the client is ignored.
+ * Returns: { success, pending, status, credits_granted: 0, new_balance }
  */
 Deno.serve(async (req) => {
   try {
@@ -18,80 +24,63 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { payment_id, response_code, index, token } = body;
-
+    const body = await req.json().catch(() => ({}));
+    const payment_id = body?.payment_id;
     if (!payment_id) {
       return Response.json({ error: 'Missing payment_id' }, { status: 400 });
     }
 
-    const payments = await base44.asServiceRole.entities.TranzilaPayment.filter({ id: payment_id });
-    const payment = payments?.[0];
+    let payment = null;
+    try {
+      const payments = await base44.asServiceRole.entities.TranzilaPayment.filter({ id: payment_id });
+      payment = payments?.[0] ?? null;
+    } catch {
+      // Malformed record id — treat as not found rather than a server error.
+      payment = null;
+    }
 
     if (!payment) {
       return Response.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    // Verify the payment belongs to the requesting user
+    // A user may only inspect their own payment.
     if (payment.user_id !== user.id) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Already completed — return success without double-granting
+    const freshUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    const newBalance = freshUsers?.[0]?.worker_credits ?? user.worker_credits ?? 0;
+
     if (payment.status === 'completed') {
       return Response.json({
         success: true,
+        pending: false,
+        status: 'completed',
         credits_granted: 0,
-        new_balance: user.worker_credits ?? 0,
-        message: 'Already completed'
+        new_balance: newBalance,
+        message: 'Already completed',
       });
     }
 
-    // Verify the transaction was successful (Tranzila Response code 000 = success)
-    const isSuccess = response_code === '000';
-
-    if (!isSuccess) {
-      await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, {
-        status: 'failed',
-        tranzila_index: index || '',
-      });
+    if (payment.status === 'failed') {
       return Response.json({
         success: false,
+        pending: false,
+        status: 'failed',
         credits_granted: 0,
-        message: 'Payment was not successful'
+        new_balance: newBalance,
+        message: 'Payment was not successful',
       });
     }
 
-    // Grant credits to the user
-    const newBalance = (user.worker_credits ?? 0) + payment.credits;
-    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
-
-    // Record the credit transaction
-    await base44.asServiceRole.entities.CreditTransaction.create({
-      user_id: user.id,
-      amount: payment.credits,
-      type: 'Purchase',
-      balance_after: newBalance,
-      note: `טעינת ${payment.credits} ג'ובות — Tranzila (${payment.type === 'subscription' ? 'מנוי חודשי' : 'חד-פעמי'})`,
-    });
-
-    // Mark payment as completed
-    const updateData = {
-      status: 'completed',
-      tranzila_index: index || '',
-      thtk: token || payment.thtk,
-    };
-    if (payment.type === 'subscription') {
-      updateData.subscription_status = 'active';
-    }
-    await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, updateData);
-
-    console.log(`✅ Payment ${payment.id} completed via redirect verification — ${payment.credits} credits granted, balance: ${newBalance}`);
-
+    // Still pending — the server has not yet received Tranzila's confirmation.
     return Response.json({
-      success: true,
-      credits_granted: payment.credits,
+      success: false,
+      pending: true,
+      status: 'pending',
+      credits_granted: 0,
       new_balance: newBalance,
+      message: 'Awaiting server confirmation',
     });
 
   } catch (error) {

@@ -9,12 +9,13 @@ import { trackEvent } from '@/lib/analytics';
 /**
  * TranzilaIframe — Full-screen payment modal using Tranzila's iFrame.
  *
- * CREDIT-GRANTING MECHANISM:
- *   1. PRIMARY: Tranzila redirects the iframe to /tranzila-callback.html after payment.
- *      That page reads the transaction result params and postMessages them to us.
- *      We then call verifyTranzilaPayment to grant credits.
- *   2. FALLBACK: We also poll checkTranzilaPayment every 3s in case the webhook
- *      (notify_url) fires and updates the payment status server-side.
+ * CREDIT-GRANTING MECHANISM (Phase 1 — server-side authority):
+ *   1. The redirect to /tranzila-callback.html and the postMessage below are UX
+ *      ONLY — they carry no authority. verifyTranzilaPayment no longer grants.
+ *   2. Credits are granted exclusively by the server-to-server notification
+ *      (tranzilaNotify) that Tranzila sends directly to our backend.
+ *   3. We poll checkTranzilaPayment every 3s and complete the flow as soon as
+ *      the server has marked the payment completed.
  *
  * Props:
  *   supplier      — Tranzila terminal name (joba24)
@@ -64,26 +65,25 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
       if (processedRef.current) return;
       processedRef.current = true;
 
-      const params = data.params || {};
-      const responseCode = params['Response'] || '';
-      const index = params['index'] || '';
-      const token = params['TranzilaTK'] || '';
-
       try {
+        // PHASE 1: the redirect/postMessage is UX only. The client sends no
+        // proof of payment — the server never trusts a client-supplied result.
+        // Credits are granted exclusively by the server-to-server notification.
         const res = await base44.functions.invoke('verifyTranzilaPayment', {
           payment_id: paymentId,
-          response_code: responseCode,
-          index,
-          token,
         });
 
         if (res.data?.success) {
           if (pollRef.current) clearInterval(pollRef.current);
-          // Meta Purchase — the charge was confirmed successful by Tranzila.
+          // Meta Purchase — the charge was confirmed successful by the server.
           // Deduped inside the helper by payment id, so a repeated callback
           // (or the status poll below) can never report a second Purchase.
           trackEvent('purchase', { value: sum, currency: 'ILS', content_type: isSubscription ? 'subscription' : 'consumable' }, { dedupeKey: paymentId });
           onSuccess();
+        } else if (res.data?.pending) {
+          // The server has not received Tranzila's confirmation yet. Release
+          // the guard so the status poll below can still complete the flow.
+          processedRef.current = false;
         } else {
           if (pollRef.current) clearInterval(pollRef.current);
           onClose();

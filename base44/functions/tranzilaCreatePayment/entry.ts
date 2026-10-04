@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { resolvePackage } from '../../shared/paymentCatalog.ts';
 
 /**
  * tranzilaCreatePayment
@@ -102,11 +103,20 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
 
-    const { sum, credits, package_id, is_subscription, pay_method } = await req.json();
+    const { package_id, pay_method } = await req.json();
 
-    if (!sum || sum <= 0) {
-      return new Response(JSON.stringify({ error: 'Invalid sum' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    // ── Server-side authority (Phase 1) ──────────────────────────────────────
+    // The client may NOT decide the amount or how many Jobas are granted. It
+    // sends only a package id, which is resolved against the authoritative
+    // server-side catalog. Any client-supplied `sum` / `credits` /
+    // `is_subscription` is ignored.
+    const pkg = resolvePackage(package_id);
+    if (!pkg) {
+      return new Response(JSON.stringify({ error: 'Unknown package' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
+    const sum = pkg.price;
+    const credits = pkg.credits;
+    const is_subscription = pkg.type === 'subscription';
 
     // === Terminal selection ===
     // Subscriptions → joba24tok (token terminal with V2 handshake)
@@ -125,7 +135,8 @@ Deno.serve(async (req) => {
     const paymentData = {
       user_id: user.id,
       amount: sum,
-      credits: credits || 0,
+      expected_amount: sum,
+      credits,
       thtk: '',
       type: is_subscription ? 'subscription' : 'one_time',
       status: 'pending',
