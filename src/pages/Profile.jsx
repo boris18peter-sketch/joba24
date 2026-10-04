@@ -12,6 +12,7 @@ import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
+import ProfileSubscriptionCard from '@/components/profile/ProfileSubscriptionCard';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
@@ -306,6 +307,9 @@ export default function Profile() {
 
         {/* SECTION 9 — SOCIAL NETWORKS */}
         <SocialLinksSection user={me} />
+
+        {/* Apple subscription — server-side normalized entitlement */}
+        <ProfileSubscriptionCard />
 
         {/* Subscriptions */}
         <SubscriptionManager />

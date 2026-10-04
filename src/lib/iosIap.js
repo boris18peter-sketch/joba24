@@ -125,7 +125,7 @@ export async function recoverUnfinishedIosPurchases() {
     const transactions = res?.transactions || [];
     for (const tx of transactions) {
       try {
-        const verify = await base44.functions.invoke('verifyIosPurchase', { jws: tx.jws });
+        const verify = await base44.functions.invoke('verifyIosPurchase', { jws: tx.jws, source: 'recovery' });
         if (verify.data?.success) {
           await finishIosTransaction(tx.transactionId);
         }
@@ -175,7 +175,15 @@ export async function startIosTransactionObserver(onTransaction) {
         if (data?.jws) {
           // The backend is idempotent by Apple transaction id, so re-sending an
           // already-processed transaction grants nothing.
-          await base44.functions.invoke('verifyIosPurchase', { jws: data.jws });
+          const verify = await base44.functions.invoke('verifyIosPurchase', { jws: data.jws, source: 'observer' });
+          // A consumable that is never finished is re-delivered by StoreKit
+          // forever. Finish it only AFTER the backend confirmed processing.
+          // Auto-renewable subscriptions are never finished (Apple does not
+          // require it, and doing so can interfere with the subscription).
+          const isConsumable = Object.values(IOS_IAP_PRODUCT_IDS).includes(data.productId);
+          if (isConsumable && verify.data?.success) {
+            await finishIosTransaction(data.transactionId);
+          }
         }
       } catch (err) {
         console.error('[iosIap] transactionUpdate verify failed:', err);
@@ -189,10 +197,11 @@ export async function startIosTransactionObserver(onTransaction) {
   }
 }
 
-// Pushes the device's active subscription state to the backend so the server
-// holds a normalized entitlement record instead of relying on a local boolean.
-// verifyIosPurchase refreshes entitlement state on duplicates and grants
-// nothing extra, so this can never create duplicate monthly Jobas.
+// Pushes the device's currently VERIFIED entitlement to the backend so the
+// server holds a normalized subscription record instead of relying on a local
+// boolean. This is a RECONCILIATION, not a grant: the backend refreshes the
+// entitlement state for the subscription and only credits a period whose Apple
+// transaction has never been seen. A previously processed period → +0 Jobas.
 export async function syncIosSubscriptionEntitlements() {
   if (!isIosNative()) return 0;
   try {
@@ -200,7 +209,7 @@ export async function syncIosSubscriptionEntitlements() {
     for (const s of subs) {
       if (!s.jws) continue;
       try {
-        await base44.functions.invoke('verifyIosPurchase', { jws: s.jws });
+        await base44.functions.invoke('verifyIosPurchase', { jws: s.jws, source: 'sync' });
       } catch (err) {
         console.error('[iosIap] entitlement sync failed for', s.productId, err);
       }
@@ -212,6 +221,99 @@ export async function syncIosSubscriptionEntitlements() {
   }
 }
 
+/**
+ * שחזור רכישות — Apple "Restore Purchases".
+ *
+ * Subscriptions: reconciles the CURRENT entitlement (the backend refreshes the
+ * normalized subscription state and credits only an unseen paid period).
+ *
+ * Consumables: only transactions StoreKit itself reports as verifiably
+ * UNFINISHED are re-sent — those are the ones whose entitlement may genuinely
+ * have been lost. Historical, already-finished consumables are NEVER re-granted
+ * just because the button was pressed.
+ */
+export async function restoreIosPurchases() {
+  if (!isIosNative()) return { subscriptions: 0, recovered: 0 };
+
+  let subscriptions = 0;
+  let recovered = 0;
+
+  // Subscriptions — reconcile current entitlements + full renewal history.
+  try {
+    const active = await getIosActiveSubscriptions();
+    for (const s of active) {
+      if (!s.jws) continue;
+      try {
+        await base44.functions.invoke('verifyIosPurchase', { jws: s.jws, source: 'restore' });
+        subscriptions++;
+      } catch (err) {
+        console.error('[iosIap] restore subscription failed:', err);
+      }
+    }
+    const history = await IosIap.getSubscriptionHistory();
+    for (const tx of (history?.transactions || [])) {
+      try {
+        await base44.functions.invoke('verifyIosPurchase', { jws: tx.jws, source: 'restore' });
+      } catch (err) {
+        console.error('[iosIap] restore subscription history failed:', err);
+      }
+    }
+  } catch (err) {
+    console.error('[iosIap] restore subscriptions failed:', err);
+  }
+
+  // Consumables — ONLY verifiably unfinished transactions.
+  try {
+    const res = await IosIap.getUnfinished();
+    for (const tx of (res?.transactions || [])) {
+      try {
+        const verify = await base44.functions.invoke('verifyIosPurchase', { jws: tx.jws, source: 'restore' });
+        if (verify.data?.success) {
+          await finishIosTransaction(tx.transactionId);
+          recovered++;
+        }
+      } catch (err) {
+        console.error('[iosIap] restore consumable failed:', err);
+      }
+    }
+  } catch (err) {
+    console.error('[iosIap] restore consumables failed:', err);
+  }
+
+  return { subscriptions, recovered };
+}
+
+// Apple's supported subscription-management experience. Joba24 never implements
+// its own cancellation — the user is handed to Apple.
+export async function openIosManageSubscriptions() {
+  const url = 'https://apps.apple.com/account/subscriptions';
+  try {
+    const { Browser } = await import('@capacitor/browser');
+    await Browser.open({ url });
+    return true;
+  } catch {
+    try {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+// The backend's normalized subscription entitlement for the current user.
+// Apple remains authoritative; this is Joba24's server-side projection, so it is
+// correct across reinstalls and devices.
+export async function getServerSubscriptionState() {
+  try {
+    const rows = await base44.entities.AppleSubscription.list('-last_verified_at', 1);
+    return rows?.[0] || null;
+  } catch (err) {
+    console.error('[iosIap] getServerSubscriptionState failed:', err);
+    return null;
+  }
+}
+
 export async function recoverIosSubscriptionCredits() {
   if (!isIosNative()) return 0;
   try {
@@ -219,7 +321,7 @@ export async function recoverIosSubscriptionCredits() {
     const transactions = res?.transactions || [];
     for (const tx of transactions) {
       try {
-        await base44.functions.invoke('verifyIosPurchase', { jws: tx.jws });
+        await base44.functions.invoke('verifyIosPurchase', { jws: tx.jws, source: 'sync' });
       } catch (err) {
         console.error('[iosIap] subscription recovery failed:', err);
       }

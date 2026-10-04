@@ -1,0 +1,127 @@
+{
+  "name": "AppleSubscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Joba24 User.id \u2014 the subscriber"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "Apple product id of the subscription (e.g. com.joba24.sub45)"
+    },
+    "original_transaction_id": {
+      "type": "string",
+      "description": "Apple originalTransactionId \u2014 the stable identity of this subscription across every renewal period. One AppleSubscription row per original transaction."
+    },
+    "latest_transaction_id": {
+      "type": "string",
+      "description": "The most recently verified Apple transaction for this subscription (changes on every renewal)"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "Sandbox",
+        "Production"
+      ],
+      "description": "Apple environment this entitlement was observed in"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled_active",
+        "billing_issue",
+        "grace_period",
+        "expired",
+        "revoked",
+        "refunded",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "Normalized Joba24 subscription state. Apple remains authoritative; this is Joba24's normalized projection. cancelled_active = auto-renew disabled but still entitled until period_end."
+    },
+    "auto_renew_status": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Whether Apple reports auto-renew as enabled. null when unknown."
+    },
+    "period_start": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Start of the current paid period"
+    },
+    "period_end": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "End of the current paid period \u2014 the renewal/expiry date shown in Profile"
+    },
+    "last_verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this entitlement state was last reconciled against Apple"
+    },
+    "latest_processing_status": {
+      "type": "string",
+      "enum": [
+        "processed",
+        "state_only",
+        "pending",
+        "failed"
+      ],
+      "default": "pending",
+      "description": "Outcome of the last processing pass for this subscription. state_only = an entitlement-state update with no credit grant (correct for failures, cancellations, expirations, refunds)."
+    },
+    "credits_per_period": {
+      "type": "number",
+      "description": "Jobas granted per paid period, per the authoritative server catalog"
+    },
+    "last_notification_type": {
+      "type": "string",
+      "description": "The last App Store Server Notification V2 type applied to this subscription"
+    }
+  },
+  "required": [
+    "user_id",
+    "product_id",
+    "original_transaction_id",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
