@@ -399,7 +399,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
       if (event.type === 'update' && event.data) {
         const patch = event.data;
         // Update story data in cache (price, status, story_expires_at, etc.)
-        queryClient.setQueryData(['stories'], (old = []) =>
+        queryClient.setQueryData(['stories', brandId], (old = []) =>
           old.map(t => t.id === event.id ? { ...t, ...patch } : t)
         );
         // If story status changed or expired, refetch to filter properly
@@ -412,7 +412,9 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
   }, [queryClient, brandId, isPlatformBrand]);
 
   const { data: rawStories = [] } = useQuery({
-    queryKey: ['stories'],
+    // Brand-scoped cache key — a sub-Brand must never render the previous
+    // surface's stories from a shared cache entry after switching Brands.
+    queryKey: ['stories', brandId],
     queryFn: async () => {
       const tasks = await fetchPublicTasks({ mode: 'stories' });
       const now = new Date();

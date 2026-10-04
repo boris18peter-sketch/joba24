@@ -7,7 +7,9 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 999999,
+        // Above the global Task Detail sheet (z-index 1000000) so the confirmation
+        // is visible when cancel is triggered from inside the task sheet.
+        position: 'fixed', inset: 0, zIndex: 2000000,
         background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         touchAction: 'none',

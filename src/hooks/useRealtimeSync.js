@@ -89,6 +89,14 @@ export default function useRealtimeSync({
       updateListCache('myTasks');
       updateListCache('tasks');
 
+      // A task reaching a terminal state settles its applications (credits are
+      // released or consumed). Refresh the committed-balance queries so the
+      // header/wallet indicator never keeps a stale "בהתחייבות" number.
+      if (event.type === 'update' && TERMINAL_STATUSES.includes(t_data.status)) {
+        queryClient.invalidateQueries({ queryKey: ['myLockedJobas'] });
+        queryClient.invalidateQueries({ queryKey: ['myApplications'] });
+      }
+
       // activeWorkerTask — synced across all pages via shared cache
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
@@ -262,6 +270,15 @@ export default function useRealtimeSync({
     const unsub = base44.entities.TaskApplication.subscribe((event) => {
       const appData = event.data || {};
       let prevAppStatus = null;
+
+      // Committed (locked) jobas are derived from this user's applications, so any
+      // change to one of them must refresh the balance queries immediately —
+      // otherwise the locked indicator keeps showing credits that were already
+      // released (or consumed) by the server.
+      if (appData.worker_id === me.id) {
+        queryClient.invalidateQueries({ queryKey: ['myLockedJobas'] });
+        queryClient.invalidateQueries({ queryKey: ['myApplications'] });
+      }
 
       // Sync applications-pulse cache
       if (appData.task_id) {
