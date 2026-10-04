@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { isIosNative, startIosTransactionObserver, recoverIosState } from '@/lib/iosIap';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * IosIapRecovery — runs the Apple transaction lifecycle for the WHOLE app.
@@ -18,8 +19,14 @@ import { isIosNative, startIosTransactionObserver, recoverIosState } from '@/lib
  * app was killed, the network dropped, or the immediate response was lost.
  */
 export default function IosIapRecovery() {
+  const { user } = useAuth();
+
   useEffect(() => {
-    if (!isIosNative()) return;
+    // Never reconcile before a Joba24 user is authenticated: a StoreKit
+    // transaction recovered while signed out must stay queued in StoreKit
+    // (unfinished) and be credited only once a user session exists — the
+    // backend derives the account from the session, never from the client.
+    if (!isIosNative() || !user?.id) return;
 
     let cancelled = false;
     const run = () => {
@@ -46,7 +53,7 @@ export default function IosIapRecovery() {
       removeListener();
       sub.then((s) => s.remove()).catch(() => {});
     };
-  }, []);
+  }, [user?.id]);
 
   return null;
 }

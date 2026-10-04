@@ -176,8 +176,13 @@ export async function upsertAppleSubscription(base44, {
 
   // Only ever advance the entitlement — a state-only notification arriving out
   // of order must not roll a newer period back.
+  // An existing binding is permanent: a device signed in as another Joba24
+  // account must never re-point a subscription that already belongs to someone.
+  const boundUserId = existing?.user_id && existing.user_id !== 'unknown'
+    ? existing.user_id
+    : userId;
   const patch = {
-    user_id: userId,
+    user_id: boundUserId,
     product_id: productId,
     original_transaction_id: originalTransactionId,
     latest_transaction_id: latestTransactionId || existing?.latest_transaction_id || null,
@@ -282,15 +287,34 @@ export async function processAppleTransaction(base44, {
     return { success: false, duplicate: false, credits_granted: 0, new_balance: null, product_id: productId, is_subscription: isSubscription, stage: 'transaction_identity', error: 'Missing transactionId' };
   }
 
-  // 2. Product-type cross-check against Apple's own `type` field.
+  // 2. Product-type consistency NOTE — never a gate.
+  //    The AUTHORITATIVE type is the server catalog (step 1). Apple's own `type`
+  //    field is a signed cross-check only: a formatting/string difference must
+  //    NEVER reject a verified, already-paid Apple transaction whose product id
+  //    the server catalog already knows. Recorded, logged, and ignored.
   const expectedType = isSubscription ? 'Auto-Renewable Subscription' : 'Consumable';
   if (tx.type && tx.type !== expectedType) {
-    await recordAppleAttempt(base44, {
-      ...base, productType: def.type, status: 'failed_product_mapping',
-      verificationStage: 'product_type_mismatch',
-      errorCategory: `expected:${expectedType}`,
-    });
-    return { success: false, duplicate: false, credits_granted: 0, new_balance: null, product_id: productId, is_subscription: isSubscription, stage: 'product_type_mismatch', error: `Expected a ${expectedType} purchase` };
+    console.warn(JSON.stringify({
+      fn: 'appleEntitlement', stage: 'product_type_note',
+      product_id: productId, apple_type: tx.type,
+      catalog_type: def.type, expected: expectedType, source,
+    }));
+  }
+
+  // 2b. Account binding. An Apple subscription belongs to the Joba24 account
+  //     that first verified it. A transaction delivered from a device signed in
+  //     as a DIFFERENT account must never re-point or credit that subscription.
+  if (isSubscription && originalTransactionId) {
+    const boundUserId = await resolveUserIdFromOriginalTransaction(base44, originalTransactionId);
+    if (boundUserId && boundUserId !== userId) {
+      await recordAppleAttempt(base44, {
+        ...base, productType: def.type, status: 'failed_entitlement',
+        verificationStage: 'wrong_account',
+        errorCategory: 'subscription_bound_to_other_user',
+        creditsIntended: 0, creditsGranted: 0,
+      });
+      return { success: false, duplicate: false, credits_granted: 0, new_balance: null, product_id: productId, is_subscription: true, stage: 'wrong_account', error: 'Subscription belongs to another account' };
+    }
   }
 
   // 3. Revocation / refund — record and update state. NEVER claw back Jobas.
