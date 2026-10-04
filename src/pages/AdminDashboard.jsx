@@ -849,7 +849,11 @@ export default function AdminDashboard() {
 
   const handleTaskDelete = async (task) => {
     try {
-      await base44.entities.Task.delete(task.id);
+      // Server-authoritative delete: settles and refunds every committed
+      // application before the record is removed. Never delete client-side,
+      // or applicants would lose their jobas silently.
+      const res = await base44.functions.invoke('deleteTask', { taskId: task.id });
+      if (!res.data?.success) throw new Error(res.data?.error || 'לא ניתן למחוק');
       queryClient.setQueryData(['adminTasks'], (old = []) => old.filter(t => t.id !== task.id));
       toast.success('המשימה נמחקה');
     } catch (e) {
