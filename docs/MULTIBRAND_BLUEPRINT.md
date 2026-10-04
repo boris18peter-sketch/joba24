@@ -1,7 +1,7 @@
 # JOBA24 MULTI-BRAND PLATFORM — BLUEPRINT
 
 > **Living architecture document.** The authoritative record of *decisions* (ADRs), invariants, the entity model and the phase plan.
-> **Companion documents:** `BASE44_DEPENDENCY_REGISTER.md` · `MULTIBRAND_RESTORE_RUNBOOK.md`
+> **Companion documents:** `PROJECT_CONTINUITY.md` (work control & session continuity — start here) · `BASE44_DEPENDENCY_REGISTER.md` · `MULTIBRAND_RESTORE_RUNBOOK.md`
 > **Status:** Phase 1 deployed · Phase 2 (Joba24 attribution backfill) **deployed** · Package #2.1 (default attribution for new records) **deployed** · Packages #3.1B–#3.1F **deployed** · Package #4.0 (C3 pre-flight: User field trust boundary) **completed** · Package #4.1.1 (`brand_ids` FLS foundation) **CLOSED — FLS runtime-verified (PASS)** · **⛔ Tranzila payments frozen — must NOT be reactivated until Package #3.1A completes (see runbook blocker)** · **⚠️ User Field Hardening package approved and MUST run before Multibrand continues** · Phase 3/4 otherwise **not approved**.
 > **Governing rule:** the live Joba24 product is the regression baseline and must not change unintentionally at any phase.
 
