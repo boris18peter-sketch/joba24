@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { resolvePackage } from '../../shared/paymentCatalog.ts';
 
 /**
  * tranzilaCreateHandshake
@@ -16,11 +17,20 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
 
-    const { sum, credits, package_id, is_subscription } = await req.json();
+    const { package_id } = await req.json();
 
-    if (!sum || sum <= 0) {
-      return new Response(JSON.stringify({ error: 'Invalid sum' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    // ── Server-side authority (Phase 1.5) ────────────────────────────────────
+    // Same rule as tranzilaCreatePayment: the client may not decide the amount.
+    // This endpoint is not reachable from the current UI, but it is a live
+    // authenticated endpoint that creates payment records, so it resolves the
+    // package against the authoritative catalog too.
+    const pkg = resolvePackage(package_id);
+    if (!pkg) {
+      return new Response(JSON.stringify({ error: 'Unknown package' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
+    const sum = pkg.price;
+    const credits = pkg.credits;
+    const is_subscription = pkg.type === 'subscription';
 
     const supplier = Deno.env.get('supplier');
     const TranzilaPW = Deno.env.get('TranzilaPW');
