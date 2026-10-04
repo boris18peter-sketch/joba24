@@ -165,7 +165,7 @@ const DEFAULT_FORM = {
   address_apartment: '',
   address_notes: '',
   estimated_time: '1h',
-  category: 'other',
+  category: '',
   approval_mode: 'manual',
   expiry_hours: null,
   custom_time: '',
@@ -279,7 +279,7 @@ export default function CreateTask() {
         address_apartment: searchParams.get('address_apartment') || '',
         address_notes: searchParams.get('address_notes') || '',
         estimated_time: searchParams.get('estimated_time') || '1h',
-        category: searchParams.get('category') || 'other',
+        category: searchParams.get('category') || '',
         approval_mode: searchParams.get('approval_mode') || 'manual',
         payment_method: searchParams.get('payment_method') || '',
         urgency_tag: searchParams.get('urgency_tag') || '',
@@ -297,9 +297,13 @@ export default function CreateTask() {
     return DEFAULT_FORM;
   });
 
+  // Rescue ONLY a stale category — one this Brand genuinely does not offer.
+  // An empty value means "the user is still choosing" (parent picked, service
+  // pending) and must never be overwritten: that reset is what silently snapped
+  // the picker back to the first category in the list.
   useEffect(() => {
     if (categoriesLoading || isEditMode) return;
-    if (!brandCategories.some(c => c.value === form.category)) {
+    if (form.category && !brandCategories.some(c => c.value === form.category)) {
       setForm(p => ({ ...p, category: brandCategories[0]?.value || '', category_details: {} }));
       setCategoryDetails({});
     }
