@@ -301,6 +301,54 @@ export default function useRealtimeSync({
         });
       }
 
+      // ── ACTIVE-APPLICANT COUNT — one global sync, every task cache ─────────
+      // This is the SINGLE place the applicant count is kept live. A cancelled
+      // or rejected application must drop out of the task's `applicants` array
+      // EVERYWHERE at once (feed, My Tasks, task sheet, the orange indicator),
+      // not only on the screen that happened to own the handler. Counting is
+      // derived from the array length, so pruning it here updates all of them.
+      if (appData.task_id) {
+        const ACTIVE = ['pending', 'approved'];
+        const INACTIVE = ['cancelled', 'rejected', 'declined'];
+
+        const patchApplicants = (old) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((t) => {
+            if (!t || t.id !== appData.task_id) return t;
+            const list = Array.isArray(t.applicants) ? t.applicants : [];
+            const without = list.filter((a) => a.worker_id !== appData.worker_id);
+            if (event.type === 'create') {
+              return { ...t, applicants: [...without, { worker_id: appData.worker_id, worker_name: appData.worker_name }] };
+            }
+            if (event.type === 'delete') return { ...t, applicants: without };
+            if (event.type === 'update') {
+              if (INACTIVE.includes(appData.status)) return { ...t, applicants: without };
+              if (ACTIVE.includes(appData.status)) {
+                return without.length === list.length
+                  ? t
+                  : { ...t, applicants: [...without, { worker_id: appData.worker_id, worker_name: appData.worker_name }] };
+              }
+            }
+            return t;
+          });
+        };
+
+        // Task-bearing caches the applicant count is derived from.
+        const CACHE_KEYS = [
+          ['allTasks'], ['tasks'], ['myTasks', me.id], ['myTasksPage', me.id],
+          ['workerTasksLayout', me.id], ['myPublishedTasks', me.id],
+          ['appliedTasksData', me.id], ['lockedPopupTasks'],
+        ];
+        for (const key of CACHE_KEYS) {
+          queryClient.setQueryData(key, (old) => (Array.isArray(old) ? patchApplicants(old) : old));
+        }
+        // The task sheet holds a single task object under ['task', id].
+        queryClient.setQueryData(['task', appData.task_id], (old) => {
+          const patched = patchApplicants(old ? [old] : []);
+          return Array.isArray(patched) && patched.length ? patched[0] : old;
+        });
+      }
+
       // Detect approved → rejected (revocation)
       if (event.type === 'update' && appData.worker_id === me.id) {
         const appId = event.id || appData.id;

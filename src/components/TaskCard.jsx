@@ -7,6 +7,8 @@ import MediaLightbox from '@/components/MediaLightbox';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import useTaskServiceLabel from '@/components/useTaskServiceLabel';
 import { categoryKeyForTask } from '@/lib/brand/categoryTree';
+import { useGlobalCategories } from '@/lib/brand/globalCategories';
+import { resolveStatusFlow, statusLabel } from '@/lib/taskStatusFlow';
 import { trackEvent } from '@/lib/analytics';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
@@ -106,6 +108,8 @@ const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr
 function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
   const { t, isRTL, lang } = useLanguage();
   const navigate = useNavigate();
+  // Global category catalogue — resolves the category-aware status wording.
+  const { rows: catRows } = useGlobalCategories();
   const { openTaskSheet } = useTaskSheet();
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
@@ -595,7 +599,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {task.worker_status === 'on_the_way' ? t('on_the_way') : task.worker_status === 'delayed' ? t('delayed') : task.worker_status === 'parking' ? t('parking') : task.worker_status === 'arrived' ? t('arrived') : task.worker_status === 'starting' ? t('starting') : task.worker_status === 'finishing' ? t('finishing') : task.worker_status === 'done' ? t('done_waiting') : t('in_progress')}
+                      {statusLabel(resolveStatusFlow(task.category, catRows), task.worker_status, 'worker') || t('in_progress')}
                     </span>
                   </div>
               ) : (

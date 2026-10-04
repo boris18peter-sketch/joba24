@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { getCategoryConfig } from '@/lib/categoryConfig';
+import { useGlobalCategories } from '@/lib/brand/globalCategories';
+import { resolveStatusFlow, stepIndexOf, nextCta, proofCopy } from '@/lib/taskStatusFlow';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
@@ -39,12 +40,22 @@ const ICON_MAP = {
   package: Package, truck: Truck, heart: Heart, book: BookOpen, camera: Camera,
 };
 
-// Quick Action config per step — uses category config for labels, icons, and confirm text
-function getQuickAction(config, stepIdx) {
-  if (stepIdx < 0)   return { ...config.actions.start,  nextKey: 'on_the_way', color: 'var(--brand-banner-bg, var(--brand-primary))' };
-  if (stepIdx === 0) return { ...config.actions.arrive, nextKey: 'arrived',    color: '#059669' };
-  if (stepIdx === 1) return { ...config.actions.done,   nextKey: 'done',       color: '#059669' };
-  return null;
+// The worker's next action, derived from the task's CATEGORY-AWARE status flow.
+// No category is hardcoded here — the flow comes from the global catalogue and
+// falls back to the generic flow for categories that define none.
+function getQuickAction(flow, workerStatus) {
+  const cta = nextCta(flow, workerStatus);
+  if (!cta) return null;
+  const icon = cta.key === 'on_the_way' ? 'navigation' : cta.key === 'arrived' ? 'map_pin' : 'check';
+  const color = cta.key === 'on_the_way' ? 'var(--brand-banner-bg, var(--brand-primary))' : '#059669';
+  return {
+    ...cta,
+    nextKey: cta.key,
+    icon,
+    color,
+    confirmTitle: cta.confirm_title,
+    confirmSub: cta.confirm_sub,
+  };
 }
 
 // ── Confirm Bottom Sheet ────────────────────────────────────────────────────────
@@ -99,6 +110,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
   const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
+  // The global category catalogue — the single source of every status flow.
+  const { rows: catRows } = useGlobalCategories();
   const [activeIdx, setActiveIdx] = useState(0);
   const [pendingAction, setPendingAction] = useState(null); // { task, action }
   const [updating, setUpdating] = useState(false);
@@ -199,15 +212,20 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ paddingBottom: 0 }}>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
         {taskList.map((task, idx) => {
-          const catConfig = getCategoryConfig(task.category);
-          const tStatusInfo = catConfig.statusMap[task.worker_status] || null;
+          // Category-aware presentation, resolved from the GLOBAL catalogue — the
+          // same definition every Brand offering this category shares.
+          const flow = resolveStatusFlow(task.category, catRows);
+          const flowIdx = stepIndexOf(flow, task.worker_status);
+          const tStatusInfo = flowIdx >= 0
+            ? { step: flowIdx, label: flow.steps[flowIdx].label, ownerLabel: flow.steps[flowIdx].owner_label }
+            : null;
           const tRole = task._roleHint || roleHint;
           const tIsWorker = tRole === 'worker' || (tRole !== 'client' && me?.id === task.worker_id);
           const tIsOwner  = tRole === 'client' || (tRole !== 'worker' && me?.id === task.client_id);
           const tStepIdx  = tStatusInfo?.step ?? -1;
           // If task is no longer TAKEN (cancelled by publisher), worker cannot update status
           const isTaskActive = task.status === 'TAKEN';
-          const quickAction = tIsWorker && isTaskActive ? getQuickAction(catConfig, tStepIdx) : null;
+          const quickAction = tIsWorker && isTaskActive ? getQuickAction(flow, task.worker_status) : null;
           const QuickActionIcon = quickAction ? (ICON_MAP[quickAction.icon] || Navigation) : null;
 
           const gradient = 'linear-gradient(135deg, var(--brand-banner-bg, var(--brand-primary)) 0%, var(--brand-banner-bg-2, var(--brand-primary-dark)) 100%)';
@@ -250,7 +268,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
             }
           }
           const heroDone = tStepIdx === 2;
-          const HeroIcon = heroDone ? CheckCircle : (ICON_MAP[catConfig.steps[Math.min(Math.max(tStepIdx, 0), catConfig.steps.length - 1)].icon] || Navigation);
+          const HeroIcon = heroDone ? CheckCircle : (ICON_MAP[flow.steps[Math.min(Math.max(tStepIdx, 0), flow.steps.length - 1)].icon] || Navigation);
 
           // Nav button → show only when on_the_way. After arrived → show chat.
           const showNavBtn  = tIsWorker && tStepIdx === 0 && task.location_name;
@@ -332,7 +350,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                   background: 'rgba(255,255,255,0.85)', borderRadius: 2,
                   transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
                 }} />
-                {catConfig.steps.map((step, stepIdx) => {
+                {flow.steps.map((step, stepIdx) => {
                   const Icon = ICON_MAP[step.icon] || Navigation;
                   const label = step.label;
                   const done   = tStepIdx >= 0 && stepIdx <= tStepIdx;
@@ -495,7 +513,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                     onClick={() => { setMediaTask(task); setMediaPhotos([...(task.completion_photos || [])]); setMediaVideo(task.completion_video_url || ''); }}
                     style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
-                    <Camera size={12} /> {catConfig.proofLabel} {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
+                    <Camera size={12} /> {proofCopy(flow).label} {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
                   </button>
                   {task.requires_invoice && (
                     <button
@@ -529,8 +547,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
         >
           <div dir={isRTL ? 'rtl' : 'ltr'} onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg,white)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)', maxHeight: '80dvh', overflowY: 'auto' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 16px' }} />
-            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1,#0f1e40)', marginBottom: 4 }}>📸 {getCategoryConfig(mediaTask.category).proofLabel}</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>{getCategoryConfig(mediaTask.category).proofSub}</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1,#0f1e40)', marginBottom: 4 }}>📸 {proofCopy(resolveStatusFlow(mediaTask.category, catRows)).label}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>{proofCopy(resolveStatusFlow(mediaTask.category, catRows)).sub}</div>
             <WorkerCompletionPhoto
               photos={mediaPhotos}
               videoUrl={mediaVideo}

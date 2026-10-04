@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { KEY_RE, sanitizeFields, PLATFORM_CATEGORY_KEYS } from '../../shared/globalCategories.ts';
+import { KEY_RE, sanitizeFields, sanitizeStatusFlow, PLATFORM_CATEGORY_KEYS } from '../../shared/globalCategories.ts';
 import { listAll, treeError } from '../../shared/categoryTree.ts';
 export default async function(req) {
   try {
@@ -26,6 +26,12 @@ export default async function(req) {
         if (!Array.isArray(body.fields) || fields.length !== body.fields.length || new Set(fields.map(f => f.key)).size !== fields.length) return Response.json({ error: 'field_keys_invalid' }, { status: 400 });
         if (nodeType === 'parent' && fields.length) return Response.json({ error: 'forms_belong_to_services' }, { status: 400 });
         patch.fields = fields;
+      }
+      // Category-aware lifecycle PRESENTATION — global, so a category shared by
+      // several Brands is defined once. Only label/icon/CTA copy is accepted;
+      // the step keys stay canonical. `null` clears it back to the generic flow.
+      if (body.status_flow !== undefined) {
+        patch.status_flow = sanitizeStatusFlow(body.status_flow);
       }
       const category = target ? await svc.entities.GlobalCategory.update(target.id, patch) : await svc.entities.GlobalCategory.create({ ...patch, fields: patch.fields || [] });
       return Response.json({ success: true, category });

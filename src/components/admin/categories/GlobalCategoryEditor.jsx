@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Btn, Field } from '@/components/admin/brand/brandUi';
 import GlobalFormEditor from '@/components/admin/categories/GlobalFormEditor';
+import StatusFlowEditor from '@/components/admin/categories/StatusFlowEditor';
 export default function GlobalCategoryEditor({ category, rows, onSaved, onClose }) {
-  const [form,setForm] = useState({ node_type: 'service', parent_key: '', category_key: '', label: '', icon: '', image_url: '', description: '', active: true, fields: [], sort_order: 0, ...category });
+  const [form,setForm] = useState({ node_type: 'service', parent_key: '', category_key: '', label: '', icon: '', image_url: '', description: '', active: true, fields: [], sort_order: 0, status_flow: null, ...category });
   const [busy,setBusy] = useState(false), [error,setError] = useState('');
   const set = (key,value) => setForm(f => ({ ...f,[key]:value }));
   const save = async () => {
@@ -29,6 +30,7 @@ export default function GlobalCategoryEditor({ category, rows, onSaved, onClose 
     </div>
     <label className="flex gap-2"><input type="checkbox" checked={form.active !== false} onChange={e => set('active',e.target.checked)} /> פעילה בכל המותגים</label>
     {form.node_type === 'service' && <GlobalFormEditor fields={form.fields || []} onChange={v => set('fields',v)} />}
+    {form.node_type === 'service' && <StatusFlowEditor flow={form.status_flow} onChange={v => set('status_flow',v)} />}
     {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
     <div className="flex gap-2"><Btn loading={busy} onClick={save}>שמור גלובלית</Btn><Btn variant="soft" disabled={busy} onClick={onClose}>ביטול</Btn></div>
   </div>;

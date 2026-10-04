@@ -42,6 +42,7 @@ export function invalidateTaskCaches(queryClient, { taskId, meId, includeCredits
     queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout', meId] });
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', meId] });
     queryClient.invalidateQueries({ queryKey: ['appliedTasks', meId] });
+    queryClient.invalidateQueries({ queryKey: ['appliedTasksData', meId] });
     // Active-task banners (feed + inside the task sheet) — read the same caches
     queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', meId] });
     queryClient.invalidateQueries({ queryKey: ['activeClientTask', meId] });

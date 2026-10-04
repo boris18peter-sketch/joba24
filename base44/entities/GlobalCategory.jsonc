@@ -65,6 +65,11 @@
       "type": "string",
       "description": "Optional helper/microcopy for this category (chips, hints, CTA support text)."
     },
+    "status_flow": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "GLOBAL, category-aware lifecycle PRESENTATION. The backend states are fixed (worker_status: on_the_way \u2192 arrived \u2192 done); this object only renames them per service so a DJ does not read like a plumber. Shape: { steps: [{key,label,owner_label,icon}], cta: { <key>: {label,emoji,confirm_title,confirm_sub,toast} }, proof: {label,sub} }. Any unset field inherits the generic fallback. Defined once globally \u2014 every Brand offering this category gets it."
+    },
     "fields": {
       "type": "array",
       "description": "The single global task form for an actionable service; never copied into a Brand.",

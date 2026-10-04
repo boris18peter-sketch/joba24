@@ -1,21 +1,37 @@
 import { useState } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { Button } from '@/components/ui/button';
-import { Navigation, CheckCircle2, PartyPopper, Loader2 } from 'lucide-react';
+import { Navigation, MapPin, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useLanguage } from '@/lib/LanguageContext';
+import useTaskStatusFlow from '@/hooks/useTaskStatusFlow';
+import { nextCta } from '@/lib/taskStatusFlow';
 
+const CTA_ICONS = { navigation: Navigation, map_pin: MapPin, check: CheckCircle2 };
+
+/**
+ * WorkerStatusUpdater — the worker's single "advance the job" button.
+ *
+ * The button label, confirm copy and success toast all come from the task's
+ * CATEGORY-AWARE status flow (GlobalCategory.status_flow), so a plumber and a DJ
+ * each read their own language while advancing the SAME canonical backend state
+ * (on_the_way → arrived → done).
+ */
 export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
-  const { t } = useLanguage();
+  const flow = useTaskStatusFlow(task?.category);
   const [loading, setLoading] = useState(false);
 
   if (!isWorker || !task.worker_id) return null;
+
+  const cta = nextCta(flow, task.worker_status);
+  if (!cta) return null;
+
+  const Icon = CTA_ICONS[flow.steps.find((s) => s.key === cta.key)?.icon] || Navigation;
 
   const updateStatus = async (status) => {
     setLoading(true);
     try {
       const update = { worker_status: status };
-      
+
       // Capture location when going on the way
       if (status === 'on_the_way' && navigator.geolocation) {
         getCurrentPosition(
@@ -23,63 +39,33 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
             update.worker_lat = pos.coords.latitude;
             update.worker_lng = pos.coords.longitude;
             onUpdate(update);
-            toast.success(t('wsu_on_way_toast'));
+            toast.success(cta.toast);
           },
           () => {
             onUpdate(update);
-            toast.success(t('wsu_on_way_toast'));
+            toast.success(cta.toast);
           }
         );
       } else {
         await onUpdate(update);
-        if (status === 'arrived') toast.success(t('wsu_arrived_toast'));
-        if (status === 'done') toast.success(t('wsu_done_toast'));
+        toast.success(cta.toast);
       }
     } catch (err) {
-      toast.error(t('wsu_error'));
+      toast.error('שגיאה בעדכון הסטטוס');
     }
     setLoading(false);
   };
 
-  // Show different buttons based on current status
-  if (!task.worker_status) {
-    return (
-      <Button
-        onClick={() => updateStatus('on_the_way')}
-        disabled={loading}
-        className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold h-12"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Navigation className="w-4 h-4 ml-2" />}
-        {t('wsu_leave_btn')}
-      </Button>
-    );
-  }
+  const isLast = cta.key === 'done';
 
-  if (task.worker_status === 'on_the_way') {
-    return (
-      <Button
-        onClick={() => updateStatus('arrived')}
-        disabled={loading}
-        className="w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold h-12"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <CheckCircle2 className="w-4 h-4 ml-2" />}
-        {t('wsu_arrived_btn')}
-      </Button>
-    );
-  }
-
-  if (task.worker_status === 'arrived') {
-    return (
-      <Button
-        onClick={() => updateStatus('done')}
-        disabled={loading}
-        className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <PartyPopper className="w-4 h-4 ml-2" />}
-        {t('wsu_done_btn')}
-      </Button>
-    );
-  }
-
-  return null;
+  return (
+    <Button
+      onClick={() => updateStatus(cta.key)}
+      disabled={loading}
+      className={`w-full rounded-xl text-white font-bold h-12 ${isLast ? 'bg-emerald-500 hover:bg-emerald-600' : cta.key === 'on_the_way' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}`}
+    >
+      {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Icon className="w-4 h-4 ml-2" />}
+      {cta.emoji} {cta.label}
+    </Button>
+  );
 }

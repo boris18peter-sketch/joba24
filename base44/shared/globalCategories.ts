@@ -98,6 +98,74 @@ export function sanitizeFields(raw: unknown) {
     .sort((a: any, b: any) => a.order - b.order);
 }
 
+/** The canonical worker progress states — the only steps a flow may describe. */
+export const CANONICAL_FLOW_STEPS = ['on_the_way', 'arrived', 'done'];
+
+const FLOW_ICONS = ['navigation', 'map_pin', 'check', 'truck', 'heart', 'clock', 'star'];
+
+/**
+ * Keep a category's lifecycle presentation to the supported shape.
+ *
+ * The step KEYS are fixed to the canonical backend states, so a category can
+ * never invent a state the rest of the system does not understand — it only
+ * supplies labels, icons and CTA copy. Empty values are dropped so the generic
+ * fallback applies on read.
+ */
+export function sanitizeStatusFlow(raw: unknown) {
+  if (!raw || typeof raw !== 'object') return null;
+  const src: any = raw;
+  const clip = (v: unknown, n: number) => {
+    const s = String(v ?? '').trim();
+    return s ? s.slice(0, n) : undefined;
+  };
+
+  const steps = CANONICAL_FLOW_STEPS.map((key) => {
+    const s = (Array.isArray(src.steps) ? src.steps : []).find((x: any) => x?.key === key) || {};
+    const out: any = { key };
+    const label = clip(s.label, 60);
+    const owner = clip(s.owner_label, 60);
+    if (label) out.label = label;
+    if (owner) out.owner_label = owner;
+    if (FLOW_ICONS.includes(s.icon)) out.icon = s.icon;
+    return out;
+  });
+
+  const cta: any = {};
+  for (const key of CANONICAL_FLOW_STEPS) {
+    const c = (src.cta && typeof src.cta === 'object' ? src.cta[key] : null) || {};
+    const out: any = {};
+    const label = clip(c.label, 60);
+    const emoji = clip(c.emoji, 8);
+    const title = clip(c.confirm_title, 60);
+    const sub = clip(c.confirm_sub, 160);
+    const toast = clip(c.toast, 120);
+    if (label) out.label = label;
+    if (emoji) out.emoji = emoji;
+    if (title) out.confirm_title = title;
+    if (sub) out.confirm_sub = sub;
+    if (toast) out.toast = toast;
+    if (Object.keys(out).length) cta[key] = out;
+  }
+
+  const p = (src.proof && typeof src.proof === 'object' ? src.proof : {}) as any;
+  const proof: any = {};
+  const pLabel = clip(p.label, 60);
+  const pSub = clip(p.sub, 160);
+  if (pLabel) proof.label = pLabel;
+  if (pSub) proof.sub = pSub;
+
+  // Nothing configured at all → store null so the generic flow applies.
+  const hasSteps = steps.some((s) => s.label || s.owner_label || s.icon);
+  const hasCta = Object.keys(cta).length > 0;
+  const hasProof = Object.keys(proof).length > 0;
+  if (!hasSteps && !hasCta && !hasProof) return null;
+
+  const result: any = { steps };
+  if (hasCta) result.cta = cta;
+  if (hasProof) result.proof = proof;
+  return result;
+}
+
 /** Every global category row, ordered. */
 export async function getGlobalCategories(base44: any) {
   const rows = await base44.asServiceRole.entities.GlobalCategory.list('sort_order', 500);
