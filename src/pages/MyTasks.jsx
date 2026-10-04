@@ -13,6 +13,7 @@ import { createPortal } from 'react-dom';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import { STATUS_GRADIENT, STATUS_LABEL, buildRepostUrl } from '@/lib/taskUtils';
+import { invalidateTaskCaches } from '@/lib/taskSync';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useBrand } from '@/lib/brand/BrandProvider';
 
@@ -118,10 +119,8 @@ export default function MyTasks() {
         old.map(t => t.id === taskId ? { ...t, status: 'CANCELLED' } : t)
       );
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks', me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    onSuccess: (_data, taskId) => {
+      invalidateTaskCaches(queryClient, { taskId, meId: me?.id });
       toast.success(t('task_cancelled_toast'));
       setCancelTask(null);
       navigate('/');

@@ -14,13 +14,16 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo }) {
   const { user: me } = useAuth();
 
+  // Always fresh: the banner must never show a task the worker has already left,
+  // completed, or had cancelled. Realtime patches these caches; a zero staleTime
+  // guarantees a remount also re-reads the server instead of trusting a 2-minute
+  // old snapshot.
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
     queryFn: () =>
       base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id && isWorker,
-    staleTime: 120000,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
   });
 
   const { data: activeClientTask } = useQuery({
@@ -28,8 +31,7 @@ export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo 
     queryFn: () =>
       base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id && !isWorker,
-    staleTime: 120000,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
   });
 
   const liveTask = isWorker ? activeWorkerTask : activeClientTask;

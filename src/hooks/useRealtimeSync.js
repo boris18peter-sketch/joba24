@@ -90,18 +90,29 @@ export default function useRealtimeSync({
       updateListCache('tasks');
 
       // A task reaching a terminal state settles its applications (credits are
-      // released or consumed). Refresh the committed-balance queries so the
+      // released or consumed), and a DELETED task releases every applicant's
+      // committed jobas. Refresh the committed-balance queries either way so the
       // header/wallet indicator never keeps a stale "בהתחייבות" number.
-      if (event.type === 'update' && TERMINAL_STATUSES.includes(t_data.status)) {
+      if (event.type === 'delete' || (event.type === 'update' && TERMINAL_STATUSES.includes(t_data.status))) {
         queryClient.invalidateQueries({ queryKey: ['myLockedJobas'] });
         queryClient.invalidateQueries({ queryKey: ['myApplications'] });
+        queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout'] });
+        queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
+        queryClient.invalidateQueries({ queryKey: ['applications'] });
+        queryClient.invalidateQueries({ queryKey: ['applications-pulse'] });
+        queryClient.invalidateQueries({ queryKey: ['applicant-stats'] });
+        queryClient.invalidateQueries({ queryKey: ['me'] });
       }
 
       // activeWorkerTask — synced across all pages via shared cache
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update' && old?.id === event.id) {
-          if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
+          // The banner represents an ASSIGNED, in-progress task. Anything that
+          // ends the assignment clears it at once — cancellation, completion,
+          // expiry, OR the worker leaving (status returns to OPEN). Waiting for
+          // a "terminal" status left a stale banner up after an exit.
+          if (cleanPatch.status && cleanPatch.status !== 'TAKEN') return null;
           return { ...old, ...cleanPatch };
         }
         // Not tracking yet — try to populate full task data from list caches
@@ -123,7 +134,8 @@ export default function useRealtimeSync({
       queryClient.setQueryData(['activeClientTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update' && old?.id === event.id) {
-          if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
+          // Same rule as the worker banner: only a TAKEN task is "active".
+          if (cleanPatch.status && cleanPatch.status !== 'TAKEN') return null;
           return { ...old, ...cleanPatch };
         }
         // Not tracking yet — populate from myPublishedTasks cache (full data, just updated above)
@@ -196,7 +208,8 @@ export default function useRealtimeSync({
       const prevWasActiveForWorker = ACTIVE_WORKER_STATUSES.includes(prev.status);
       if (task.status === 'CANCELLED' && prevWasActiveForWorker && workerIdForTask === me.id && me.id !== task.client_id) {
         notify({ type: 'task_cancelled_worker', taskTitle: prev.title || task.title, taskId: task.id, actorId: task.client_id });
-        setCancelledTask({ ...task, worker_id: workerIdForTask, title: prev.title || task.title });
+        // The full-screen cancellation popup is raised globally by useTaskAlerts
+        // (mounted in GlobalPopups) so it also reaches routes outside Layout.
       }
 
       // Task CANCELLED → notify client

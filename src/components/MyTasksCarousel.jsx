@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
+import { invalidateTaskCaches } from '@/lib/taskSync';
 import { useLanguage } from '@/lib/LanguageContext';
 
 function statusConfig(t) {
@@ -28,9 +29,7 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate, t, isRTL }) {
     try {
       const res = await base44.functions.invoke('cancelTaskPayment', { taskId: task.id });
       if (!res.data?.success) throw new Error(t('mtc_cancel_error'));
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      invalidateTaskCaches(queryClient, { taskId: task.id });
       setCancelling(false);
       setShowCancelConfirm(false);
       onClose();

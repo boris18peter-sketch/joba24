@@ -86,6 +86,24 @@ Deno.serve(async (req) => {
       worker_status: null,
     });
 
+    // ── Notify the assigned worker ─────────────────────────────────────────
+    // When the PUBLISHER cancels, the worker must hear about it even if their
+    // app is closed or backgrounded — the in-app WebSocket popup alone cannot
+    // cover that. The "Push: Task Cancelled" workflow cannot fire here because
+    // this very update nulls `worker_id`, so the push is sent explicitly.
+    if (isClient && cancelledWorkerId && cancelledWorkerId !== user.id) {
+      try {
+        await base44.asServiceRole.functions.invoke('notificationManager', {
+          event_key: 'task_cancelled',
+          user_ids: [cancelledWorkerId],
+          task_id: taskId,
+          variables: { task_title: task.title || '', task_id: taskId },
+        });
+      } catch (err) {
+        console.warn('⚠️ Worker cancellation push failed:', err?.message);
+      }
+    }
+
     console.log(`✅ Task ${taskId} cancelled by ${isClient ? 'client' : 'worker'}`);
     return Response.json({ success: true, cancelledWorkerId, taskTitle: task.title, taskId });
 

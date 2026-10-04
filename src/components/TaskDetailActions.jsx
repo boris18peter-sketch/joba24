@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
 import ApplySheet from '@/components/ApplySheet';
+import { invalidateTaskCaches } from '@/lib/taskSync';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function TaskDetailActions({
@@ -22,6 +23,8 @@ export default function TaskDetailActions({
   const [showRating, setShowRating] = useState(false);
   const [hasRated, setHasRated] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
+  // Leaving an active task is irreversible — it always asks for confirmation.
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
@@ -30,13 +33,12 @@ export default function TaskDetailActions({
     },
     onSuccess: () => {
       queryClient.setQueryData(['myApp', id, me?.id], null);
-      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['task', id] });
-      queryClient.invalidateQueries({ queryKey: ['me'] });
+      invalidateTaskCaches(queryClient, { taskId: id, meId: me?.id });
+      setShowExitConfirm(false);
       toast.success(t('left_task_credits_back'));
       navigate('/');
     },
-    onError: () => toast.error(t('tda_exit_error')),
+    onError: () => { setShowExitConfirm(false); toast.error(t('tda_exit_error')); },
   });
 
   const reopenMutation = useMutation({
@@ -105,7 +107,7 @@ export default function TaskDetailActions({
         {/* Exit task */}
         {isWorker && task?.status === 'TAKEN' && task?.worker_status !== 'done' && (
           <button
-            onClick={() => cancelTakeMutation.mutate()}
+            onClick={() => setShowExitConfirm(true)}
             disabled={cancelTakeMutation.isPending}
             style={{ width: '100%', height: 48, borderRadius: 'var(--r-md)', background: 'var(--surface-2)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
             {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> {t('tda_exit_task_btn')}</>}
@@ -119,6 +121,41 @@ export default function TaskDetailActions({
       )}
       {showInvoice && task && me && createPortal(
         <InvoiceModal task={task} me={me} onClose={() => setShowInvoice(false)} />,
+        document.body
+      )}
+
+      {/* Exit-task confirmation — shown before any active task is left */}
+      {showExitConfirm && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 2000000, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', touchAction: 'none' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowExitConfirm(false); }}
+        >
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🚪</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>{t('exit_task_title')}</div>
+              <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                {t('exit_task_body')}<br />
+                <strong style={{ color: 'var(--text-1)' }}>{t('exit_task_note')}</strong>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', border: 'none', color: 'var(--brand-btn-primary-text, white)', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
+                {t('continue_in_task')}
+              </button>
+              <button
+                onClick={() => cancelTakeMutation.mutate()}
+                disabled={cancelTakeMutation.isPending}
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'var(--surface-2)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> {t('yes_exit_task')}</>}
+              </button>
+            </div>
+            <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
+          </div>
+        </div>,
         document.body
       )}
     </>

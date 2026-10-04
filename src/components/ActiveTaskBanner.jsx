@@ -8,7 +8,6 @@ import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileTe
 import { base44 } from '@/api/base44Client';
 import { getCategoryConfig } from '@/lib/categoryConfig';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import QuickChatDrawer from '@/components/QuickChatDrawer';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import { hasSocialVerified } from '@/lib/utils';
@@ -54,7 +53,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
   if (!action) return null;
   return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 2000000, background: 'rgba(5,15,40,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
       onClick={onCancel}
     >
       <div
@@ -101,7 +100,6 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
   const [activeIdx, setActiveIdx] = useState(0);
-  const [showChat, setShowChat] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // { task, action }
   const [updating, setUpdating] = useState(false);
   const [completingTaskId, setCompletingTaskId] = useState(null);
@@ -429,7 +427,12 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 {/* Chat */}
                 {(showChatBtn || tIsOwner) && (
                   <button
-                    onClick={() => extraInfo?.onQuickChat ? extraInfo.onQuickChat() : setShowChat(true)}
+                    onClick={() => {
+                      // Chat always opens the normal Chat page — never a nested drawer.
+                      if (extraInfo?.onQuickChat) { extraInfo.onQuickChat(); return; }
+                      const otherId = me?.id === task.client_id ? task.worker_id : task.client_id;
+                      if (otherId) navigate(`/chat/${task.id}?with=${otherId}`);
+                    }}
                     style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
                     <MessageCircle size={14} /> {t('chat') || 'צ׳אט'}
@@ -517,18 +520,9 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
         loading={updating}
       />
 
-      {showChat && me && taskList[activeIdx] && (
-        <QuickChatDrawer
-          task={taskList[activeIdx]}
-          me={me}
-          otherUserId={me.id === taskList[activeIdx].client_id ? taskList[activeIdx].worker_id : taskList[activeIdx].client_id}
-          onClose={() => setShowChat(false)}
-        />
-      )}
-
       {/* Media upload sheet */}
       {mediaTask && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000000, background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={() => setMediaTask(null)}
           onPointerDown={e => e.stopPropagation()}
           onTouchStart={e => e.stopPropagation()}

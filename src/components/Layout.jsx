@@ -39,10 +39,8 @@ import { notificationStore } from '@/lib/notificationStore';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
-import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
-import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import RatingModal from '@/components/RatingModal';
-import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
+import { taskAlertStore } from '@/lib/taskAlertStore';
 
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -253,9 +251,12 @@ export default function Layout() {
 
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [revokedTask, setRevokedTask] = useState(null);
-  const [cancelledTask, setCancelledTask] = useState(null);
-  const [cancelSuccessTask, setCancelSuccessTask] = useState(null);
+  // Full-screen task alerts are raised on the GLOBAL store and rendered by
+  // GlobalPopups (mounted in App.jsx), so they reach every route — including the
+  // standalone screens rendered outside Layout (chat, support).
+  const setRevokedTask = useCallback((task) => taskAlertStore.raise('revoked', task), []);
+  const setCancelledTask = useCallback((task) => taskAlertStore.raise('cancelled', task), []);
+  const setCancelSuccessTask = useCallback((task) => taskAlertStore.raise('cancel_success', task), []);
   const [cancelWarningTask, setCancelWarningTask] = useState(null);
   const [cancelWarningLoading, setCancelWarningLoading] = useState(false);
 
@@ -570,9 +571,7 @@ export default function Layout() {
       {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
-      {revokedTask && createPortal(<ApprovalRevokedPopup task={revokedTask} onClose={() => setRevokedTask(null)} />, document.body)}
-      {cancelledTask && createPortal(<WorkerCancelledPopup task={cancelledTask} onClose={() => setCancelledTask(null)} />, document.body)}
-      {cancelSuccessTask && createPortal(<CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />, document.body)}
+      {/* Task alerts (cancelled / revoked / cancel-success) render globally via GlobalPopups */}
       {ratingTask && me && createPortal(
         <RatingModal task={ratingTask} me={me} onClose={() => {
           localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');

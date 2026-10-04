@@ -30,6 +30,7 @@ import { isUserVerified } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import { creditsShortfall } from '@/lib/jobaBalance';
+import { invalidateTaskCaches } from '@/lib/taskSync';
 
 
 function normalizeDate(d) {
@@ -163,8 +164,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     try {
       const res = await base44.functions.invoke('cancelMyApplication', { applicationId: myApp.id, taskId: task.id });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
-      queryClient.invalidateQueries({ queryKey: ['me'] });
+      invalidateTaskCaches(queryClient, { taskId: task.id, meId: currentUserId });
       toast.success(t('app_cancelled_credits_back'));
     } catch {
       // Rollback optimistic update
@@ -249,9 +249,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     try {
       const res = await base44.functions.invoke('cancelTaskPayment', { taskId: task.id });
       if (!res.data?.success) throw new Error(t('error_cancelling_task'));
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      invalidateTaskCaches(queryClient, { taskId: task.id, meId: currentUserId });
       setShowCancelConfirm(false);
     } catch {
       toast.error(t('error_cancelling_task'));

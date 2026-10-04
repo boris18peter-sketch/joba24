@@ -6,8 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck, Phone, Lock, Briefcase } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
-import QuickChatDrawer from '@/components/QuickChatDrawer';
 import UserVerificationBadge from '@/components/UserVerificationBadge';
+import { invalidateTaskCaches } from '@/lib/taskSync';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -18,8 +18,6 @@ export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
-  // Which applicant the owner is chatting with — one thread per applicant.
-  const [chatWith, setChatWith] = useState(null);
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -134,9 +132,7 @@ export default function TaskApplicants({ task, onApprove }) {
       queryClient.setQueryData(['allTasks'], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
       queryClient.setQueryData(['myTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
       queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
-      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
+      invalidateTaskCaches(queryClient, { taskId: task.id, meId: me?.id });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
       toast.success(t('ta_worker_cancelled'));
@@ -365,7 +361,7 @@ export default function TaskApplicants({ task, onApprove }) {
 
               {/* Quick action: chat */}
               <button
-                onClick={() => setChatWith(app.worker_id)}
+                onClick={() => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/chat/${task.id}?with=${app.worker_id}`); }}
                 style={{
                   width: 36, height: 36, borderRadius: 11, flexShrink: 0,
                   background: '#eff6ff', border: '1px solid #bfdbfe',
@@ -460,7 +456,6 @@ export default function TaskApplicants({ task, onApprove }) {
         );
       })}
 
-      {chatWith && me && <QuickChatDrawer task={task} me={me} otherUserId={chatWith} onClose={() => setChatWith(null)} />}
       <MediaLightbox
         isOpen={lightbox.open}
         items={lightbox.images.map(url => ({ type: 'image', url }))}

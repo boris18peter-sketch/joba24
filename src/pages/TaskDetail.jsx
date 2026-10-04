@@ -93,8 +93,8 @@ import TaskLocationMap from '@/components/TaskLocationMap';
 
 
 import ApplySheet from '@/components/ApplySheet';
-import QuickChatDrawer from '@/components/QuickChatDrawer';
 import { chatThreadKey } from '@/lib/chatThread';
+import { invalidateTaskCaches } from '@/lib/taskSync';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
@@ -169,19 +169,27 @@ export default function TaskDetail(props) {
   // Task RLS permits delete only for the owner (client_id) or an admin, so a
   // non-owner request is rejected by the server even if the UI were bypassed.
   const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.Task.delete(id),
+    mutationFn: async () => {
+      // SERVER-AUTHORITATIVE: releasing every applicant's committed jobas and
+      // removing the task happen together, so a delete can never strand credits.
+      const res = await base44.functions.invoke('deleteTask', { taskId: id });
+      if (!res.data?.success) throw new Error(res.data?.error || 'delete_failed');
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task', id] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      invalidateTaskCaches(queryClient, { taskId: id, meId: me?.id });
       toast.success(t('task_deleted_toast') || 'המשימה נמחקה');
       setShowDeleteConfirm(false);
       window.dispatchEvent(new CustomEvent('close_task_sheet'));
     },
-    onError: () => toast.error(t('delete_error_toast') || 'שגיאה במחיקה'),
+    onError: (err) => {
+      const code = err?.response?.data?.error || err?.data?.error;
+      if (code === 'work_in_progress_not_deletable') {
+        toast.error(t('delete_blocked_in_progress') || 'העבודה כבר החלה — יש לבטל את המשימה במקום למחוק אותה');
+      } else {
+        toast.error(t('delete_error_toast') || 'שגיאה במחיקה');
+      }
+    },
   });
-  const [showQuickChat, setShowQuickChat] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showInvoiceView, setShowInvoiceView] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
@@ -488,10 +496,7 @@ export default function TaskDetail(props) {
     },
     onSuccess: () => {
       setShowCancelConfirm(false);
-      queryClient.invalidateQueries({ queryKey: ['task', id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      invalidateTaskCaches(queryClient, { taskId: id, meId: me?.id });
       toast.success(t('task_cancelled_toast'));
       navigate('/');
     }
@@ -517,13 +522,7 @@ export default function TaskDetail(props) {
     onSuccess: () => {
       // Clear application cache so the worker sees the task as fresh
       queryClient.setQueryData(['myApp', id, me?.id], null);
-      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', id] });
-      queryClient.invalidateQueries({ queryKey: ['task', id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['me'] });
-      queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
+      invalidateTaskCaches(queryClient, { taskId: id, meId: me?.id });
       toast.success(t('left_task_credits_back'));
       navigate('/');
     }
@@ -702,6 +701,19 @@ export default function TaskDetail(props) {
 
   const isOwner = me?.id === task.client_id;
 
+  // Chat always opens the NORMAL Chat page, never a nested drawer. The sheet is
+  // hidden first (keeping its history entry) so the conversation opens cleanly
+  // and the user lands on the real chat screen they can navigate back from.
+  const openChatWith = (otherId) => {
+    if (!otherId) return;
+    window.dispatchEvent(new CustomEvent('hide_task_sheet'));
+    navigate(`/chat/${id}?with=${otherId}`);
+  };
+  const openChatWithCounterpart = () => {
+    if (!me?.id || !task) return;
+    openChatWith(me.id === task.client_id ? task.worker_id : task.client_id);
+  };
+
   // Show boost pill for all open owner tasks — the pill itself handles charge state
   const boostAvailable = isOwner && task.status === 'OPEN' && !task.worker_id;
 
@@ -819,7 +831,7 @@ export default function TaskDetail(props) {
             contactPhone: task.contactPhone,
             isOwner,
             onOwnerMenu: () => setShowOwnerMenu(v => !v),
-            onQuickChat: () => setShowQuickChat(true),
+            onQuickChat: openChatWithCounterpart,
             onSheetClose,
           }}
         />
@@ -1148,7 +1160,7 @@ export default function TaskDetail(props) {
             {!isOwner && (hasPendingApp || isApproved) &&
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                 <button
-                onClick={() => setShowQuickChat(true)}
+                onClick={openChatWithCounterpart}
                 style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                 
                   <MessageCircle size={13} /> {t('message_to_publisher')}
@@ -1549,15 +1561,6 @@ export default function TaskDetail(props) {
           </div>
         </div>,
         document.body
-      )}
-
-      {showQuickChat && task && me && (
-        <QuickChatDrawer
-          task={task}
-          me={me}
-          otherUserId={me.id === task.client_id ? task.worker_id : task.client_id}
-          onClose={() => setShowQuickChat(false)}
-        />
       )}
 
       {showInvoice && task && me && createPortal(

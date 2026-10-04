@@ -10,8 +10,16 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'Not a new cancellation' });
     }
 
-    // worker_id may be nulled in the update payload — fall back to old_data
-    const workerId = data.worker_id || old_data?.worker_id;
+    // The cancellation update nulls `worker_id`, so the assigned worker has to be
+    // recovered from the previous state. A full status patch carries no title
+    // either — read the persisted task so the push names the real task.
+    const taskId = data.id || event?.entity_id;
+    const tasks = taskId
+      ? await base44.asServiceRole.entities.Task.filter({ id: taskId })
+      : [];
+    const task = tasks?.[0] || null;
+
+    const workerId = data.worker_id || old_data?.worker_id || task?.worker_id;
     if (!workerId) {
       return Response.json({ sent: 0, reason: 'No worker assigned' });
     }
@@ -26,10 +34,10 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.functions.invoke('notificationManager', {
       event_key: 'task_cancelled',
       user_ids: [workerId],
-      task_id: data.id || event?.entity_id,
+      task_id: taskId,
       variables: {
-        task_title: data.title || '',
-        task_id: data.id || event?.entity_id || '',
+        task_title: data.title || task?.title || old_data?.title || '',
+        task_id: taskId || '',
       },
     });
 

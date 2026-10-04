@@ -453,6 +453,22 @@ html[data-brand-themed] .j-modal-surface {
   z-index: 2000000 !important;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   ROOT FIX — "popups from the Task Detail sheet look dead".
+   The Task Detail sheet is portaled to <body> at z-index 1000000, but the
+   confirm/status modals it opens were portaled at 999999 — i.e. BEHIND it,
+   so they were invisible and unclickable and the buttons appeared broken.
+
+   Every overlay portaled directly to <body> at the legacy 999999 layer is
+   lifted above the sheet. 2000000 matches none of the attribute selectors
+   above, so there is no cascade conflict. The bottom nav is excluded (it is
+   portaled at z-index 30, so it never matched anyway).
+   ════════════════════════════════════════════════════════════════════ */
+body > div[style*="z-index: 999999"],
+body > div[style*="zIndex: 999999"] {
+  z-index: 2000000 !important;
+}
+
 /* ── Scrollbars ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
