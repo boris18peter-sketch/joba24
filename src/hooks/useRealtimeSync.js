@@ -271,13 +271,11 @@ export default function useRealtimeSync({
       const appData = event.data || {};
       let prevAppStatus = null;
 
-      // Committed (locked) jobas are derived from this user's applications, so any
-      // change to one of them must refresh the balance queries immediately —
-      // otherwise the locked indicator keeps showing credits that were already
-      // released (or consumed) by the server.
-      if (appData.worker_id === me.id) {
-        queryClient.invalidateQueries({ queryKey: ['myLockedJobas'] });
-        queryClient.invalidateQueries({ queryKey: ['myApplications'] });
+      // Update/delete events may contain only id/status, without worker_id.
+      // Refresh after application settlement too, not only the earlier task event.
+      if (!appData.worker_id || appData.worker_id === me.id) {
+        queryClient.invalidateQueries({ queryKey: ['myLockedJobas', me.id] });
+        queryClient.invalidateQueries({ queryKey: ['myApplications', me.id] });
       }
 
       // Sync applications-pulse cache

@@ -87,7 +87,8 @@ export default function RatingModal({ task, me, onClose }) {
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 999999,
+        // Above TaskDetailSheet (1000000), including when opened from inside it.
+        position: 'fixed', inset: 0, zIndex: 2000000,
         background: 'var(--overlay-bg)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         touchAction: 'none',

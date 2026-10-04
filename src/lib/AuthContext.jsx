@@ -295,7 +295,8 @@ export const AuthProvider = ({ children }) => {
       // queries so the header indicator + popups update immediately (no manual refresh needed).
       unsubAppRef.current = base44.entities.TaskApplication.subscribe((event) => {
         const app = event.data;
-        if (!app || app.worker_id === currentUser?.id) {
+        // Partial updates can omit worker_id when only the status changes.
+        if (!app?.worker_id || app.worker_id === currentUser?.id) {
           queryClientInstance.invalidateQueries({ queryKey: ['myLockedJobas'] });
           queryClientInstance.invalidateQueries({ queryKey: ['myApplications'] });
           queryClientInstance.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
