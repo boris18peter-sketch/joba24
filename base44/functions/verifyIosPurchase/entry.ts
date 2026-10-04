@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { IAP_CONSUMABLES, IAP_SUBSCRIPTIONS } from '../../shared/appleProducts.ts';
 
 /**
  * verifyIosPurchase — verifies an Apple In-App Purchase signed transaction
@@ -21,23 +22,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // "Apple Root CA - G3" — per Apple's trusted root certificates list.
 const APPLE_ROOT_CA_G3_SHA256_HEX = '63343abfb89a6a03ebb57e9b3f5fa7be7c4f5c756f3017b3a8c488c3653e9179';
 
-// IAP product ids — must match the products created in App Store Connect
-// EXACTLY. Values = Jobas credits granted per purchase / per renewal month.
-const IAP_CONSUMABLES = {
-  'com.joba24.jobas5': 5,
-  'com.joba24.jobas14': 14,
-  'com.joba24.jobas29': 29,
-  'com.joba24.jobas60': 60,
-  'com.joba24.jobas100': 100,
-  'com.joba24.jobas135': 135,
-};
-const IAP_SUBSCRIPTIONS = {
-  'com.joba24.sub20': 20,
-  'com.joba24.sub45': 45,
-  'com.joba24.sub95': 95,
-  'com.joba24.sub145': 145,
-  'com.joba24.sub190': 190,
-};
+// Product ids are NOT declared here. The authoritative Apple catalog lives in
+// base44/shared/appleProducts.ts — the single source of truth for what each
+// Apple product grants. The client never tells the server how many Jobas to grant.
 
 // ── Minimal ASN.1 DER helpers ────────────────────────────────────────────────
 

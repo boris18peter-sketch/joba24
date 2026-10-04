@@ -107,7 +107,11 @@ public class IosIapPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getUnfinished", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getActiveSubscriptions", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getSubscriptionHistory", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "startObserving", returnType: CAPPluginReturnPromise),
     ]
+
+    // Guard so the durable observer is started at most once per app session.
+    private var observing = false
 
     // StoreKit products fetched from the App Store (keyed by product id)
     private var products: [String: Product] = [:]
@@ -172,16 +176,39 @@ public class IosIapPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // Finish the transaction so StoreKit stops re-delivering it. Called by the
     // web layer ONLY after the backend verified the JWS and granted credits.
+    // ROOT-CAUSE FIX: this used to look the transaction up ONLY in
+    // `pendingTransactions`, an in-memory map. After an app restart that map is
+    // empty, so finish() silently resolved {finished:false} and the transaction
+    // stayed unfinished forever. StoreKit then re-delivers an unfinished
+    // transaction instead of opening the purchase sheet — which is exactly why
+    // buying the same consumable package a second time appeared to do nothing.
+    // We now fall back to StoreKit itself: `Transaction.unfinished` is the
+    // durable source of truth and survives app restarts.
     @objc public func finish(_ call: CAPPluginCall) {
         let tidString = call.getString("transactionId") ?? ""
-        guard let tid = UInt64(tidString), let tx = pendingTransactions[tid] else {
+        guard let tid = UInt64(tidString) else {
             call.resolve(["finished": false])
             return
         }
         Task {
-            await tx.finish()
-            pendingTransactions.removeValue(forKey: tid)
-            call.resolve(["finished": true])
+            if let tx = pendingTransactions[tid] {
+                await tx.finish()
+                pendingTransactions.removeValue(forKey: tid)
+                call.resolve(["finished": true])
+                return
+            }
+            if #available(iOS 15.4, *) {
+                for await result in Transaction.unfinished {
+                    guard case .verified(let tx) = result else { continue }
+                    if tx.id == tid {
+                        await tx.finish()
+                        pendingTransactions.removeValue(forKey: tid)
+                        call.resolve(["finished": true])
+                        return
+                    }
+                }
+            }
+            call.resolve(["finished": false])
         }
     }
 
@@ -240,5 +267,33 @@ public class IosIapPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             call.resolve(["transactions": items])
         }
+    }
+
+    // Starts the durable StoreKit 2 transaction observer.
+    // `Transaction.updates` is the ONLY way StoreKit delivers transactions that
+    // arrive OUTSIDE an active purchase() call: subscription renewals, Ask-to-Buy
+    // approvals, and purchases completed while the app was backgrounded. Without
+    // this observer those transactions are never seen by Joba24 — the user is
+    // charged by Apple and receives no Jobas. This is the root cause of the
+    // "subscription purchased but no Jobas" and "renewals need the purchase
+    // screen" symptoms.
+    @objc public func startObserving(_ call: CAPPluginCall) {
+        if observing {
+            call.resolve(["observing": true])
+            return
+        }
+        observing = true
+        Task {
+            for await result in Transaction.updates {
+                guard case .verified(let tx) = result else { continue }
+                self.pendingTransactions[tx.id] = tx
+                self.notifyListeners("transactionUpdate", data: [
+                    "jws": result.jwsRepresentation,
+                    "transactionId": String(tx.id),
+                    "productId": tx.productID,
+                ])
+            }
+        }
+        call.resolve(["observing": true])
     }
 }

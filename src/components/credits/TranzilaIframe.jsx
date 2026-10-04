@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2, Shield } from 'lucide-react';
+import { X, Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -33,26 +33,57 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
   const [loading, setLoading] = useState(true);
   const processedRef = useRef(false);
 
-  // App origin — used for both notify_url (webhook) and u71 (redirect)
+  // App origin — used for the BROWSER redirect (u71) only.
   const appOrigin = appParams.appBaseUrl || window.location.origin;
 
-  // Notify URL — Tranzila POSTs transaction result here (server-to-server).
-  // Kept as a fallback in case it works.
-  const notifyUrl = `${appOrigin}/functions/tranzilaNotify?payment_id=${paymentId}`;
+  // ── Tranzila notify_url — FIXED, never derived from a client origin ────────
+  // Inside Capacitor `window.location.origin` resolves to `capacitor://localhost`,
+  // which Tranzila's servers can never reach. Because the server-to-server
+  // notification is now the ONLY authority that grants Jobas, a notify_url that
+  // is not a publicly reachable HTTPS endpoint means a paid purchase is never
+  // credited. The URL is therefore built from an explicit trusted constant and
+  // then fail-closed validated.
+  const TRUSTED_NOTIFY_ORIGIN = 'https://joba24.base44.app';
+  const TRUSTED_NOTIFY_HOST = 'joba24.base44.app';
+  const TRUSTED_NOTIFY_PATH = '/functions/tranzilaNotify';
+
+  const notifyUrl = `${TRUSTED_NOTIFY_ORIGIN}${TRUSTED_NOTIFY_PATH}?payment_id=${encodeURIComponent(paymentId)}`;
+
+  const notifyConfigError = (() => {
+    try {
+      const u = new URL(notifyUrl);
+      if (u.protocol !== 'https:') return 'protocol';
+      if (u.hostname !== TRUSTED_NOTIFY_HOST) return 'host';
+      if (!u.pathname.startsWith(TRUSTED_NOTIFY_PATH)) return 'path';
+      return null;
+    } catch {
+      return 'parse';
+    }
+  })();
+
+  useEffect(() => {
+    if (notifyConfigError) {
+      console.error('[TranzilaIframe] Invalid notify_url configuration:', notifyConfigError, notifyUrl);
+    }
+  }, [notifyConfigError]);
 
   // Redirect URL — Tranzila redirects the iframe here after payment (browser).
   // This is the PRIMARY mechanism. Uses our static callback page.
   const redirectUrl = `${appOrigin}/tranzila-callback.html?payment_id=${paymentId}`;
 
-  // Submit the hidden form INTO the iframe once mounted
+  // Submit the hidden form INTO the iframe once mounted.
+  // FAIL CLOSED: if the notify_url configuration is invalid we never initiate
+  // the payment — the user must not be charged for a purchase we cannot
+  // receive a server-to-server confirmation for.
   useEffect(() => {
+    if (notifyConfigError) return;
     const timer = setTimeout(() => {
       if (formRef.current) {
         formRef.current.submit();
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [notifyConfigError]);
 
   // PRIMARY: Listen for postMessage from tranzila-callback.html
   useEffect(() => {
@@ -225,6 +256,31 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
           </>
         )}
       </form>
+
+      {/* Configuration failure — safe, generic message. No technical detail
+          is exposed to the user; the real error is in the console log above. */}
+      {notifyConfigError && (
+        <div style={{
+          position: 'absolute', inset: 0, top: 56,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--surface-1)', zIndex: 2, padding: 32, textAlign: 'center', gap: 12,
+        }}>
+          <AlertTriangle size={34} color="var(--color-warning)" />
+          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>
+            התשלום אינו זמין כרגע
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-2)', maxWidth: 320 }}>
+            לא הצלחנו לפתוח את דף התשלום. לא בוצע חיוב. נסו שוב מאוחר יותר.
+          </div>
+          <button onClick={onClose} style={{
+            marginTop: 8, height: 46, padding: '0 26px', borderRadius: 'var(--r-md)',
+            background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+            color: 'var(--text-1)', fontWeight: 700, fontSize: 15, cursor: 'pointer',
+          }}>
+            סגירה
+          </button>
+        </div>
+      )}
 
       {/* The actual Tranzila iframe */}
       <iframe

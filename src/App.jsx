@@ -25,6 +25,7 @@ import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
 import NativeAuthListener from '@/components/NativeAuthListener';
+import IosIapRecovery from '@/components/IosIapRecovery';
 import PermissionPrompt from '@/components/PermissionPrompt';
 import NativeOAuthBounce from '@/components/NativeOAuthBounce';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
@@ -319,6 +320,7 @@ function App() {
                 <ScrollToTop />
                 <DeepLinkHandler />
                 <NativeAuthListener />
+                <IosIapRecovery />
                 <PermissionPrompt />
                 <NativeOAuthBounce />
                 <AuthenticatedApp />
