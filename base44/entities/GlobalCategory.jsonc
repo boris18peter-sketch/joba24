@@ -4,7 +4,7 @@
   "properties": {
     "category_key": {
       "type": "string",
-      "description": "Immutable global key. Existing Task enum keys remain unchanged; additional service keys are persisted in Task.category_details.brand_category_key."
+      "description": "Immutable global key. Never renamed \u2014 existing Task.category values stay valid."
     },
     "label": {
       "type": "string"
@@ -20,15 +20,27 @@
     },
     "parent_key": {
       "type": "string",
-      "description": "GlobalCategory.category_key of the parent, empty for roots. Supports future deeper nesting."
+      "description": "Canonical taxonomy parent (GlobalCategory.category_key). Empty for root nodes. A VISUAL GROUP must never appear here \u2014 that is group_key's job."
+    },
+    "group_key": {
+      "type": "string",
+      "description": "VISUAL GROUP only (a node_type='group' row's category_key). Purely presentational: it lets broad UIs organise roots into sections. It is never persisted as a Task's professional category and never used for matching."
     },
     "node_type": {
       "type": "string",
       "enum": [
-        "parent",
-        "service"
+        "group",
+        "root",
+        "service",
+        "parent"
       ],
-      "default": "service"
+      "default": "service",
+      "description": "group (was 'parent') = visual section only, never a task category. root = a niche/root category a Brand can be built around. service = an actionable category that owns a global task form."
+    },
+    "is_niche": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for roots that are strong enough to be a Brand's entire niche (Plumbing, Events...). Purely a curation hint for Brand Studio \u2014 the mechanism itself works for ANY root."
     },
     "sort_order": {
       "type": "number",
@@ -38,9 +50,24 @@
       "type": "boolean",
       "default": true
     },
+    "description_example": {
+      "type": "string",
+      "description": "The task-description placeholder shown when THIS actionable category is selected. Global content shared by every Brand that offers the category."
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Short example task titles for THIS actionable category, used by the brand-aware content layer (homepage, empty states, search, onboarding). Global content \u2014 never duplicated per Brand."
+    },
+    "helper_copy": {
+      "type": "string",
+      "description": "Optional helper/microcopy for this category (chips, hints, CTA support text)."
+    },
     "fields": {
       "type": "array",
-      "description": "Single global task form for an actionable service; never copied into a Brand.",
+      "description": "The single global task form for an actionable service; never copied into a Brand.",
       "items": {
         "type": "object",
         "properties": {

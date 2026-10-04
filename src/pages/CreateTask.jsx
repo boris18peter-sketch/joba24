@@ -259,7 +259,7 @@ export default function CreateTask() {
   // offers (falls back to the platform catalogue). A brand-specific category is
   // persisted on the Task as 'other' with its brand key kept in category_details.
   const { brandId } = useBrand();
-  const { categories: brandCategories, taskCategoryFor, formFieldsFor, isLoading: categoriesLoading } = useBrandCategories();
+  const { categories: brandCategories, taskCategoryFor, formFieldsFor, contentFor, isLoading: categoriesLoading } = useBrandCategories();
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
@@ -1234,7 +1234,7 @@ export default function CreateTask() {
               {t('recording_press_stop')}
             </div>
           )}
-          <Textarea placeholder={t('ct_describe_ph')}
+          <Textarea placeholder={contentFor(form.category)?.descriptionExample || t('ct_describe_ph')}
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {

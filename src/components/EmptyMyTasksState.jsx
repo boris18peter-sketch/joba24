@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
 import { useMemo, useState, useEffect, useRef } from 'react';
+import { useBrandCategories } from '@/lib/brand/brandCategories';
 
 // Combined task examples — fetched from i18n (ex_1 .. ex_27).
 function getExamples(t) {
@@ -96,7 +97,11 @@ export default function EmptyMyTasksState() {
   const [active, setActive] = useState(0);
 
   // Render the list 3× for a seamless infinite loop (start in the middle copy)
-  const EXAMPLES = useMemo(() => getExamples(t), [t]);
+  // Examples come from the ACTIVE Brand's own categories, so a specialised Brand
+  // never shows an unrelated Joba24 example. i18n list is the generic fallback.
+  const { examplesFor } = useBrandCategories();
+  const brandExamples = useMemo(() => { try { return examplesFor(8); } catch { return []; } }, [examplesFor]);
+  const EXAMPLES = useMemo(() => (brandExamples.length ? brandExamples : getExamples(t)), [brandExamples, t]);
   const items = useMemo(() => [...EXAMPLES, ...EXAMPLES, ...EXAMPLES], [EXAMPLES]);
   const len = EXAMPLES.length;
   const startOffset = len * ITEM_H; // begin at middle copy
