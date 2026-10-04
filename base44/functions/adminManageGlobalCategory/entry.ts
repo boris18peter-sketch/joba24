@@ -13,7 +13,7 @@ export default async function(req) {
       if (body.id && !target) return Response.json({ error: 'category_not_found' }, { status: 404 });
       if (target && target.category_key !== key) return Response.json({ error: 'key_immutable' }, { status: 409 });
       if (rows.some(r => r.category_key === key && r.id !== body.id)) return Response.json({ error: 'category_key_taken' }, { status: 409 });
-      const nodeType = body.node_type === 'parent' ? 'parent' : 'service';
+      const nodeType = ['group','parent','root','service'].includes(body.node_type) ? body.node_type : 'service';
       if (target && PLATFORM_CATEGORY_KEYS.includes(key) && nodeType === 'parent') return Response.json({ error: 'legacy_key_is_service' }, { status: 409 });
       const patch = { category_key: key, label: String(body.label || '').trim().slice(0,120), icon: String(body.icon || '').slice(0,32), image_url: String(body.image_url || '').slice(0,1000), description: String(body.description || '').slice(0,240), parent_key: String(body.parent_key || ''), node_type: nodeType, active: body.active !== false, sort_order: Number(body.sort_order) || 0 };
       if (!patch.label) return Response.json({ error: 'label_required' }, { status: 400 });

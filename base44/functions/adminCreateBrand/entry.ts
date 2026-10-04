@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { listAll, rootKey } from '../../shared/categoryTree.ts';
+import { listAll, rootKey, isBranchNode, isGroupNode } from '../../shared/categoryTree.ts';
 
 /**
  * adminCreateBrand — Package 4.5.
@@ -88,7 +88,7 @@ export default async function(req) {
     const globalCategories = await listAll(svc.entities.GlobalCategory);
     const categoryMap = Object.fromEntries(globalCategories.map(g => [g.category_key,g]));
     const assignedParents = [...new Set(Array.isArray(body.parent_category_keys) ? body.parent_category_keys : parent.assigned_parent_keys || [])];
-    if (assignedParents.some(key => categoryMap[key]?.node_type !== 'parent')) return Response.json({ error: 'parent_invalid' }, { status: 400 });
+    if (assignedParents.some(key => !isBranchNode(categoryMap[key]))) return Response.json({ error: 'parent_invalid' }, { status: 400 });
 
     // ── Create (inactive until the final step) ──────────────────────────────
     const brand = await svc.entities.Brand.create({
@@ -133,7 +133,7 @@ export default async function(req) {
     }
 
     // Derive services from parent assignments; never copy child definitions or forms.
-    const services = globalCategories.filter(g => g.node_type !== 'parent' && g.active !== false && assignedParents.includes(rootKey(g.category_key,categoryMap)));
+    const services = globalCategories.filter(g => !isGroupNode(g) && g.active !== false && assignedParents.includes(rootKey(g.category_key,categoryMap)));
 
     // ── Go live (final step) ────────────────────────────────────────────────
     // Domains deliberately stay 'pending' here. A hostname may only be

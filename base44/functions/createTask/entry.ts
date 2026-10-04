@@ -33,7 +33,7 @@ export default async function (req: Request): Promise<Response> {
     const serviceKey = draft.category_details?.brand_category_key || draft.category;
     const row = catalogue.map[serviceKey];
     const offered = row && catalogue.services.some((s) => s.category_key === row.category_key);
-    if (!row || row.node_type === 'parent' || !offered) {
+    if (!row || row.node_type === 'parent' || row.node_type === 'group' || !offered) {
       return Response.json({ error: 'category_not_offered', category: serviceKey || null }, { status: 400 });
     }
 

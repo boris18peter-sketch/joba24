@@ -18,8 +18,8 @@ export default function GlobalCategoryEditor({ category, rows, onSaved, onClose 
   return <div className="rounded-lg border border-jborder-2 bg-surface-2 p-4 space-y-3">
     <h3 className="font-bold">{form.id ? 'עריכת קטגוריה' : 'קטגוריה חדשה'}</h3>
     <div className="grid sm:grid-cols-2 gap-3">
-      <Field label="סוג"><select className="j-input p-2" disabled={!!form.id} value={form.node_type} onChange={e => set('node_type',e.target.value)}><option value="parent">קטגוריית אב</option><option value="service">שירות / קטגוריית ילד</option></select></Field>
-      <Field label="קטגוריית אב"><select className="j-input p-2" value={form.parent_key || ''} onChange={e => set('parent_key',e.target.value)}><option value="">ללא אב (לשורש בלבד)</option>{rows.filter(r => r.node_type === 'parent' && r.id !== form.id).map(r => <option key={r.id} value={r.category_key}>{r.label}</option>)}</select></Field>
+      <Field label="סוג"><select className="j-input p-2" disabled={!!form.id} value={form.node_type} onChange={e => set('node_type',e.target.value)}><option value="group">קבוצה ויזואלית (לא קטגוריית משימה)</option><option value="root">קטגוריית שורש / נישה</option><option value="service">שירות / קטגוריה לביצוע</option></select></Field>
+      <Field label="קטגוריית אב"><select className="j-input p-2" value={form.parent_key || ''} onChange={e => set('parent_key',e.target.value)}><option value="">ללא אב (לשורש בלבד)</option>{rows.filter(r => ['group','parent','root'].includes(r.node_type) && r.id !== form.id).map(r => <option key={r.id} value={r.category_key}>{r.label}</option>)}</select></Field>
       <Field label="מזהה קבוע"><input className="j-input p-2" dir="ltr" disabled={!!form.id} value={form.category_key} onChange={e => set('category_key',e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))} /></Field>
       <Field label="שם"><input className="j-input p-2" value={form.label} onChange={e => set('label',e.target.value)} /></Field>
       <Field label="אייקון"><input className="j-input p-2" value={form.icon || ''} onChange={e => set('icon',e.target.value)} /></Field>

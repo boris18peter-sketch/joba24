@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { listAll } from '../../shared/categoryTree.ts';
+import { listAll, isBranchNode, isGroupNode } from '../../shared/categoryTree.ts';
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req), user = await base44.auth.me();
@@ -11,8 +11,8 @@ export default async function(req) {
     const globals = await listAll(svc.entities.GlobalCategory);
     const parents = [...new Set(Array.isArray(body.assigned_parent_keys) ? body.assigned_parent_keys : [])];
     const excluded = [...new Set(Array.isArray(body.excluded_child_keys) ? body.excluded_child_keys : [])];
-    if (parents.some(key => !globals.some(g => g.category_key === key && g.node_type === 'parent'))) return Response.json({ error: 'parent_invalid' }, { status: 400 });
-    if (excluded.some(key => !globals.some(g => g.category_key === key && g.node_type !== 'parent'))) return Response.json({ error: 'child_invalid' }, { status: 400 });
+    if (parents.some(key => !globals.some(g => g.category_key === key && isBranchNode(g)))) return Response.json({ error: 'parent_invalid' }, { status: 400 });
+    if (excluded.some(key => !globals.some(g => g.category_key === key && !isGroupNode(g)))) return Response.json({ error: 'child_invalid' }, { status: 400 });
     const updated = await svc.entities.Brand.update(brand.id, { category_model_version: 2, assigned_parent_keys: parents, excluded_child_keys: excluded });
     return Response.json({ success: true, brand: updated });
   } catch (error) { return Response.json({ error: error.message }, { status: 500 }); }
