@@ -17,12 +17,16 @@
  * direction). A crash between the ledger write and the balance update leaves a
  * 'claimed' marker that the next pass detects and heals.
  *
+ * Two TRULY CONCURRENT requests for the same transaction are serialized by an
+ * atomic Compare-And-Swap claim on that transaction's audit row (updateMany →
+ * `updated === 1`). Only the winner may reach the credit path, so a double grant
+ * is impossible even under true concurrency.
+ *
  * Base44 has no multi-record transaction and no unique index, so EXACTLY-ONCE
- * CANNOT be guaranteed. The guarantees actually provided are:
+ * is not a single-transaction guarantee. The guarantees actually provided are:
  *   • at-most-once for every sequential retry / replay / recovery / notification
- *   • self-healing for an interrupted grant (the 'claimed' marker)
- *   • a documented residual race window for two TRULY CONCURRENT requests for
- *     the same transaction (see the Phase 2B report)
+ *   • at-most-once for two truly concurrent requests (the CAS claim)
+ *   • self-healing for an interrupted grant ('claimed' marker + claim lease)
  */
 
 import { resolveAppleProduct } from './appleProducts.ts';
@@ -48,6 +52,36 @@ function isoOrNull(value) {
   } catch {
     return null;
   }
+}
+
+// A live grant completes in seconds. A claim older than this was abandoned by a
+// process that died before writing the ledger, and may be reclaimed.
+const CLAIM_LEASE_MS = 120_000;
+
+function toMs(value) {
+  if (!value) return null;
+  const t = new Date(value).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+/** The later of two ISO timestamps — period fields only ever move FORWARD. */
+function laterIso(a, b) {
+  const ta = toMs(a);
+  const tb = toMs(b);
+  if (ta === null) return b || null;
+  if (tb === null) return a;
+  return ta >= tb ? a : b;
+}
+
+/**
+ * The lifecycle state a verified transaction implies ON ITS OWN.
+ * A transaction whose paid period already ended can never mark a subscription
+ * 'active' — this is what stops a historical Restore from resurrecting one.
+ */
+function deriveSubscriptionStatus(periodEnd) {
+  const end = toMs(periodEnd);
+  if (end !== null && end <= Date.now()) return 'expired';
+  return 'active';
 }
 
 async function getUserCredits(base44, userId) {
@@ -158,6 +192,12 @@ export async function upsertAppleSubscription(base44, {
   creditsPerPeriod = 0,
   latestProcessingStatus = 'pending',
   notificationType = null,
+  // Does THIS write own the lifecycle state? A state-authoritative event (a
+  // revocation, or an App Store notification) does. A duplicate / reconciliation
+  // refresh of an already-processed transaction does NOT — it may only refine
+  // the record, never flip a cancelled, expired, refunded or revoked
+  // subscription back to active + auto-renewing.
+  authoritative = false,
 }) {
   if (!originalTransactionId) return null;
   const nowIso = new Date().toISOString();
@@ -174,23 +214,45 @@ export async function upsertAppleSubscription(base44, {
     console.error('[appleEntitlement] subscription lookup failed:', err?.message || err);
   }
 
-  // Only ever advance the entitlement — a state-only notification arriving out
-  // of order must not roll a newer period back.
   // An existing binding is permanent: a device signed in as another Joba24
   // account must never re-point a subscription that already belongs to someone.
   const boundUserId = existing?.user_id && existing.user_id !== 'unknown'
     ? existing.user_id
     : userId;
+
+  // ── B: time-sensitive fields are MONOTONIC ────────────────────────────────
+  // A historical transaction replayed by Restore / reconciliation carries an
+  // OLDER period than the one already stored. It must never roll period_start,
+  // period_end or latest_transaction_id backwards.
+  const incomingEnd = toMs(periodEnd);
+  const existingEnd = toMs(existing?.period_end);
+  const isStalePeriod = incomingEnd !== null && existingEnd !== null && incomingEnd < existingEnd;
+
+  const nextPeriodStart = laterIso(periodStart, existing?.period_start);
+  const nextPeriodEnd = laterIso(periodEnd, existing?.period_end);
+  const nextLatestTransactionId = isStalePeriod
+    ? (existing?.latest_transaction_id ?? null)
+    : (latestTransactionId || existing?.latest_transaction_id || null);
+
+  // ── A: lifecycle state ────────────────────────────────────────────────────
+  // Only a state-authoritative event may WRITE the state. Everything else keeps
+  // what is already stored (falling back to the passed value only when this
+  // subscription has no state yet).
+  const nextStatus = authoritative ? status : (existing?.status || status);
+  const nextAutoRenew = authoritative
+    ? (autoRenewStatus !== null ? autoRenewStatus : (existing?.auto_renew_status ?? null))
+    : (existing?.auto_renew_status ?? null);
+
   const patch = {
     user_id: boundUserId,
     product_id: productId,
     original_transaction_id: originalTransactionId,
-    latest_transaction_id: latestTransactionId || existing?.latest_transaction_id || null,
+    latest_transaction_id: nextLatestTransactionId,
     environment,
-    status,
-    auto_renew_status: autoRenewStatus,
-    period_start: periodStart || existing?.period_start || null,
-    period_end: periodEnd || existing?.period_end || null,
+    status: nextStatus,
+    auto_renew_status: nextAutoRenew,
+    period_start: nextPeriodStart,
+    period_end: nextPeriodEnd,
     credits_per_period: creditsPerPeriod || existing?.credits_per_period || 0,
     latest_processing_status: latestProcessingStatus,
     last_notification_type: notificationType || existing?.last_notification_type || null,
@@ -328,6 +390,7 @@ export async function processAppleTransaction(base44, {
         userId, productId, originalTransactionId, latestTransactionId: transactionId,
         environment, status: 'revoked', periodStart, periodEnd,
         creditsPerPeriod: def.credits, latestProcessingStatus: 'state_only', notificationType,
+        authoritative: true,
       });
     }
     return { success: true, duplicate: false, credits_granted: 0, new_balance: await getUserCredits(base44, userId), product_id: productId, is_subscription: isSubscription, stage: 'revoked_no_grant' };
@@ -351,7 +414,7 @@ export async function processAppleTransaction(base44, {
     if (isSubscription) {
       await upsertAppleSubscription(base44, {
         userId, productId, originalTransactionId, latestTransactionId: transactionId,
-        environment, status: 'active', autoRenewStatus: true,
+        environment, status: deriveSubscriptionStatus(periodEnd),
         periodStart, periodEnd, creditsPerPeriod: def.credits,
         latestProcessingStatus: 'processed', notificationType,
       });
@@ -392,7 +455,7 @@ export async function processAppleTransaction(base44, {
     if (isSubscription) {
       await upsertAppleSubscription(base44, {
         userId, productId, originalTransactionId, latestTransactionId: transactionId,
-        environment, status: 'active', autoRenewStatus: true,
+        environment, status: deriveSubscriptionStatus(periodEnd),
         periodStart, periodEnd, creditsPerPeriod: def.credits,
         latestProcessingStatus: 'processed', notificationType,
       });
@@ -401,15 +464,77 @@ export async function processAppleTransaction(base44, {
   }
 
   // 6. Fresh grant. ORDER MATTERS (see the module header):
-  //    claim marker → ledger → balance → confirm. A crash at any point leaves
+  //    atomic claim → ledger → balance → confirm. A crash at any point leaves
   //    recoverable evidence, and can never cause a second grant.
+  //
+  //    C — ATOMIC CLAIM (Compare-And-Swap). The claim is a conditional
+  //    `updateMany` on this transaction's canonical audit row. The database
+  //    serializes concurrent updates, so of two requests for the SAME
+  //    transaction exactly one sees `updated === 1` — and only that one may
+  //    continue to the credit path. The other sees 0 and stops.
   const quantity = isSubscription ? 1 : Math.max(1, Number(tx.quantity) || 1);
   const credits = def.credits * quantity;
 
-  const claimedId = claimedRow?.id || await recordAppleAttempt(base44, {
-    ...base, productType: def.type, status: 'verified',
-    verificationStage: 'claimed', creditsIntended: credits, creditsGranted: 0,
-  });
+  if (!claimedRow) {
+    await recordAppleAttempt(base44, {
+      ...base, productType: def.type, status: 'verified',
+      verificationStage: 'claimed', creditsIntended: credits, creditsGranted: 0,
+    });
+  }
+
+  // Both requests must CAS the SAME row, so always resolve the OLDEST row for
+  // this transaction — a request that reads after creating its own row sees
+  // every earlier row, so all of them converge on the earliest one.
+  let canonicalRow = claimedRow;
+  try {
+    const rows = await base44.asServiceRole.entities.IosPurchase.filter(
+      { transaction_id: transactionId }, 'created_date', 1,
+    );
+    if (rows?.[0]) canonicalRow = rows[0];
+  } catch { /* fall back to the row we already know about */ }
+
+  const claimToken = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+  const claimAt = new Date().toISOString();
+  const staleClaimBefore = new Date(Date.now() - CLAIM_LEASE_MS).toISOString();
+
+  let claimUpdated = 0;
+  if (canonicalRow?.id) {
+    try {
+      const claim = await base44.asServiceRole.entities.IosPurchase.updateMany(
+        {
+          id: canonicalRow.id,
+          $or: [
+            { claim_state: { $ne: 'granted' } },
+            // Lease: a claim whose owner died before writing the ledger is
+            // reclaimed. Reaching this point already proved NO ledger row
+            // exists, so reclaiming can never grant twice.
+            { claim_at: { $lt: staleClaimBefore } },
+          ],
+        },
+        {
+          $set: {
+            claim_state: 'granted',
+            claim_token: claimToken,
+            claim_owner: userId,
+            claim_at: claimAt,
+          },
+        },
+      );
+      claimUpdated = Number(claim?.updated ?? 0);
+    } catch (err) {
+      console.error('[appleEntitlement] claim CAS failed:', err?.message || err);
+    }
+  }
+
+  if (claimUpdated !== 1) {
+    // Another request owns this transaction — grant NOTHING. Recorded as a NEW
+    // row so the winner's row (its claim + grant evidence) is never overwritten.
+    await recordAppleAttempt(base44, {
+      ...base, productType: def.type, status: 'verified',
+      verificationStage: 'duplicate_no_grant', creditsIntended: credits, creditsGranted: 0,
+    });
+    return { success: true, duplicate: true, credits_granted: 0, new_balance: await getUserCredits(base44, userId), product_id: productId, is_subscription: isSubscription, stage: 'duplicate_no_grant' };
+  }
 
   const currentBalance = await getUserCredits(base44, userId);
   const newBalance = currentBalance + credits;
@@ -429,12 +554,22 @@ export async function processAppleTransaction(base44, {
 
     await base44.asServiceRole.entities.User.update(userId, { worker_credits: newBalance });
   } catch (err) {
+    // Nothing was granted — release the claim so a retry can recover it now
+    // rather than waiting for the lease to expire.
+    if (canonicalRow?.id) {
+      try {
+        await base44.asServiceRole.entities.IosPurchase.updateMany(
+          { id: canonicalRow.id, claim_token: claimToken },
+          { $set: { claim_state: 'unclaimed' } },
+        );
+      } catch { /* the lease will reclaim it */ }
+    }
     await recordAppleAttempt(base44, {
       ...base, productType: def.type, status: 'failed_entitlement',
       verificationStage: 'failed_entitlement',
       errorCategory: String(err?.message || 'entitlement_failed').slice(0, 140),
       creditsIntended: credits, creditsGranted: 0,
-      existingRow: claimedRow || (claimedId ? { id: claimedId } : null),
+      existingRow: canonicalRow || null,
     });
     return { success: false, duplicate: false, credits_granted: 0, new_balance: currentBalance, product_id: productId, is_subscription: isSubscription, stage: 'failed_entitlement', error: 'Entitlement failed' };
   }
@@ -445,16 +580,20 @@ export async function processAppleTransaction(base44, {
     verificationStage: 'entitlement_granted',
     creditsIntended: credits, creditsGranted: credits,
     expirationDate: periodEnd,
-    existingRow: claimedRow || (claimedId ? { id: claimedId } : null),
+    existingRow: canonicalRow || null,
   });
 
-  // 8. Normalized subscription entitlement.
+  // 8. Normalized subscription entitlement. This IS a paid period we just
+  //    credited, so the state is authoritative — but the status is DERIVED from
+  //    the period, so a historical transaction can never mark an ended
+  //    subscription active.
   if (isSubscription) {
     await upsertAppleSubscription(base44, {
       userId, productId, originalTransactionId, latestTransactionId: transactionId,
-      environment, status: 'active', autoRenewStatus: true,
+      environment, status: deriveSubscriptionStatus(periodEnd), autoRenewStatus: true,
       periodStart, periodEnd, creditsPerPeriod: def.credits,
       latestProcessingStatus: 'processed', notificationType,
+      authoritative: true,
     });
   }
 
@@ -498,5 +637,6 @@ export async function applySubscriptionStateOnly(base44, {
     userId, productId, originalTransactionId, latestTransactionId,
     environment, status, autoRenewStatus, periodStart, periodEnd,
     creditsPerPeriod, latestProcessingStatus: 'state_only', notificationType,
+    authoritative: true,
   });
 }
