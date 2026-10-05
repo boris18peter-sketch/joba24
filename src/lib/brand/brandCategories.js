@@ -20,7 +20,7 @@ export function useBrandCategories() {
   const global = useGlobalCategories();
   useEffect(() => base44.entities.Brand.subscribe(event => { if (event.id === brandId) cache.invalidateQueries({ queryKey:['brandScope',brandId] }); }), [brandId,cache]);
   const services = deriveServices(global.rows,effectiveBrand,legacy.data || []);
-  const categories = services.map(g => ({ ...g,value:g.category_key,label:g.label || platformCategoryLabel(g.category_key),fields:globalFormFields(g),brandSpecific:isBrandSpecificKey(g.category_key) }));
+  const categories = services.map(g => ({ ...g,value:g.category_key,label:g.label || platformCategoryLabel(g.category_key),fields:globalFormFields(g,global.map),brandSpecific:isBrandSpecificKey(g.category_key) }));
   // Single source of truth for every Brand-facing task example / placeholder.
   const examplesFor = (limit = 4) => resolveBrandExamples(global.rows, categories, effectiveBrand, limit).map(e => e.text);
   return { categories,isPlatformBrand,examples:examplesFor(4),examplesFor,groups:serviceGroups(global.rows,categories,effectiveBrand),rows:legacy.data || [],globalRows:global.rows,globalMap:global.map,
@@ -29,5 +29,5 @@ export function useBrandCategories() {
     isLoading:scopeQuery.isLoading || global.isLoading || (effectiveBrand?.category_model_version !== 2 && legacy.isLoading),
     taskCategoryFor:value => value,
     rowFor:value => (legacy.data || []).find(r => r.category_key === value) || null,
-    formFieldsFor:value => globalFormFields(global.map[value]) };
+    formFieldsFor:value => globalFormFields(global.map[value],global.map) };
 }

@@ -7,6 +7,7 @@
 
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { globalCategoryFor } from '@/lib/brand/categoryRegistry';
+import { globalFormFields, globalFieldChain } from '@/lib/brand/globalCategories';
 import { CATEGORY_REQUIREMENTS, DEFAULT_REQUIREMENT_CATEGORIES, getRequirementCategories } from '@/lib/requirements';
 
 export { CATEGORIES, getCategoryLabel, getRequirementCategories, CATEGORY_REQUIREMENTS, DEFAULT_REQUIREMENT_CATEGORIES };
@@ -1284,9 +1285,16 @@ export const TASK_FLOW_CONFIG = {
 
 export const getCategoryConfig = (category) => {
   const row = globalCategoryFor(category);
-  const legacy = TASK_FLOW_CONFIG[category] || TASK_FLOW_CONFIG.other;
-  if (!row?.fields?.length) return legacy;
-  const fields = row.fields.filter(f => f.enabled !== false).sort((a,b) => (a.order || 0) - (b.order || 0));
+  // Legacy knowledge follows the same chain as the form: the category's own
+  // entry, then its ROOT's, then the generic fallback — so a subcategory keeps
+  // its parent's keywords and price range instead of silently losing them.
+  const rootKey = globalFieldChain(row)[0]?.category_key;
+  const legacy = TASK_FLOW_CONFIG[category] || (rootKey && TASK_FLOW_CONFIG[rootKey]) || TASK_FLOW_CONFIG.other;
+  // Inheritance-aware: a subcategory resolves its ROOT's form merged with its
+  // own, so the legacy reader (schedule detection, formatted details, chat
+  // order) sees exactly the same questions the renderer does.
+  const fields = globalFormFields(row);
+  if (!fields.length) return legacy;
   return { ...legacy, label: `${row.icon || '📋'} ${row.label}`, extraFields: fields.map(f => ({ ...f, type: ({ boolean:'toggle', multiselect:'multi' })[f.type] || f.type })), chatQuestionOrder: fields.map(f => f.key) };
 };
 
