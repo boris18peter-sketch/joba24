@@ -186,6 +186,14 @@ export default function SimulatorPanel() {
   const [bulkMinPrice, setBulkMinPrice] = useState(100);
   const [bulkMaxPrice, setBulkMaxPrice] = useState(2000);
   const [bulkCategories, setBulkCategories] = useState([]);
+  const [bulkBrands, setBulkBrands] = useState([]);
+
+  const { data: brands = [] } = useQuery({
+    queryKey: ['sim_brands'],
+    queryFn: () => base44.entities.Brand.list('created_date', 100),
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+  });
 
   const CATEGORY_OPTIONS = [
     { value: 'plumbing', label: 'אינסטלציה' },
@@ -210,6 +218,18 @@ export default function SimulatorPanel() {
   const toggleCategory = (cat) => {
     setBulkCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
   };
+
+  const toggleBrand = (id) => {
+    setBulkBrands(prev => prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]);
+  };
+
+  // Round-robin split so the operator sees exactly where each task will land.
+  const brandSplit = bulkBrands.map((id, i) => {
+    const base = Math.floor(bulkCount / bulkBrands.length);
+    const extra = i < (bulkCount % bulkBrands.length) ? 1 : 0;
+    const b = brands.find(x => x.id === id);
+    return { id, name: b?.name || b?.slug || id.slice(-6), count: base + extra };
+  });
 
   const myTasks = allTasks.filter(t => t.client_id === me?.id);
   const testTasks = myTasks.filter(t => t.title?.includes('🧪'));
@@ -950,6 +970,42 @@ export default function SimulatorPanel() {
           </select>
         </div>
 
+        {/* Brand multi-select — target one or several Brands */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>
+            מותגים {bulkBrands.length > 0 && `(${bulkBrands.length} נבחרו)`} — ריק = Joba24 בלבד
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: 120, overflowY: 'auto', padding: 4, background: '#f8faff', borderRadius: 8, border: '1px solid #dce8f5' }}>
+            {brands.length === 0 && (
+              <span style={{ fontSize: 10, color: '#94a3b8', padding: 4 }}>אין מותגים זמינים</span>
+            )}
+            {brands.map(b => {
+              const active = bulkBrands.includes(b.id);
+              return (
+                <button key={b.id} onClick={() => toggleBrand(b.id)}
+                  style={{
+                    padding: '4px 10px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                    background: active ? '#0f2b6b' : 'white',
+                    color: active ? 'white' : '#0f2b6b',
+                    border: `1px solid ${active ? '#0f2b6b' : '#dce8f5'}`,
+                  }}>
+                  {b.name || b.slug}
+                </button>
+              );
+            })}
+          </div>
+          {bulkBrands.length > 0 && (
+            <button onClick={() => setBulkBrands([])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#dc2626', fontSize: 10, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+              נקה בחירת מותגים
+            </button>
+          )}
+          {bulkBrands.length > 0 && (
+            <div style={{ fontSize: 10, color: '#0e7490', padding: '5px 9px', background: '#ecfeff', borderRadius: 8, border: '1px solid #a5f3fc', lineHeight: 1.6 }}>
+              יחולקו: {brandSplit.map(s => `${s.name} (${s.count})`).join(' · ')}
+            </div>
+          )}
+        </div>
+
         {/* Category multi-select */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>
@@ -1007,9 +1063,13 @@ export default function SimulatorPanel() {
               action: 'generate', city: bulkCity, count: bulkCount,
               minPrice: bulkMinPrice, maxPrice: bulkMaxPrice,
               categories: bulkCategories.length > 0 ? bulkCategories : undefined,
+              brandIds: bulkBrands.length > 0 ? bulkBrands : undefined,
             });
             if (res.data?.error) throw new Error(res.data.error);
-            toast.success(`✅ נוצרו ${res.data.count} משימות דמו ב${bulkCity}`);
+            const brandLabel = bulkBrands.length > 0
+              ? ` · ${brandSplit.map(s => `${s.name} (${s.count})`).join(' · ')}`
+              : '';
+            toast.success(`✅ נוצרו ${res.data.count} משימות דמו ב${bulkCity}${brandLabel}`);
           }} />
 
         {/* Stats */}

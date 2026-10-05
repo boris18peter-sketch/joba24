@@ -507,7 +507,7 @@ Deno.serve(async (req) => {
     if (denied) return denied;
 
     const body = await req.json();
-    const { action, city, count, minPrice, maxPrice, categories } = body;
+    const { action, city, count, minPrice, maxPrice, categories, brandIds } = body;
 
     // ── CLEANUP ──
     if (action === "cleanup") {
@@ -542,6 +542,12 @@ Deno.serve(async (req) => {
       const selectedCats: string[] = Array.isArray(categories) && categories.length > 0
         ? categories
         : ALL_CATEGORIES;
+
+      // Brand targeting: the selected Brand.id values are assigned round-robin so
+      // every chosen Brand gets tasks. Empty selection keeps the platform Brand.
+      const selectedBrands: string[] = Array.isArray(brandIds) && brandIds.length > 0
+        ? brandIds.filter((b: any) => typeof b === "string" && b)
+        : [JOBA24_BRAND_ID];
 
       // Build a large pool of demo users (100) and shuffle so each task
       // gets a different profile — prevents the same face appearing across
@@ -592,12 +598,17 @@ Deno.serve(async (req) => {
           client_rating: demoUser.rating || 0,
           expires_at: new Date(Date.now() + (6 + Math.random() * 42) * 60 * 60 * 1000).toISOString(),
           expiry_duration_hours: 24,
-          origin_brand_id: JOBA24_BRAND_ID,
+          origin_brand_id: selectedBrands[i % selectedBrands.length],
         });
       }
 
       await base44.entities.Task.bulkCreate(tasks);
-      return Response.json({ success: true, count: tasks.length, demoUsers: demoUsers.length });
+      return Response.json({
+        success: true,
+        count: tasks.length,
+        demoUsers: demoUsers.length,
+        brands: selectedBrands.length,
+      });
     }
 
     return Response.json({ error: "Invalid action" }, { status: 400 });
