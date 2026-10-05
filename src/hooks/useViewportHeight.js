@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * useViewportHeight — React-state version. Kept for the quick-chat drawer.
@@ -51,7 +51,11 @@ export function useViewportHeight() {
  * `--safe-bottom`, so the composer doesn't float above the keyboard with a
  * phantom home-indicator gap.
  */
-export function useChatViewport(ref) {
+export function useChatViewport(ref, onGeometryChange) {
+  // Held in a ref so a new callback identity never re-subscribes the listeners.
+  const callbackRef = useRef(onGeometryChange);
+  callbackRef.current = onGeometryChange;
+
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof window === 'undefined') return;
@@ -82,6 +86,10 @@ export function useChatViewport(ref) {
         if (keyboardOpen) el.style.setProperty('--safe-bottom', '0px');
         else el.style.removeProperty('--safe-bottom');
       }
+
+      // Let the owner react to the new geometry in the same frame the height
+      // changed (e.g. keep the newest message anchored to the bottom).
+      callbackRef.current?.({ height: h, offsetTop: y, keyboardOpen });
     };
 
     const schedule = () => {

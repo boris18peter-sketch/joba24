@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Star, ChevronLeft, Briefcase, User, MessageSquare } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import { brandContextCategoryLabel, brandContextTaskTitle } from '@/lib/brand/professionalScope';
+import { classifyReviews } from '@/lib/reviewClassification';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
@@ -80,19 +81,9 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
   // Prefer the task relationship (robust for public-profile reviews that lack
   // task_id); fall back to the review's `role` field (the reviewer's role).
   // role='client' → reviewer was the client → reviewee is the worker.
-  const workerTaskIds = new Set(workerTasks.map(t => t.id));
-  const clientTaskIds = new Set(clientTasks.map(t => t.id));
-  const classifyReview = (r) => {
-    if (r.task_id) {
-      if (workerTaskIds.has(r.task_id)) return 'worker';
-      if (clientTaskIds.has(r.task_id)) return 'client';
-    }
-    if (r.role === 'client') return 'worker';
-    if (r.role === 'worker') return 'client';
-    return null;
-  };
-  const workerReviews = reviews.filter(r => classifyReview(r) === 'worker');
-  const clientReviews = reviews.filter(r => classifyReview(r) === 'client');
+  // ONE shared classifier (@/lib/reviewClassification) so a review is never
+  // typed differently here than in the reviews section.
+  const { aboutWorker: workerReviews, aboutClient: clientReviews } = classifyReviews(reviews, userId, tasks);
 
   const activeTasks = tab === 'worker' ? workerTasks : clientTasks;
   const activeReviews = tab === 'worker' ? workerReviews : clientReviews;

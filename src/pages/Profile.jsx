@@ -13,6 +13,7 @@ import TrustCard from '@/components/TrustCard';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileSubscriptionCard from '@/components/profile/ProfileSubscriptionCard';
+import ReviewsSection from '@/components/profile/ReviewsSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
@@ -224,6 +225,16 @@ export default function Profile() {
 
         {/* Verify CTA — status-aware */}
         <VerificationStatusBanner me={me} />
+
+        {/* Reviews — split by the role the owner held when each was received */}
+        <ReviewsSection
+          reviews={reviews}
+          tasks={[...workerTasks, ...postedTasks]}
+          profileUserId={me?.id}
+          rating={rating}
+          scope={scope}
+          showTaskTitle
+        />
 
         {/* About */}
         {me?.bio && (

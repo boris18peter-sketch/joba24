@@ -132,7 +132,21 @@ export default function Chat() {
   });
 
   // Pin the shell to the visible viewport (keyboard-aware, no re-renders).
-  useChatViewport(shellRef);
+  //
+  // When the keyboard opens the shell shrinks by ~300px, but the list's
+  // scrollTop is NOT adjusted by the browser — so the newest messages slide out
+  // of view and the conversation appears to jump. Re-pin the list to the bottom
+  // on every geometry change while the user is following the conversation.
+  // `resizingRef` suppresses the scroll event our own re-pin fires, so it can
+  // never clear the stickiness that the re-pin depends on.
+  const resizingRef = useRef(false);
+  useChatViewport(shellRef, () => {
+    const el = listRef.current;
+    if (!el || !stickRef.current) return;
+    resizingRef.current = true;
+    el.scrollTop = el.scrollHeight;
+    requestAnimationFrame(() => { resizingRef.current = false; });
+  });
 
   // ── Scroll management ────────────────────────────────────────────────────
   // Opening a conversation shows the newest messages.
@@ -202,6 +216,8 @@ export default function Chat() {
   };
 
   const handleScroll = () => {
+    // Ignore the scroll event our own keyboard-resize re-pin produces.
+    if (resizingRef.current) return;
     if (scrollRafRef.current) return;
     scrollRafRef.current = requestAnimationFrame(() => {
       scrollRafRef.current = 0;

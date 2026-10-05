@@ -10,6 +10,7 @@ import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
+import ReviewsSection from '@/components/profile/ReviewsSection';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
@@ -159,6 +160,17 @@ export default function PublicProfile() {
 
         {/* SECTION 2b — Reliability */}
         <TrustCard user={liveUser} reviews={reviews} tasks={[]} isPublic />
+
+        {/* Reviews — split by the role the owner held when each was received.
+            Task titles are intentionally not shown on a public profile: a
+            client's job title is not the worker's to publish. */}
+        <ReviewsSection
+          reviews={reviews}
+          tasks={[...completedTasks, ...postedTasks]}
+          profileUserId={userId}
+          rating={liveRating}
+          scope={scope}
+        />
 
         {/* About */}
         {user.bio && (

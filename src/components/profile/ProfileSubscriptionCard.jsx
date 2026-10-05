@@ -7,6 +7,7 @@ import {
   getServerSubscriptionState,
   openIosManageSubscriptions,
   restoreIosPurchases,
+  syncIosSubscriptionEntitlements,
 } from '@/lib/iosIap';
 
 // Normalized Joba24 subscription state → label + colour.
@@ -43,6 +44,10 @@ export default function ProfileSubscriptionCard() {
   const ios = isIosNative();
   const [restoring, setRestoring] = useState(false);
 
+  // THE source of truth for Apple subscription state: the backend's normalized
+  // entitlement (AppleSubscription). StoreKit on the device is used ONLY to
+  // reconcile the backend — never to render a second, possibly-contradicting
+  // state next to this one.
   const { data: sub, isLoading } = useQuery({
     queryKey: ['appleSubscription'],
     queryFn: getServerSubscriptionState,
@@ -50,9 +55,32 @@ export default function ProfileSubscriptionCard() {
     enabled: ios,
   });
 
-  const meta = STATUS_META[sub?.status] || STATUS_META.unknown;
-  const periodEnd = formatDate(sub?.period_end);
-  const isActive = ['active', 'cancelled_active', 'grace_period'].includes(sub?.status);
+  // StoreKit can know about an active subscription the backend has not recorded
+  // yet (server-side verification is what creates the record). Rather than claim
+  // "no active subscription" during that window, reconcile once from Apple and
+  // read the backend again. This is a RECONCILIATION, not a grant: the backend
+  // is idempotent per Apple transaction, so an already-processed period adds 0
+  // Jobas. It reuses the app's existing sync path — no new credit logic.
+  const { data: reconciled, isFetching: reconciling } = useQuery({
+    queryKey: ['appleSubscriptionReconcile'],
+    queryFn: async () => {
+      await syncIosSubscriptionEntitlements();
+      const fresh = await getServerSubscriptionState();
+      queryClient.setQueryData(['appleSubscription'], fresh);
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      return fresh;
+    },
+    enabled: ios && !isLoading && !sub,
+    staleTime: Infinity,
+    retry: 0,
+  });
+
+  const entitlement = sub || reconciled || null;
+  const syncing = ios && !entitlement && (isLoading || reconciling);
+
+  const meta = STATUS_META[entitlement?.status] || STATUS_META.unknown;
+  const periodEnd = formatDate(entitlement?.period_end);
+  const isActive = ['active', 'cancelled_active', 'grace_period'].includes(entitlement?.status);
 
   const handleRestore = async () => {
     if (restoring) return;
@@ -81,8 +109,18 @@ export default function ProfileSubscriptionCard() {
   };
 
   // Nothing to show: not on iOS and no server-side subscription.
-  if (!ios && !sub) return null;
-  if (isLoading && !sub) return null;
+  if (!ios && !entitlement) return null;
+  if (syncing) {
+    return (
+      <div style={{
+        background: 'var(--brand-card-bg, var(--surface-2))',
+        borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px',
+        display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-2)',
+      }}>
+        <Loader2 size={15} className="animate-spin" /> מסנכרן מנוי מול Apple…
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -96,11 +134,11 @@ export default function ProfileSubscriptionCard() {
         <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>המנוי שלי</span>
       </div>
 
-      {sub ? (
+      {entitlement ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--text-1)' }}>
-              {sub.credits_per_period ? `מנוי ${sub.credits_per_period} ג'ובות בחודש` : 'מנוי חודשי'}
+              {entitlement.credits_per_period ? `מנוי ${entitlement.credits_per_period} ג'ובות בחודש` : 'מנוי חודשי'}
             </span>
             <span style={{
               fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 99,
@@ -114,7 +152,7 @@ export default function ProfileSubscriptionCard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-2)', marginBottom: 12 }}>
               <Calendar size={12} />
               {isActive
-                ? (sub.auto_renew_status === false ? `פעיל עד ${periodEnd}` : `מתחדש ב-${periodEnd}`)
+                ? (entitlement.auto_renew_status === false ? `פעיל עד ${periodEnd}` : `מתחדש ב-${periodEnd}`)
                 : `הסתיים ב-${periodEnd}`}
             </div>
           )}
@@ -126,7 +164,7 @@ export default function ProfileSubscriptionCard() {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {sub && (
+        {entitlement && (
           <button
             onClick={handleManage}
             style={{

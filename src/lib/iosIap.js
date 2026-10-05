@@ -306,7 +306,14 @@ export async function openIosManageSubscriptions() {
 // correct across reinstalls and devices.
 export async function getServerSubscriptionState() {
   try {
-    const rows = await base44.entities.AppleSubscription.list('-last_verified_at', 1);
+    // Scope explicitly to the signed-in user. RLS also lets an ADMIN read every
+    // subscription, so an unfiltered `.list()` could hand an admin someone
+    // else's entitlement. This must always be THIS user's subscription.
+    const me = await base44.auth.me();
+    if (!me?.id) return null;
+    const rows = await base44.entities.AppleSubscription.filter(
+      { user_id: me.id }, '-last_verified_at', 1,
+    );
     return rows?.[0] || null;
   } catch (err) {
     console.error('[iosIap] getServerSubscriptionState failed:', err);

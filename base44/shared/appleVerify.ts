@@ -104,62 +104,124 @@ class Certificate {
   }
 }
 
-// Digest the certificate's signatureAlgorithm OID → WebCrypto hash name.
-function ecHashFromAlg(sigAlgFull) {
+// A certificate's signatureAlgorithm OID → the WebCrypto algorithm to use.
+// Apple's chain is ECDSA today, but the intermediates issued by Apple Root CA
+// have historically been RSA — both must be supported or a valid chain is
+// rejected as "Invalid intermediate certificate".
+const SIG_ALGS = {
+  '2a8648ce3d040302': { kind: 'ecdsa', hash: 'SHA-256' }, // ecdsa-with-SHA256
+  '2a8648ce3d040303': { kind: 'ecdsa', hash: 'SHA-384' }, // ecdsa-with-SHA384
+  '2a864886f70d01010b': { kind: 'rsa', hash: 'SHA-256' }, // sha256WithRSAEncryption
+  '2a864886f70d01010c': { kind: 'rsa', hash: 'SHA-384' }, // sha384WithRSAEncryption
+  '2a864886f70d01010d': { kind: 'rsa', hash: 'SHA-512' }, // sha512WithRSAEncryption
+  '2a864886f70d010105': { kind: 'rsa', hash: 'SHA-1' },   // sha1WithRSAEncryption
+};
+
+function sigAlgInfo(sigAlgFull) {
   const alg = readTLV(sigAlgFull, 0);
+  if (!alg) return null;
   const kids = readChildren(alg.content);
   if (!kids.length) return null;
-  const oid = toHex(kids[0].content);
-  if (oid === '2a8648ce3d040302') return 'SHA-256'; // ecdsa-with-SHA256
-  if (oid === '2a8648ce3d040303') return 'SHA-384'; // ecdsa-with-SHA384
-  return null;
+  return SIG_ALGS[toHex(kids[0].content)] || null;
 }
 
-// Curve name from the SPKI algorithm OID.
-function curveFromSpki(spkiFull) {
+// The key algorithm of an SPKI, plus the SPKI itself.
+function spkiKeyInfo(spkiFull) {
   const outer = readTLV(spkiFull, 0);
+  if (!outer) return null;
   const kids = readChildren(outer.content);
   if (!kids.length || kids[0].tag !== 0x30) return null;
   const algKids = readChildren(kids[0].content);
   if (!algKids.length) return null;
-  const oid = toHex(algKids[0].content);
-  if (oid === '2a8648ce3d030107') return 'P-256'; // secp256r1
-  if (oid === '2b81040022') return 'P-384'; // secp384r1
+  // AlgorithmIdentifier = SEQUENCE { keyAlgorithmOID, [parameters] }.
+  // For an EC key the first OID is id-ecPublicKey and the CURVE is the second
+  // element (a namedCurve OID). Reading the first one never matches a curve,
+  // which made every ECDSA verification silently return false.
+  const paramOid = algKids.length > 1 && algKids[1].tag === 0x06
+    ? toHex(algKids[1].content)
+    : null;
+  return { oid: toHex(algKids[0].content), paramOid, spki: spkiFull };
+}
+
+// Curve name from the SPKI's namedCurve parameter OID.
+function curveFromSpki(spkiFull) {
+  const info = spkiKeyInfo(spkiFull);
+  if (!info) return null;
+  if (info.paramOid === '2a8648ce3d030107') return 'P-256'; // secp256r1
+  if (info.paramOid === '2b81040022') return 'P-384'; // secp384r1
   return null;
 }
 
-async function ecdsaVerify(spkiFull, hashName, data, sigDer) {
+// Raw (r||s) ECDSA signature length for a curve — the format WebCrypto expects.
+function curveByteLength(curve) {
+  if (curve === 'P-256') return 32;
+  if (curve === 'P-384') return 48;
+  return null;
+}
+
+/**
+ * X.509 signatures are ASN.1 DER { r, s }, but WebCrypto's ECDSA verify wants
+ * the raw IEEE-P1363 (r||s) form. Feeding DER straight to WebCrypto makes every
+ * signature check fail — which is what rejected Apple's certificate chain.
+ */
+function derEcdsaToRaw(der, size) {
+  const outer = readTLV(der, 0);
+  if (!outer || outer.tag !== 0x30) return null;
+  const kids = readChildren(outer.content);
+  if (kids.length < 2 || kids[0].tag !== 0x02 || kids[1].tag !== 0x02) return null;
+  const out = new Uint8Array(size * 2);
+  const write = (intContent, offset) => {
+    let v = intContent;
+    while (v.length > size && v[0] === 0) v = v.slice(1); // strip DER sign padding
+    if (v.length > size) return false;
+    out.set(v, offset + (size - v.length));
+    return true;
+  };
+  if (!write(kids[0].content, 0) || !write(kids[1].content, size)) return null;
+  return out;
+}
+
+/**
+ * Verify a signature made by `issuerSpki` over `data`, using the signature
+ * algorithm declared by the signed certificate.
+ */
+async function verifyWithIssuer(issuerSpki, sigAlgFull, data, sigBytes) {
+  const alg = sigAlgInfo(sigAlgFull);
+  if (!alg) return false;
+  const info = spkiKeyInfo(issuerSpki);
+  if (!info) return false;
+
+  if (alg.kind === 'rsa') {
+    if (info.oid !== '2a864886f70d010101') return false; // rsaEncryption
+    const key = await crypto.subtle.importKey(
+      'spki', info.spki, { name: 'RSASSA-PKCS1-v1_5', hash: alg.hash }, false, ['verify'],
+    );
+    return await crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, key, sigBytes, data);
+  }
+
+  const curve = curveFromSpki(info.spki);
+  const size = curveByteLength(curve);
+  if (!size) return false;
+  const raw = derEcdsaToRaw(sigBytes, size);
+  if (!raw) return false;
+  const key = await crypto.subtle.importKey(
+    'spki', info.spki, { name: 'ECDSA', namedCurve: curve }, false, ['verify'],
+  );
+  return await crypto.subtle.verify({ name: 'ECDSA', hash: { name: alg.hash } }, key, raw, data);
+}
+
+// Verify a signature that is ALREADY in WebCrypto's raw (r||s) form — the JWS
+// signature itself, which Apple emits as ES256.
+async function ecdsaVerify(spkiFull, hashName, data, sigRaw) {
   const curve = curveFromSpki(spkiFull);
   if (!curve) return false;
   const key = await crypto.subtle.importKey('spki', spkiFull, { name: 'ECDSA', namedCurve: curve }, false, ['verify']);
-  return await crypto.subtle.verify({ name: 'ECDSA', hash: { name: hashName } }, key, sigDer, data);
+  return await crypto.subtle.verify({ name: 'ECDSA', hash: { name: hashName } }, key, sigRaw, data);
 }
 
 async function sha256Hex(bytes) {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   return toHex(digest);
-}
-
-// Convert a raw (r||s) JWS ECDSA signature to DER encoding for WebCrypto.
-function rawEcdsaToDer(raw) {
-  const half = raw.length / 2;
-  const part = (buf) => {
-    let start = 0;
-    while (start < buf.length - 1 && buf[start] === 0) start++;
-    let bytes = buf.slice(start);
-    if (bytes[0] & 0x80) {
-      const padded = new Uint8Array(bytes.length + 1);
-      padded.set(bytes, 1);
-      bytes = padded;
-    }
-    return new Uint8Array([0x02, bytes.length, ...bytes]);
-  };
-  const rInt = part(raw.slice(0, half));
-  const sInt = part(raw.slice(half));
-  const body = new Uint8Array(rInt.length + sInt.length);
-  body.set(rInt, 0);
-  body.set(sInt, rInt.length);
-  return new Uint8Array([0x30, body.length, ...body]);
 }
 
 /**
@@ -187,20 +249,19 @@ export async function verifySignedJws(jws) {
   }
 
   // 2. The intermediate must be signed by the (pinned) root
-  const interHash = ecHashFromAlg(intermediate.sigAlg);
-  if (!interHash || !(await ecdsaVerify(root.spki, interHash, intermediate.tbs, intermediate.sig))) {
+  if (!(await verifyWithIssuer(root.spki, intermediate.sigAlg, intermediate.tbs, intermediate.sig))) {
     throw new Error('Invalid intermediate certificate');
   }
 
   // 3. The leaf must be signed by the intermediate
-  const leafHash = ecHashFromAlg(leaf.sigAlg);
-  if (!leafHash || !(await ecdsaVerify(intermediate.spki, leafHash, leaf.tbs, leaf.sig))) {
+  if (!(await verifyWithIssuer(intermediate.spki, leaf.sigAlg, leaf.tbs, leaf.sig))) {
     throw new Error('Invalid leaf certificate');
   }
 
-  // 4. The JWS payload must be signed by the leaf's key (Apple uses ES256)
+  // 4. The JWS payload must be signed by the leaf's key. Apple emits ES256, and
+  // the JWS signature is ALREADY in the raw (r||s) form WebCrypto expects.
   const signingInput = new TextEncoder().encode(parts[0] + '.' + parts[1]);
-  const sigOk = await ecdsaVerify(leaf.spki, 'SHA-256', signingInput, rawEcdsaToDer(b64ToBytes(parts[2])));
+  const sigOk = await ecdsaVerify(leaf.spki, 'SHA-256', signingInput, b64ToBytes(parts[2]));
   if (!sigOk) throw new Error('Invalid JWS signature');
 
   return JSON.parse(new TextDecoder().decode(b64ToBytes(parts[1])));
