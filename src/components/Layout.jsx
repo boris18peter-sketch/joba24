@@ -183,13 +183,20 @@ export default function Layout() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
 
   // Poll the real is_approved / is_blocked status from the database (JWT is stale after admin changes)
-  const { data: approvalStatus } = useQuery({
+  const { data: approvalStatus, isError: approvalFailed } = useQuery({
     queryKey: ['approvalStatus', me?.id],
     queryFn: () => base44.functions.invoke('checkApprovalStatus', {}),
     enabled: !!me?.id && isAuthenticated,
     refetchInterval: 60000,
-    staleTime: 30000,
-    refetchOnWindowFocus: false,
+    // Never trust a cached verdict: an approval (or a launch-settings change)
+    // made in the dashboard must take effect the moment the user returns to the
+    // app — a long-lived session must not keep an old decision alive.
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    // The gate is fail-closed, so a transient failure must never strand a
+    // legitimately approved user: retry, then keep polling until it recovers.
+    retry: 2,
   });
 
   // Send welcome email for brand-new users (covers all registration methods)
@@ -495,36 +502,45 @@ export default function Layout() {
 
   const isBlocked = approvalStatus?.data?.is_blocked;
   const dbIsApproved = approvalStatus?.data?.is_approved;
-  // Launch-mode gate: when the admin turns "pre-launch" OFF (public distribution),
-  // every authenticated user enters the full app — no waiting page. Defaults to
-  // active (true) until settings load, so the app never opens accidentally.
-  const preLaunchGateActive = approvalStatus?.data?.pre_launch_gate_active !== false;
-  const releaseMode = approvalStatus?.data?.pre_launch_release_mode || 'all';
-  const releaseAt = approvalStatus?.data?.pre_launch_release_at || '';
-  // When the launch gate is OFF the admin chooses who is released:
-  //   'all'      → everyone (waiting-list users AND new users) enters immediately
-  //   'new_only' → only accounts created at/after the release moment enter;
-  //                everyone already on the waiting page stays gated until approved
+
+  // ── Pre-launch gate — FAIL CLOSED ────────────────────────────────────────
+  // Access is granted ONLY by an explicit verdict: the database says the
+  // account is approved, the account is a platform admin, or the launch
+  // settings explicitly release it. Nothing here opens the app by default — a
+  // missing settings record, a failed status check, a stale JWT or an
+  // unrecognised release mode all keep the user out. (Previously an empty or
+  // unreadable release mode released EVERYONE, which is how an account the
+  // dashboard still shows as "ממתין" could already be inside the app.)
+  const isAdmin = me?.role === 'admin';
+  const gateActive = approvalStatus?.data?.pre_launch_gate_active !== false;
   let releasedByLaunch = false;
-  if (!preLaunchGateActive) {
-    if (releaseMode === 'new_only' && releaseAt) {
-      const createdMs = me?.created_date ? new Date(me.created_date).getTime() : 0;
-      releasedByLaunch = createdMs >= new Date(releaseAt).getTime();
-    } else {
+  if (!gateActive) {
+    const mode = approvalStatus?.data?.pre_launch_release_mode;
+    const releaseAt = approvalStatus?.data?.pre_launch_release_at;
+    const releaseMs = releaseAt ? new Date(releaseAt).getTime() : NaN;
+    if (mode === 'all') {
+      // The admin opened the app to everyone.
       releasedByLaunch = true;
+    } else if (mode === 'new_only') {
+      // Only accounts created at/after a REAL cutoff. A missing or invalid
+      // cutoff releases nobody — it must never fall through to "everyone".
+      const createdMs = me?.created_date ? new Date(me.created_date).getTime() : 0;
+      releasedByLaunch = Number.isFinite(releaseMs) && Number.isFinite(createdMs) && createdMs >= releaseMs;
     }
   }
-  // Use DB value if available (freshest); fall back to JWT value while loading
-  const isApprovedUser = isBlocked
-    ? false
-    : (((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin') || releasedByLaunch);
-  // SECURITY: No loading-window gap. While the DB approval status is loading,
-  // gate based on the JWT's is_approved. This closes the vulnerability where
-  // unapproved users could see the full app for 1-2s before the waiting page
-  // kicked in. Users approved in DB but not yet in JWT will see the waiting
-  // page briefly until the DB status arrives — a minor flash, far better than
-  // the security hole of unapproved users seeing the app.
-  const approvalLoading = approvalStatus === undefined;
+
+  // The server verdict is the single source of truth for approval.
+  const isApprovedUser = !isBlocked && (dbIsApproved === true || isAdmin || releasedByLaunch);
+  // No loading-window gap and no waiting-page flash: while the verdict is still
+  // unknown the user stays on the splash, never on the app.
+  const approvalLoading = isAuthenticated && !!me && !isAdmin && !approvalFailed && approvalStatus === undefined;
+  if (approvalLoading) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
+        <Loader2 size={32} color="var(--brand-nav-active, var(--brand-primary))" className="animate-spin" />
+      </div>
+    );
+  }
   // Authenticated but not-yet-approved users can still read Terms / Privacy / FAQ
   if (isAuthenticated && me && !isApprovedUser && PUBLIC_PAGES.includes(location.pathname)) {
     return (
