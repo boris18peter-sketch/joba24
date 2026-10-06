@@ -74,6 +74,7 @@ if (typeof window !== 'undefined') {
     import('@/pages/CreateTask');
     import('@/pages/Wallet');
     import('@/pages/MyTasks');
+    import('@/pages/MySchedule');
     import('@/pages/WorkerProfile');
     import('@/pages/EarningsDashboard');
     import('@/pages/Notifications');
@@ -102,6 +103,7 @@ const Presentation = lazyRetry(() => import('@/pages/Presentation'));
 const WorkerOnboarding = lazyRetry(() => import('@/pages/WorkerOnboarding'));
 const SimulatorPanel = lazyRetry(() => import('@/pages/SimulatorPanel'));
 const MyTasks = lazyRetry(() => import('@/pages/MyTasks'));
+const MySchedule = lazyRetry(() => import('@/pages/MySchedule'));
 const PublicProfile = lazyRetry(() => import('@/pages/PublicProfile'));
 const Notifications = lazyRetry(() => import('@/pages/Notifications'));
 const AgentDashboard = lazyRetry(() => import('@/pages/AgentDashboard'));
@@ -265,6 +267,7 @@ const AuthenticatedApp = () => {
                   <Route path="/simulator" element={<SimulatorPanel />} />
                 </Route>
                 <Route path="/my-tasks" element={<MyTasks />} />
+                <Route path="/schedule" element={<MySchedule />} />
                 <Route path="/chats" element={<ChatInbox />} />
                 <Route path="/notifications" element={<Notifications />} />
                 {/* Platform Admin only — same guard as /simulator */}

@@ -16,6 +16,7 @@ import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
+import ScheduleUpcomingCard from '@/components/schedule/ScheduleUpcomingCard';
 import { getCategoryLabel } from '@/lib/categories';
 import MarketServiceFilter from '@/components/MarketServiceFilter';
 import { categoryKeyForTask } from '@/lib/brand/categoryTree';
@@ -685,6 +686,11 @@ export default function HomeFeed() {
           <ActiveTaskBanner tasks={[{ ...activeClientTask, _roleHint: 'client' }]} roleHint="client" extraInfo={{ workerUser: activeWorkerUser }} />
         </div>
       )}
+
+      {/* Upcoming — a small heads-up that something is PLANNED. Deliberately
+          separate from the Active Task banner, which is a job in EXECUTION.
+          Renders nothing when the Upcoming window is empty. */}
+      <ScheduleUpcomingCard />
 
 
       <div className="px-4" style={{ paddingTop: 12, paddingBottom: 8 }}>

@@ -11,20 +11,49 @@
  * `schedulePhase`: "is this upcoming or active?", "when does it start?", "may
  * the worker set out yet?". No component compares dates itself.
  *
- * Upcoming and Active Execution are DIFFERENT presentation states:
- *   upcoming — the engagement exists, but execution has not been unlocked.
- *   active   — the window is open; the worker's step CTAs are live.
+ * ── Three windows, three states ─────────────────────────────────────────────
+ * "Far out", "coming up" and "may start now" are THREE different product states,
+ * never one future bucket. Each has its own window:
+ *
+ *   calendar — beyond the visibility window. Calendar only; no Upcoming entry.
+ *   upcoming — inside the visibility window. Calendar AND Upcoming.
+ *   active   — inside the activation window. Active Task, with the
+ *              category-aware status flow and live step CTAs.
+ *
+ * Upcoming and Active Execution are therefore never the same window, and a task
+ * does not silently become "active" just because it has a future date.
  */
 import { combineDateTime, parseTime, formatWhen } from '@/lib/time';
 
 /**
- * Execution unlocks this long before an occurrence starts. Until then a
- * scheduled task is UPCOMING — visible, agreed, but with no "יצאתי לדרך".
+ * The three scheduling windows, in hours.
+ *
+ * These defaults are placeholders for JobaSettings (M3.7). Every function below
+ * accepts a `windows` argument, so promoting them to the dashboard is a DATA
+ * change and not a code change — no caller hard-codes a window.
  */
-export const ACTIVATION_LEAD_MINUTES = 60;
+export const DEFAULT_SCHEDULE_WINDOWS = {
+  /** How far ahead the Upcoming list reaches. */
+  upcoming_visibility_hours: 48,
+  /** How early before an occurrence the worker may begin execution. */
+  execution_activation_hours: 3,
+  /** When the "starting soon" reminder fires (M3.7). */
+  starting_soon_reminder_hours: 2,
+};
 
-/** The "starting soon" window. Reminders land here (M3.7). */
-export const STARTING_SOON_MINUTES = 120;
+/**
+ * Merge admin-configured values over the defaults. Anything missing or not a
+ * non-negative number is ignored, so a half-written settings record can never
+ * disable the scheduling windows.
+ */
+export function scheduleWindows(settings) {
+  const out = { ...DEFAULT_SCHEDULE_WINDOWS };
+  for (const key of Object.keys(out)) {
+    const value = Number(settings?.[key]);
+    if (Number.isFinite(value) && value >= 0) out[key] = value;
+  }
+  return out;
+}
 
 /**
  * The canonical occurrences of a task, earliest first.
@@ -74,6 +103,11 @@ export function occurrencesOf(task) {
   return out.sort((a, b) => a.start - b.start);
 }
 
+/** The next occurrence still ahead (or in progress), else null. */
+export function nextOccurrence(task, now = Date.now()) {
+  return occurrencesOf(task).find((o) => (o.end || o.start).getTime() > now) || null;
+}
+
 /** The occurrence governing the task now: the next one, else the last one. */
 export function primaryOccurrence(task, now = Date.now()) {
   const all = occurrencesOf(task);
@@ -88,25 +122,54 @@ export function hasSchedule(task) {
 /**
  * The scheduling phase of a task.
  *   'none'     — no schedule: execution may start immediately.
- *   'upcoming' — scheduled, and execution is not unlocked yet.
+ *   'calendar' — scheduled beyond the visibility window: calendar only.
+ *   'upcoming' — inside the visibility window, execution not unlocked yet.
  *   'active'   — inside the activation window, or already started.
- *   'ended'    — every occurrence is behind us.
+ *   'ended'    — every occurrence is behind us (handled in M3.8).
+ *
+ * The phase follows the NEXT occurrence, not the first one, so a task whose
+ * earlier slot has passed is judged by the slot still ahead of it.
  */
-export function schedulePhase(task, now = Date.now()) {
+export function schedulePhase(task, now = Date.now(), windows = DEFAULT_SCHEDULE_WINDOWS) {
   const all = occurrencesOf(task);
   if (!all.length) return 'none';
 
-  const lastEnd = Math.max(...all.map((o) => (o.end || o.start).getTime()));
-  if (lastEnd < now) return 'ended';
+  const next = all.find((o) => (o.end || o.start).getTime() > now);
+  if (!next) return 'ended';
 
-  const firstStart = all[0].start.getTime();
-  return firstStart - now > ACTIVATION_LEAD_MINUTES * 60000 ? 'upcoming' : 'active';
+  const minutesToStart = (next.start.getTime() - now) / 60000;
+  if (minutesToStart <= windows.execution_activation_hours * 60) return 'active';
+  if (minutesToStart <= windows.upcoming_visibility_hours * 60) return 'upcoming';
+  return 'calendar';
 }
 
 /** Whether the worker may begin execution now — or has no schedule to wait for. */
-export function isExecutionActive(task, now = Date.now()) {
-  const phase = schedulePhase(task, now);
+export function isExecutionActive(task, now = Date.now(), windows = DEFAULT_SCHEDULE_WINDOWS) {
+  const phase = schedulePhase(task, now, windows);
   return phase === 'none' || phase === 'active';
+}
+
+/**
+ * Whether the task is an AGREED ENGAGEMENT that has not started: either inside
+ * the Upcoming window or still far out. Both are "not execution" — the banner
+ * shows the planned time and offers no step CTA for either.
+ */
+export function isEngagement(task, now = Date.now(), windows = DEFAULT_SCHEDULE_WINDOWS) {
+  const phase = schedulePhase(task, now, windows);
+  return phase === 'upcoming' || phase === 'calendar';
+}
+
+/** Whether the task is beyond the Upcoming window — calendar only. */
+export function isCalendarOnly(task, now = Date.now(), windows = DEFAULT_SCHEDULE_WINDOWS) {
+  return schedulePhase(task, now, windows) === 'calendar';
+}
+
+/** Whether the occurrence is close enough to warrant a "starting soon" nudge. */
+export function isStartingSoon(task, now = Date.now(), windows = DEFAULT_SCHEDULE_WINDOWS) {
+  const next = nextOccurrence(task, now);
+  if (!next) return false;
+  const minutes = (next.start.getTime() - now) / 60000;
+  return minutes > 0 && minutes <= windows.starting_soon_reminder_hours * 60;
 }
 
 /**

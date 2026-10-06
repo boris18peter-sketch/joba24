@@ -8,7 +8,7 @@ import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileTe
 import { base44 } from '@/api/base44Client';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { resolveStatusFlow, stepIndexOf, nextCta, proofCopy } from '@/lib/taskStatusFlow';
-import { schedulePhase, primaryOccurrence, formatOccurrence } from '@/lib/scheduling';
+import { isEngagement, primaryOccurrence, formatOccurrence } from '@/lib/scheduling';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
@@ -231,8 +231,10 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           // Until its activation window opens it stays UPCOMING: the schedule is
           // shown, but no step CTA is offered — a worker cannot "set out" for a
           // job that starts tomorrow. Same canonical statuses, a different state.
-          const phase = schedulePhase(task);
-          const isUpcoming = phase === 'upcoming';
+          // 'calendar' (far out) and 'upcoming' (inside the window) are BOTH
+          // engagements — neither unlocks execution, so both show the planned
+          // time and offer no step CTA.
+          const isUpcoming = isEngagement(task);
           const nextOccurrence = isUpcoming ? primaryOccurrence(task) : null;
           const quickAction = tIsWorker && isTaskActive && !isUpcoming ? getQuickAction(flow, task.worker_status) : null;
           const QuickActionIcon = quickAction ? (ICON_MAP[quickAction.icon] || Navigation) : null;

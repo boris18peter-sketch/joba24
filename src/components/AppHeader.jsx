@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react';
+import { Menu, CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
@@ -123,6 +123,20 @@ export default function AppHeader({ onOpenMenu }) {
             >
               {t('login_now')}
             </button>
+          )}
+          {isAuthenticated && (
+            <Link
+              to="/schedule"
+              aria-label="יומן עבודות"
+              style={{
+                width: 42, height: 42, borderRadius: 'var(--r-sm)',
+                background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, textDecoration: 'none',
+              }}
+            >
+              <CalendarDays size={18} color="var(--text-2)" />
+            </Link>
           )}
           <button
             onClick={onOpenMenu}
