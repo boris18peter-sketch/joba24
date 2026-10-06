@@ -83,7 +83,7 @@ export default function ScheduleCalendar({ monthCursor, onMonthChange, entriesBy
       {/* Day grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
         {cells.map((date, idx) => {
-          if (!date) return <div key={`empty_${idx}`} style={{ height: 46 }} />;
+          if (!date) return <div key={`empty_${idx}`} style={{ height: 48 }} />;
           const key = dateKey(date);
           return (
             <ScheduleDayCell
