@@ -186,3 +186,79 @@ export function formatOccurrence(occurrence) {
   const when = formatWhen(occurrence.start);
   return occurrence.endClock ? `${when}–${occurrence.endClock}` : when;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   RESCHEDULE & CONFLICT DETECTION (M3.8)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The assumed length of an occurrence that carries no explicit end. Mirrors the
+ * server constant; the live value comes from JobaSettings.
+ */
+export const DEFAULT_OCCURRENCE_MINUTES = 60;
+
+/** Tasks that are no longer engagements — they can never conflict. */
+export const TERMINAL_TASK_STATUSES = ['COMPLETED', 'CANCELLED', 'EXPIRED'];
+
+/**
+ * Whether two occurrences collide in time. An occurrence without an end is
+ * given `defaultMinutes` of assumed length, so a job that only states a start
+ * still collides with whatever is booked straight after it.
+ */
+export function overlaps(a, b, defaultMinutes = DEFAULT_OCCURRENCE_MINUTES) {
+  if (!a?.start || !b?.start) return false;
+  const aStart = a.start.getTime();
+  const aEnd = (a.end || new Date(aStart + defaultMinutes * 60000)).getTime();
+  const bStart = b.start.getTime();
+  const bEnd = (b.end || new Date(bStart + defaultMinutes * 60000)).getTime();
+  return aStart < bEnd && bStart < aEnd;
+}
+
+/**
+ * The user's OTHER work that collides with `occurrence` — a warning, never a
+ * block. The person stays free to proceed; they are simply told they are
+ * double-booked so the choice is informed.
+ */
+export function findConflicts({ tasks, userId, occurrence, excludeTaskId = null, defaultMinutes = DEFAULT_OCCURRENCE_MINUTES }) {
+  const out = [];
+  if (!userId || !occurrence?.start) return out;
+
+  for (const task of (tasks || [])) {
+    if (!task?.id || task.id === excludeTaskId) continue;
+    if (TERMINAL_TASK_STATUSES.includes(task.status)) continue;
+    // Only work THIS person is committed to — as the publisher or as the worker.
+    const asClient = task.client_id === userId;
+    const asWorker = task.worker_id === userId;
+    if (!asClient && !asWorker) continue;
+
+    for (const other of occurrencesOf(task)) {
+      if (!overlaps(occurrence, other, defaultMinutes)) continue;
+      out.push({
+        task_id: task.id,
+        task_title: task.title || '',
+        role: asClient ? 'client' : 'worker',
+        start: other.start.toISOString(),
+        end: other.end ? other.end.toISOString() : null,
+      });
+    }
+  }
+  return out;
+}
+
+/** The occurrence a change request targets — by its stable key, never by index. */
+export function findOccurrence(task, key) {
+  return occurrencesOf(task).find((o) => o.key === key) || null;
+}
+
+/**
+ * A pending change request, or null. While one is pending the ORIGINAL time
+ * stays the effective one — the calendar is not touched until it is accepted.
+ */
+export function pendingChangeRequest(task) {
+  return task?.schedule_change_request || null;
+}
+
+/** Whether this user asked for the pending change (so they cannot accept it). */
+export function isChangeRequester(task, userId) {
+  return !!userId && task?.schedule_change_request?.requested_by === userId;
+}

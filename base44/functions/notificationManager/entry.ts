@@ -169,6 +169,35 @@ const DEFAULT_CONFIGS = {
     cooldown_minutes: 0,
     priority: 'high',
   },
+  // ── בקשת שינוי מועד (Reschedule) ──
+  // שינוי מועד מוסכם אינו ביטול: הוא לא נוגע בסטטוס, בג'ובות או באמינות.
+  schedule_change_requested: {
+    title_template: 'בקשה לשינוי מועד 🕒',
+    body_template: '{requester_label} מבקש להזיז את "{task_title}" מ-{old_when} ל-{new_when}',
+    deep_link: '/task/{task_id}',
+    tag_template: 'schedule_change_req_{task_id}',
+    segments: ['all'],
+    cooldown_minutes: 0,
+    priority: 'high',
+  },
+  schedule_change_accepted: {
+    title_template: 'המועד החדש אושר ✅',
+    body_template: '"{task_title}" נקבע מחדש ל-{new_when}',
+    deep_link: '/task/{task_id}',
+    tag_template: 'schedule_change_ok_{task_id}',
+    segments: ['all'],
+    cooldown_minutes: 0,
+    priority: 'high',
+  },
+  schedule_change_declined: {
+    title_template: 'בקשת שינוי המועד נדחתה',
+    body_template: 'המועד של "{task_title}" נשאר {old_when}',
+    deep_link: '/task/{task_id}',
+    tag_template: 'schedule_change_no_{task_id}',
+    segments: ['all'],
+    cooldown_minutes: 0,
+    priority: 'normal',
+  },
   // ── התראות חדשות (עידוד / אצ'יבמנט) ──
   verification_approved_green: {
     title_template: 'מזל טוב! הווי הירוק שלך הגיע! 🟢',

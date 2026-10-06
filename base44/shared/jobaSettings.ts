@@ -19,6 +19,9 @@ export const DEFAULT_SETTINGS = {
   upcoming_visibility_hours: 48,
   execution_activation_hours: 3,
   starting_soon_reminder_hours: 2,
+  // The assumed length of an occurrence with no explicit end, used to detect
+  // overlaps between jobs. A warning signal only — it never blocks anything.
+  default_occurrence_minutes: 60,
   pre_launch_gate_active: true,
   pre_launch_release_mode: 'all',
   pre_launch_release_at: '',
@@ -49,6 +52,7 @@ export async function getJobaSettings(base44) {
         upcoming_visibility_hours: num(rec.upcoming_visibility_hours, DEFAULT_SETTINGS.upcoming_visibility_hours),
         execution_activation_hours: num(rec.execution_activation_hours, DEFAULT_SETTINGS.execution_activation_hours),
         starting_soon_reminder_hours: num(rec.starting_soon_reminder_hours, DEFAULT_SETTINGS.starting_soon_reminder_hours),
+        default_occurrence_minutes: num(rec.default_occurrence_minutes, DEFAULT_SETTINGS.default_occurrence_minutes),
         pre_launch_gate_active: rec.pre_launch_gate_active !== false,
         pre_launch_release_mode: rec.pre_launch_release_mode === 'new_only' ? 'new_only' : 'all',
         pre_launch_release_at: rec.pre_launch_release_at || '',

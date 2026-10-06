@@ -122,6 +122,16 @@ const FIELDS = [
     border: '#fecaca',
     suffix: 'שע׳',
   },
+  {
+    key: 'default_occurrence_minutes',
+    label: 'אורך מועד משוער (דקות)',
+    desc: 'אורך משוער של מועד בלי שעת סיום, לצורך זיהוי חפיפות בין עבודות. אזהרה בלבד — לא חוסם כלום.',
+    icon: <CalendarClock size={15} color="#7c3aed" />,
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+    suffix: 'דק׳',
+  },
 ];
 
 const DEFAULTS = {
@@ -137,6 +147,7 @@ const DEFAULTS = {
   upcoming_visibility_hours: 48,
   execution_activation_hours: 3,
   starting_soon_reminder_hours: 2,
+  default_occurrence_minutes: 60,
   pre_launch_gate_active: true,
   pre_launch_release_mode: 'all',
   pre_launch_release_at: '',
@@ -254,6 +265,7 @@ export default function JobaSettingsTab() {
         upcoming_visibility_hours: Number(draft.upcoming_visibility_hours),
         execution_activation_hours: Number(draft.execution_activation_hours),
         starting_soon_reminder_hours: Number(draft.starting_soon_reminder_hours),
+        default_occurrence_minutes: Number(draft.default_occurrence_minutes),
         pre_launch_gate_active: gateActive,
         pre_launch_release_mode: releaseMode,
         pre_launch_release_at: releaseAt,

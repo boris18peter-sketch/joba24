@@ -55,6 +55,7 @@ import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 import BoostPill from '@/components/BoostPill';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import ActiveTaskBannerFromCache from '@/components/ActiveTaskBannerFromCache';
+import ScheduleChangeCard from '@/components/schedule/ScheduleChangeCard';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import { fetchPublicTasks, fetchApplicantStats } from '@/lib/publicTasks';
@@ -835,6 +836,13 @@ export default function TaskDetail(props) {
             onSheetClose,
           }}
         />
+      )}
+
+      {/* בקשת שינוי מועד — זמינה לשני הצדדים לאחר שנקבעה עבודה */}
+      {task.status === 'TAKEN' && (isOwner || me?.id === task.worker_id) && (
+        <div style={{ padding: '8px 12px 0' }}>
+          <ScheduleChangeCard task={task} me={me} />
+        </div>
       )}
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">

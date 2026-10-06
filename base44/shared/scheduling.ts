@@ -189,3 +189,128 @@ export function hasSchedule(task: any): boolean {
   const slots = task?.category_details?.schedule;
   return (Array.isArray(slots) && slots.length > 0) || !!task?.scheduled_time;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   RESCHEDULE & CONFLICT DETECTION (M3.8)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The assumed length of an occurrence that carries no explicit end. A slot
+ * always has one; a bare `scheduled_time` does not, and an occurrence of unknown
+ * length still has to be comparable with the work booked around it.
+ */
+export const DEFAULT_OCCURRENCE_MINUTES = 60;
+
+/** Tasks that are no longer engagements — they can never conflict. */
+export const TERMINAL_TASK_STATUSES = ['COMPLETED', 'CANCELLED', 'EXPIRED'];
+
+/**
+ * Whether two occurrences collide in time. An occurrence without an end is
+ * given `defaultMinutes` of assumed length, so a job that only states a start
+ * still collides with whatever is booked straight after it.
+ */
+export function overlaps(a: any, b: any, defaultMinutes = DEFAULT_OCCURRENCE_MINUTES): boolean {
+  if (!a?.start || !b?.start) return false;
+  const aStart = a.start.getTime();
+  const aEnd = (a.end || new Date(aStart + defaultMinutes * 60000)).getTime();
+  const bStart = b.start.getTime();
+  const bEnd = (b.end || new Date(bStart + defaultMinutes * 60000)).getTime();
+  return aStart < bEnd && bStart < aEnd;
+}
+
+/** The occurrence a change request targets — by its stable key, never by index. */
+export function findOccurrence(task: any, key: string) {
+  return occurrencesOf(task).find((o: any) => o.key === key) || null;
+}
+
+/**
+ * Apply a proposed new time to ONE occurrence of a task, and return the exact
+ * field updates — nothing is written here, so the caller stays in control of
+ * the transaction.
+ *
+ * A task is NOT one occurrence. `targetKey` names the single occurrence being
+ * moved, so changing Thursday can never move Sunday: the other slots are copied
+ * through untouched and only the addressed one is replaced.
+ *
+ * `scheduled_time` is re-derived from the earliest slot afterwards, exactly the
+ * rule CreateTask uses — otherwise the task would carry a single instant that no
+ * longer describes its own schedule.
+ */
+export function applyOccurrenceChange(task: any, targetKey: string, proposed: any) {
+  if (!task || !targetKey || !proposed?.date || !proposed?.start) return null;
+
+  const target = findOccurrence(task, targetKey);
+  if (!target) return null;
+
+  const slots = [...(task?.category_details?.schedule || [])];
+  const slotKey = (s: any) => `${s?.date ?? ''}_${s?.start ?? ''}`;
+  const replacement = { date: proposed.date, start: proposed.start, end: proposed.end || '' };
+
+  const index = slots.findIndex((s) => slotKey(s) === targetKey);
+  if (index >= 0) {
+    // The addressed slot is edited in place — its siblings are untouched.
+    slots[index] = replacement;
+  } else {
+    // The occurrence came from the bare `scheduled_time`. Materialize it as a
+    // slot so the change speaks the same vocabulary the rest of the app reads;
+    // the two collapse into ONE occurrence because they share a start.
+    slots.push(replacement);
+  }
+
+  const sorted = slots.sort((a: any, b: any) =>
+    `${a?.date ?? ''} ${a?.start ?? ''}`.localeCompare(`${b?.date ?? ''} ${b?.start ?? ''}`),
+  );
+
+  // Earliest slot wins — the same derivation CreateTask performs.
+  const starts = sorted
+    .map((s: any) => zonedInstant(s.date, s.start || '00:00'))
+    .filter((d: Date | null): d is Date => !!d)
+    .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+
+  const categoryDetails = { ...(task.category_details || {}), schedule: sorted };
+  const nextTask = { ...task, category_details: categoryDetails };
+  const newStart = zonedInstant(proposed.date, proposed.start);
+
+  return {
+    category_details: categoryDetails,
+    scheduled_time: starts[0] ? starts[0].toISOString() : null,
+    occurrence: newStart
+      ? { key: `${proposed.date}_${proposed.start}`, start: newStart, end: proposed.end ? zonedInstant(proposed.date, proposed.end) : null }
+      : null,
+    // Proof the addressed occurrence really is the one that moved.
+    previous_start: target.start,
+  };
+}
+
+/**
+ * The user's other work that collides with `occurrence`.
+ *
+ * A conflict is a WARNING, never a block: it is reported so the person can see
+ * they are double-booked, and the decision stays theirs. Nothing here writes,
+ * cancels or refuses anything.
+ */
+export function findConflicts({ tasks, userId, occurrence, excludeTaskId = null, defaultMinutes = DEFAULT_OCCURRENCE_MINUTES }: any) {
+  const out: any[] = [];
+  if (!userId || !occurrence?.start) return out;
+
+  for (const task of (tasks || [])) {
+    if (!task?.id || task.id === excludeTaskId) continue;
+    if (TERMINAL_TASK_STATUSES.includes(task.status)) continue;
+    // Only work THIS person is committed to — as the publisher or as the worker.
+    const asClient = task.client_id === userId;
+    const asWorker = task.worker_id === userId;
+    if (!asClient && !asWorker) continue;
+
+    for (const other of occurrencesOf(task)) {
+      if (!overlaps(occurrence, other, defaultMinutes)) continue;
+      out.push({
+        task_id: task.id,
+        task_title: task.title || '',
+        role: asClient ? 'client' : 'worker',
+        start: other.start.toISOString(),
+        end: other.end ? other.end.toISOString() : null,
+      });
+    }
+  }
+  return out;
+}
