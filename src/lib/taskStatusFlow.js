@@ -44,9 +44,9 @@ export const STEP_ICONS = [
  */
 export const GENERIC_STATUS_FLOW = {
   steps: [
-    { key: 'on_the_way', label: 'יצא לדרך', owner_label: 'בדרך אליך', icon: 'navigation' },
-    { key: 'arrived', label: 'הגיע', owner_label: 'הגיע למיקום', icon: 'map_pin' },
-    { key: 'done', label: 'סיים', owner_label: 'ממתין לאישורך', icon: 'check' },
+    { key: 'on_the_way', label: 'בדרך לעבודה', owner_label: 'בדרך אליך', icon: 'navigation' },
+    { key: 'arrived', label: 'הגעתי', owner_label: 'הגיע למיקום', icon: 'map_pin' },
+    { key: 'done', label: 'סיימתי את העבודה', owner_label: 'ממתין לאישורך', icon: 'check' },
   ],
   cta: {
     on_the_way: {
@@ -57,11 +57,11 @@ export const GENERIC_STATUS_FLOW = {
       toast: 'יצאת לדרך! המפרסם קיבל עדכון',
     },
     arrived: {
-      label: 'הגעתי למיקום',
+      label: 'הגעתי',
       emoji: '📍',
       confirm_title: 'אישור הגעה',
-      confirm_sub: 'המפרסם יקבל עדכון שהגעת והתחלת',
-      toast: 'סומן שהגעת למיקום',
+      confirm_sub: 'המפרסם יקבל עדכון שהגעת',
+      toast: 'סומן שהגעת',
     },
     done: {
       label: 'סיימתי את העבודה',
@@ -127,18 +127,81 @@ export function normalizeFlow(raw) {
 }
 
 /**
+ * The canonical ancestor chain of a category, ROOT-first, ending with the
+ * category itself. A VISUAL GROUP owns no form and is never a task category,
+ * so the walk stops there — the same rule the category and field layers use.
+ */
+function ancestorChain(row, map) {
+  const chain = [], seen = new Set();
+  let node = row;
+  while (node && !seen.has(node.category_key)) {
+    seen.add(node.category_key);
+    if (node.node_type === 'group' || node.node_type === 'parent') break;
+    chain.unshift(node);
+    node = node.parent_key ? map[node.parent_key] : null;
+  }
+  return chain;
+}
+
+/**
+ * Deep-merge a child definition over its parent's, so a Service overrides only
+ * the fields it actually declares and inherits every other word from its Root.
+ * `steps` merge by canonical key, `cta` merges per step field-by-field, and
+ * `proof` merges field-by-field.
+ */
+function mergeFlows(base, override) {
+  if (!base) return override;
+  if (!override) return base;
+  const out = { ...base };
+
+  if (Array.isArray(override.steps)) {
+    const byKey = {};
+    for (const s of override.steps) if (s && s.key) byKey[s.key] = s;
+    out.steps = Array.isArray(base.steps) && base.steps.length
+      ? base.steps.map((b) => ({ ...b, ...(byKey[b.key] || {}) }))
+      : override.steps;
+  }
+
+  if (override.cta && typeof override.cta === 'object') {
+    out.cta = { ...(base.cta || {}) };
+    for (const [key, val] of Object.entries(override.cta)) {
+      if (val && typeof val === 'object') out.cta[key] = { ...(base.cta?.[key] || {}), ...val };
+    }
+  }
+
+  if (override.proof && typeof override.proof === 'object') {
+    out.proof = { ...(base.proof || {}), ...override.proof };
+  }
+
+  return out;
+}
+
+/**
  * Resolve the flow for a task's Actionable Category.
+ *
+ * Inheritance runs Generic → Root → Actionable Service: the GENERIC fallback is
+ * the floor, a Root supplies the professional baseline for its whole niche, and
+ * a Service overrides only what genuinely differs (a DJ performs, a waiter
+ * works a shift — the same three canonical steps, a different story). A
+ * category that declares nothing still gets the generic flow, so `other` and
+ * `personal_help` can never receive wording that does not fit them.
  *
  * @param {string} categoryKey  the Task.category (a GlobalCategory.category_key)
  * @param {Array}  categories   the GlobalCategory catalogue (from useGlobalCategories)
  */
 export function resolveStatusFlow(categoryKey, categories) {
   if (!categoryKey || !Array.isArray(categories)) return GENERIC_STATUS_FLOW;
-  const row = categories.find((c) => c && c.category_key === categoryKey);
-  const stored = row?.status_flow;
-  // No definition at all → the generic flow object itself (cheap, shared).
-  if (!stored || typeof stored !== 'object') return GENERIC_STATUS_FLOW;
-  return normalizeFlow(stored);
+  const map = {};
+  for (const c of categories) if (c && c.category_key) map[c.category_key] = c;
+  const row = map[categoryKey];
+  if (!row) return GENERIC_STATUS_FLOW;
+
+  let merged = null;
+  for (const node of ancestorChain(row, map)) {
+    const stored = node?.status_flow;
+    if (stored && typeof stored === 'object') merged = mergeFlows(merged, stored);
+  }
+  return merged ? normalizeFlow(merged) : GENERIC_STATUS_FLOW;
 }
 
 /** The ordered step list, with the label that fits the viewer's role. */
