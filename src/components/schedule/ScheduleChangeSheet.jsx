@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Calendar, Clock, Loader2, X, AlertTriangle } from 'lucide-react';
+import { Calendar, Loader2, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { occurrencesOf, findConflicts, DEFAULT_OCCURRENCE_MINUTES, formatOccurrence } from '@/lib/scheduling';
 import { useMyScheduleTasks } from '@/hooks/useMyScheduleTasks';
