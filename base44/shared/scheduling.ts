@@ -119,11 +119,23 @@ export function occurrencesOf(task: any): { key: string; start: Date; end: Date 
     const start = zonedInstant(slot.date, slot.start || '00:00');
     if (!start) continue;
     const end = slot.end ? zonedInstant(slot.date, slot.end) : null;
-    push({ key: `${slot.date}_${slot.start}`, start, end });
+    // The raw clock fields travel with the occurrence too, so a caller can echo
+    // the slot it addressed without re-reading the task. Mirrors the client.
+    push({
+      key: `${slot.date}_${slot.start}`,
+      start,
+      end,
+      date: slot.date,
+      startClock: slot.start,
+      endClock: slot.end,
+      source: 'slot',
+    });
   }
 
   const single = parseTime(task?.scheduled_time);
-  if (single) push({ key: 'scheduled_time', start: single, end: null });
+  if (single) {
+    push({ key: 'scheduled_time', start: single, end: null, date: null, startClock: null, endClock: null, source: 'scheduled_time' });
+  }
 
   return out.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
