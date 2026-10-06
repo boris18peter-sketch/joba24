@@ -1,14 +1,26 @@
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { dateKey } from '@/lib/scheduleEntries';
+import { roleStyle } from '@/lib/scheduleUi';
+import ScheduleDayCell from '@/components/schedule/ScheduleDayCell';
 
 const WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
 const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 
+const NAV_BTN = {
+  width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+  background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+};
+
 /**
- * ScheduleCalendar — the month view of the Job Calendar.
+ * ScheduleCalendar — the month view, and the hero of this screen.
  *
- * Purely presentational: it receives the entries already projected from Tasks
- * and reports which day the user picked. It owns no data of its own.
+ * Purely presentational: it receives entries already projected from Tasks and
+ * reports which day the user picked. It owns no data of its own, and reads no
+ * scheduling rule — the phase each entry carries was decided upstream.
+ *
+ * The month itself is the reward: a busy month reads denser through tint and
+ * counts alone, with no gamification layered on top.
  */
 export default function ScheduleCalendar({ monthCursor, onMonthChange, entriesByDay, selectedDay, onSelectDay }) {
   const year = monthCursor.getFullYear();
@@ -22,86 +34,81 @@ export default function ScheduleCalendar({ monthCursor, onMonthChange, entriesBy
   for (let day = 1; day <= daysInMonth; day += 1) cells.push(new Date(year, month, day));
   while (cells.length % 7 !== 0) cells.push(null);
 
+  // How full the month is, at a glance.
+  let monthJobs = 0;
+  let monthDays = 0;
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const count = (entriesByDay.get(dateKey(new Date(year, month, day))) || []).length;
+    if (count > 0) {
+      monthJobs += count;
+      monthDays += 1;
+    }
+  }
+
   const shiftMonth = (delta) => onMonthChange(new Date(year, month + delta, 1));
 
   return (
     <div dir="rtl" style={{
       background: 'var(--brand-card-bg, var(--surface-2))',
-      border: '1px solid var(--border-1)', borderRadius: 16,
-      padding: '12px 10px 10px', boxShadow: 'var(--shadow-xs)',
+      border: '1px solid var(--border-1)', borderRadius: 20,
+      padding: '14px 12px 12px', boxShadow: 'var(--shadow-sm)',
     }}>
-      {/* Month navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '0 2px' }}>
-        <button onClick={() => shiftMonth(-1)} aria-label="חודש קודם" className="j-icon-btn"
-          style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <ChevronRight size={16} color="var(--text-2)" />
+      {/* Month navigation — clear, but deliberately secondary to the content */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '0 2px' }}>
+        <button onClick={() => shiftMonth(-1)} aria-label="חודש קודם" className="j-icon-btn" style={NAV_BTN}>
+          <ChevronRight size={17} color="var(--text-2)" />
         </button>
-        <div style={{ fontSize: 14.5, fontWeight: 900, color: 'var(--text-1)' }}>
-          {MONTHS[month]} {year}
+
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.1 }}>
+            {MONTHS[month]} {year}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginTop: 2 }}>
+            {monthJobs === 0 ? 'אין עבודות החודש' : `${monthJobs} עבודות · ${monthDays} ימים`}
+          </div>
         </div>
-        <button onClick={() => shiftMonth(1)} aria-label="חודש הבא" className="j-icon-btn"
-          style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <ChevronLeft size={16} color="var(--text-2)" />
+
+        <button onClick={() => shiftMonth(1)} aria-label="חודש הבא" className="j-icon-btn" style={NAV_BTN}>
+          <ChevronLeft size={17} color="var(--text-2)" />
         </button>
       </div>
 
       {/* Weekday header */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 5 }}>
         {WEEKDAYS.map((w) => (
           <div key={w} style={{ textAlign: 'center', fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{w}</div>
         ))}
       </div>
 
       {/* Day grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
         {cells.map((date, idx) => {
-          if (!date) return <div key={`empty_${idx}`} style={{ height: 42 }} />;
+          if (!date) return <div key={`empty_${idx}`} style={{ height: 46 }} />;
           const key = dateKey(date);
-          const dayEntries = entriesByDay.get(key) || [];
-          const isToday = key === todayKey;
-          const isSelected = key === selectedDay;
-          const hasClient = dayEntries.some((e) => e.role === 'client');
-          const hasWorker = dayEntries.some((e) => e.role === 'worker');
-
           return (
-            <button
+            <ScheduleDayCell
               key={key}
-              onClick={() => onSelectDay(key)}
-              style={{
-                height: 42, borderRadius: 11, cursor: 'pointer', position: 'relative',
-                border: isSelected
-                  ? '1.5px solid var(--brand-primary)'
-                  : isToday ? '1.5px solid var(--border-2)' : '1.5px solid transparent',
-                background: isSelected ? 'var(--brand-primary-light)' : 'transparent',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-              }}
-            >
-              <span style={{
-                fontSize: 13, fontWeight: isToday || isSelected ? 900 : 600,
-                color: isSelected ? 'var(--brand-primary)' : isToday ? 'var(--text-1)' : 'var(--text-2)',
-                lineHeight: 1,
-              }}>
-                {date.getDate()}
-              </span>
-              {dayEntries.length > 0 && (
-                <span style={{ display: 'flex', gap: 2, height: 5, alignItems: 'center' }}>
-                  {hasWorker && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--brand-primary)' }} />}
-                  {hasClient && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--color-warning)' }} />}
-                </span>
-              )}
-            </button>
+              date={date}
+              entries={entriesByDay.get(key) || []}
+              isToday={key === todayKey}
+              isSelected={key === selectedDay}
+              onSelect={() => onSelectDay(key)}
+            />
           );
         })}
       </div>
 
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 10, fontSize: 10.5, color: 'var(--text-3)', fontWeight: 700 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-primary)' }} /> עבודה שאני מבצע
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-warning)' }} /> עבודה שפרסמתי
-        </span>
+      {/* Legend — the same two colours the whole screen uses */}
+      <div style={{
+        display: 'flex', gap: 16, justifyContent: 'center',
+        marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-1)',
+      }}>
+        {['worker', 'client'].map((role) => (
+          <span key={role} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, color: 'var(--text-2)' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: roleStyle(role).accent }} />
+            {roleStyle(role).label}
+          </span>
+        ))}
       </div>
     </div>
   );
