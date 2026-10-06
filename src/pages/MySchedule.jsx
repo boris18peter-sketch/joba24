@@ -5,6 +5,7 @@ import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { scheduleWindows } from '@/lib/scheduling';
 import { buildScheduleEntries, upcomingEntries, groupByDay, dateKey } from '@/lib/scheduleEntries';
 import { formatWhen } from '@/lib/time';
+import { useScheduleClock } from '@/hooks/useScheduleClock';
 import ScheduleCalendar from '@/components/schedule/ScheduleCalendar';
 import ScheduleJobRow from '@/components/schedule/ScheduleJobRow';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -45,11 +46,15 @@ export default function MySchedule() {
   });
   const [selectedDay, setSelectedDay] = useState(todayKey);
 
-  const entries = useMemo(() => buildScheduleEntries(tasks, meId), [tasks, meId]);
+  // Live clock — re-renders exactly when a job crosses into the upcoming or
+  // execution window. No polling, no manual reload.
+  const now = useScheduleClock(tasks, windows);
+
+  const entries = useMemo(() => buildScheduleEntries(tasks, meId, now), [tasks, meId, now]);
   const entriesByDay = useMemo(() => groupByDay(entries), [entries]);
   const upcoming = useMemo(
-    () => upcomingEntries(entries, Date.now(), scheduleWindows(settings)),
-    [entries, horizonHours]
+    () => upcomingEntries(entries, now, scheduleWindows(settings)),
+    [entries, now, horizonHours]
   );
 
   const selectedEntries = entriesByDay.get(selectedDay) || [];

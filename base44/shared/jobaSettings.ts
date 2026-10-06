@@ -13,6 +13,12 @@ export const DEFAULT_SETTINGS = {
   boost_cost: 5,
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
+  // ── Scheduling windows (hours) ──
+  // The single source of truth for calendar → upcoming → active. These defaults
+  // are a FALLBACK only: the live values are the admin's, read below.
+  upcoming_visibility_hours: 48,
+  execution_activation_hours: 3,
+  starting_soon_reminder_hours: 2,
   pre_launch_gate_active: true,
   pre_launch_release_mode: 'all',
   pre_launch_release_at: '',
@@ -40,6 +46,9 @@ export async function getJobaSettings(base44) {
         boost_cost: num(rec.boost_cost, DEFAULT_SETTINGS.boost_cost),
         loyalty_reward_percent: num(rec.loyalty_reward_percent, DEFAULT_SETTINGS.loyalty_reward_percent),
         loyalty_reward_min: num(rec.loyalty_reward_min, DEFAULT_SETTINGS.loyalty_reward_min),
+        upcoming_visibility_hours: num(rec.upcoming_visibility_hours, DEFAULT_SETTINGS.upcoming_visibility_hours),
+        execution_activation_hours: num(rec.execution_activation_hours, DEFAULT_SETTINGS.execution_activation_hours),
+        starting_soon_reminder_hours: num(rec.starting_soon_reminder_hours, DEFAULT_SETTINGS.starting_soon_reminder_hours),
         pre_launch_gate_active: rec.pre_launch_gate_active !== false,
         pre_launch_release_mode: rec.pre_launch_release_mode === 'new_only' ? 'new_only' : 'all',
         pre_launch_release_at: rec.pre_launch_release_at || '',

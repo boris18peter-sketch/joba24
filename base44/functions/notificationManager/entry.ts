@@ -140,6 +140,35 @@ const DEFAULT_CONFIGS = {
     cooldown_minutes: 0,
     priority: 'normal',
   },
+  // ── התראות תזמון (Scheduling) ──
+  // מבוססות-זמן: נשלחות פעם אחת בלבד לכל משימה+מועד+נמען, בעזרת occurrence_key.
+  schedule_agreed: {
+    title_template: 'העבודה נקבעה ✅',
+    body_template: '{task_title} — {when}',
+    deep_link: '/task/{task_id}',
+    tag_template: 'schedule_agreed_{task_id}',
+    segments: ['all'],
+    cooldown_minutes: 0,
+    priority: 'normal',
+  },
+  schedule_upcoming: {
+    title_template: 'עבודה מתקרבת 📅',
+    body_template: '{role_line}',
+    deep_link: '/task/{task_id}',
+    tag_template: 'schedule_upcoming_{task_id}_{occurrence_key}',
+    segments: ['all'],
+    cooldown_minutes: 0,
+    priority: 'normal',
+  },
+  schedule_starting_soon: {
+    title_template: 'מתחיל בקרוב ⏰',
+    body_template: '{role_line}',
+    deep_link: '/task/{task_id}',
+    tag_template: 'schedule_soon_{task_id}_{occurrence_key}',
+    segments: ['all'],
+    cooldown_minutes: 0,
+    priority: 'high',
+  },
   // ── התראות חדשות (עידוד / אצ'יבמנט) ──
   verification_approved_green: {
     title_template: 'מזל טוב! הווי הירוק שלך הגיע! 🟢',
@@ -304,7 +333,7 @@ Deno.serve(async (req) => {
       return forbidden();
     }
 
-    const { event_key, user_ids, variables = {}, task_id, force = false } = await req.json();
+    const { event_key, user_ids, variables = {}, task_id, occurrence_key, force = false } = await req.json();
 
     if (!event_key || !user_ids || !user_ids.length) {
       return Response.json({ error: 'Missing event_key or user_ids' }, { status: 400 });
@@ -413,6 +442,10 @@ Deno.serve(async (req) => {
           status: deliveryStatus,
           skip_reason: deliveryReason,
           task_id: task_id || null,
+          // The idempotency anchor for time-based notifications. The sender
+          // checks for this before sending, so the same task+occurrence+type
+          // never reaches the same recipient twice.
+          occurrence_key: occurrence_key || null,
         });
       } catch (logErr) {
         console.log('[NotificationManager] Log write failed:', logErr.message);
@@ -428,6 +461,7 @@ Deno.serve(async (req) => {
           status: 'skipped',
           skip_reason: skipped.reason,
           task_id: task_id || null,
+          occurrence_key: occurrence_key || null,
         });
       } catch {}
     }

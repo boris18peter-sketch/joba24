@@ -1,0 +1,45 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "schedule_upcoming_starting_soon",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "notify_schedule": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "scheduleNotifications",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "\u05e9\u05dc\u05d9\u05d7\u05ea \u05d4\u05ea\u05e8\u05d0\u05d5\u05ea \u05ea\u05d6\u05de\u05d5\u05df",
+            "description": "\u05d1\u05e7\u05e8\u05d5\u05d1 / \u05de\u05ea\u05d7\u05d9\u05dc \u05d1\u05e7\u05e8\u05d5\u05d1"
+          }
+        }
+      }
+    ]
+  },
+  "description": "Sends the time-based scheduling notifications (Upcoming / Starting Soon) to both sides of every agreed job. Idempotent: each task + occurrence + type + recipient is sent once.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "Asia/Jerusalem",
+      "interval_value": 15,
+      "interval_unit": "minutes",
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "name": "Schedule Upcoming and Starting Soon"
+}

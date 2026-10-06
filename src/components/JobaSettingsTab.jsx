@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2, UserPlus, Megaphone, Hammer, Rocket, Apple, Eye } from 'lucide-react';
+import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2, UserPlus, Megaphone, Hammer, Rocket, Apple, Eye, CalendarClock, Play, BellRing } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import FacebookAutoPostSettings from '@/components/admin/FacebookAutoPostSettings';
@@ -92,6 +92,36 @@ const FIELDS = [
     bg: '#f0fdf4',
     border: '#bbf7d0',
   },
+  {
+    key: 'upcoming_visibility_hours',
+    label: 'חלון "בקרוב" (שעות)',
+    desc: 'כמה שעות קדימה עבודה נחשבת בקרוב ומופיעה ב-Upcoming. מעבר לכך היא מופיעה ביומן בלבד.',
+    icon: <CalendarClock size={15} color="#0d9488" />,
+    color: '#0d9488',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    suffix: 'שע׳',
+  },
+  {
+    key: 'execution_activation_hours',
+    label: 'חלון ביצוע (שעות)',
+    desc: 'כמה שעות לפני המועד נפתח חלון הביצוע. לפני כן העובד רואה מועד מתוכנן ולא יכול לצאת לדרך.',
+    icon: <Play size={15} color="#16a34a" />,
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    suffix: 'שע׳',
+  },
+  {
+    key: 'starting_soon_reminder_hours',
+    label: 'תזכורת "מתחיל בקרוב" (שעות)',
+    desc: 'כמה שעות לפני המועד נשלחת התראת "מתחיל בקרוב" לשני הצדדים. מומלץ שיהיה קטן או שווה לחלון הביצוע.',
+    icon: <BellRing size={15} color="#dc2626" />,
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    suffix: 'שע׳',
+  },
 ];
 
 const DEFAULTS = {
@@ -104,6 +134,9 @@ const DEFAULTS = {
   boost_cost: 5,
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
+  upcoming_visibility_hours: 48,
+  execution_activation_hours: 3,
+  starting_soon_reminder_hours: 2,
   pre_launch_gate_active: true,
   pre_launch_release_mode: 'all',
   pre_launch_release_at: '',
@@ -218,6 +251,9 @@ export default function JobaSettingsTab() {
         boost_cost: Number(draft.boost_cost),
         loyalty_reward_percent: Number(draft.loyalty_reward_percent),
         loyalty_reward_min: Number(draft.loyalty_reward_min),
+        upcoming_visibility_hours: Number(draft.upcoming_visibility_hours),
+        execution_activation_hours: Number(draft.execution_activation_hours),
+        starting_soon_reminder_hours: Number(draft.starting_soon_reminder_hours),
         pre_launch_gate_active: gateActive,
         pre_launch_release_mode: releaseMode,
         pre_launch_release_at: releaseAt,

@@ -17,6 +17,10 @@ export const DEFAULT_JOBA_SETTINGS = {
   boost_cost: 5,
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
+  // ── Scheduling windows (hours) — fallback only; the live values are the admin's ──
+  upcoming_visibility_hours: 48,
+  execution_activation_hours: 3,
+  starting_soon_reminder_hours: 2,
   pre_launch_gate_active: true,
   pre_launch_release_mode: 'all',
   pre_launch_release_at: '',

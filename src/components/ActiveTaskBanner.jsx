@@ -8,7 +8,9 @@ import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileTe
 import { base44 } from '@/api/base44Client';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { resolveStatusFlow, stepIndexOf, nextCta, proofCopy } from '@/lib/taskStatusFlow';
-import { isEngagement, primaryOccurrence, formatOccurrence } from '@/lib/scheduling';
+import { isEngagement, primaryOccurrence, formatOccurrence, scheduleWindows } from '@/lib/scheduling';
+import { useScheduleClock } from '@/hooks/useScheduleClock';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
@@ -124,6 +126,12 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
   const [invoiceTask, setInvoiceTask] = useState(null); // task for invoice modal
   const [proofLightbox, setProofLightbox] = useState({ open: false, items: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  // Live scheduling clock — arms a single timer for the exact calendar →
+  // upcoming → active boundary, so the banner flips state without a reload and
+  // without polling. Declared before the early returns below (rules of hooks).
+  const { settings: jobaSettings } = useJobaSettings();
+  const scheduleWins = scheduleWindows(jobaSettings);
+  const clockNow = useScheduleClock(tasks, scheduleWins);
 
   // No local state — read directly from props (which come from React Query cache via Layout/HomeFeed)
   // Layout.jsx is the single broadcaster: it subscribes to WebSocket and updates all caches
@@ -234,7 +242,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           // 'calendar' (far out) and 'upcoming' (inside the window) are BOTH
           // engagements — neither unlocks execution, so both show the planned
           // time and offer no step CTA.
-          const isUpcoming = isEngagement(task);
+          const isUpcoming = isEngagement(task, clockNow, scheduleWins);
           const nextOccurrence = isUpcoming ? primaryOccurrence(task) : null;
           const quickAction = tIsWorker && isTaskActive && !isUpcoming ? getQuickAction(flow, task.worker_status) : null;
           const QuickActionIcon = quickAction ? (ICON_MAP[quickAction.icon] || Navigation) : null;

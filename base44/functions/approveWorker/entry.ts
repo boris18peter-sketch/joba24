@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { scheduleSignature, hasSchedule } from '../../shared/scheduling.ts';
+import { scheduleSignature, hasSchedule, occurrencesOf, formatOccurrenceHe } from '../../shared/scheduling.ts';
 
 /**
  * approveWorker — Assigns a worker to a task.
@@ -105,6 +105,28 @@ Deno.serve(async (req) => {
       status: 'approved'
     });
     console.log('✅ APPLICATION APPROVED');
+
+    // ── Schedule agreed → tell the worker the job is locked in ──────────────
+    // The client performed the approval, so they already know. The WORKER is
+    // the one who needs the confirmation, and only when a schedule actually
+    // exists and the two sides are aligned on it.
+    if (scheduleAgreed) {
+      try {
+        const first = occurrencesOf(task)[0];
+        await base44.asServiceRole.functions.invoke('notificationManager', {
+          event_key: 'schedule_agreed',
+          user_ids: [workerId],
+          task_id: taskId,
+          variables: {
+            task_title: task.title || '',
+            task_id: taskId,
+            when: first ? formatOccurrenceHe(first.start) : '',
+          },
+        });
+      } catch (notifyErr) {
+        console.log('[approveWorker] schedule_agreed notification failed:', notifyErr.message);
+      }
+    }
 
     // NOTE: Other pending applications are NOT refunded here.
     // They stay "pending" so they remain valid if the approved worker is later cancelled.

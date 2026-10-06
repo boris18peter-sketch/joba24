@@ -5,6 +5,7 @@ import { useMyScheduleTasks } from '@/hooks/useMyScheduleTasks';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { scheduleWindows } from '@/lib/scheduling';
 import { buildScheduleEntries, upcomingEntries } from '@/lib/scheduleEntries';
+import { useScheduleClock } from '@/hooks/useScheduleClock';
 import { formatWhen } from '@/lib/time';
 
 /**
@@ -21,10 +22,11 @@ export default function ScheduleUpcomingCard() {
   const { settings } = useJobaSettings();
   const windows = scheduleWindows(settings);
   const horizonHours = windows.upcoming_visibility_hours;
+  const now = useScheduleClock(tasks, windows);
 
   const upcoming = useMemo(
-    () => upcomingEntries(buildScheduleEntries(tasks, meId), Date.now(), scheduleWindows(settings)),
-    [tasks, meId, horizonHours]
+    () => upcomingEntries(buildScheduleEntries(tasks, meId, now), now, scheduleWindows(settings)),
+    [tasks, meId, now, horizonHours]
   );
 
   if (!upcoming.length) return null;
