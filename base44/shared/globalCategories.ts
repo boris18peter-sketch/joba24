@@ -62,6 +62,54 @@ export const PLATFORM_CATEGORY_SEED = [
 
 export const KEY_RE = /^[a-z][a-z0-9_]{1,40}$/;
 
+/** The ONLY conditional operators a global field may use — never arbitrary logic. */
+export const SHOW_WHEN_OPS = ['equals', 'notEquals', 'in', 'notIn'] as const;
+
+/**
+ * Keep a field's `showWhen` to the supported, DECLARATIVE shape:
+ *   { field: <another field key>, equals | notEquals: scalar }
+ *   { field: <another field key>, in | notIn: scalar[] }
+ *
+ * Exactly ONE operator, a real field key, and scalar operands only. Anything
+ * else — extra keys, nested objects, several operators at once, functions — is
+ * dropped entirely, so the catalogue can never smuggle executable logic into a
+ * renderer. A rejected condition simply makes the field unconditional.
+ */
+export function sanitizeShowWhen(raw: unknown) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const src: any = raw;
+  if (typeof src.field !== 'string' || !KEY_RE.test(src.field)) return undefined;
+
+  // Only a NON-EMPTY operand counts as an operator. The store normalises the
+  // object and fills every declared key, so a round-tripped condition arrives
+  // as { equals:true, notEquals:null, in:[], notIn:[] } — that is still exactly
+  // one operator, and must not be rejected (which would silently drop it).
+  const ops = SHOW_WHEN_OPS.filter((op) => {
+    const v = src[op];
+    if (v === undefined || v === null) return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return true;
+  });
+  if (ops.length !== 1) return undefined;
+  const op = ops[0];
+
+  const scalar = (v: unknown): any => {
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+    if (typeof v === 'string') { const s = v.trim(); return s ? s.slice(0, 80) : undefined; }
+    return undefined;
+  };
+
+  if (op === 'in' || op === 'notIn') {
+    if (!Array.isArray(src[op])) return undefined;
+    const values = src[op].map(scalar).filter((v: any) => v !== undefined).slice(0, 30);
+    return values.length ? { field: src.field, [op]: values } : undefined;
+  }
+
+  const value = scalar(src[op]);
+  return value === undefined ? undefined : { field: src.field, [op]: value };
+}
+
 /** A global key that is NOT in the Task enum is stored on the Task as 'other'. */
 export function isBrandSpecificKey(key: string) {
   return !!key && !PLATFORM_CATEGORY_KEYS.includes(key);
@@ -86,6 +134,8 @@ export function sanitizeFields(raw: unknown) {
           ? f.options.map((o: any) => String(o).slice(0, 80)).filter(Boolean).slice(0, 30)
           : [],
       };
+      const showWhen = sanitizeShowWhen(f.showWhen);
+      if (showWhen) out.showWhen = showWhen;
       if (f.validation && typeof f.validation === 'object') {
         const v: any = {};
         for (const k of ['min', 'max', 'min_length', 'max_length', 'pattern']) {

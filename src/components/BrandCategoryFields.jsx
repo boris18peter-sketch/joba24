@@ -1,4 +1,5 @@
 import { useBrandCategories } from '@/lib/brand/brandCategories';
+import { isFieldVisible } from '@/lib/brand/globalCategories';
 import { Label } from '@/components/ui/label';
 
 /**
@@ -14,10 +15,13 @@ import { Label } from '@/components/ui/label';
  */
 export default function BrandCategoryFields({ category, values = {}, onChange }) {
   const { formFieldsFor } = useBrandCategories();
-  const fields = formFieldsFor(category);
+  const allFields = formFieldsFor(category);
+  // A conditional question appears only while its condition holds — evaluated by
+  // the same helper the legacy renderer uses, so both paths behave identically.
+  const fields = allFields.filter((f) => isFieldVisible(f, values));
   // No parent or sibling fields are ever added to the selected global service.
 
-  if (!fields.length) return null;
+  if (!allFields.length) return null;
 
   const set = (key, value) => onChange(key, value);
   const inputStyle = {

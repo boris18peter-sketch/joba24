@@ -72,7 +72,7 @@
     },
     "fields": {
       "type": "array",
-      "description": "The single global task form for an actionable service; never copied into a Brand.",
+      "description": "The single global task form for an actionable service; never copied into a Brand. A subcategory INHERITS its root's fields (see globalFormFields), so a root holds only questions common to every service beneath it.",
       "items": {
         "type": "object",
         "properties": {
@@ -120,6 +120,57 @@
           "validation": {
             "type": "object",
             "additionalProperties": true
+          },
+          "showWhen": {
+            "type": "object",
+            "description": "DECLARATIVE condition \u2014 the field is shown only while it holds. Exactly ONE operator, keyed off another field in the same resolved form. Sanitized on write by sanitizeShowWhen; anything outside this shape is dropped, so no executable logic can be stored.",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "The key of the field this condition reads (e.g. water_flow)."
+              },
+              "equals": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "description": "Show when the source value equals this scalar."
+              },
+              "notEquals": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "description": "Show when the source value differs from this scalar."
+              },
+              "in": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "description": "Show when the source value is one of these scalars."
+              },
+              "notIn": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "description": "Show when the source value is none of these scalars."
+              }
+            },
+            "required": [
+              "field"
+            ]
           }
         },
         "required": [

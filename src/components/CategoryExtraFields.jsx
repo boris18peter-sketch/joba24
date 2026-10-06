@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
+import { isFieldVisible } from '@/lib/brand/globalCategories';
 import SchedulePicker from '@/components/SchedulePicker';
 import { useLanguage } from '@/lib/LanguageContext';
 import { tTaskFlow } from '@/lib/taskFlowI18n';
@@ -229,14 +230,7 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
   // Also filter by showWhen conditions (conditional fields based on other values)
   const fields = (config?.extraFields || []).filter(f => {
     if (f.key === 'urgency') return false;
-    if (f.showWhen) {
-      const curVal = values[f.showWhen.field];
-      if (f.showWhen.equals !== undefined && curVal !== f.showWhen.equals) return false;
-      if (f.showWhen.notEquals !== undefined && curVal === f.showWhen.notEquals) return false;
-      if (f.showWhen.in && !f.showWhen.in.includes(curVal)) return false;
-      if (f.showWhen.notIn && f.showWhen.notIn.includes(curVal)) return false;
-    }
-    return true;
+    return isFieldVisible(f, values);
   });
   const [destCoords, setDestCoords] = useState(null);
 

@@ -16,6 +16,7 @@
  */
 
 export { actionableCategoryKey as categoryKeyForTask } from '@/lib/brand/categoryRegistry';
+import { isFieldVisible } from '@/lib/brand/globalCategories';
 
 const isGroupNode = (n) => n?.node_type === 'group' || n?.node_type === 'parent';
 const isActive = (n) => !!n && n.active !== false;
@@ -126,6 +127,8 @@ export function canonicalRootKey(globals, categoryKey) {
 
 export function globalFormError(fields, values) {
   for (const f of fields) {
+    // A question the user cannot see must never block submission.
+    if (!isFieldVisible(f, values)) continue;
     const v = values?.[f.key], empty = v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length);
     if (f.required && empty) return `יש למלא: ${f.label || f.key}`;
     if (empty) continue;
