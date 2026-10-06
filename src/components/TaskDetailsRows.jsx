@@ -14,6 +14,7 @@ import { formatHoursLabel, formatScheduleSlots } from '@/lib/priceCalculator';
 import { getActiveRequirements } from '@/lib/requirements';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 import { useLanguage } from '@/lib/LanguageContext';
+import { formatWhen, isPast } from '@/lib/time';
 
 function getUrgencyConfig(urgency_tag, t) {
   const configs = {
@@ -78,20 +79,11 @@ export default function TaskDetailsRows({ task, compact = false }) {
   }
 
   if (task.scheduled_time) {
-    const sDate = new Date(task.scheduled_time.includes('T') && !task.scheduled_time.endsWith('Z') && !task.scheduled_time.includes('+') ? task.scheduled_time + 'Z' : task.scheduled_time);
-    if (!isNaN(sDate.getTime())) {
-      const now = new Date();
-      const isToday = sDate.toDateString() === now.toDateString();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
-      const timeStr = sDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-      let dateLabel;
-      if (isToday) dateLabel = `${t('tdr_today')}, ${timeStr}`;
-      else if (isTomorrow) dateLabel = `${t('tdr_tomorrow')}, ${timeStr}`;
-      else dateLabel = sDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-      const isPast = sDate < now;
-      detailRows.push({ icon: '📅', iconBg: isPast ? '#f1f5f9' : '#eff6ff', label: t('tdr_fixed_time'), value: dateLabel, valueColor: isPast ? '#94a3b8' : 'var(--brand-primary)' });
+    // One time utility for the whole app — no local date parsing here.
+    const when = formatWhen(task.scheduled_time);
+    if (when) {
+      const past = isPast(task.scheduled_time);
+      detailRows.push({ icon: '📅', iconBg: past ? '#f1f5f9' : '#eff6ff', label: t('tdr_fixed_time'), value: when, valueColor: past ? '#94a3b8' : 'var(--brand-primary)' });
     }
   }
 

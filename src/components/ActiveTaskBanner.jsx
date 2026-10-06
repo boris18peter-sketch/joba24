@@ -4,10 +4,11 @@ import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen, X } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen, Calendar, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { resolveStatusFlow, stepIndexOf, nextCta, proofCopy } from '@/lib/taskStatusFlow';
+import { schedulePhase, primaryOccurrence, formatOccurrence } from '@/lib/scheduling';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
@@ -225,7 +226,15 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           const tStepIdx  = tStatusInfo?.step ?? -1;
           // If task is no longer TAKEN (cancelled by publisher), worker cannot update status
           const isTaskActive = task.status === 'TAKEN';
-          const quickAction = tIsWorker && isTaskActive ? getQuickAction(flow, task.worker_status) : null;
+          // ── Upcoming vs Active Execution ─────────────────────────────────
+          // A task scheduled for later is an ENGAGEMENT, not a job in progress.
+          // Until its activation window opens it stays UPCOMING: the schedule is
+          // shown, but no step CTA is offered — a worker cannot "set out" for a
+          // job that starts tomorrow. Same canonical statuses, a different state.
+          const phase = schedulePhase(task);
+          const isUpcoming = phase === 'upcoming';
+          const nextOccurrence = isUpcoming ? primaryOccurrence(task) : null;
+          const quickAction = tIsWorker && isTaskActive && !isUpcoming ? getQuickAction(flow, task.worker_status) : null;
           const QuickActionIcon = quickAction ? (ICON_MAP[quickAction.icon] || Navigation) : null;
 
           const gradient = 'linear-gradient(135deg, var(--brand-banner-bg, var(--brand-primary)) 0%, var(--brand-banner-bg-2, var(--brand-primary-dark)) 100%)';
@@ -238,7 +247,15 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           const cfgStatusLabel = tIsOwner ? tStatusInfo?.ownerLabel : tStatusInfo?.label;
           const nextBtnLabel = quickAction?.label;
           let hero, heroSub;
-          if (tIsWorker) {
+          if (isUpcoming) {
+            // The engagement is agreed but not started — say WHEN, not what to do.
+            hero = tIsWorker ? 'מועד מתוכנן' : 'המשימה מתוכננת';
+            heroSub = nextOccurrence
+              ? (tIsWorker
+                  ? `הביצוע ייפתח סמוך ל-${formatOccurrence(nextOccurrence)}`
+                  : `העובד יגיע ב-${formatOccurrence(nextOccurrence)}`)
+              : '';
+          } else if (tIsWorker) {
             if (tStepIdx < 0) {
               hero = 'יצאת לדרך';
               heroSub = nextBtnLabel ? `לחץ/י "${nextBtnLabel}" כדי להתחיל` : 'עדכן/י את הסטטוס שלך';
@@ -268,7 +285,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
             }
           }
           const heroDone = tStepIdx === 2;
-          const HeroIcon = heroDone ? CheckCircle : (ICON_MAP[flow.steps[Math.min(Math.max(tStepIdx, 0), flow.steps.length - 1)].icon] || Navigation);
+          const HeroIcon = isUpcoming ? Calendar : heroDone ? CheckCircle : (ICON_MAP[flow.steps[Math.min(Math.max(tStepIdx, 0), flow.steps.length - 1)].icon] || Navigation);
 
           // Nav button → show only when on_the_way. After arrived → show chat.
           const showNavBtn  = tIsWorker && tStepIdx === 0 && task.location_name;

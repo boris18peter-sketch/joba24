@@ -82,6 +82,9 @@ Deno.serve(async (req) => {
       worker_verified: false,
       on_the_way_at: null,
       arrived_at: null,
+      // The schedule agreement belongs to the assignment, not the task: once the
+      // worker leaves, the task is OPEN again and no agreement is in force.
+      schedule_agreed_at: null,
     });
 
     console.log(`✅ Worker ${user.id} left task ${taskId}`);

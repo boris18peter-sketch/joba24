@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { scheduleSignature } from '../../shared/scheduling.ts';
 import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
 import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
 
@@ -93,6 +94,10 @@ Deno.serve(async (req) => {
       status: 'pending',
       credits_charged: creditsRequired,
       surface_brand_id: JOBA24_BRAND_ID,
+      // The schedule the worker saw when applying. If it is unchanged when the
+      // publisher picks them, the Schedule Agreement is automatic — no extra
+      // confirmation. A later change is what makes a confirmation necessary.
+      schedule_snapshot: scheduleSignature(task),
     });
 
     // Rebuild applicants array from actual TaskApplication records (single source of truth)

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { scheduleSignature, hasSchedule } from '../../shared/scheduling.ts';
 
 /**
  * approveWorker — Assigns a worker to a task.
@@ -77,6 +78,17 @@ Deno.serve(async (req) => {
       resolvedWorkerName = workerUsers[0]?.full_name || 'עובד';
     }
 
+    // ── Schedule Agreement ──────────────────────────────────────────────────
+    // The worker saw the task's schedule when they applied. If it is unchanged
+    // at the moment they are picked, the two are already aligned, so the
+    // agreement is recorded automatically and no confirmation is asked.
+    // A task with no schedule has nothing to agree on. A schedule that CHANGED
+    // since the application is deliberately left unagreed — that is the case the
+    // reschedule/confirmation layer exists for (M3.8).
+    const signature = scheduleSignature(task);
+    const isScheduled = hasSchedule(task);
+    const scheduleAgreed = isScheduled && (!app.schedule_snapshot || app.schedule_snapshot === signature);
+
     // Assign worker to task
     await base44.asServiceRole.entities.Task.update(taskId, {
       status: 'TAKEN',
@@ -84,6 +96,7 @@ Deno.serve(async (req) => {
       worker_name: resolvedWorkerName,
       worker_rating: app.worker_rating || 0,
       worker_verified: app.worker_verified || false,
+      schedule_agreed_at: scheduleAgreed ? new Date().toISOString() : null,
     });
     console.log('✅ TASK UPDATED:', taskId);
 
