@@ -6,13 +6,13 @@
  *   min     — never charge less than this
  *   max     — never charge more than this (0 = no cap)
  *
- * The platform sets all three in JobaSettings. A Brand may override them in its
- * own marketplace config. A CATEGORY may override them too, per service — that is
- * what lets a ₪5,000 job cost a capped fee instead of 5% of it.
+ * The platform default is 5% with NO cap, and it applies to EVERY category that
+ * has not been given a fee of its own.
  *
- * Resolution walks from the task's own service UP its parent chain and takes the
- * FIRST value it finds, so a subcategory inherits its root's fee unless it states
- * its own. Nothing is ever copied down the tree.
+ * There is deliberately NO inheritance. A category states its own fee or it uses
+ * the platform default — nothing is ever read from a parent, so editing one
+ * category can never move another. A Brand may override the platform default in
+ * its own marketplace config.
  */
 
 export const DEFAULT_FEE = { percent: 5, min: 1, max: 0 };
@@ -31,6 +31,9 @@ export interface ResolvedFee {
 /**
  * The fee rules that apply to a task's category.
  *
+ * Only the category's OWN fee is consulted; when it states none, the platform
+ * default (5%, no cap) applies. There is no parent lookup.
+ *
  * @param categoryKey the task's actionable GlobalCategory.category_key
  * @param globalMap   category_key -> GlobalCategory row
  * @param settings    JobaSettings, already merged with the Brand's overrides
@@ -46,34 +49,14 @@ export function resolveFee(
     max: num(settings?.application_fee_max) ?? DEFAULT_FEE.max,
   };
 
-  let percentSet = false;
-  let maxSet = false;
+  // ONLY this category's own fee is read. No parent, no inheritance.
+  const fee = (categoryKey ? globalMap?.[categoryKey]?.fee : null) || {};
 
-  // Nearest ancestor that states a value wins; the walk stops once both are set.
-  let node = categoryKey ? globalMap?.[categoryKey] : null;
-  const seen = new Set<string>();
-  while (node && !seen.has(node.category_key)) {
-    seen.add(node.category_key);
-    const fee = node.fee || {};
+  const p = num(fee.application_fee_percent);
+  if (p !== null) out.percent = Math.max(0, p);
 
-    if (!percentSet) {
-      const p = num(fee.application_fee_percent);
-      if (p !== null) {
-        out.percent = Math.max(0, p);
-        percentSet = true;
-      }
-    }
-    if (!maxSet) {
-      const m = num(fee.application_fee_max);
-      if (m !== null) {
-        out.max = Math.max(0, m);
-        maxSet = true;
-      }
-    }
-    if (percentSet && maxSet) break;
-
-    node = node.parent_key ? globalMap?.[node.parent_key] : null;
-  }
+  const m = num(fee.application_fee_max);
+  if (m !== null) out.max = Math.max(0, m);
 
   return out;
 }

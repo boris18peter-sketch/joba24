@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { syncTaskApplicants } from '../../shared/taskApplicants.ts';
 
 /**
  * completeTask — Called by the task owner (client) to confirm task completion.
@@ -76,6 +77,10 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    // Every remaining pending application was just rejected — rebuild the task's
+    // applicant projection so the card cannot keep counting them.
+    await syncTaskApplicants(base44.asServiceRole, taskId);
 
     console.log(`✅ Task ${taskId} marked COMPLETED by client ${user.id}`);
     return Response.json({ success: true });

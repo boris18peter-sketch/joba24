@@ -19,7 +19,7 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import ScheduleUpcomingCard from '@/components/schedule/ScheduleUpcomingCard';
 import { getCategoryLabel } from '@/lib/categories';
 import MarketServiceFilter from '@/components/MarketServiceFilter';
-import { categoryKeyForTask } from '@/lib/brand/categoryTree';
+import { categoryKeyForTask, categoryMatches } from '@/lib/brand/categoryTree';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -520,7 +520,7 @@ export default function HomeFeed() {
       if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
       if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
       if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
-      if (filters.categories?.length > 0 && !filters.categories.includes(categoryKeyForTask(t))) return false;
+      if (filters.categories?.length > 0 && !filters.categories.some(k => categoryMatches(categoryKeyForTask(t), k, categoryMap))) return false;
       if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
       if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
       if (filters.payment_method && t.payment_method !== filters.payment_method) return false;

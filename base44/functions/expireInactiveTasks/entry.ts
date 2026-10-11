@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { syncTaskApplicants } from '../../shared/taskApplicants.ts';
 
 /**
  * Cron job — runs every hour.
@@ -79,6 +80,9 @@ Deno.serve(async (req) => {
         refundedCount++;
         console.log(`✅ Refunded ${creditsToRefund} credits to worker ${app.worker_id}`);
       }));
+
+      // The task is EXPIRED — no application may still count towards its card.
+      await syncTaskApplicants(base44.asServiceRole, task.id);
     }
 
     console.log(`✅ Done: ${expiredCount} tasks expired, ${refundedCount} refunds issued`);

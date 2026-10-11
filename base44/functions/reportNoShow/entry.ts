@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { syncTaskApplicants } from '../../shared/taskApplicants.ts';
 
 /**
  * reportNoShow — Called by task owner to report a worker no-show.
@@ -28,6 +29,9 @@ Deno.serve(async (req) => {
     if (approvedApp) {
       await base44.asServiceRole.entities.TaskApplication.update(approvedApp.id, { status: 'rejected' });
     }
+
+    // The approved application is gone — rebuild the task's applicant projection.
+    await syncTaskApplicants(base44.asServiceRole, taskId);
 
     // Reduce worker trust_score by 5% in parallel with task reset
     await Promise.all([

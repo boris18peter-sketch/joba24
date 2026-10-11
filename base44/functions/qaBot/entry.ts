@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
+import { syncTaskApplicants } from '../../shared/taskApplicants.ts';
 import { requireInternalOperator } from '../../shared/internalAuth.ts';
 
 /**
@@ -150,6 +151,9 @@ Deno.serve(async (req) => {
       if (!app) return Response.json({ error: 'No active bot application to cancel' }, { status: 404 });
 
       await sr.entities.TaskApplication.update(app.id, { status: 'cancelled' });
+      // The publisher's task card counts Task.applicants — a cancelled application
+      // must leave it, or a phantom applicant stays on an OPEN task.
+      await syncTaskApplicants(sr, taskId);
       log.push(`✅ Bot application cancelled (credits_charged=${app.credits_charged})`);
       return Response.json({ success: true, action, credits_refunded: app.credits_charged, log });
     }

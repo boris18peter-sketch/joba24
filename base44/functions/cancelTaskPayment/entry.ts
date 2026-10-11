@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { syncTaskApplicants } from '../../shared/taskApplicants.ts';
 
 /**
  * cancelTaskPayment — Cancels a task and refunds credits to all applicants.
@@ -85,6 +86,10 @@ Deno.serve(async (req) => {
       worker_name: null,
       worker_status: null,
     });
+
+    // Every application was just cancelled — rebuild the task's applicant
+    // projection so a phantom applicant cannot survive the cancellation.
+    await syncTaskApplicants(base44.asServiceRole, taskId);
 
     // ── Notify the assigned worker ─────────────────────────────────────────
     // When the PUBLISHER cancels, the worker must hear about it even if their

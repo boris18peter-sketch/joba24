@@ -4,9 +4,9 @@ import { Field } from '@/components/admin/brand/brandUi';
 /**
  * CategoryFeeEditor — the application-fee rules for ONE category.
  *
- * An EMPTY field means "inherit": the value comes from the parent category, or
- * from the platform default in הגדרות ג'ובות. That is what keeps a subcategory
- * in step with its root without anyone copying numbers down the tree.
+ * An EMPTY field means "use the platform default" — 5% with no cap. There is NO
+ * inheritance: a category never reads a parent's numbers, so editing one
+ * category can never move another.
  *
  * The cap is the one that matters in practice. At 5%, a ₪5,000 job charges 250
  * Jobas; a cap of 100 turns the same job into 100 — the fee stops scaling with
@@ -39,8 +39,9 @@ export default function CategoryFeeEditor({ fee, onChange }) {
       </div>
 
       <p className="text-xs text-jtext-3 leading-relaxed">
-        ריק = ירושה מהקטגוריה שמעל, ואם גם שם ריק — מהגדרת ברירת המחדל במסך
-        "הגדרות ג'ובות". 0 באחוזים = פטור מלא מהגשת בקשה בקטגוריה הזו.
+        ריק = ברירת המחדל — 5% וללא תקרה. כל קטגוריה עומדת בפני עצמה: שינוי כאן
+        חל על הקטגוריה הזו בלבד ואינו משפיע על שום קטגוריה אחרת. 0 באחוזים = פטור
+        מלא מהגשת בקשה בקטגוריה הזו.
       </p>
 
       <div className="grid sm:grid-cols-2 gap-3">

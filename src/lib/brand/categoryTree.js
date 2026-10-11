@@ -42,6 +42,20 @@ export function groupOf(row, map) {
 }
 
 /**
+ * Does a task's category fall under a filter key?
+ *
+ * True when the key IS the task's category, or when it is any ANCESTOR of it.
+ * That is what lets the platform Brand offer broad ROOT categories as filters
+ * while tasks stay categorised by the exact service they need.
+ */
+export function categoryMatches(taskCategoryKey, filterKey, map) {
+  if (!filterKey) return false;
+  if (filterKey === taskCategoryKey) return true;
+  const row = map?.[taskCategoryKey];
+  return !!row && ancestorsOf(row, map).some((a) => a.category_key === filterKey);
+}
+
+/**
  * Every actionable (form-owning) category beneath a node, at any depth.
  * A node with no children is actionable itself — unless it is a pure group.
  */
@@ -62,6 +76,22 @@ export function deriveServices(globals, brand, legacyRows = []) {
   const map = Object.fromEntries(globals.map((g) => [g.category_key, g]));
   const childrenOf = {};
   for (const g of globals) (childrenOf[g.parent_key] ||= []).push(g);
+
+  // The platform Brand IS the whole marketplace. It presents the broad ROOT
+  // categories and nothing narrower — a shopper picking a need should see
+  // "אינסטלציה", never the individual service beneath it. Partner Brands are
+  // built around a niche, so they keep listing the actionable services.
+  if (brand?.is_default) {
+    const roots = [];
+    const seenRoot = new Set();
+    for (const key of brand.assigned_parent_keys || []) {
+      const node = map[key];
+      if (!node || !isActive(node) || isGroupNode(node) || seenRoot.has(key)) continue;
+      seenRoot.add(key);
+      roots.push(node);
+    }
+    if (roots.length) return roots;
+  }
 
   if (brand?.category_model_version !== 2) {
     const active = globals.filter((g) => isActive(g) && !isGroupNode(g));

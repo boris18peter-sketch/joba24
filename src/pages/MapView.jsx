@@ -10,7 +10,7 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import MarketServiceFilter from '@/components/MarketServiceFilter';
-import { categoryKeyForTask } from '@/lib/brand/categoryTree';
+import { categoryKeyForTask, categoryMatches } from '@/lib/brand/categoryTree';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -176,7 +176,7 @@ export default function MapView() {
     if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
     if (filters.time && t.estimated_time !== filters.time) return false;
     if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
-    if (filters.categories?.length > 0 && !filters.categories.includes(categoryKeyForTask(t))) return false;
+    if (filters.categories?.length > 0 && !filters.categories.some(k => categoryMatches(categoryKeyForTask(t), k, categoryMap))) return false;
     if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
     if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
     return true;

@@ -149,7 +149,7 @@ const DEFAULTS = {
   profile_completion_bonus: 0,
   application_fee_percent: 5,
   application_fee_min: 1,
-  application_fee_max: 100,
+  application_fee_max: 0,
   story_cost: 10,
   boost_cost: 5,
   loyalty_reward_percent: 10,
