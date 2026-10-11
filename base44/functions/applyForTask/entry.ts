@@ -1,6 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { scheduleSignature } from '../../shared/scheduling.ts';
 import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
+import { getGlobalCategoryMap } from '../../shared/globalCategories.ts';
+import { resolveFee, computeApplicationFee } from '../../shared/categoryFee.ts';
+import { ensureBrandMembership } from '../../shared/brandMembership.ts';
 import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
 
 /**
@@ -33,10 +36,14 @@ Deno.serve(async (req) => {
     const alreadyActive = existing.find(a => a.status === 'pending' || a.status === 'approved');
     if (alreadyActive) return Response.json({ error: 'already_applied' }, { status: 409 });
 
-    // Calculate credits from configurable settings: Round(price * %), minimum min
-    // Pricing follows the Brand the TASK belongs to (its own overrides, else Joba24).
+    // Calculate credits: the fee RESOLVES PER CATEGORY, on top of the Brand's own
+    // overrides. The nearest category in the chain that states a rule wins, so a
+    // service inherits its root's fee — and a cap on the root stops an expensive
+    // job from being charged a proportionally expensive application.
     const settings = await getBrandMarketplaceSettings(base44, task.origin_brand_id);
-    const creditsRequired = Math.max(settings.application_fee_min, Math.round(task.price * settings.application_fee_percent / 100));
+    const globalMap = await getGlobalCategoryMap(base44);
+    const categoryKey = task.category_details?.brand_category_key || task.category || '';
+    const creditsRequired = computeApplicationFee(task.price, resolveFee(categoryKey, globalMap, settings));
 
     // Fetch fresh worker data for credits check
     const workerUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
@@ -99,6 +106,9 @@ Deno.serve(async (req) => {
       // confirmation. A later change is what makes a confirmation necessary.
       schedule_snapshot: scheduleSignature(task),
     });
+
+    // Applying on a Brand's task is the moment this worker JOINS that Brand.
+    await ensureBrandMembership(base44.asServiceRole, user.id, task.origin_brand_id, 'apply_for_task');
 
     // Rebuild applicants array from actual TaskApplication records (single source of truth)
     const allAppsAfter = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });

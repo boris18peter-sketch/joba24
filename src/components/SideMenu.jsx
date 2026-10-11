@@ -11,6 +11,7 @@ import NewUserSimulator from '@/components/NewUserSimulator';
 import { isStandaloneApp } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { BrandLogo, BrandName } from '@/components/BrandIdentity';
+import { useBrandAccess } from '@/hooks/useBrandAccess';
 
 
 // navItems built inside component using t()
@@ -21,6 +22,9 @@ export default function SideMenu({ open, onClose }) {
   const { isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const { t } = useLanguage();
+  // Brands whose dashboard this user was explicitly granted. Empty for almost
+  // everyone — the link simply does not exist until an admin grants access.
+  const { brands: brandAccess } = useBrandAccess();
 
   const navItems = [
     { to: '/', icon: Home, label: t('nav_feed') },
@@ -176,6 +180,24 @@ export default function SideMenu({ open, onClose }) {
               {t('nav_agent')}
             </Link>
           }
+          {/* Brand dashboards — one entry per Brand this user was granted */}
+          {isAuthenticated && brandAccess.map(b => {
+            const to = `/brand/${b.brand_id}`;
+            const active = location.pathname === to;
+            return (
+              <Link key={b.brand_id} to={to} onClick={onClose}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
+                  background: active ? 'rgba(5,150,105,0.15)' : 'transparent',
+                  color: '#059669',
+                  fontWeight: 700, fontSize: 15, textDecoration: 'none',
+                  borderLeft: active ? '3px solid #059669' : '3px solid transparent',
+                }}>
+                <TrendingUp size={18} />
+                {`דשבורד ${b.name}`}
+              </Link>
+            );
+          })}
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>

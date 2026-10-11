@@ -10,6 +10,7 @@ import BrandDomainsTab from '@/components/admin/brand/BrandDomainsTab';
 import BrandCategoriesTab from '@/components/admin/brand/BrandCategoriesTab';
 import BrandMarketplaceTab from '@/components/admin/brand/BrandMarketplaceTab';
 import BrandDashboardTab from '@/components/admin/brand/BrandDashboardTab';
+import BrandAccessTab from '@/components/admin/brand/BrandAccessTab';
 import BrandDangerTab from '@/components/admin/brand/BrandDangerTab';
 import { Pill } from '@/components/admin/brand/brandUi';
 import { fetchGlobalCategories } from '@/lib/brand/globalCategories';
@@ -31,6 +32,7 @@ const TABS = [
   ['marketplace', 'שוק'],
   ['domains', 'דומיינים'],
   ['dashboard', 'דשבורד'],
+  ['access', 'גישה'],
   ['danger', 'אזור מסוכן'],
 ];
 
@@ -195,6 +197,7 @@ export default function BrandManager() {
       )}
       {tab === 'marketplace' && <BrandMarketplaceTab brand={brand} config={config} onSaved={onSaved} />}
       {tab === 'dashboard' && <BrandDashboardTab brand={brand} />}
+      {tab === 'access' && <BrandAccessTab brand={brand} />}
       {tab === 'danger' && <BrandDangerTab brand={brand} />}
     </div>
   );

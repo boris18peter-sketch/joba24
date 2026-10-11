@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { KEY_RE, sanitizeFields, sanitizeStatusFlow, PLATFORM_CATEGORY_KEYS } from '../../shared/globalCategories.ts';
+import { KEY_RE, sanitizeFields, sanitizeStatusFlow, sanitizeFee, PLATFORM_CATEGORY_KEYS } from '../../shared/globalCategories.ts';
 import { listAll, treeError } from '../../shared/categoryTree.ts';
 export default async function(req) {
   try {
@@ -32,6 +32,11 @@ export default async function(req) {
       // the step keys stay canonical. `null` clears it back to the generic flow.
       if (body.status_flow !== undefined) {
         patch.status_flow = sanitizeStatusFlow(body.status_flow);
+      }
+      // Per-category application fee. `null` is stored as "inherit from the
+      // parent" — an emptied form field must clear the override, not set 0%.
+      if (body.fee !== undefined) {
+        patch.fee = sanitizeFee(body.fee);
       }
       const category = target ? await svc.entities.GlobalCategory.update(target.id, patch) : await svc.entities.GlobalCategory.create({ ...patch, fields: patch.fields || [] });
       return Response.json({ success: true, category });

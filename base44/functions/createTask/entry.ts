@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { resolveBrandFromRequest } from '../../shared/brandContext.ts';
 import { taskCatalogue, normalizeTaskCategory, validateGlobalForm } from '../../shared/taskCategories.ts';
+import { ensureBrandMembership } from '../../shared/brandMembership.ts';
 
 /**
  * createTask — the trusted Task writer.
@@ -54,6 +55,10 @@ export default async function (req: Request): Promise<Response> {
       client_verified: user.is_verified || false,
       origin_brand_id: brand.brandId,
     });
+
+    // Posting on a Brand is the moment this person JOINS it — the Brand's
+    // dashboard can then honestly report who arrived, and through what.
+    await ensureBrandMembership(base44.asServiceRole, user.id, brand.brandId, 'create_task');
 
     return Response.json({ task });
   } catch (error) {

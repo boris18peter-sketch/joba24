@@ -9,6 +9,10 @@ export const DEFAULT_SETTINGS = {
   profile_completion_bonus: 0,
   application_fee_percent: 5,
   application_fee_min: 1,
+  // Never charge more than this for an application, however expensive the task.
+  // A ₪5,000 job at 5% would otherwise cost 250 Jobas; the cap is what keeps a
+  // big job postable. 0 = no cap. A category may override it (GlobalCategory.fee).
+  application_fee_max: 100,
   story_cost: 10,
   boost_cost: 5,
   loyalty_reward_percent: 10,
@@ -45,6 +49,7 @@ export async function getJobaSettings(base44) {
         profile_completion_bonus: num(rec.profile_completion_bonus, DEFAULT_SETTINGS.profile_completion_bonus),
         application_fee_percent: num(rec.application_fee_percent, DEFAULT_SETTINGS.application_fee_percent),
         application_fee_min: num(rec.application_fee_min, DEFAULT_SETTINGS.application_fee_min),
+        application_fee_max: num(rec.application_fee_max, DEFAULT_SETTINGS.application_fee_max),
         story_cost: num(rec.story_cost, DEFAULT_SETTINGS.story_cost),
         boost_cost: num(rec.boost_cost, DEFAULT_SETTINGS.boost_cost),
         loyalty_reward_percent: num(rec.loyalty_reward_percent, DEFAULT_SETTINGS.loyalty_reward_percent),

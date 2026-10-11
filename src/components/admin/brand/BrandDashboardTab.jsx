@@ -165,6 +165,51 @@ export default function BrandDashboardTab({ brand }) {
         )}
       </Section>
 
+      {/* Arrivals — who actually came to this Brand, and through what. A member
+          row only exists after a real action, so this is first-touch, not traffic. */}
+      {data.arrivals && (
+        <Section
+          title="מי הגיע למותג"
+          desc="חברים שנוצרו בטווח — אנשים שביצעו פעולה אמיתית במותג, לא רק גלשו בו."
+        >
+          {data.arrivals.in_range === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-3)', padding: 16, textAlign: 'center' }}>
+              אף אחד לא הצטרף למותג בטווח הזה
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {(data.arrivals.by_first_action || []).map((a) => (
+                  <Pill key={a.action} tone="blue">{a.label} · {num(a.count)}</Pill>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(data.arrivals.recent || []).map((r) => (
+                  <div key={r.user_id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: 'var(--surface-1)', border: '1px solid var(--border-1)',
+                    borderRadius: 11, padding: '9px 12px',
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 800, color: 'var(--text-1)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {r.name || 'משתמש'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        {r.first_action_label}
+                        {r.joined_at ? ` · ${new Date(r.joined_at).toLocaleDateString('he-IL')}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </Section>
+      )}
+
       <BrandCategoryAnalytics data={data} />
 
       <Section title="משיכת נתונים" desc="הטווח המדויק שממנו נספרים הנתונים.">

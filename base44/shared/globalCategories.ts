@@ -149,6 +149,30 @@ export function sanitizeFields(raw: unknown) {
 }
 
 /** The canonical worker progress states — the only steps a flow may describe. */
+/**
+ * sanitizeFee — the per-category application-fee override.
+ *
+ * Only the two known numbers survive, each clamped to something sane: a percent
+ * between 0 and 100, a cap of 0 or more. An empty result is `null`, which means
+ * "inherit" — never a stored zero that would silently exempt a whole category.
+ */
+export function sanitizeFee(raw: unknown) {
+  if (!raw || typeof raw !== 'object') return null;
+  const src = raw as any;
+  const out: any = {};
+
+  const pct = Number(src.application_fee_percent);
+  if (Number.isFinite(pct) && src.application_fee_percent !== null && src.application_fee_percent !== '') {
+    out.application_fee_percent = Math.min(100, Math.max(0, pct));
+  }
+  const max = Number(src.application_fee_max);
+  if (Number.isFinite(max) && src.application_fee_max !== null && src.application_fee_max !== '') {
+    out.application_fee_max = Math.max(0, max);
+  }
+
+  return Object.keys(out).length ? out : null;
+}
+
 export const CANONICAL_FLOW_STEPS = ['on_the_way', 'arrived', 'done'];
 
 const FLOW_ICONS = ['navigation', 'map_pin', 'check', 'truck', 'heart', 'clock', 'star'];

@@ -29,14 +29,26 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'forbidden', message: 'Platform admin only' }, { status: 403 });
-    }
+    if (!user) return Response.json({ error: 'unauthorized' }, { status: 401 });
+
     const svc = base44.asServiceRole;
     const body = await req.json().catch(() => ({}));
 
     const brandId = String(body?.brand_id || '');
     if (!brandId) return Response.json({ error: 'brand_id_required' }, { status: 400 });
+
+    // Platform admins see every Brand. Everyone else needs an EXPLICIT grant:
+    // membership earned by posting or applying is NOT enough to see a Brand's
+    // numbers, which is why the check reads the role, not the row.
+    if (user.role !== 'admin') {
+      const mine = await svc.entities.BrandMembership.filter({ brand_id: brandId, user_id: user.id });
+      const granted = (mine || []).some(
+        (m: any) => m.role === 'brand_admin' && m.status !== 'suspended',
+      );
+      if (!granted) {
+        return Response.json({ error: 'forbidden', message: 'No access to this Brand' }, { status: 403 });
+      }
+    }
 
     const brands = await svc.entities.Brand.filter({ id: brandId });
     if (!brands?.[0]) return Response.json({ error: 'brand_not_found' }, { status: 404 });
@@ -145,9 +157,59 @@ export default async function(req) {
       unavailable.push({ metric: 'marketplace', reason: 'No Task carries this Brand yet.' });
     }
 
+    // ── Arrivals — WHO came to this Brand, and through what ──────────────────
+    // A BrandMembership row only exists after a MEANINGFUL action, so this is a
+    // real first-touch record, not traffic: the person is here because they
+    // posted a task or applied for one on this Brand.
+    const ARRIVAL_LABELS: Record<string, string> = {
+      create_task: 'פרסמו משימה',
+      apply_for_task: 'הגישו בקשה',
+      dashboard_grant: 'קיבלו גישה ידנית',
+      backfill: 'היסטורי',
+    };
+
+    const recentMembers = [...newMembers]
+      .sort((a: any, b: any) =>
+        new Date(b.joined_at || b.created_date || 0).getTime() -
+        new Date(a.joined_at || a.created_date || 0).getTime())
+      .slice(0, 25);
+
+    const arrivalIds = [...new Set(recentMembers.map((m: any) => m.user_id))].filter(Boolean) as string[];
+    const arrivalUsers: Record<string, any> = {};
+    if (arrivalIds.length) {
+      try {
+        const found = await svc.entities.User.filter({ id: { $in: arrivalIds } });
+        for (const u of (found || [])) arrivalUsers[u.id] = u;
+      } catch {
+        // Names are a nicety — never fail the whole dashboard over them.
+      }
+    }
+
+    const actionCounts: Record<string, number> = {};
+    for (const m of newMembers) {
+      const k = m.first_action || 'other';
+      actionCounts[k] = (actionCounts[k] || 0) + 1;
+    }
+
+    const arrivals = {
+      in_range: newMembers.length,
+      total: M.length,
+      by_first_action: Object.entries(actionCounts)
+        .map(([action, count]) => ({ action, count, label: ARRIVAL_LABELS[action] || action }))
+        .sort((a: any, b: any) => Number(b.count) - Number(a.count)),
+      recent: recentMembers.map((m: any) => ({
+        user_id: m.user_id,
+        name: arrivalUsers[m.user_id]?.full_name || '',
+        first_action: m.first_action || 'other',
+        first_action_label: ARRIVAL_LABELS[m.first_action] || m.first_action || 'אחר',
+        joined_at: m.joined_at || m.created_date,
+      })),
+    };
+
     return Response.json({
       success: true,
       range: { from: new Date(start).toISOString(), to: new Date(end).toISOString(), key: range },
+      arrivals,
       members: {
         total: M.length,
         new_in_range: newMembers.length,

@@ -16,6 +16,7 @@ import { getJobaSettings } from './jobaSettings.ts';
 export const BRAND_OVERRIDABLE_KEYS = [
   'application_fee_percent',
   'application_fee_min',
+  'application_fee_max',
   'story_cost',
   'boost_cost',
   'loyalty_reward_percent',

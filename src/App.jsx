@@ -116,6 +116,7 @@ const AuthCallback = lazyRetry(() => import('@/pages/AuthCallback'));
 const StoreKitStudio = lazyRetry(() => import('@/pages/StoreKitStudio'));
 const DesignPreviewV2 = lazyRetry(() => import('@/pages/DesignPreviewV2'));
 const BrandManager = lazyRetry(() => import('@/pages/BrandManager'));
+const BrandDashboard = lazyRetry(() => import('@/pages/BrandDashboard'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -268,6 +269,8 @@ const AuthenticatedApp = () => {
                 </Route>
                 <Route path="/my-tasks" element={<MyTasks />} />
                 <Route path="/schedule" element={<MySchedule />} />
+                {/* A Brand's own dashboard — reachable only with an explicit grant */}
+                <Route path="/brand/:brandId" element={<BrandDashboard />} />
                 <Route path="/chats" element={<ChatInbox />} />
                 <Route path="/notifications" element={<Notifications />} />
                 {/* Platform Admin only — same guard as /simulator */}
