@@ -72,9 +72,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Rebuild the applicants array from the actual TaskApplication records — the
+    // Task's array is what the publisher's task card counts, so a worker who left
+    // must disappear from it. TaskApplication is the single source of truth;
+    // without this the publisher keeps seeing a phantom applicant on an OPEN task.
+    const allApps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId }, '-created_date', 200);
+    const activeApplicants = (allApps || []).filter(a => a.status === 'pending' || a.status === 'approved');
+
     // Reset task to OPEN and clear worker data
     await base44.asServiceRole.entities.Task.update(taskId, {
       status: 'OPEN',
+      applicants: activeApplicants.map(a => ({
+        worker_id: a.worker_id,
+        worker_name: a.worker_name,
+        applied_at: a.created_date,
+      })),
       worker_id: null,
       worker_name: null,
       worker_status: null,

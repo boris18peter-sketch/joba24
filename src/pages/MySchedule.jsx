@@ -1,26 +1,17 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CalendarDays } from 'lucide-react';
 import { useMyScheduleTasks } from '@/hooks/useMyScheduleTasks';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { scheduleWindows } from '@/lib/scheduling';
-import { buildScheduleEntries, upcomingEntries, groupByDay, dateKey } from '@/lib/scheduleEntries';
+import { buildScheduleEntries, groupByDay, dateKey } from '@/lib/scheduleEntries';
 import { useScheduleClock } from '@/hooks/useScheduleClock';
 import ScheduleCalendar from '@/components/schedule/ScheduleCalendar';
 import ScheduleJobRow from '@/components/schedule/ScheduleJobRow';
-import ScheduleNextJob from '@/components/schedule/ScheduleNextJob';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const WEEKDAYS_HE = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
 const MONTHS_HE = ['בינואר', 'בפברואר', 'במרץ', 'באפריל', 'במאי', 'ביוני', 'ביולי', 'באוגוסט', 'בספטמבר', 'באוקטובר', 'בנובמבר', 'בדצמבר'];
-
-/** Short label for a row that already shows its own time: 'היום' / 'מחר' / 'יום שישי, 9 באוקטובר'. */
-function dayTitle(dayKey, todayKey, tomorrowKey) {
-  if (dayKey === todayKey) return 'היום';
-  if (dayKey === tomorrowKey) return 'מחר';
-  const d = new Date(`${dayKey}T00:00:00`);
-  if (isNaN(d.getTime())) return dayKey;
-  return `${WEEKDAYS_HE[d.getDay()]}, ${d.getDate()} ${MONTHS_HE[d.getMonth()]}`;
-}
 
 /** The agenda's heading — always dated, with the relative word when there is one. */
 function agendaTitle(dayKey, todayKey, tomorrowKey) {
@@ -39,8 +30,10 @@ function agendaTitle(dayKey, todayKey, tomorrowKey) {
  * and the jobs they were hired for, each with a clear role indicator. Everything
  * shown is a projection of existing Tasks — there is no CalendarTask.
  *
- * The screen reads top-to-bottom as one story: the month (where the work is),
- * what's next (what is imminent), and the selected day (what it holds).
+ * The screen is deliberately ONE scroll: the month on top, then a single
+ * chronological agenda from today onward. There is no second list duplicating
+ * the first, so nothing is ever out of reach — and tapping a day in the month
+ * simply jumps to that day inside the same list.
  */
 export default function MySchedule() {
   const { isRTL } = useLanguage();
@@ -48,7 +41,6 @@ export default function MySchedule() {
   const { tasks, meId, isLoading } = useMyScheduleTasks();
   const { settings } = useJobaSettings();
   const windows = scheduleWindows(settings);
-  const horizonHours = windows.upcoming_visibility_hours;
 
   const todayKey = dateKey(new Date());
   const tomorrow = new Date();
@@ -67,38 +59,61 @@ export default function MySchedule() {
 
   const entries = useMemo(() => buildScheduleEntries(tasks, meId, now), [tasks, meId, now]);
   const entriesByDay = useMemo(() => groupByDay(entries), [entries]);
-  const upcoming = useMemo(
-    () => upcomingEntries(entries, now, windows),
-    [entries, now, horizonHours]
+
+  // Every day from today onward that holds work, earliest first. Past days stay
+  // off the agenda — the month grid already shows them.
+  const agendaDays = useMemo(
+    () => [...entriesByDay.keys()].filter((key) => key >= todayKey).sort(),
+    [entriesByDay, todayKey]
   );
 
-  const selectedEntries = entriesByDay.get(selectedDay) || [];
-
-  const labelFor = useCallback(
-    (dayKey) => dayTitle(dayKey, todayKey, tomorrowKey),
-    [todayKey, tomorrowKey]
+  const agendaCount = useMemo(
+    () => agendaDays.reduce((total, key) => total + (entriesByDay.get(key)?.length || 0), 0),
+    [agendaDays, entriesByDay]
   );
+
+  // Refs to each day block so tapping a calendar day can bring it into view
+  // inside the page's own scroll container.
+  const dayRefs = useRef({});
+  const jumpToDay = useCallback((key) => {
+    setSelectedDay(key);
+    const el = dayRefs.current[key];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const jumpToToday = () => {
     const nowDate = new Date();
     setMonthCursor(new Date(nowDate.getFullYear(), nowDate.getMonth(), 1));
-    setSelectedDay(todayKey);
+    jumpToDay(todayKey);
   };
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', minHeight: '100%', paddingBottom: 28 }}>
+    <div
+      dir={isRTL ? 'rtl' : 'ltr'}
+      style={{ background: 'var(--surface-1)', flexShrink: 0, paddingBottom: 28 }}
+    >
       {/* Slim page header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 16px 8px' }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.15 }}>יומן עבודות</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>העבודות שאתה מפרסם ואתה מבצע</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 16px 10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 11, flexShrink: 0,
+            background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 3px 10px rgba(26,111,212,0.3)',
+          }}>
+            <CalendarDays size={18} color="#ffffff" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.15 }}>יומן עבודות</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>מה שאתה מפרסם ומה שאתה מבצע</div>
+          </div>
         </div>
         <button
           onClick={jumpToToday}
           style={{
-            height: 32, padding: '0 13px', borderRadius: 99, cursor: 'pointer', flexShrink: 0,
-            background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-            color: 'var(--text-2)', fontSize: 12, fontWeight: 900,
+            height: 32, padding: '0 14px', borderRadius: 99, cursor: 'pointer', flexShrink: 0,
+            background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)',
+            color: 'var(--brand-primary)', fontSize: 12, fontWeight: 900,
           }}
         >
           היום
@@ -120,70 +135,76 @@ export default function MySchedule() {
             onMonthChange={setMonthCursor}
             entriesByDay={entriesByDay}
             selectedDay={selectedDay}
-            onSelectDay={setSelectedDay}
+            onSelectDay={jumpToDay}
           />
 
-          {/* ── What's next — the near-term window, not the whole future ── */}
+          {/* ── The agenda — one continuous list from today forward ── */}
           <section>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8, padding: '0 2px' }}>
-              <span style={{ fontSize: 12.5, fontWeight: 900, color: 'var(--text-1)' }}>
-                {upcoming.length > 0 ? 'העבודה הבאה שלך' : 'בקרוב'}
-              </span>
-              <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)' }}>
-                {horizonHours} השעות הקרובות
-              </span>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 10, padding: '0 2px' }}>
+              <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>העבודות שלי</span>
+              {agendaCount > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-primary)' }}>
+                  {agendaCount} עבודות מתוכננות
+                </span>
+              )}
             </div>
 
-            {upcoming.length === 0 ? (
+            {agendaDays.length === 0 ? (
               <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                 background: 'var(--brand-card-bg, var(--surface-2))',
-                border: '1px solid var(--border-1)', borderRadius: 14, padding: '10px 14px',
+                border: '1px solid var(--border-1)', borderRadius: 16,
+                padding: '22px 18px', textAlign: 'center',
               }}>
-                <span style={{ fontSize: 12.5, color: 'var(--text-2)', fontWeight: 600 }}>אין עבודות קרובות כרגע</span>
+                <div style={{ fontSize: 26, marginBottom: 6 }}>📅</div>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 3 }}>
+                  אין עבודות מתוכננות
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>
+                  עבודות שתפרסם או שתבצע יופיעו כאן
+                </div>
                 <button
                   onClick={() => navigate('/')}
                   style={{
-                    height: 30, padding: '0 12px', borderRadius: 99, cursor: 'pointer', flexShrink: 0,
-                    background: 'var(--brand-primary-light)', border: 'none',
-                    color: 'var(--brand-primary)', fontSize: 11.5, fontWeight: 900,
+                    height: 34, padding: '0 16px', borderRadius: 99, cursor: 'pointer',
+                    background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))',
+                    border: 'none', color: '#ffffff', fontSize: 12.5, fontWeight: 900,
+                    boxShadow: '0 4px 14px rgba(26,111,212,0.28)',
                   }}
                 >
                   מצא עבודה
                 </button>
               </div>
             ) : (
-              <ScheduleNextJob entries={upcoming} labelFor={labelFor} now={now} />
-            )}
-          </section>
-
-          {/* ── The selected day ── */}
-          <section>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8, padding: '0 2px' }}>
-              <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>
-                {agendaTitle(selectedDay, todayKey, tomorrowKey)}
-              </span>
-              {selectedEntries.length > 0 && (
-                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-primary)' }}>
-                  {selectedEntries.length} עבודות
-                </span>
-              )}
-            </div>
-
-            {selectedEntries.length === 0 ? (
-              <div style={{
-                background: 'var(--brand-card-bg, var(--surface-2))',
-                border: '1px solid var(--border-1)', borderRadius: 14,
-                padding: '12px 14px', textAlign: 'center',
-                fontSize: 12, color: 'var(--text-3)', fontWeight: 600,
-              }}>
-                אין עבודות ביום הזה
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {selectedEntries.map((entry) => (
-                  <ScheduleJobRow key={entry.id} entry={entry} />
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {agendaDays.map((dayKey) => {
+                  const dayEntries = entriesByDay.get(dayKey) || [];
+                  const isToday = dayKey === todayKey;
+                  return (
+                    <div
+                      key={dayKey}
+                      ref={(el) => { dayRefs.current[dayKey] = el; }}
+                      style={{ scrollMarginTop: 8 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, padding: '0 2px' }}>
+                        <span style={{
+                          width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                          background: isToday ? 'var(--brand-primary)' : 'var(--border-2)',
+                        }} />
+                        <span style={{ fontSize: 13, fontWeight: 900, color: isToday ? 'var(--brand-primary)' : 'var(--text-1)' }}>
+                          {agendaTitle(dayKey, todayKey, tomorrowKey)}
+                        </span>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)' }}>
+                          {dayEntries.length === 1 ? 'עבודה אחת' : `${dayEntries.length} עבודות`}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                        {dayEntries.map((entry) => (
+                          <ScheduleJobRow key={entry.id} entry={entry} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>

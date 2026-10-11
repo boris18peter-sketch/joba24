@@ -26,6 +26,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
 import SignupGiftModal from '@/components/SignupGiftModal';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import HomeBannersCarousel from '@/components/HomeBannersCarousel';
@@ -88,17 +89,30 @@ export default function HomeFeed() {
     recoverIosSubscriptionCredits().catch(() => {});
   }, [me?.id]);
 
-  // Signup gift celebration — shown once when the user first enters the app
-  // with credits (the signup bonus is granted silently by AuthContext at login;
-  // this modal is the visual celebration the user actually sees).
+  // Signup gift celebration — the visual celebration for the signup bonus that
+  // AuthContext grants silently at login. Two hard rules:
+  //   · AT MOST ONCE — the slot is claimed the moment it is scheduled, under a
+  //     per-user key, so a re-render, a balance change or a new session can never
+  //     bring it back. (The old code only wrote the flag on close, so an app
+  //     closed mid-popup showed it again next session.)
+  //   · NEVER AT ZERO — with the signup bonus switched off in the dashboard there
+  //     is no gift to celebrate, so the popup does not appear at all.
+  const { settings: jobaSettings } = useJobaSettings();
+  const giftAmount = (jobaSettings.signup_bonus ?? 0) + (me?.referred_by_agent_code ? (jobaSettings.referral_signup_bonus ?? 0) : 0);
+  const giftKey = me?.id ? `joba24_gift_claimed_${me.id}` : null;
+  const giftScheduledRef = useRef(false);
   useEffect(() => {
-    if (!me?.id) return;
+    if (giftScheduledRef.current) return;
+    if (!me?.id || !giftKey) return;
     if (localStorage.getItem('joba24_gift_claimed')) return;
+    if (localStorage.getItem(giftKey)) return;
     if (me?.worker_credits == null) return;
-    // Delay so the page settles before the full-screen gift overlay appears
-    const t = setTimeout(() => setShowGiftModal(true), 800);
-    return () => clearTimeout(t);
-  }, [me?.id, me?.worker_credits]);
+    if (giftAmount <= 0) return;
+    // Claim the slot now — no cleanup, so a balance change cannot cancel it.
+    giftScheduledRef.current = true;
+    localStorage.setItem(giftKey, '1');
+    setTimeout(() => setShowGiftModal(true), 800);
+  }, [me?.id, me?.worker_credits, giftAmount, giftKey]);
 
 
   // My published tasks — WS handles real-time; polling is safety net only

@@ -120,7 +120,16 @@ export default async function(req) {
       const parent = rootKey(key, globalMap) || 'unmapped';
       parentCounts[parent] = (parentCounts[parent] || 0) + 1;
     }
-    const shape = counts => Object.entries(counts).map(([key,count]) => ({ key, count, percentage: tasksIn.length ? Math.round(Number(count) / tasksIn.length * 1000) / 10 : 0, label: globalMap[key]?.label || (key === 'unmapped' ? 'לא משויך לאב' : key), icon: globalMap[key]?.icon || '' })).sort((a,b) => Number(b.count) - Number(a.count));
+    // A raw category_key must never reach the UI. Resolve the global label, and
+    // when a key has no GlobalCategory row fall back to a readable form of the
+    // key ("heavy_lifting" → "Heavy Lifting") rather than the key itself.
+    const displayLabel = (key: string) => {
+      if (key === 'unmapped') return 'לא משויך לאב';
+      const label = globalMap[key]?.label;
+      if (label) return label;
+      return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+    };
+    const shape = counts => Object.entries(counts).map(([key,count]) => ({ key, count, percentage: tasksIn.length ? Math.round(Number(count) / tasksIn.length * 1000) / 10 : 0, label: displayLabel(key), icon: globalMap[key]?.icon || '' })).sort((a,b) => Number(b.count) - Number(a.count));
     const byCategory = shape(catCounts), byParent = shape(parentCounts);
 
     // ── Honest availability ──────────────────────────────────────────────────

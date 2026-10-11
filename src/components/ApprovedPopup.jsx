@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
-import { Navigation } from 'lucide-react';
+import { Navigation, Clock } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -8,15 +8,35 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import BottomSheet from '@/components/BottomSheet';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { scheduleWindows, isExecutionActive, nextOccurrence, formatOccurrence } from '@/lib/scheduling';
 
+/**
+ * ApprovedPopup — the celebration shown the moment a worker is selected.
+ *
+ * It is a CELEBRATION first: being picked is good news and is announced whether
+ * or not the job is due yet. What it must never do is quietly start the job.
+ *
+ * A scheduled job unlocks execution only inside the activation window — the same
+ * rule the Active Task banner follows. So the "יצא לדרך" CTA is offered ONLY when
+ * that window is open; a job scheduled for tomorrow congratulates the worker and
+ * shows the agreed slot instead, leaving the status untouched until it is due.
+ */
 export default function ApprovedPopup({ task, onClose }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { settings } = useJobaSettings();
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20);
+
+  // May this job actually be started right now? A task with no schedule always
+  // may; a scheduled one only once its activation window has opened.
+  const windows = scheduleWindows(settings);
+  const canDepart = isExecutionActive(task, Date.now(), windows);
+  const upcoming = nextOccurrence(task);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,6 +49,9 @@ export default function ApprovedPopup({ task, onClose }) {
   }, []);
 
   const handleStartWork = async () => {
+    // Guard the celebration from ever becoming an early start — the CTA is
+    // hidden in this case, and this is the belt-and-braces behind it.
+    if (!canDepart) { onClose(); return; }
     setLoading(true);
     const update = { status: 'TAKEN', worker_status: 'on_the_way', worker_id: me?.id, worker_name: me?.full_name, on_the_way_at: new Date().toISOString() };
     if (navigator.geolocation) {
@@ -97,23 +120,47 @@ export default function ApprovedPopup({ task, onClose }) {
             </div>
           </div>
 
-          <button
-            onClick={handleStartWork}
-            disabled={loading}
-            style={{
-              width: '100%', height: 56, borderRadius: 'var(--r-md)',
-              background: loading ? '#6ee7b7' : 'linear-gradient(135deg,#059669,#047857)',
-              color: 'white', fontWeight: 900, fontSize: 16, border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: '0 8px 28px rgba(5,150,105,0.4)', marginBottom: 10,
-            }}
-          >
-            {loading ? t('starting_moment') : <><Navigation size={18} /> {t('lets_go')}</>}
-          </button>
+          {canDepart ? (
+            <button
+              onClick={handleStartWork}
+              disabled={loading}
+              style={{
+                width: '100%', height: 56, borderRadius: 'var(--r-md)',
+                background: loading ? '#6ee7b7' : 'linear-gradient(135deg,#059669,#047857)',
+                color: 'white', fontWeight: 900, fontSize: 16, border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 8px 28px rgba(5,150,105,0.4)', marginBottom: 10,
+              }}
+            >
+              {loading ? t('starting_moment') : <><Navigation size={18} /> {t('lets_go')}</>}
+            </button>
+          ) : (
+            /* The job is scheduled ahead — it cannot be started yet, so the popup
+               only tells the worker WHEN it starts and sends them to the task. */
+            <div style={{
+              background: 'var(--brand-primary-light)', border: '1.5px solid var(--border-2)',
+              borderRadius: 'var(--r-md)', padding: '14px 16px', marginBottom: 10,
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                background: 'var(--surface-2)', border: '1px solid var(--border-1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Clock size={18} color="var(--brand-primary)" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('td_service_slots')}</div>
+                <div style={{ fontSize: 14.5, fontWeight: 900, color: 'var(--brand-primary)' }}>
+                  {upcoming ? formatOccurrence(upcoming) : ''}
+                </div>
+              </div>
+            </div>
+          )}
 
           <button
-            onClick={onClose}
+            onClick={() => { onClose(); if (task?.id) openTaskSheet(task.id); }}
             style={{
               width: '100%', height: 48, borderRadius: 'var(--r-md)',
               background: 'transparent', border: '1px solid var(--border-1)',
