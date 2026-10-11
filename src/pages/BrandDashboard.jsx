@@ -1,22 +1,34 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowRight, Loader2, ShieldAlert } from 'lucide-react';
+import {
+  ArrowRight, Loader2, ShieldAlert, TrendingUp, ClipboardList, Users, Flag, Headphones,
+} from 'lucide-react';
 import { useBrandAccess } from '@/hooks/useBrandAccess';
+import BrandTabButton from '@/components/brand/dashboard/BrandTabButton';
+import BrandTasksTab from '@/components/brand/dashboard/BrandTasksTab';
+import BrandUsersTab from '@/components/brand/dashboard/BrandUsersTab';
+import BrandReportsTab from '@/components/brand/dashboard/BrandReportsTab';
+import BrandSupportTab from '@/components/brand/dashboard/BrandSupportTab';
 import BrandDashboardTab from '@/components/admin/brand/BrandDashboardTab';
 
 /**
  * BrandDashboard — a Brand's own dashboard, for the people granted access to it.
  *
- * It renders the SAME view the platform admin sees, because the numbers are the
- * Brand's numbers: every figure is attributed to this Brand's id and nothing is
- * inferred. Access is decided by the grant, so the page asks useBrandAccess()
- * before it shows anything.
+ * Same shell, same components and same visual language as the platform Admin
+ * dashboard, with only the tabs that make sense for ONE Brand: analytics, tasks,
+ * users, reports and support.
+ *
+ * Every figure and every row is attributed to this Brand's id — nothing is
+ * inferred. Access is decided by an explicit brand_admin grant, so the page
+ * asks useBrandAccess() before it shows anything.
  */
 export default function BrandDashboard() {
   const { brandId } = useParams();
   const navigate = useNavigate();
   const { brands, isLoading: accessLoading } = useBrandAccess();
+  const [tab, setTab] = useState('analytics');
 
   const { data: brand, isLoading } = useQuery({
     queryKey: ['brandForDashboard', brandId],
@@ -28,6 +40,15 @@ export default function BrandDashboard() {
   });
 
   const allowed = brands.some((b) => b.brand_id === brandId);
+
+  const { data: panel } = useQuery({
+    queryKey: ['brandPanel', brandId],
+    enabled: !!brandId && allowed,
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getBrandPanel', { brand_id: brandId });
+      return res?.data?.success ? res.data : null;
+    },
+  });
 
   if (accessLoading || isLoading) {
     return (
@@ -61,9 +82,18 @@ export default function BrandDashboard() {
     );
   }
 
+  const counts = panel?.counts || {};
+  const stats = [
+    { label: 'משימות', value: counts.tasks_total ?? '—' },
+    { label: 'פתוחות', value: counts.tasks_open ?? '—' },
+    { label: 'משתמשים', value: counts.users_total ?? '—' },
+    { label: 'דיווחים', value: counts.reports_pending ?? '—' },
+  ];
+
   return (
-    <div dir="rtl" style={{ padding: '12px 16px 28px', flexShrink: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+    <div dir="rtl" style={{ flexShrink: 0, paddingBottom: 28 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px 10px' }}>
         <button
           onClick={() => navigate(-1)}
           aria-label="חזרה"
@@ -86,7 +116,55 @@ export default function BrandDashboard() {
         </div>
       </div>
 
-      <BrandDashboardTab brand={brand} />
+      {/* Stats strip */}
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 18px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          {stats.map((s) => (
+            <div key={s.label} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: 'white' }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ padding: '16px 16px 0', display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        <BrandTabButton active={tab === 'analytics'} onClick={() => setTab('analytics')}>
+          <TrendingUp size={13} style={{ display: 'inline', marginLeft: 4 }} /> אנליטיקה
+        </BrandTabButton>
+        <BrandTabButton active={tab === 'tasks'} onClick={() => setTab('tasks')}>
+          <ClipboardList size={13} style={{ display: 'inline', marginLeft: 4 }} /> משימות
+        </BrandTabButton>
+        <BrandTabButton active={tab === 'users'} onClick={() => setTab('users')}>
+          <Users size={13} style={{ display: 'inline', marginLeft: 4 }} /> משתמשים
+        </BrandTabButton>
+        <BrandTabButton active={tab === 'reports'} onClick={() => setTab('reports')}>
+          <Flag size={13} style={{ display: 'inline', marginLeft: 4 }} /> דיווחים
+          {counts.reports_pending > 0 && (
+            <span style={{ marginRight: 4, background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>
+              {counts.reports_pending}
+            </span>
+          )}
+        </BrandTabButton>
+        <BrandTabButton active={tab === 'support'} onClick={() => setTab('support')}>
+          <Headphones size={13} style={{ display: 'inline', marginLeft: 4 }} /> תמיכה
+          {counts.support_unread > 0 && (
+            <span style={{ marginRight: 4, background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>
+              {counts.support_unread}
+            </span>
+          )}
+        </BrandTabButton>
+      </div>
+
+      {/* Tab content */}
+      <div style={{ padding: '12px 16px 0' }}>
+        {tab === 'analytics' && <BrandDashboardTab brand={brand} />}
+        {tab === 'tasks' && <BrandTasksTab tasks={panel?.tasks || []} />}
+        {tab === 'users' && <BrandUsersTab users={panel?.users || []} />}
+        {tab === 'reports' && <BrandReportsTab reports={panel?.reports || []} />}
+        {tab === 'support' && <BrandSupportTab messages={panel?.support || []} />}
+      </div>
     </div>
   );
 }

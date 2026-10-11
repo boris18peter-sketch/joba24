@@ -77,22 +77,6 @@ export function deriveServices(globals, brand, legacyRows = []) {
   const childrenOf = {};
   for (const g of globals) (childrenOf[g.parent_key] ||= []).push(g);
 
-  // The platform Brand IS the whole marketplace. It presents the broad ROOT
-  // categories and nothing narrower — a shopper picking a need should see
-  // "אינסטלציה", never the individual service beneath it. Partner Brands are
-  // built around a niche, so they keep listing the actionable services.
-  if (brand?.is_default) {
-    const roots = [];
-    const seenRoot = new Set();
-    for (const key of brand.assigned_parent_keys || []) {
-      const node = map[key];
-      if (!node || !isActive(node) || isGroupNode(node) || seenRoot.has(key)) continue;
-      seenRoot.add(key);
-      roots.push(node);
-    }
-    if (roots.length) return roots;
-  }
-
   if (brand?.category_model_version !== 2) {
     const active = globals.filter((g) => isActive(g) && !isGroupNode(g));
     const legacy = new Set(legacyRows.filter((r) => r.enabled !== false).map((r) => r.category_key));
