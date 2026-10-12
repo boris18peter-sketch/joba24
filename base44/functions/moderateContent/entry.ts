@@ -11,22 +11,25 @@ Deno.serve(async (req) => {
 
     // Text moderation via InvokeLLM (Hebrew-aware)
     if (text && text.trim().length > 1) {
-      const prompt = `You are a strict content safety filter for Joba24 - a Hebrew job marketplace in Israel.
+      const prompt = `You are a content safety reviewer for Joba24, a Hebrew home-services marketplace in Israel where people describe repair, cleaning, moving and maintenance jobs.
 
-Analyze the text below and flag it if it contains ANY of:
-1. Sexual or explicit content
-2. Violence, threats, or calls to harm
-3. Insults, harassment, or degrading language directed at a person (e.g. stupid, idiot, psycho, worthless, disgusting, moron, etc.)
-4. Hate speech targeting any group
-5. Profanity used as an attack or insult
+Read the text in full and judge its MEANING. This is a work marketplace: an ordinary task description is never a violation, however blunt it is.
 
-IMPORTANT:
-- Hebrew job descriptions and normal conversation are NOT flagged
-- Factual/neutral descriptions are NOT flagged
-- Mild frustration without personal attack is NOT flagged
-- The word "כלב" (dog) is a common Hebrew word for a pet animal and is NOT an insult — do NOT flag it
-- Only flag "כלבה" or "בן כלבה" when used as a direct insult toward a person
-- When in doubt about personal insults or harassment - flag it
+FLAG only when the text itself contains:
+1. Sexual or explicit content, or a sexual solicitation
+2. A threat of violence, or a call to harm a person
+3. A direct insult, harassment or degrading language aimed AT A PERSON (e.g. "מניאק", "מטומטם", "שרמוטה", "idiot", "moron")
+4. Hate speech targeting a group
+5. Profanity used as an attack on a person
+
+NEVER FLAG:
+- Ordinary descriptions of damage, dirt, leaks, sewage, pests, mould, smells, broken or blocked fixtures. Words such as "מתחת" (underneath), "זבל"/"אשפה" (rubbish), "לפרוץ" (break into a locked door), "רגיל" (regular), "דפוק" (broken) are NORMAL here and are NOT violations.
+- A complaint about a product, a place or a situation (e.g. "המקום מסריח", "העבודה דפוקה")
+- A person describing their own problem, anger or frustration without insulting anyone
+- A quote or a report of what somebody else said
+- Animals mentioned by name (כלב, כלבה, חזיר, בהמה)
+
+A word that CAN be vulgar is not a violation when the sentence uses its ordinary meaning. If the text has no clear target and no explicit content, it is NOT flagged.
 
 Text:
 """${text}"""`;

@@ -38,6 +38,10 @@ import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
+// The COMPLETE form, stashed the moment a visitor is asked to sign in before
+// publishing and restored verbatim when they come back — so they resume at the
+// exact point they were stopped instead of re-typing the task.
+const PENDING_PUBLISH_KEY = 'joba24_pending_publish';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 const EXPIRY_OPTIONS = [
    { label: 'ללא תוקף', hours: null, i18n_key: 'expiry_never' },
@@ -476,7 +480,36 @@ export default function CreateTask() {
     location_name: useRef(null),
     payment_method: useRef(null),
     contactPhone: useRef(null),
+    categoryForm: useRef(null),
+    publishBtn: useRef(null),
   };
+
+  // ── Resume after sign-in ──────────────────────────────────────────────────
+  // A visitor may fill the whole form and only then be asked to sign in (the
+  // PUBLISH button is the one action that requires an account). The complete
+  // form is restored and the page scrolls straight back to the publish button,
+  // so they continue from exactly where they were stopped.
+  const [resumePublish, setResumePublish] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated || isEditMode || isRepost) return;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(PENDING_PUBLISH_KEY) || 'null'); } catch (_) { saved = null; }
+    if (!saved) return;
+    localStorage.removeItem(PENDING_PUBLISH_KEY);
+    setForm({ ...DEFAULT_FORM, ...saved });
+    if (saved.category_details) setCategoryDetails(saved.category_details);
+    if (saved.location_name) setAddressConfirmed(true);
+    setResumePublish(true);
+  }, [isAuthenticated, isEditMode, isRepost]);
+
+  useEffect(() => {
+    if (!resumePublish || categoriesLoading) return;
+    const timer = setTimeout(() => {
+      fieldRefs.publishBtn.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setResumePublish(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [resumePublish, categoriesLoading]);
 
   // Auto-save draft on form change (debounced 1s)
   useEffect(() => {
@@ -641,9 +674,9 @@ export default function CreateTask() {
 
   const handleSubmit = () => {
     if (!isAuthenticated) {
-      // Save current form to draft before showing login
-      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, requirements: form.requirements, images: form.images, expiry_hours: form.expiry_hours, is_story: form.is_story, scheduled_time: form.scheduled_time };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
+      // The visitor may fill the form freely — but publishing needs an account.
+      // Stash the WHOLE form so signing in brings them back to this exact state.
+      try { localStorage.setItem(PENDING_PUBLISH_KEY, JSON.stringify(form)); } catch (_) {}
       setShowLoginPrompt(true);
       return;
     }
@@ -656,7 +689,15 @@ export default function CreateTask() {
       toast.error('יש לבחור שירות זמין במותג'); return;
     }
     const formError = globalFormError(formFieldsFor(form.category), categoryDetails);
-    if (formError) { toast.error(formError); return; }
+    if (formError) {
+      // A required question in the category form is still empty — mark the whole
+      // section red and take the user straight to it.
+      setErrors({ categoryForm: true });
+      setShowErrorBanner(true);
+      toast.error(formError);
+      fieldRefs.categoryForm.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     submittingRef.current = true;
     let submitted = false;
     const newErrors = {};
@@ -740,7 +781,9 @@ export default function CreateTask() {
       setErrors(newErrors);
       setShowErrorBanner(true);
       submittingRef.current = false;
-      const order = ['description', 'price', 'location_name', 'payment_method', 'contactPhone'];
+      // Visual order of the form — the first missing field must be the one the
+      // user reaches first when scrolling.
+      const order = ['description', 'location_name', 'price', 'payment_method', 'contactPhone'];
       const firstError = order.find(k => newErrors[k]);
       if (firstError && fieldRefs[firstError]?.current) {
         fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1203,16 +1246,19 @@ export default function CreateTask() {
         {/* Worker count hint — removed per design decision */}
 
         {/* One selected actionable service, one global form; no parent form alongside it. */}
-        <SelectedCategoryForm
-          key={form.category}
-          category={form.category}
-          values={categoryDetails}
-          originLat={form.lat}
-          originLng={form.lng}
-          initialValues={isEditMode ? form.category_details : undefined}
-          onLegacyChange={(data, text) => { setCategoryDetails(prev => ({ ...prev, ...data })); setExtraFieldsText(text); }}
-          onChange={(k, v) => setCategoryDetails(prev => ({ ...prev, [k]: v }))}
-        />
+        <div ref={fieldRefs.categoryForm} style={errors.categoryForm ? { borderRadius: 18, outline: '2px solid #ef4444', outlineOffset: 4 } : undefined}>
+          <SelectedCategoryForm
+            key={form.category}
+            category={form.category}
+            values={categoryDetails}
+            originLat={form.lat}
+            originLng={form.lng}
+            initialValues={isEditMode ? form.category_details : undefined}
+            onLegacyChange={(data, text) => { setCategoryDetails(prev => ({ ...prev, ...data })); setExtraFieldsText(text); setErrors(p => ({ ...p, categoryForm: false })); }}
+            onChange={(k, v) => { setCategoryDetails(prev => ({ ...prev, [k]: v })); setErrors(p => ({ ...p, categoryForm: false })); }}
+          />
+          {errors.categoryForm && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_required')}</p>}
+        </div>
 
         {/* Description — the main input. Title and category are auto-generated from this. */}
         <div ref={fieldRefs.description}>
@@ -1739,10 +1785,11 @@ export default function CreateTask() {
         </div>
 
         {/* Contact Phone */}
+        <div ref={fieldRefs.contactPhone}>
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-            <Phone size={14} color="var(--text-3)" strokeWidth={1.8} />
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_contact')}</Label>
+            <Phone size={14} color={errors.contactPhone ? '#ef4444' : 'var(--text-3)'} strokeWidth={1.8} />
+            <Label className="text-sm font-bold" style={{ color: errors.contactPhone ? '#ef4444' : 'var(--text-1)', margin: 0 }}>{t('ct_contact')}</Label>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
             {t('ct_contact_help')}
@@ -1753,16 +1800,18 @@ export default function CreateTask() {
             dir="ltr"
             placeholder="05X-XXXXXXX"
             value={form.contactPhone || ''}
-            onChange={e => set('contactPhone', e.target.value)}
-            style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 48, fontSize: 16 }}
+            onChange={e => { set('contactPhone', e.target.value); setErrors(p => ({ ...p, contactPhone: false })); }}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.contactPhone ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 16 }}
           />
+          {errors.contactPhone && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_phone_err')}</p>}
         </SectionCard>
+        </div>
 
         {/* Submit */}
         {(() => {
           const isReady = !!(form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
           return (
-            <div style={{ marginTop: 8, paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
+            <div ref={fieldRefs.publishBtn} style={{ marginTop: 8, paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
               <button
                 onClick={handleSubmit}
                 disabled={loading || !!checkingModeration || categoriesLoading || (!isEditMode && !brandCategories.length)}

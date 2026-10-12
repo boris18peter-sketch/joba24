@@ -1,105 +1,82 @@
 import { base44 } from '@/api/base44Client';
 
-// Comprehensive local block list — Hebrew insults, sexual, threats, English
-const BLOCKED_WORDS = [
-  // Hebrew sexual/explicit
-  'סקס', 'זין', 'כוס', 'תחת', 'זיון', 'מזדיין', 'מזדיינת', 'מזדיינים',
-  'לזיין', 'לדפוק', 'דפוק', 'דפוקה', 'דפקתי', 'דפקת', 'זיינתי', 'זיינת',
-  'מציץ', 'מציצה', 'פין', 'שדיים', 'עיסוי אינטימי',
-  'בולבול', 'כוסית', 'כוסיות', 'פוצי', 'פוצה', 'תחתון', 'תחתונים',
-  'גיל', 'לאנוס', 'אונס', 'מאנס', 'אנסתי', 'אנס', 'זיון חינם',
-  'לשכב', 'שכב איתי', 'בסקס', 'ביחד במיטה',
-  // Hebrew insults / harassment
-  'שרמוטה', 'זונה', 'בן זונה', 'בת זונה', 'מנוול', 'חרא', 'כאס',
-  'יבן', 'יבנה', 'מחרבן', 'בוזדיק', 'אחבל',
-  'מפגר', 'מפגרת', 'מטומטם', 'מטומטמת', 'טמבל', 'טמבלה',
-  'אידיוט', 'אידיוטית', 'אחמק', 'אחמקית',
-  'מניאק', 'מניאקית', 'פסיכו', 'פסיכופת', 'פסיכופתית',
-  'שוטה', 'כלבה', 'בן כלבה', 'חזיר', 'חזירה',
-  'נבלה', 'זבל', 'אשפה', 'סחבה', 'זבלה',
-  'מרושע', 'גנב', 'רמאי', 'שקרן', 'שקרנית',
-  'בוגד', 'בוגדת', 'ארור', 'ארורה',
-  'מסריח', 'מסריחה', 'דביל', 'דבילה', 'קרטין', 'קרטינית',
-  'שפל', 'שפלה', 'מושחת', 'מושחתת',
-  'כסח', 'בן כסח', 'חרוב', 'חרובה', 'פרוצה', 'פרוץ',
-  'לזיין אותך', 'לדפוק אותך', 'בן מנוול', 'בן שרמוטה',
-  'עזאזל', 'לך לגיהינום', 'לך תזדיין', 'לך תדפוק',
-  'אפסית', 'חלאה', 'בהמה', 'יצור', 'מסכן', 'מסכנה',
-  'טיפש', 'טיפשה', 'פראייר', 'פריירית', 'פרייר', 'נאיבי',
-  'לוזר', 'כישלון', 'אפס מוחלט', 'חסר תקנה',
-  'לא שווה כלום', 'לא שווה שום דבר',
-  'ממזר', 'ממזרה', 'בסטרד', 'כלבות',
-  // Hebrew threats
-  'אהרוג', 'אשחט', 'אמחק', 'תמות', 'ימח שמו',
-  'אפגע', 'אשבור', 'תשלם על זה',
-  'אדפוק אותך', 'אשבור לך', 'אהרוג אותך', 'אסיים אותך',
-  'אחסל אותך', 'אכחיד אותך', 'תיזהר ממני',
-  // Arabic slurs common in Hebrew speech
-  'קחבה', 'חמאר', 'כלב אבן', 'יבן אלחמאר', 'אבן זונה', 'שרמוטה אחת',
-  'כס אמך', 'כס אומך', 'כואס', 'בן זונה',
-  // Leetspeak / evasion variations
-  'ז1ין', 'כ0ס', 'ש4מוטה', 'ז0נה',
-  // English explicit/sexual
-  'sex', 'porn', 'fuck', 'fucking', 'fucker', 'motherfucker', 'mf',
-  'shit', 'bitch', 'dick', 'pussy', 'ass', 'asshole', 'cunt', 'cock',
+/**
+ * Content moderation — deliberately PRECISE.
+ *
+ * Hebrew is an agglutinated language: "מתחת" (underneath) contains "תחת",
+ * "רגיל" (regular) contains "גיל", "אחראי" (responsible) contains "חרא",
+ * "מזין" (feeds) contains "זין", "לפרוץ" (to break in) contains "פרוץ".
+ * Plain substring matching therefore blocked completely ordinary job
+ * descriptions — e.g. "יש לי נזילה מתחת לכיור".
+ *
+ * So every Hebrew term here is matched as a WHOLE WORD only, and the terms that
+ * are legitimate words in their own right (תחת, גיל, יצור, זבל, אשפה, פרוץ,
+ * דפוק, מסריח, חזיר…) were dropped from the list entirely. The meaning of a
+ * sentence is left to the LLM pass, which reads the whole text in context.
+ */
+
+// Hebrew terms — matched as whole words only.
+const BLOCKED_HE = [
+  // sexual / explicit
+  'סקס', 'זיון', 'לזיין', 'מזדיין', 'מזדיינת', 'מזדיינים', 'זיינתי', 'זיינת',
+  'מציצה', 'פין', 'שדיים', 'עיסוי אינטימי', 'בולבול', 'כוסית', 'כוסיות',
+  'פוצי', 'פוצה', 'לאנוס', 'אונס', 'מאנס', 'אנסתי', 'זיון חינם',
+  // insults / harassment aimed at a person
+  'שרמוטה', 'זונה', 'בן זונה', 'בת זונה', 'בן שרמוטה', 'מנוול', 'בן מנוול',
+  'חרא', 'יבן', 'מחרבן', 'בוזדיק',
+  'מפגר', 'מפגרת', 'מטומטם', 'מטומטמת', 'טמבל', 'טמבלה', 'טיפש', 'טיפשה',
+  'אידיוט', 'אידיוטית', 'מניאק', 'מניאקית', 'פסיכו', 'פסיכופת', 'פסיכופתית',
+  'שוטה', 'בן כלבה', 'גנב', 'רמאי', 'שקרן', 'שקרנית',
+  'בוגד', 'בוגדת', 'דביל', 'דבילה', 'קרטין', 'קרטינית',
+  'שפל', 'פרוצה', 'פראייר', 'פרייר', 'פריירית',
+  'ממזר', 'ממזרה', 'בסטרד', 'חלאה',
+  // threats
+  'אהרוג', 'אשחט', 'תמות', 'ימח שמו', 'אהרוג אותך', 'אשחט אותך',
+  'אדפוק אותך', 'אשבור לך', 'אסיים אותך', 'אחסל אותך', 'אכחיד אותך',
+  'לך לגיהינום', 'לך תזדיין', 'לך תדפוק',
+  // Arabic slurs used in Hebrew speech
+  'קחבה', 'חמאר', 'אבן זונה', 'כס אמך', 'כס אומך', 'כואס',
+];
+
+// Hebrew sequences also caught when spaced out / punctuated ("ז י ו ן").
+// Whole-word matched exactly like the plain list above.
+const BLOCKED_HE_EVASION = [
+  'כוס', 'זין', 'זיון', 'זונה', 'שרמוטה', 'מפגר', 'מטומטם', 'פרוצה', 'חרא', 'דביל', 'ממזר',
+];
+
+// English terms — whole-word matched, so "ass" no longer hits "class" and
+// "pos" no longer hits "position".
+const BLOCKED_EN = [
+  'sex', 'porn', 'fuck', 'fucking', 'fucker', 'motherfucker',
+  'shit', 'bitch', 'dick', 'pussy', 'asshole', 'cunt', 'cock',
   'whore', 'slut', 'nude', 'naked', 'blowjob', 'handjob',
   'masturbat', 'orgasm', 'erection', 'penis', 'vagina',
   'rape', 'molest', 'pedophile', 'incest',
-  'fck', 'fuk', 'fvck', 'fcuk', 'sh1t', 'b1tch', 'a55', 'a$$',
-  'wtf', 'stfu', 'gtfo',
-  // English insults
+  'fck', 'fuk', 'fvck', 'fcuk',
   'idiot', 'moron', 'retard', 'stupid', 'loser', 'freak',
   'psycho', 'maniac', 'dumbass', 'imbecile', 'dimwit',
   'jackass', 'dipshit', 'nitwit', 'halfwit', 'scumbag',
   'bastard', 'wanker', 'prick', 'twat', 'tosser',
   'kill yourself', 'kys', 'die bitch', 'i will kill',
-  'go to hell', 'drop dead', 'piece of shit', 'pos',
+  'go to hell', 'drop dead', 'piece of shit',
 ];
 
-// Regex patterns for evasion (spaces/dashes/dots/asterisks between letters)
-const SEP = /[\s\-_.*@#!]+/; // separator between letters
-function buildSep(letters) {
-  return new RegExp(letters.split('').join('[\\s\\-_.*@#!]*'), 'i');
-}
-const BLOCKED_REGEX = [
-  // English evasion
-  buildSep('fuck'),
-  buildSep('shit'),
-  buildSep('bitch'),
-  buildSep('cunt'),
-  buildSep('cock'),
-  buildSep('dick'),
-  buildSep('pussy'),
-  buildSep('asshole'),
-  buildSep('bastard'),
-  buildSep('wanker'),
-  // Hebrew evasion
-  /כ[\s\-_.*@#!]*ו[\s\-_.*@#!]*ס/,
-  /ז[\s\-_.*@#!]*י[\s\-_.*@#!]*ן/,
-  /ז[\s\-_.*@#!]*י[\s\-_.*@#!]*י[\s\-_.*@#!]*ן/,
-  /ז[\s\-_.*@#!]*ו[\s\-_.*@#!]*נ[\s\-_.*@#!]*ה/,
-  /ש[\s\-_.*@#!]*ר[\s\-_.*@#!]*מ[\s\-_.*@#!]*ו[\s\-_.*@#!]*ט[\s\-_.*@#!]*ה/,
-  /מ[\s\-_.*@#!]*פ[\s\-_.*@#!]*ג[\s\-_.*@#!]*ר/,
-  /מ[\s\-_.*@#!]*ט[\s\-_.*@#!]*ו[\s\-_.*@#!]*מ[\s\-_.*@#!]*ט[\s\-_.*@#!]*ם/,
-  /פ[\s\-_.*@#!]*ר[\s\-_.*@#!]*ו[\s\-_.*@#!]*צ[\s\-_.*@#!]*ה/,
-  /ח[\s\-_.*@#!]*ר[\s\-_.*@#!]*א/,
-  /ד[\s\-_.*@#!]*ב[\s\-_.*@#!]*י[\s\-_.*@#!]*ל/,
-  /כ[\s\-_.*@#!]*ס[\s\-_.*@#!]*א[\s\-_.*@#!]*מ/,
-  /ב[\s\-_.*@#!]*ן[\s\-_.* @#!]*כ[\s\-_.*@#!]*ל[\s\-_.*@#!]*ב/,
-  /מ[\s\-_.*@#!]*מ[\s\-_.*@#!]*ז[\s\-_.*@#!]*ר/,
-  // Number substitution (1=i/l, 0=o, 3=e, 4=a)
-  /[fF][uU0][cC][kK]/,
-  /[sS][hH][1iI!][tT]/,
-  /[bB][1iI!][tT][cC][hH]/,
-  /[aA@4][sS][sS]/,
-];
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// JS \b is ASCII-only and can never sit between two Hebrew letters, so a Hebrew
+// word boundary is written out explicitly. This is what stops "תחת" from
+// matching inside "מתחת".
+const heWord = (w) => new RegExp(`(^|[^א-ת])${esc(w)}([^א-ת]|$)`);
+const heSepWord = (w) =>
+  new RegExp(`(^|[^א-ת])${w.split('').map(esc).join('[\\s\\-_.*@#!]*')}([^א-ת]|$)`);
+const enWord = (w) => new RegExp(`\\b${esc(w)}\\w*\\b`, 'i');
+
+const HE_REGEX = [...BLOCKED_HE.map(heWord), ...BLOCKED_HE_EVASION.map(heSepWord)];
+const EN_REGEX = BLOCKED_EN.map(enWord);
 
 function localCheck(text) {
   if (!text) return false;
-  const lower = text.toLowerCase();
-  if (BLOCKED_WORDS.some(w => lower.includes(w.toLowerCase()))) return true;
-  if (BLOCKED_REGEX.some(r => r.test(text))) return true;
-  return false;
+  return HE_REGEX.some((r) => r.test(text)) || EN_REGEX.some((r) => r.test(text));
 }
 
 export async function moderateText(text) {

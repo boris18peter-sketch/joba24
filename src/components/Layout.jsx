@@ -57,6 +57,12 @@ const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
 // Pages accessible without authentication — render with minimal layout (no nav/header)
 const PUBLIC_PAGES = ['/terms', '/privacy', '/faq'];
 
+// Reachable by a visitor with NO account at all. /create-task belongs here: the
+// whole publish form may be filled in freely, and only the PUBLISH action asks
+// for a sign-in. Deliberately separate from PUBLIC_PAGES so the pre-launch gate
+// still holds an unapproved account on the waiting page.
+const PUBLIC_PATHS_NO_AUTH = [...PUBLIC_PAGES, '/create-task'];
+
 // Friendly Hebrew labels for the guest-block popup (where the guest tried to go)
 const GUEST_BLOCK_LABELS = {
   '/map': 'מפת המשימות',
@@ -464,7 +470,7 @@ export default function Layout() {
   });
 
   useEffect(() => {
-    const isPublicPage = PUBLIC_PAGES.includes(location.pathname);
+    const isPublicPage = PUBLIC_PATHS_NO_AUTH.includes(location.pathname);
     if (!isAuthenticated && !isPublicPage) {
       if (effectiveGuest) {
         if (location.pathname !== '/') {
@@ -481,7 +487,7 @@ export default function Layout() {
   // Placed AFTER all hooks to comply with Rules of Hooks
   if (!isAuthenticated) {
     // Public pages: render with minimal layout (no header, no bottom nav, no side menu)
-    if (PUBLIC_PAGES.includes(location.pathname)) {
+    if (PUBLIC_PATHS_NO_AUTH.includes(location.pathname)) {
       return (
         <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden', paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
           <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
