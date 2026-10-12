@@ -74,6 +74,16 @@ export const EVENTS = {
     tiktok: 'task_creation_started',
     dedup: 'session',
   },
+  task_form_completed: {
+    // The visitor finished every required field on the publish form — the
+    // mid-funnel step between opening the form and actually publishing. Fires
+    // for signed-out visitors too, which is what makes it usable for
+    // retargeting the people who nearly published.
+    meta: 'TaskFormCompleted',
+    firebase: 'task_form_completed',
+    tiktok: 'task_form_completed',
+    dedup: 'session',
+  },
   task_published: {
     meta: 'TaskPublished',
     firebase: 'task_published',

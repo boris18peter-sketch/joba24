@@ -179,7 +179,13 @@ Joba24 רשאית לשנות בכל עת את מחירי הג'ובות, מנגנ
 לג'ובות:
 • אין ערך כספי
 • הן אינן ניתנות להעברה
-• ואינן ניתנות להחזר כספי אלא אם צוין אחרת`
+• ואינן ניתנות להחזר כספי אלא אם צוין אחרת
+
+בונוסים וג'ובות שהוענקו ללא תמורה כספית:
+• בונוסים הניתנים על ידי Joba24 — לרבות בונוס הרשמה, בונוס הצטרפות דרך סוכן או קוד הפניה, בונוס השלמת פרופיל, פרסי נאמנות וכל תגמול אחר שאינו ניתן בתמורה כספית — אינם זכות מוקנית ואינם מובטחים להישמר באופן קבוע.
+• Joba24 רשאית, לפי שיקול דעתה הבלעדי ובכל עת, לשנות את גובה הבונוסים ותנאיהם, להפסיק או לצמצם את מתן הבונוסים, ולנכות מהארנק ג'ובות שהוענקו כבונוס — כולן או חלקן, לרבות בדיעבד — וכן לבטל ג'ובות שהוענקו בטעות, ביתר או שלא כדין.
+• ניכוי או ביטול כאמור ייעשו ללא הודעה מוקדמת וללא כל פיצוי או החזר.
+• אין בהוראה זו כדי לגרוע מג'ובות שנרכשו בתמורה כספית ישירה, אשר ממשיכות להיות כפופות להוראות סעיף 9א בלבד.`
   },
   {
     title: 'מדיניות ביטול וטעינת יתרה',
@@ -196,6 +202,8 @@ Joba24 רשאית לשנות בכל עת את מחירי הג'ובות, מנגנ
 
 9א.3 — ג'ובות שנצברו חינם
 ג'ובות שניתנו כבונוס הרשמה, פרס נאמנות, קוד הפניה, בתגמול פעילות או בכל צורה אחרת ללא תמורה כספית — אינן ניתנות לביטול, להמרה לכסף, להעברה לחשבון אחר, או לפדיון בשום אופן.
+
+כמו כן, Joba24 רשאית לנכות ג'ובות כאמור מהארנק בהתאם להוראות סעיף 9 לעיל, ללא הודעה מוקדמת וללא פיצוי.
 
 9א.4 — החזר כספי בגין ביטול
 • החזר כספי יינתן אך ורק בגין ג'ובות שנרכשו בתמורה כספית ישירה ולא נוצלו.
@@ -488,7 +496,13 @@ Joba24 may change Joba prices, consumption mechanisms, packages, and related fea
 Jobas:
 • Have no monetary value
 • Cannot be transferred
-• And are not refundable for cash unless stated otherwise`
+• And are not refundable for cash unless stated otherwise
+
+Bonuses and Jobas granted without monetary consideration:
+• Bonuses provided by Joba24 — including the signup bonus, agent or referral-code bonus, profile-completion bonus, loyalty rewards, and any other reward not given in exchange for monetary consideration — are not a vested right and are not guaranteed to remain in the balance permanently.
+• Joba24 may, at its sole discretion and at any time, change the amount and terms of bonuses, stop or reduce the granting of bonuses, and deduct from the wallet Jobas that were granted as a bonus — in whole or in part, including retroactively — as well as cancel Jobas granted by mistake, in excess, or unlawfully.
+• Any such deduction or cancellation may be made without prior notice and without any compensation or refund.
+• Nothing in this section affects Jobas purchased for direct monetary consideration, which remain governed solely by section 9a.`
   },
   {
     title: 'Cancellation and Top-Up Policy',
@@ -505,6 +519,8 @@ In accordance with the Consumer Protection Law, 5741-1981, and the Consumer Prot
 
 9a.3 — Free Jobas
 Jobas given as a signup bonus, loyalty reward, referral code, activity reward, or in any other form without monetary consideration — cannot be cancelled, converted to cash, transferred to another account, or redeemed in any way.
+
+In addition, Joba24 may deduct such Jobas from the wallet in accordance with section 9 above, without prior notice and without compensation.
 
 9a.4 — Cash Refund for Cancellation
 • A cash refund will be given only for Jobas purchased with direct monetary consideration that were not used.

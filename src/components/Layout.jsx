@@ -725,7 +725,12 @@ export default function Layout() {
               const active = location.pathname === to;
               if (primary) {
                 return (
-                  <button id="onboarding-create-btn" key={to} onClick={() => { if (effectiveGuest) { login(); return; } if (!isAuthenticated) { navigate(to); return; } navigate(to); }}
+                  // The publish form is open to EVERYONE: a visitor — guest
+                  // included — fills it freely and is asked to sign in only at
+                  // the PUBLISH step. Gating this button behind login was the one
+                  // reason the form was reachable from the side menu but not from
+                  // the main feed.
+                  <button id="onboarding-create-btn" key={to} onClick={() => navigate(to)}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent', justifySelf: 'center' }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-nav-active, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
                       <Icon size={24} color="white" />

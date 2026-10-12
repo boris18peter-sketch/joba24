@@ -672,9 +672,67 @@ export default function CreateTask() {
     trackEvent('task_creation_started', {}, { dedupeKey: 'create-task' });
   }, []);
 
+  // ── Required-field validation ──────────────────────────────────────────────
+  // Shared by the pre-sign-in gate and the submit path, so "the form is
+  // complete" can never mean two different things depending on whether the
+  // person filling it has an account.
+  const collectRequiredErrors = () => {
+    const errs = {};
+    if (!form.description) errs.description = true;
+    if (!form.price) errs.price = true;
+    if (!form.location_name || !addressConfirmed) errs.location_name = true;
+    if (!form.payment_method) errs.payment_method = true;
+    if (!form.contactPhone || form.contactPhone.replace(/\D/g, '').length < 9) errs.contactPhone = true;
+    return errs;
+  };
+  const focusFirstMissingField = (errs) => {
+    // Visual order of the form — the first missing field must be the one the
+    // user reaches first when scrolling.
+    const order = ['description', 'location_name', 'price', 'payment_method', 'contactPhone'];
+    const first = order.find(k => errs[k]);
+    if (!first || !fieldRefs[first]?.current) return;
+    fieldRefs[first].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    fieldRefs[first].current.querySelector?.('input,textarea')?.focus();
+  };
+  const showRequiredErrors = (errs) => {
+    setErrors(errs);
+    setShowErrorBanner(true);
+    focusFirstMissingField(errs);
+  };
+  const scrollToCategoryForm = () => {
+    setErrors({ categoryForm: true });
+    setShowErrorBanner(true);
+    fieldRefs.categoryForm.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   const handleSubmit = () => {
+    // A visitor must be able to COMPLETE the form before being asked to sign in.
+    // Prompting earlier is a dead end — they sign in and still cannot publish —
+    // so every required field is checked first, and while one is missing the
+    // user is scrolled straight to it instead of being sent to the login popup.
+    if (categoriesLoading || (!isEditMode && !brandCategories.some(c => c.value === form.category))) {
+      toast.error('יש לבחור שירות זמין במותג'); return;
+    }
+    const formError = globalFormError(formFieldsFor(form.category), categoryDetails);
+    if (formError) {
+      scrollToCategoryForm();
+      toast.error(formError);
+      return;
+    }
+    const requiredErrors = collectRequiredErrors();
+    if (Object.keys(requiredErrors).length > 0) {
+      showRequiredErrors(requiredErrors);
+      return;
+    }
+    if (form.auto_bump_enabled && form.max_price && Number(form.max_price) <= Number(form.price)) {
+      toast.error(t('ct_max_err'));
+      return;
+    }
+    // The form is complete — the publisher funnel's mid-step. Fired for
+    // signed-out visitors too, so near-publishers can be retargeted.
+    trackEvent('task_form_completed', { category: form.category, city: form.city }, { dedupeKey: 'task-form' });
     if (!isAuthenticated) {
-      // The visitor may fill the form freely — but publishing needs an account.
+      // Everything is filled — the account is the only thing still missing.
       // Stash the WHOLE form so signing in brings them back to this exact state.
       try { localStorage.setItem(PENDING_PUBLISH_KEY, JSON.stringify(form)); } catch (_) {}
       setShowLoginPrompt(true);
@@ -700,12 +758,7 @@ export default function CreateTask() {
     }
     submittingRef.current = true;
     let submitted = false;
-    const newErrors = {};
-    if (!form.description) newErrors.description = true;
-    if (!form.price) newErrors.price = true;
-    if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
-    if (!form.payment_method) newErrors.payment_method = true;
-    if (!form.contactPhone || form.contactPhone.replace(/\D/g, '').length < 9) newErrors.contactPhone = true;
+    const newErrors = collectRequiredErrors();
     if (form.auto_bump_enabled && form.max_price && Number(form.max_price) <= Number(form.price)) {
       newErrors.max_price = true;
       toast.error(t('ct_max_err'));
@@ -778,18 +831,8 @@ export default function CreateTask() {
       return;
     }
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setShowErrorBanner(true);
+      showRequiredErrors(newErrors);
       submittingRef.current = false;
-      // Visual order of the form — the first missing field must be the one the
-      // user reaches first when scrolling.
-      const order = ['description', 'location_name', 'price', 'payment_method', 'contactPhone'];
-      const firstError = order.find(k => newErrors[k]);
-      if (firstError && fieldRefs[firstError]?.current) {
-        fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const input = fieldRefs[firstError].current.querySelector?.('input,textarea');
-        input?.focus();
-      }
       return;
     }
     setShowErrorBanner(false);
