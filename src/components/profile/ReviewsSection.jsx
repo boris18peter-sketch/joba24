@@ -23,7 +23,6 @@ export default function ReviewsSection({
   scope = null,
   showTaskTitle = false,
   collapsible = false,
-  bare = false,
 }) {
   const { t } = useLanguage();
   const [filter, setFilter] = useState('all');
@@ -64,22 +63,19 @@ export default function ReviewsSection({
   const visible = expanded ? active.items : active.items.slice(0, PREVIEW_COUNT);
 
   return (
-    <div style={bare ? undefined : {
+    <div style={{
       background: 'var(--brand-card-bg, var(--surface-2))',
       borderRadius: 18,
       border: '1px solid var(--border-1)',
       padding: '16px 16px 14px',
       boxShadow: 'var(--shadow-xs)',
     }}>
-      {/* `bare` is used inside a sheet that already carries the title and chrome */}
-      {!bare && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-          <MessageCircle size={14} color="var(--brand-primary)" />
-          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>
-            {t('rev_section_title')}
-          </span>
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+        <MessageCircle size={14} color="var(--brand-primary)" />
+        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>
+          {t('rev_section_title')}
+        </span>
+      </div>
 
       {reviews.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-3)', fontSize: 13, fontWeight: 600 }}>

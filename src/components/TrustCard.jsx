@@ -211,7 +211,7 @@ function getBarColor(w) {
   return '#16a34a';
 }
 
-export default function TrustCard({ user, reviews = [], tasks = [], isPublic = false, variant = 'card' }) {
+export default function TrustCard({ user, reviews = [], tasks = [], isPublic = false }) {
   const { t, isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
   const [displayWidth, setDisplayWidth] = useState(0);
@@ -238,41 +238,6 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
   if (!user || trustScore === 0) return null;
 
   const barColor = getBarColor(displayWidth);
-
-  // Compact variant — a slim reliability line for the Profile page. Same data,
-  // same breakdown popup; only the card chrome is removed. Renders nothing when
-  // the user has no trust score yet (handled by the early return above).
-  if (variant === 'compact') {
-    return (
-      <>
-        <div
-          dir={isRTL ? 'rtl' : 'ltr'}
-          onClick={() => setOpen(true)}
-          style={{
-            padding: '14px 0', cursor: 'pointer', userSelect: 'none',
-            borderTop: '1px solid rgba(26,111,212,0.12)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 7 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: 'var(--text-2)' }}>
-              <Shield size={14} strokeWidth={2} color="var(--brand-primary)" />
-              {t('pr_reliability')}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-primary)', whiteSpace: 'nowrap' }}>
-              {displayWidth}% · {getTrustLevelLabel(trustLevel, t)}
-            </span>
-          </div>
-          <div style={{ height: 6, background: 'rgba(26,111,212,0.14)', borderRadius: 99, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: 'var(--brand-primary)', transition: 'width 0.2s' }} />
-          </div>
-        </div>
-
-        {open && (
-          <DetailsPopup user={user} reviews={reviews} tasks={tasks} trustScore={trustScore} trustLevel={trustLevel} mainColor={barColor} onClose={() => setOpen(false)} isPublic={isPublic} />
-        )}
-      </>
-    );
-  }
 
   return (
     <>
