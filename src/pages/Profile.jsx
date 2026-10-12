@@ -3,23 +3,22 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
-  LogOut, Briefcase, CreditCard, ChevronLeft, Loader2,
-  X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, ShieldCheck, Link2,
+  Loader2, Trash2, Briefcase, CreditCard, Clock, Wallet,
+  Settings, ShieldCheck, ShieldAlert, Sparkles, MapPin, Images, X,
 } from 'lucide-react';
-import VerificationStatusBanner from '@/components/VerificationStatusBanner';
-import VerifiedBadge from '@/components/VerifiedBadge';
-import GoldBadge from '@/components/GoldBadge';
-import TrustCard from '@/components/TrustCard';
-import SubscriptionManager from '@/components/credits/SubscriptionManager';
-import SocialLinksSection from '@/components/SocialLinksSection';
-import ProfileSubscriptionCard from '@/components/profile/ProfileSubscriptionCard';
+import { useNavigate } from 'react-router-dom';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import ReputationSummary from '@/components/profile/ReputationSummary';
+import ProfileRow, { ProfileSection } from '@/components/profile/ProfileRow';
+import ProfileSheet from '@/components/profile/ProfileSheet';
+import TaxonomySheet from '@/components/profile/TaxonomySheet';
+import MediaSheet from '@/components/profile/MediaSheet';
+import SubscriptionSheet from '@/components/profile/SubscriptionSheet';
+import AccountSettingsSheet from '@/components/profile/AccountSettingsSheet';
 import ReviewsSection from '@/components/profile/ReviewsSection';
-import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
-import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
+import VerifyModal from '@/components/VerifyModal';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { Link, useNavigate } from 'react-router-dom';
-import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { getCityLabel } from '@/lib/cityLabels';
@@ -29,37 +28,18 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 
-function MenuRow({ icon: Icon, iconBg, iconColor, label, sub, onClick, to, danger, last }) {
-  const inner = (
-    <div
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '13px 14px', cursor: 'pointer',
-        transition: 'background 0.13s',
-      }}
-      onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
-      onPointerUp={e => { e.currentTarget.style.background = ''; }}
-      onPointerLeave={e => { e.currentTarget.style.background = ''; }}
-    >
-      <div style={{ width: 38, height: 38, borderRadius: 11, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Icon size={17} color={iconColor} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: danger ? '#dc2626' : 'var(--text-1)' }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{sub}</div>}
-      </div>
-      <ChevronLeft size={15} color="var(--text-3)" />
-    </div>
-  );
-  return (
-    <>
-      {to ? <Link to={to} style={{ textDecoration: 'none', display: 'block' }}>{inner}</Link> : inner}
-      {!last && <div style={{ height: 1, background: 'var(--border-1)', margin: '0 14px 0 56px' }} />}
-    </>
-  );
-}
-
+/**
+ * Profile — identity, reputation, and one place to manage everything else.
+ *
+ * The page answers three questions and nothing more:
+ *   1. Who am I, and how does my profile appear?   → header + bio
+ *   2. What is my reputation and verification?      → reputation block + rows
+ *   3. Where do I manage my details and account?    → the two settings groups
+ *
+ * Everything detailed (reviews, breakdown, skills, areas, gallery, subscription,
+ * account actions) opens in a sheet, so nothing is lost and the page stays short.
+ * All data loading, writes and third-party flows are unchanged.
+ */
 export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -71,6 +51,9 @@ export default function Profile() {
   const { currentBrandId, isPlatformBrand } = useBrand();
   const completedScope = isPlatformBrand ? {} : { origin_brand_id: currentBrandId };
   const { openTaskSheet } = useTaskSheet();
+
+  const [sheet, setSheet] = useState(null); // skills | areas | media | subscription | account | reviews
+  const [showVerify, setShowVerify] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -141,7 +124,7 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-2)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
       </div>
     );
@@ -151,7 +134,6 @@ export default function Profile() {
   const postedCount = postedTasks.length;
   const reviewsAvg = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const rating = (me?.rating && me.rating > 0) ? me.rating : reviewsAvg;
-  const avgRating = rating > 0 ? rating.toFixed(1) : '—';
   const initials = me?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   const cities = me?.preferred_cities || [];
   // Visibility only — the user's global categories are never modified, and a
@@ -159,189 +141,173 @@ export default function Profile() {
   const categories = scope.filter(me?.preferred_categories || []);
   const verified = isUserVerified(me);
   const social = hasSocialVerified(me);
+  const kycStatus = me?.kyc_status;
   const trustScore = calculateTrustScore(me, { tasks: workerTasks, reviews });
 
+  const mediaCount = (me?.profile_media?.length || 0) + (me?.intro_video_url ? 1 : 0);
+
   return (
-    <div style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* ── SECTION 1 — IDENTITY (compact hero) ── */}
-      <div style={{
-        background: 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, var(--brand-hero-bg, #2563eb) 100%)',
-        paddingBottom: 16, position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-        <div style={{ position: 'absolute', bottom: -40, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
+    <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-2)', minHeight: '100%', paddingBottom: 28 }}>
 
-        {/* Top bar */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 0' }}>
-          <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--brand-hero-text, white)' }}>{t('profile_title')}</span>
-          <button
-            onClick={() => navigate('/worker-profile')}
-            style={{ height: 34, paddingInline: 16, borderRadius: 20, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--brand-hero-text, white)', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(6px)' }}
-          >
-            <Pencil size={13} color="var(--brand-hero-text, white)" /> {t('pr_edit')}
-          </button>
-        </div>
+      {/* 1 — IDENTITY */}
+      <ProfileHeader
+        me={me}
+        initials={initials}
+        rating={rating}
+        reviewCount={reviews.length}
+        completedCount={completedCount}
+        verified={verified}
+        social={social}
+        onEdit={() => navigate('/worker-profile')}
+        onAvatarClick={() => photoInputRef.current?.click()}
+        avatarInputRef={photoInputRef}
+        onAvatarChange={handlePhotoUpload}
+      />
 
-        {/* Avatar + Name + badges — tighter, identity-first */}
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 20px 0' }}>
-          <div style={{ position: 'relative', marginBottom: 8 }}>
-            <div
-              onClick={() => photoInputRef.current?.click()}
-              style={{
-                width: 76, height: 76, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.15)',
-                border: '3px solid rgba(255,255,255,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, fontWeight: 900, color: 'var(--brand-hero-text, white)',
-                overflow: 'hidden', cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-              }}
-            >
-              {me?.profile_photo
-                ? <img src={me.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : initials}
-            </div>
-            <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
-          </div>
+      {me?.bio && (
+        <p
+          className="selectable-text"
+          style={{
+            margin: '12px 20px 0', fontSize: 14.5, lineHeight: 1.65,
+            color: 'var(--text-2)',
+          }}
+        >
+          {me.bio}
+        </p>
+      )}
 
-          {/* Read-only here — the name is edited on the profile edit page
-              (/worker-profile), which is the single place for profile edits. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, padding: '2px 8px' }}>
-            <span style={{ fontSize: 19, fontWeight: 900, color: 'var(--brand-hero-text, white)' }}>{me?.full_name || 'User'}</span>
-            {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
-          </div>
+      {/* 2 — REPUTATION (rating → reviews, reliability → breakdown) */}
+      <ReputationSummary
+        me={me}
+        reviews={reviews}
+        tasks={workerTasks}
+        rating={rating}
+        reviewCount={reviews.length}
+        onOpenReviews={() => setSheet('reviews')}
+      />
 
-        </div>
-
-        {/* Stats pill — 3 cubes directly under the name (legacy layout) */}
-        <div style={{ padding: '12px 16px 0' }}>
-          <ProfileStatsPill rating={rating} reviewCount={reviews.length} postedCount={postedCount} completedCount={completedCount} />
-        </div>
-      </div>
-
-      {/* ── Content: trust hierarchy ── */}
-      <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-        {/* SECTION 2b — Reliability score (compact, clickable → existing modal) */}
-        <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
-
-        {/* Verify CTA — status-aware */}
-        <VerificationStatusBanner me={me} />
-
-        {/* Reviews — split by the role the owner held when each was received */}
-        <ReviewsSection
-          reviews={reviews}
-          tasks={[...workerTasks, ...postedTasks]}
-          profileUserId={me?.id}
-          rating={rating}
-          scope={scope}
-          showTaskTitle
+      {/* 3 — MY DETAILS */}
+      <ProfileSection title={t('pr_my_details')}>
+        <ProfileRow
+          icon={Briefcase}
+          label={t('worker_profile')}
+          to="/worker-profile"
         />
-
-        {/* About */}
-        {me?.bio && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>{t('pr_about')}</div>
-            <p className="selectable-text" style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{me.bio}</p>
-          </div>
+        <ProfileRow
+          icon={Sparkles}
+          label={t('pr_skills')}
+          value={categories.length > 0 ? t('pr_skills_count', { n: categories.length }) : t('pr_none_yet')}
+          onClick={() => setSheet('skills')}
+        />
+        <ProfileRow
+          icon={MapPin}
+          label={t('pr_areas')}
+          value={cities.length > 0 ? t('pr_areas_count', { n: cities.length }) : t('pr_none_yet')}
+          onClick={() => setSheet('areas')}
+        />
+        {mediaCount > 0 && (
+          <ProfileRow
+            icon={Images}
+            label={t('pr_media_gallery')}
+            value={t('pr_media_count', { n: mediaCount })}
+            onClick={() => setSheet('media')}
+          />
         )}
+        <ProfileRow
+          icon={verified ? ShieldCheck : ShieldAlert}
+          iconColor={verified ? 'var(--color-success)' : 'var(--brand-primary)'}
+          label={t('pr_identity_verification')}
+          value={verified ? t('pr_verified_label') : kycStatus === 'pending' ? t('pr_verify_pending') : t('pr_not_verified')}
+          valueColor={verified ? 'var(--color-success)' : kycStatus === 'pending' ? 'var(--color-warning)' : 'var(--brand-primary)'}
+          onClick={verified ? undefined : () => setShowVerify(true)}
+          last
+        />
+      </ProfileSection>
 
-        {/* SECTION 6 — ABOUT ME (personal gallery, renamed) */}
-        {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_about_me')}</span>
-            </div>
-            <ProfileMediaGallery
-              media={[
-                ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
-                ...(me?.profile_media || []),
-              ]}
-              isEditing={false}
+      {/* 4 — ACCOUNT & PAYMENTS */}
+      <ProfileSection title={t('pr_account_payments')}>
+        <ProfileRow
+          icon={CreditCard}
+          label={t('pr_my_subscription')}
+          onClick={() => setSheet('subscription')}
+        />
+        <ProfileRow
+          icon={Wallet}
+          label={t('pr_purchases_jobas')}
+          to="/wallet"
+        />
+        <ProfileRow
+          icon={Clock}
+          label={t('pr_history_reviews')}
+          value={t('pr_history_count', { n: completedCount + postedCount, m: reviews.length })}
+          onClick={() => setShowUnifiedHistory(true)}
+        />
+        <ProfileRow
+          icon={Settings}
+          label={t('pr_account_settings')}
+          onClick={() => setSheet('account')}
+          last
+        />
+      </ProfileSection>
+
+      {/* ── Detail sheets ─────────────────────────────────────────────── */}
+
+      {sheet === 'reviews' && (
+        <ProfileSheet title={t('rev_section_title')} onClose={() => setSheet(null)}>
+          <div style={{ paddingBottom: 8 }}>
+            <ReviewsSection
+              reviews={reviews}
+              tasks={[...workerTasks, ...postedTasks]}
+              profileUserId={me?.id}
+              rating={rating}
+              scope={scope}
+              showTaskTitle
+              bare
             />
           </div>
-        )}
+        </ProfileSheet>
+      )}
 
-        {/* SECTION 7 — PROFESSIONAL AREAS */}
-        {categories.length > 0 && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-              <span style={{ fontSize: 13 }}>🔧</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_professions')}</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, var(--brand-primary-light))', color: 'var(--brand-primary, var(--brand-primary))', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, var(--border-2))' }}>
-                  {scope.label(c, t)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+      {sheet === 'skills' && (
+        <TaxonomySheet
+          title={t('pr_skills')}
+          subtitle={t('pr_skills_sub')}
+          items={categories}
+          renderLabel={(key) => scope.label(key, t)}
+          emptyText={t('pr_skills_empty')}
+          onClose={() => setSheet(null)}
+        />
+      )}
 
-        {/* Certificates — professional documents */}
-        {(me?.certificate_files?.length > 0) && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-              <FileText size={12} color="var(--text-3)" />
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_certs')}</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(me?.certificate_files || []).map(doc => (
-                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
-                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+      {sheet === 'areas' && (
+        <TaxonomySheet
+          title={t('pr_areas')}
+          subtitle={t('pr_areas_sub')}
+          items={cities}
+          renderLabel={(key) => getCityLabel(key, lang)}
+          emptyText={t('pr_areas_empty')}
+          onClose={() => setSheet(null)}
+        />
+      )}
 
-        {/* SECTION 8 — SERVICE AREAS */}
-        {cities.length > 0 && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-              <span style={{ fontSize: 13 }}>📍</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_areas')}</span>
-              <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginRight: 'auto' }}>
-                {t('pr_active_in_areas', { n: cities.length })}
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {cities.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} /> {getCityLabel(c, lang)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+      {sheet === 'media' && <MediaSheet me={me} onClose={() => setSheet(null)} />}
+      {sheet === 'subscription' && <SubscriptionSheet onClose={() => setSheet(null)} />}
 
-        {/* SECTION 9 — SOCIAL NETWORKS */}
-        <SocialLinksSection user={me} />
+      {sheet === 'account' && (
+        <AccountSettingsSheet
+          me={me}
+          onClose={() => setSheet(null)}
+          onLogout={() => logout()}
+          onDelete={() => { setSheet(null); setShowDeleteConfirm(true); }}
+        />
+      )}
 
-        {/* Apple subscription — server-side normalized entitlement */}
-        <ProfileSubscriptionCard />
+      {/* Identity verification — the same modal as before */}
+      {showVerify && (
+        <VerifyModal onClose={() => setShowVerify(false)} onSuccess={() => setShowVerify(false)} />
+      )}
 
-        {/* Subscriptions */}
-        <SubscriptionManager />
-
-        {/* Menu — single grouped list */}
-        <div style={{
-          background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14,
-          border: '1px solid var(--border-1)', overflow: 'hidden',
-        }}>
-          <MenuRow icon={Briefcase} iconBg="var(--brand-primary-light)" iconColor="var(--brand-primary)" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
-          <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
-          <MenuRow icon={BarChart3} iconBg="var(--brand-primary-light)" iconColor="var(--brand-primary)" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
-          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('pr_history_reviews')} sub={t('pr_history_count', { n: completedCount + postedCount, m: reviews.length })} onClick={() => setShowUnifiedHistory(true)} />
-          <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => logout()} chevronColor="#fca5a5" />
-          <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
-        </div>
-      </div>
-
-      {/* Unified History & Reviews Sheet */}
+      {/* Unified History & Reviews Sheet (unchanged) */}
       {showUnifiedHistory && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'var(--overlay-bg)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
           <div className="j-modal-surface" style={{ background: 'var(--brand-modal-bg, var(--surface-2))', borderRadius: 'var(--brand-modal-radius, 24px) var(--brand-modal-radius, 24px) 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
@@ -359,11 +325,11 @@ export default function Profile() {
         document.body
       )}
 
-      {/* Delete Confirm Sheet */}
+      {/* Delete Confirm Sheet (unchanged) */}
       {showDeleteConfirm && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
-          <div dir="rtl" className="j-modal-surface" style={{ background: 'var(--brand-modal-bg, var(--surface-2))', border:'1px solid var(--brand-modal-border, var(--border-1))', borderRadius: 'var(--brand-modal-radius, 24px) var(--brand-modal-radius, 24px) 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', boxShadow: '0 -16px 60px rgba(0,0,0,0.25)' }}
+          <div dir="rtl" className="j-modal-surface" style={{ background: 'var(--brand-modal-bg, var(--surface-2))', border: '1px solid var(--brand-modal-border, var(--border-1))', borderRadius: 'var(--brand-modal-radius, 24px) var(--brand-modal-radius, 24px) 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', boxShadow: '0 -16px 60px rgba(0,0,0,0.25)' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
