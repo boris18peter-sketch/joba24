@@ -1,4 +1,5 @@
 import React from 'react';
+import { reloadFresh } from '@/lib/reloadFresh';
 
 /**
  * A lazily-loaded route chunk can end up on a different module generation than
@@ -18,16 +19,10 @@ function healStaleModule() {
   const last = Number(sessionStorage.getItem(KEY) || 0);
   if (Date.now() - last <= 10000) return false;
   sessionStorage.setItem(KEY, String(Date.now()));
-  // Unregister stale service workers first, otherwise the reload can serve the
-  // same outdated chunks from cache.
-  try {
-    navigator.serviceWorker?.getRegistrations?.()
-      .then((rs) => Promise.all(rs.map((r) => r.unregister())))
-      .then(() => window.location.reload())
-      .catch(() => window.location.reload());
-  } catch {
-    window.location.reload();
-  }
+  // reloadFresh, not location.reload — a plain reload can be served from the HTTP
+  // cache and hand back the very same stale module graph, so the heal would fail
+  // and the crash screen would come straight back.
+  reloadFresh();
   return true;
 }
 
@@ -74,7 +69,7 @@ export default class AppErrorBoundary extends React.Component {
           <div style={{ fontSize: 14, color: '#64748b', marginBottom: 24, maxWidth: 320, lineHeight: 1.6 }}>
             האפליקציה נתקלה בשגיאה בלתי צפויה. נסה לרענן את הדף.
           </div>
-          <button onClick={() => window.location.reload()} style={{
+          <button onClick={() => reloadFresh()} style={{
             padding: '14px 40px', borderRadius: 16, border: 'none',
             background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white',
             fontWeight: 800, fontSize: 15, cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)'

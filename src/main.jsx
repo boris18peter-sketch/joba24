@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
+import { reloadFresh } from '@/lib/reloadFresh'
 
 // Protective handler: the vite plugin's unhandled-rejection handler accesses
 // event.reason.stack.match(...), which crashes when a promise rejects with a
@@ -23,17 +24,10 @@ function healStaleImport() {
   const last = Number(sessionStorage.getItem(KEY) || 0);
   if (Date.now() - last <= 10000) return; // throttled — don't loop
   sessionStorage.setItem(KEY, String(Date.now()));
-  // Unregister ALL service workers so the reload fetches fresh assets from the
-  // server instead of serving a stale cached index.html that points at
-  // non-existent hashed chunks.
-  try {
-    navigator.serviceWorker?.getRegistrations?.()
-      .then((rs) => Promise.all(rs.map((r) => r.unregister())))
-      .then(() => { window.location.reload(); })
-      .catch(() => { window.location.reload(); });
-  } catch {
-    window.location.reload();
-  }
+  // reloadFresh (not location.reload) — unregisters stale service workers, clears
+  // Cache Storage and navigates with a cache-buster so the reload really does
+  // fetch fresh assets instead of the same stale index.html.
+  reloadFresh();
 }
 
 // Catch promise rejections from dynamic imports

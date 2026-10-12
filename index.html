@@ -135,7 +135,12 @@
           fetch('/index.html?cb=' + Date.now(), { cache: 'no-store' })
             .then(function (r) { return r.text(); })
             .then(function (html) {
-              var m = html.match(/<script\s+type="module"\s+src="([^"]+)"/);
+              // Vite emits the built tag as
+              // <script type="module" crossorigin src="/assets/index-HASH.js">,
+              // so src is NOT adjacent to type="module" — the old pattern never
+              // matched in production and this whole guard was dead code. Allow
+              // any attributes between them.
+              var m = html.match(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"/);
               var freshSrc = m ? m[1] : '';
               if (freshSrc && curSrc && freshSrc !== curSrc) {
                 sessionStorage.setItem('joba24_selfheal', '1');

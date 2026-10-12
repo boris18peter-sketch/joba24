@@ -15,6 +15,7 @@ import BrandTheme from '@/components/BrandTheme';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { reloadFresh } from '@/lib/reloadFresh';
 import AdminRoute from '@/components/AdminRoute';
 import { TaskSheetProvider } from '@/lib/TaskSheetContext';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
@@ -38,19 +39,19 @@ import BrandSplash from '@/components/BrandSplash';
 // the dynamic import 404s ("Failed to fetch dynamically imported module").
 // Catch that and reload once (throttled to 10s) to fetch fresh assets.
 const lazyRetry = (importFn) => lazy(() =>
-  importFn().catch(async (err) => {
+  importFn().catch((err) => {
     const KEY = 'joba24_chunk_reload_ts';
     const last = Number(sessionStorage.getItem(KEY) || 0);
     if (Date.now() - last > 10000) {
       sessionStorage.setItem(KEY, String(Date.now()));
-      // A stale service worker / HTTP cache can keep serving a broken chunk URL
-      // even after a rebuild (the ?t= changes but the SW returns the old 500).
-      // Unregister all SWs so the reload fetches the fresh chunk from the server.
-      try {
-        const regs = await navigator.serviceWorker?.getRegistrations?.();
-        if (regs?.length) await Promise.all(regs.map(r => r.unregister()));
-      } catch {}
-      window.location.reload();
+      // reloadFresh, not location.reload — a stale service worker / HTTP cache can
+      // keep serving the broken chunk URL even after a rebuild, so the reload must
+      // navigate with a cache-buster to actually fetch the fresh chunk.
+      reloadFresh();
+      // Stay suspended while the fresh build loads. Rethrowing here would throw
+      // into React's lazy() and flash the crash screen on top of a page that is
+      // already healing itself.
+      return new Promise(() => {});
     }
     throw err;
   })
