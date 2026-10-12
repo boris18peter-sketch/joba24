@@ -122,9 +122,11 @@ export default function Profile() {
     staleTime: 30000,
   });
 
+  // Every task this account PUBLISHED — not only the completed ones. Filtering
+  // by status hid a freshly posted task from its own publisher's profile.
   const { data: postedTasks = [] } = useQuery({
     queryKey: ['postedTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'COMPLETED', ...completedScope }, '-created_date', 50),
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, ...completedScope }, '-created_date', 50),
     enabled: !!me?.id && !!currentBrandId,
     staleTime: 30000,
   });

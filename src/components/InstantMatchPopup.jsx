@@ -5,6 +5,8 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MapPin, Zap, X } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRegistry';
+import { categoryMatches } from '@/lib/brand/categoryTree';
+import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -21,23 +23,29 @@ function getDistanceKm(lat1, lng1, lat2, lng2) {
 const DURATION = 18;
 
 // Returns a relevance score for showing a popup to a worker
-function calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory }) {
+function calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap }) {
   if (!task || !currentUser) return 0;
   let score = 0;
 
+  // Ancestor-aware matching: a worker who picked a broad ROOT ("בית ותחזוקה")
+  // must match a task categorised by the exact service beneath it. Comparing
+  // the raw keys silently missed every one of those.
+  const taskKey = actionableCategoryKey(task);
+  const matches = (key) => !!key && (key === taskKey || categoryMatches(taskKey, key, categoryMap));
+
   // 1. Category match with preferred_categories
-  if (currentUser.preferred_categories?.includes(task.category)) score += 40;
+  if ((currentUser.preferred_categories || []).some(matches)) score += 40;
 
   // 2. Category match with past applications
   const appliedCategories = myApplications.map(a => a._category).filter(Boolean);
-  if (appliedCategories.includes(task.category)) score += 30;
+  if (appliedCategories.some(matches)) score += 30;
 
   // 3. Category match with completed tasks
-  const completedCategories = myCompletedTasks.map(t => t.category).filter(Boolean);
-  if (completedCategories.includes(task.category)) score += 35;
+  const completedCategories = myCompletedTasks.map(t => actionableCategoryKey(t)).filter(Boolean);
+  if (completedCategories.some(matches)) score += 35;
 
   // 4. Currently browsing same category
-  if (activeCategory && activeCategory === task.category) score += 50;
+  if (matches(activeCategory)) score += 50;
 
   // 5. Distance score (< 3km = full score, 3-8km = partial, 8-20km = small bonus)
   if (userLocation && task.lat && task.lng) {
@@ -61,6 +69,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const { brandId, isPlatformBrand } = useBrand();
+  const { map: categoryMap } = useGlobalCategories();
 
   // Fetch current user profile + past activity for smart matching
   const { data: currentUser } = useQuery({
@@ -83,9 +92,20 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     refetchOnWindowFocus: false,
   });
 
+  // The subscription is created ONCE per user and never torn down while the
+  // feed is mounted. Re-subscribing whenever a profile / application / completed
+  // task refetch produced a new array opened a gap in which a brand-new task
+  // event was simply lost — which is why a matching task sometimes produced no
+  // popup at all, and other times popped long after it was posted.
+  const matchInputsRef = useRef({ currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap });
+  useEffect(() => {
+    matchInputsRef.current = { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap };
+  });
+
   useEffect(() => {
     const shown = new Set();
     const unsub = base44.entities.Task.subscribe(event => {
+      const { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap } = matchInputsRef.current;
       const task = event.data;
       if (!task || task.status !== 'OPEN') return;
       // The realtime stream is global — on the platform Brand (Joba24) every
@@ -108,7 +128,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
         ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
         : null;
 
-      const score = calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory });
+      const score = calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap });
 
       if (!currentUserId) {
         if (dist !== null && dist > 5) return;
@@ -141,7 +161,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
       setCountdown(DURATION);
     });
     return unsub;
-  }, [userLocation, currentUserId, currentUser, myApplications, myCompletedTasks, activeCategory, brandId, isPlatformBrand]);
+  }, [currentUserId, brandId, isPlatformBrand]);
 
   useEffect(() => {
     if (!popup) return;

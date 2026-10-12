@@ -99,23 +99,53 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No eligible workers' });
     }
 
+    // ── Global category labels + ancestry ───────────────────────────────────
+    // The category name in the notification must be the REAL, current label of
+    // the task's category — not a raw key and not a legacy hardcoded table that
+    // drifted away from the live taxonomy.
+    const categoryRows: any[] = [];
+    let catSkip = 0;
+    while (true) {
+      const page = await base44.asServiceRole.entities.GlobalCategory.list('category_key', 500, catSkip);
+      categoryRows.push(...(page || []));
+      if (!page || page.length < 500) break;
+      catSkip += page.length;
+    }
+    const categoryByKey = Object.fromEntries(categoryRows.map(r => [r.category_key, r]));
+    const labelForCategory = (key: string | null) =>
+      (key && categoryByKey[key]?.label) || key || 'משימה חדשה';
+
+    /** The category itself plus every ancestor, so a worker who picked a broad
+     *  ROOT still matches a task categorised by the exact service beneath it. */
+    const ancestryOf = (key: string) => {
+      const chain: string[] = [];
+      const seen = new Set<string>();
+      let node = categoryByKey[key];
+      while (node && !seen.has(node.category_key)) {
+        seen.add(node.category_key);
+        chain.push(node.category_key);
+        node = node.parent_key ? categoryByKey[node.parent_key] : null;
+      }
+      return chain;
+    };
+
     // ── "For You" matching logic (mirrors feedRanker.js) ────────────────────
-    // A worker receives a notification if the task is a "For You" match:
+    // A worker receives a notification when the task is a "For You" match:
     //
-    // 1. No preferred_categories → NO notifications (user hasn't set preferences)
-    // 2. "other" only → only "other" category tasks OR nearby tasks
+    // 1. No preferred_categories → still notify for work in the worker's own
+    //    cities (see below). Staying silent here was why a local professional
+    //    never heard about a job on his own doorstep.
+    // 2. "other" only → "other" tasks, a city match, or nearby
     // 3. Specific categories → category match OR city match OR nearby
     //
     // "Nearby" uses the same logic as the feed: GPS (last_lat/last_lng) first,
     // then preferred_cities → CITY_COORDS fallback. < 5km = nearby (same as feed).
     const NEARBY_KM = 5; // matches isNearby badge in feedRanker.js
     const matchedUserIds = [];
+    const taskAncestry = taskCategory ? ancestryOf(taskCategory) : [];
 
     for (const worker of eligibleWorkers) {
       const prefs = Array.isArray(worker.preferred_categories) ? worker.preferred_categories : [];
-
-      // Rule 1: No categories selected → no notifications
-      if (prefs.length === 0) continue;
 
       // Check if "other" is the ONLY category
       const isOtherOnly = prefs.length === 1 && prefs[0] === 'other';
@@ -133,16 +163,20 @@ Deno.serve(async (req) => {
         Array.isArray(worker.preferred_cities) &&
         worker.preferred_cities.some(c => c === taskCity || taskCity.includes(c) || c.includes(taskCity));
 
-      // Category match
-      const categoryMatch = taskCategory && prefs.includes(taskCategory);
+      // Category match — ancestor-aware: a preference for a ROOT covers every
+      // service beneath it, and the exact service always matches itself.
+      const categoryMatch = !!taskCategory &&
+        prefs.some(p => p === taskCategory || taskAncestry.includes(p));
 
       let isMatch = false;
 
-      if (isOtherOnly) {
-        // Rule 2: "other" only → only "other" tasks OR nearby
-        isMatch = taskCategory === 'other' || nearby;
+      if (prefs.length === 0) {
+        // No categories picked — still reachable for work in the cities the
+        // worker chose, or right next to where they are.
+        isMatch = !!(cityMatch || nearby);
+      } else if (isOtherOnly) {
+        isMatch = taskCategory === 'other' || cityMatch || nearby;
       } else {
-        // Rule 3: Specific categories → category match OR city match OR nearby
         isMatch = categoryMatch || cityMatch || nearby;
       }
 
@@ -155,7 +189,7 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No matched workers' });
     }
 
-    const matchType = taskCategory ? getCategoryLabel(taskCategory) : 'משימה חדשה';
+    const matchType = labelForCategory(taskCategory);
 
     // ── Route through NotificationManager (handles segmentation, cooldown, batching) ──
     const result = await base44.asServiceRole.functions.invoke('notificationManager', {
@@ -175,17 +209,3 @@ Deno.serve(async (req) => {
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
-
-function getCategoryLabel(cat) {
-  const labels = {
-    plumbing: 'אינסטלציה', electricity: 'חשמלאות', handyman: 'הנדימן / תיקונים',
-    cleaning: 'ניקיון', moving: 'הובלה', heavy_lifting: 'עזרה פיזית',
-    painting: 'צביעה', carpentry: 'נגרות', ac: 'מזגנים',
-    locksmith: 'מנעולן', gardening: 'גינון', home_maintenance: 'תחזוקת בית',
-    transportation: 'הסעות וטרמפים', delivery: 'משלוח', shopping: 'קניות',
-    pets: 'בעלי חיים', babysitting: 'בייביסיטר', elderly_care: 'סיוע לקשישים',
-    tutoring: 'שיעורים פרטיים', fitness: 'כושר וספורט', photography: 'צילום ותוכן',
-    events: 'אירועים', personal_help: 'עזרה אישית', it_support: 'מחשבים', other: 'אחר',
-  };
-  return labels[cat] || cat;
-}

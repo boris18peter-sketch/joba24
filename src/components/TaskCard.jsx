@@ -528,10 +528,10 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--brand-card-border, var(--border-1))', position: 'relative', background: '#000', cursor: 'pointer' }}
                 >
                   {cur.type === 'image' ? (
-                    <img src={cur.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    <img src={cur.url} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   ) : (
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                      <video src={cur.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <video src={cur.url} preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
                         <Play size={16} color="white" fill="white" />
                       </div>

@@ -4,11 +4,16 @@ import { createPortal } from 'react-dom';
 
 export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, onClose }) {
   const [index, setIndex] = useState(initialIndex);
+  // A full-size photo can take a moment over mobile data — show progress instead
+  // of a black screen so the wait is legible rather than looking broken.
+  const [loaded, setLoaded] = useState(false);
 
   // Sync to the requested initial index whenever the lightbox (re)opens on a different item
   useEffect(() => {
     if (isOpen) setIndex(initialIndex);
   }, [isOpen, initialIndex]);
+
+  useEffect(() => { setLoaded(false); }, [index, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -31,7 +36,10 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 99999,
+        // Above the Task Detail sheet (1,000,000) and every popup (2,000,000).
+        // The viewer is opened FROM the sheet, so any lower layer renders
+        // BEHIND it — which is exactly why the media appeared not to open.
+        zIndex: 3000000,
         background: 'rgba(0, 0, 0, 0.95)',
         display: 'flex',
         alignItems: 'center',
@@ -64,21 +72,40 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
         <X size={20} />
       </button>
 
+      <style>{`@keyframes lightboxSpin { to { transform: rotate(360deg); } }`}</style>
+
       {/* Media */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
           maxWidth: '95vw',
           maxHeight: '95vh',
+          minWidth: '70vw',
+          minHeight: '35vh',
           borderRadius: 16,
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
+        {!loaded && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
+          }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: '50%',
+              border: '3px solid rgba(255,255,255,0.25)', borderTopColor: 'white',
+              animation: 'lightboxSpin 0.8s linear infinite',
+            }} />
+          </div>
+        )}
         {isVideo ? (
           <video
             src={item.url}
             controls
             autoPlay
+            preload="auto"
+            onLoadedData={() => setLoaded(true)}
             style={{
               width: '100%',
               height: '100%',
@@ -90,6 +117,9 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
           <img
             src={item.url}
             alt=""
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={() => setLoaded(true)}
             style={{
               width: '100%',
               height: '100%',

@@ -55,7 +55,9 @@ export default function CategoryDetailsView({ task, compact = false }) {
 
   // Also render any unknown keys in category_details that aren't in the config
   // (ensures no data entered by the publisher is lost)
-  const skipKeys = new Set(['hourly_rate', 'hours', 'pricing_type', 'schedule']);
+  // Internal bookkeeping — never publisher-entered content. The category itself
+  // is already shown, localised, by the "קטגוריה" row in TaskDetailsRows.
+  const skipKeys = new Set(['hourly_rate', 'hours', 'pricing_type', 'schedule', 'brand_category_key']);
   for (const [key, v] of Object.entries(details)) {
     if (knownKeys.has(key) || skipKeys.has(key)) continue;
     // Skip raw coordinate fields stored by address-type fields (e.g. to_address_lat)
