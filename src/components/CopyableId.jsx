@@ -3,37 +3,51 @@ import { Copy, Check } from 'lucide-react';
 import { copyToClipboard } from '@/lib/utils';
 
 /**
- * CopyableId — displays an entity ID (or any string) with a one-tap copy button.
- * Used in the admin dashboard so user/task IDs can be copied for support/debug.
+ * CopyableId — shows an ID and copies it when the element itself is clicked.
+ *
+ * The whole element is the tap target (not just the icon): an admin grabbing a
+ * user/task ID for support should be able to click anywhere on it. Feedback is
+ * inline — the icon flips to a check and a short "הועתק" label appears.
  */
-export default function CopyableId({ id, label = 'ID', fontSize = 10, color = '#cbd5e1' }) {
+export default function CopyableId({ id, label = 'ID', fontSize = 10, color = 'var(--text-3)', style }) {
   const [copied, setCopied] = useState(false);
+  if (!id) return null;
 
   const handleCopy = (e) => {
     e.stopPropagation();
-    if (!id) return;
+    e.preventDefault();
     copyToClipboard(id).then((ok) => {
-      if (ok) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
+      if (!ok) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     });
   };
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize, color }}>
-      <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{label}: {id}</span>
-      <button
-        onClick={handleCopy}
-        title="העתק"
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-          display: 'flex', alignItems: 'center', color: copied ? '#16a34a' : color,
-          minHeight: 'unset', minWidth: 'unset',
-        }}
-      >
-        {copied ? <Check size={12} /> : <Copy size={12} />}
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={handleCopy}
+      title={`העתק ${label || 'מזהה'}`}
+      dir="ltr"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        background: copied ? 'var(--color-success-bg)' : 'transparent',
+        border: `1px solid ${copied ? 'var(--color-success-border)' : 'transparent'}`,
+        borderRadius: 6, padding: '1px 5px', cursor: 'pointer',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        fontSize, lineHeight: 1.5, maxWidth: '100%',
+        color: copied ? 'var(--color-success)' : color,
+        minHeight: 'unset', minWidth: 'unset',
+        ...style,
+      }}
+    >
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {label ? `${label}: ` : ''}{id}
+      </span>
+      {copied ? <Check size={11} style={{ flexShrink: 0 }} /> : <Copy size={11} style={{ flexShrink: 0 }} />}
+      {copied && (
+        <span style={{ fontFamily: 'inherit', fontWeight: 800, whiteSpace: 'nowrap' }}>הועתק</span>
+      )}
+    </button>
   );
 }
