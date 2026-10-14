@@ -60,7 +60,7 @@ function Tile({ label, value, color, bg }) {
   );
 }
 
-export default function AdminCreditsTab({ allUsers = [] }) {
+export default function AdminCreditsTab({ allUsers = [], loadingUsers = false }) {
   const [search, setSearch] = useState('');
   const [segment, setSegment] = useState('all');
   const [method, setMethod] = useState('');
@@ -106,7 +106,9 @@ export default function AdminCreditsTab({ allUsers = [] }) {
     staleTime: 60000, refetchOnWindowFocus: false,
   });
 
-  const loading = purchasesQ.isLoading || spendQ.isLoading || earnQ.isLoading || lockedQ.isLoading;
+  // The user page must be in before the aggregate rows mean anything — otherwise
+  // the tab flashes an empty list while the users query is still in flight.
+  const loading = loadingUsers || purchasesQ.isLoading || spendQ.isLoading || earnQ.isLoading || lockedQ.isLoading;
 
   const rows = useMemo(() => {
     const bought = new Map(

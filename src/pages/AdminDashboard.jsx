@@ -18,6 +18,7 @@ import AdminCreditsTab from '@/components/admin/AdminCreditsTab';
 import AdminTaskRow, { STATUS_COLORS } from '@/components/admin/AdminTaskRow';
 import AdminUserRow from '@/components/admin/AdminUserRow';
 import AdminKycTab from '@/components/admin/AdminKycTab';
+import CopyableId from '@/components/CopyableId';
 import { toast } from 'sonner';
 import ApproveAllModal from '@/components/ApproveAllModal';
 import AssignAgentModal from '@/components/AssignAgentModal';
@@ -86,6 +87,10 @@ function ReportRow({ report, onDismiss, onReview }) {
             <span style={{ fontSize: 11, fontWeight: 700, background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20 }}>{s.label}</span>
           </div>
           {report.description && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 6, background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>{report.description}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
+            <CopyableId id={report.reporter_id} label="מזהה מדווח" />
+            <CopyableId id={report.task_id} label="מזהה משימה" />
+          </div>
         </div>
       </div>
       {report.status === 'pending' && (
@@ -800,8 +805,11 @@ export default function AdminDashboard() {
                         {lastMsg?.sender_role === 'admin' ? 'אתה: ' : ''}{lastMsg?.content}
                       </div>
                     </div>
-                    <div style={{ fontSize: 10, color: '#cbd5e1', flexShrink: 0 }}>
-                      {lastMsg?.created_date ? format(new Date(lastMsg.created_date), 'dd/MM HH:mm') : ''}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                      <CopyableId id={conv.user_id} label="" fontSize={9} />
+                      <span style={{ fontSize: 10, color: '#cbd5e1' }}>
+                        {lastMsg?.created_date ? format(new Date(lastMsg.created_date), 'dd/MM HH:mm') : ''}
+                      </span>
                     </div>
                   </div>
                 );
@@ -822,6 +830,7 @@ export default function AdminDashboard() {
                   <div>
                     <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14 }}>{selectedConversation?.user_name || 'משתמש'}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>{selectedConversation?.messages.length} הודעות</div>
+                    <CopyableId id={selectedSupportUser} label="מזהה משתמש" fontSize={9} />
                   </div>
                 </div>
 
@@ -878,7 +887,7 @@ export default function AdminDashboard() {
 
         {/* CREDITS TAB — the credit position of every user */}
         {tab === 'credits' && (
-          <AdminCreditsTab allUsers={allUsers} />
+          <AdminCreditsTab allUsers={allUsers} loadingUsers={loadingUsers} />
         )}
 
         {/* JOBA SETTINGS TAB */}
