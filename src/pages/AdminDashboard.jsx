@@ -1,492 +1,72 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag } from 'lucide-react';
-import BackButton from '@/components/BackButton';
+import { Users, ClipboardList, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
-import GoldBadge from '@/components/GoldBadge';
 import NotificationManagerTab from '@/components/NotificationManagerTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
 import JobaSettingsTab from '@/components/JobaSettingsTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
-import { getCategoryLabel } from '@/lib/categories';
 import { exportToCSV } from '@/lib/csvExport';
-import CopyableId from '@/components/CopyableId';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import BrandsTab from '@/components/admin/BrandsTab';
 import GlobalCategoriesTab from '@/components/admin/GlobalCategoriesTab';
 import KycImageLightbox from '@/components/admin/KycImageLightbox';
+import AdminCreditsTab from '@/components/admin/AdminCreditsTab';
+import AdminTaskRow, { STATUS_COLORS } from '@/components/admin/AdminTaskRow';
+import AdminUserRow from '@/components/admin/AdminUserRow';
+import AdminKycTab from '@/components/admin/AdminKycTab';
 import { toast } from 'sonner';
 import ApproveAllModal from '@/components/ApproveAllModal';
 import AssignAgentModal from '@/components/AssignAgentModal';
 
-const STATUS_COLORS = {
-  OPEN: { bg: '#dbeafe', text: '#1d4ed8', label: 'פתוח' },
-  TAKEN: { bg: '#fef9ec', text: '#92700a', label: 'בעבודה' },
-  COMPLETED: { bg: '#dcfce7', text: '#166534', label: 'הושלם' },
-  CANCELLED: { bg: '#fee2e2', text: '#991b1b', label: 'בוטל' },
-  EXPIRED: { bg: '#fef3ea', text: '#8a4a1a', label: 'פג תוקף' },
-};
+// Tabs grouped by what they are for, so the dashboard reads as sections instead
+// of one long undifferentiated row. `desc` is shown as the tab's own header.
+const TAB_GROUPS = [
+  { label: 'סקירה', tabs: [
+    { key: 'analytics', label: 'אנליטיקה', icon: TrendingUp, desc: 'מגמות, התפלגויות וביצועי הפלטפורמה לאורך זמן' },
+  ] },
+  { label: 'תפעול', tabs: [
+    { key: 'tasks', label: 'משימות', icon: ClipboardList, desc: 'כל המשימות, הביקוש שלהן ומי הגיש מועמדות' },
+    { key: 'users', label: 'משתמשים', icon: Users, desc: 'ניהול משתמשים, אישורי גישה, סוכנים והרשאות' },
+    { key: 'kyc', label: 'KYC', icon: Shield, desc: 'אימותי זהות — בדיקה, אישור ודחייה' },
+    { key: 'reports', label: 'דיווחים', icon: Flag, desc: 'דיווחי משתמשים על תוכן בעייתי' },
+    { key: 'support', label: 'תמיכה', icon: Headphones, desc: 'שיחות תמיכה עם משתמשי הפלטפורמה' },
+  ] },
+  { label: 'כספים וצמיחה', tabs: [
+    { key: 'credits', label: 'קרדיטים', icon: Wallet, desc: 'מצב הג׳ובות של כל משתמש — זמין, נעול, נרכש ונוצל' },
+    { key: 'joba_settings', label: 'הגדרות ג׳ובות', icon: Coins, desc: 'בונוסים, עמלות ומחירי פעולות' },
+    { key: 'referrals', label: 'הפניות סוכנים', icon: Award, desc: 'ביצועי סוכנים וההפניות שהביאו' },
+  ] },
+  { label: 'מערכת', tabs: [
+    { key: 'notifications', label: 'התראות', icon: Bell, desc: 'ניהול התראות המערכת למשתמשים' },
+    { key: 'brands', label: 'מותגים', icon: Store, desc: 'ניהול המותגים והסביבות במרקטפלייס' },
+    { key: 'categories', label: 'קטגוריות', icon: Tag, desc: 'קטלוג הקטגוריות וטפסי המשימות הגלובליים' },
+  ] },
+];
 
-function TabButton({ active, onClick, children }) {
+function TabButton({ active, onClick, children, badge }) {
   return (
     <button onClick={onClick} style={{
       padding: '8px 16px', borderRadius: 20, fontWeight: 700, fontSize: 13,
       background: active ? '#0f2b6b' : 'var(--surface-2)',
       color: active ? 'white' : 'var(--text-2)',
       border: active ? 'none' : '1px solid var(--border-1)',
-      cursor: 'pointer', flexShrink: 0,
+      cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center',
+      gap: 4, whiteSpace: 'nowrap',
     }}>
       {children}
+      {badge > 0 && (
+        <span style={{ background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
 
-function TaskRow({ task, onStatusChange, onDelete }) {
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false);
-  const sc = STATUS_COLORS[task.status] || STATUS_COLORS.OPEN;
-  return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', marginBottom: 8, overflow: 'hidden' }}>
-      <div onClick={() => { setOpen(v => !v); setConfirmDel(false); }} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{task.client_name} · {task.created_date ? format(new Date(task.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
-        </div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20, background: sc.bg, color: sc.text, flexShrink: 0 }}>{sc.label}</span>
-        <span style={{ fontSize: 14, fontWeight: 900, color: '#1a6fd4', flexShrink: 0 }}>₪{task.price}</span>
-        {open ? <ChevronUp size={14} color="#94a3b8" /> : <ChevronDown size={14} color="#94a3b8" />}
-      </div>
-      {open && (
-        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-2)' }} onClick={e => e.stopPropagation()}>
-          {task.description && <div><strong>תיאור:</strong> {task.description}</div>}
-          {task.location_name && <div><strong>מיקום:</strong> {task.location_name}</div>}
-          {task.category && <div><strong>קטגוריה:</strong> {task.category}</div>}
-          {task.worker_name && <div><strong>עובד:</strong> {task.worker_name}</div>}
-          {task.expires_at && <div><strong>פג תוקף:</strong> {format(new Date(task.expires_at), 'dd/MM/yyyy HH:mm')}</div>}
-          <div style={{ fontSize: 10, color: '#cbd5e1' }}>ID: {task.id}</div>
-
-          {/* Admin controls */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)' }}>שינוי סטטוס:</span>
-            <select
-              value={task.status}
-              disabled={busy}
-              onChange={async (e) => { setBusy(true); await onStatusChange(task, e.target.value); setBusy(false); }}
-              style={{ height: 34, borderRadius: 10, border: '1px solid var(--border-1)', padding: '0 10px', fontSize: 12, color: 'var(--text-1)', outline: 'none', background: 'var(--surface-2)' }}
-            >
-              {Object.entries(STATUS_COLORS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-            {busy && <Loader2 size={14} className="animate-spin" color="#1a6fd4" />}
-          </div>
-
-          {confirmDel ? (
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button onClick={async () => { setBusy(true); await onDelete(task); setBusy(false); setConfirmDel(false); }} disabled={busy}
-                style={{ flex: 1, height: 36, borderRadius: 10, background: '#dc2626', color: 'white', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                {busy ? <Loader2 size={14} className="animate-spin" /> : <><Trash2 size={13} /> מחק לצמיתות</>}
-              </button>
-              <button onClick={() => setConfirmDel(false)} style={{ height: 36, padding: '0 14px', borderRadius: 10, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>ביטול</button>
-            </div>
-          ) : (
-            <button onClick={() => setConfirmDel(true)} style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 12px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-              <Trash2 size={13} /> מחיקת משימה
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SetAgentModal({ user, onClose, onSave }) {
-  const [rate, setRate] = useState(user.commission_rate || 10);
-  const [loading, setLoading] = useState(false);
-  const isAgent = user.role === 'agent';
-
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      const agentCode = user.agent_code || `AGENT_${user.id.slice(-6).toUpperCase()}`;
-      await onSave(user, { role: 'agent', commission_rate: Number(rate), agent_code: agentCode });
-      setLoading(false);
-      onClose();
-    } catch {
-      setLoading(false);
-    }
-  };
-
-  const handleRemove = async () => {
-    setLoading(true);
-    try {
-      await onSave(user, { role: 'user', commission_rate: 0, agent_code: null });
-      setLoading(false);
-      onClose();
-    } catch {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface-2)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360 }} dir="rtl">
-        <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>הגדרת סוכן</div>
-        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 20 }}>{user.full_name} · {user.email}</div>
-        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>אחוז עמלה (%)</label>
-        <input type="number" value={rate} onChange={e => setRate(e.target.value)} min={0} max={100}
-          style={{ width: '100%', height: 42, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 12, paddingLeft: 12, fontSize: 16, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)', marginBottom: 16 }} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleSave} disabled={loading} style={{ flex: 1, height: 42, borderRadius: 12, background: '#1a6fd4', color: 'white', border: 'none', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <><UserCheck size={14} /> {isAgent ? 'עדכן סוכן' : 'הגדר כסוכן'}</>}
-          </button>
-          {isAgent && (
-            <button onClick={handleRemove} disabled={loading} style={{ height: 42, padding: '0 14px', borderRadius: 12, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-              הסר סוכן
-            </button>
-          )}
-          <button onClick={onClose} style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-            ביטול
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SendCreditsModal({ user, onClose, onSave }) {
-  const [amount, setAmount] = useState(10);
-  const [note, setNote] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSend = async () => {
-    setLoading(true);
-    try {
-      await onSave(user, Number(amount), note.trim());
-      onClose();
-    } catch (e) {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface-2)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360 }} dir="rtl">
-        <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Coins size={18} color="#d97706" /> שליחת ג'ובות
-        </div>
-        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>{user.full_name} · {user.email}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 16, padding: '8px 10px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a' }}>
-          יתרה נוכחית: <strong style={{ color: '#d97706' }}>{user.worker_credits ?? 0}</strong> ג'ובות
-        </div>
-        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>כמות ג'ובות (חיובי להוספה, שלילי להפחתה)</label>
-        <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
-          style={{ width: '100%', height: 42, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 12, paddingLeft: 12, fontSize: 16, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)', marginBottom: 12 }} />
-        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>הערה (אופציונלי)</label>
-        <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="פיצוי, בונוס, תיקון..."
-          style={{ width: '100%', height: 42, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 12, paddingLeft: 12, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)', marginBottom: 16 }} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleSend} disabled={loading || !amount || amount === '0'}
-            style={{ flex: 1, height: 42, borderRadius: 12, background: Number(amount) >= 0 ? '#d97706' : '#dc2626', color: 'white', border: 'none', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <><Coins size={14} /> שלח {amount > 0 ? '+' : ''}{amount || 0}</>}
-          </button>
-          <button onClick={onClose} style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-            ביטול
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, onToggleSelect, onAssignAgent }) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showAgentModal, setShowAgentModal] = useState(false);
-  const [showCreditsModal, setShowCreditsModal] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const navigate = useNavigate();
-  const isAgent = user.role === 'agent';
-
-  const handleBlock = async (e) => {
-    e.stopPropagation();
-    setLoading(true);
-    try {
-      await onToggleBlock(user);
-    } catch {}
-    setLoading(false);
-  };
-
-  const handleCopyLink = (e) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(`${window.location.origin}/?ref=${user.agent_code}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <>
-    <div style={{ background: user.is_blocked ? '#fef2f2' : isAgent ? '#f5f3ff' : 'var(--surface-2)', borderRadius: 14, border: `1px solid ${user.is_blocked ? '#fecaca' : isAgent ? '#ddd6fe' : 'var(--border-1)'}` , marginBottom: 8, overflow: 'hidden' }}>
-      <div onClick={() => setOpen(v => !v)} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <input type="checkbox" checked={!!isSelected} onClick={e => e.stopPropagation()} onChange={onToggleSelect} style={{ width: 18, height: 18, cursor: 'pointer', flexShrink: 0, accentColor: '#1a6fd4' }} />
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: isAgent ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0, overflow: 'hidden' }}>
-          {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {user.full_name}
-            {isUserVerified(user) && hasSocialVerified(user) && <GoldBadge size="sm" />}
-            {isUserVerified(user) && !hasSocialVerified(user) && <span title="מאומת" style={{ display: 'inline-flex', width: 14, height: 14, borderRadius: '50%', background: 'linear-gradient(135deg,#16a34a,#059669)', flexShrink: 0 }}><svg width="8" height="8" viewBox="0 0 10 10" fill="none" style={{ margin: 'auto' }}><path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
-            {isAgent && <span style={{ fontSize: 9, fontWeight: 800, background: '#7c3aed', color: 'white', padding: '1px 6px', borderRadius: 10 }}>סוכן</span>}
-            {user.is_blocked && <span style={{ fontSize: 9, fontWeight: 800, background: '#dc2626', color: 'white', padding: '1px 6px', borderRadius: 10 }}>חסום</span>}
-          </div>
-          <div style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span>{user.email} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy') : ''}</span>
-            {/* Agent attribution */}
-            {user.referred_by_agent_code ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, background: 'rgba(124,58,237,0.1)', color: '#7c3aed', padding: '1px 6px', borderRadius: 6 }}>
-                <Users size={8} /> סוכן: {user.referred_by_agent_code}
-              </span>
-            ) : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, background: 'var(--surface-3)', color: 'var(--text-3)', padding: '1px 6px', borderRadius: 6 }}>
-                אורגני
-              </span>
-            )}
-            {/* Platform */}
-            {(() => {
-              const plat = user.registration_platform || (user.registration_source === 'native' ? 'native' : 'web');
-              const platMap = { ios: { label: '🍎', title: 'iOS' }, android: { label: '🤖', title: 'Android' }, native: { label: '📱', title: 'Native' }, web: { label: '🌐', title: 'Browser' } };
-              const p = platMap[plat] || platMap.web;
-              return <span title={p.title} style={{ fontSize: 10 }}>{p.label}</span>;
-            })()}
-          </div>
-        </div>
-        {user.rating > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#d97706', fontWeight: 700, flexShrink: 0 }}>
-            <Star size={11} style={{ fill: '#fbbf24' }} /> {user.rating?.toFixed(1)}
-          </span>
-        )}
-        <button onClick={e => { e.stopPropagation(); setShowAgentModal(true); }} style={{
-          padding: '5px 10px', borderRadius: 10, cursor: 'pointer', fontSize: 11, fontWeight: 700,
-          background: isAgent ? '#f5f3ff' : '#f0fdf4',
-          color: isAgent ? '#7c3aed' : '#16a34a',
-          display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
-          border: `1px solid ${isAgent ? '#ddd6fe' : '#bbf7d0'}`,
-        }}>
-          <UserCheck size={11} /> {isAgent ? `${user.commission_rate}%` : 'סוכן'}
-        </button>
-        <button onClick={handleBlock} disabled={loading} style={{
-          padding: '5px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
-          background: user.is_blocked ? '#dcfce7' : '#fef2f2',
-          color: user.is_blocked ? '#16a34a' : '#dc2626',
-          display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
-        }}>
-          {loading ? <Loader2 size={10} className="animate-spin" /> : user.is_blocked ? <><CheckCircle2 size={11} /> בטל חסימה</> : <><Ban size={11} /> חסום</>}
-        </button>
-        {open ? <ChevronUp size={14} color="#94a3b8" /> : <ChevronDown size={14} color="#94a3b8" />}
-      </div>
-      {open && (
-        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {/* Open full profile in-app */}
-          <button
-            onClick={(e) => { e.stopPropagation(); navigate(`/public-profile?id=${user.id}`); }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, borderRadius: 10, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', fontSize: 12, fontWeight: 800, cursor: 'pointer', marginTop: 8 }}
-          >
-            <ExternalLink size={13} /> פרופיל מלא באפליקציה
-          </button>
-
-          {/* Verification status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            {isUserVerified(user) ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: hasSocialVerified(user) ? '#fffbeb' : '#dcfce7', color: hasSocialVerified(user) ? '#92400e' : '#166534', border: `1px solid ${hasSocialVerified(user) ? '#fde68a' : '#bbf7d0'}` }}>
-                {hasSocialVerified(user) ? <><Award size={12} /> מאומת זהב</> : <><ShieldCheck size={12} /> מאומת</>}
-              </span>
-            ) : (
-              <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: '#f1f5f9', color: '#64748b' }}>
-                לא מאומת
-              </span>
-            )}
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: user.is_approved ? '#dcfce7' : '#fef9c3', color: user.is_approved ? '#166534' : '#854d0e' }}>
-              {user.is_approved ? '✓ מאושר' : '⏳ ממתין'}
-            </span>
-            {user.kyc_status && (
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8' }}>KYC: {user.kyc_status}</span>
-            )}
-          </div>
-
-          {/* Contact info */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
-            {user.phone && (
-              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
-                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>טלפון</div>
-                <a href={`tel:${user.phone}`} style={{ color: '#1a6fd4', textDecoration: 'none', fontWeight: 700 }}>{user.phone}</a>
-              </div>
-            )}
-            {user.email && (
-              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
-                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>אימייל</div>
-                <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
-              </div>
-            )}
-            {user.id_number && (
-              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
-                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>ת.ז.</div>
-                <div style={{ fontWeight: 700, letterSpacing: 1 }}>{user.id_number}</div>
-              </div>
-            )}
-            {user.profession && (
-              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
-                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>מקצוע</div>
-                <div style={{ fontWeight: 700 }}>{user.profession}</div>
-              </div>
-            )}
-          </div>
-
-          {/* Social links */}
-          {(user.instagram_username || user.facebook_username || user.tiktok_username) && (
-            <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px', marginTop: 2 }}>
-              <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <ExternalLink size={11} /> רשתות חברתיות
-              </div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {user.instagram_username && (
-                  <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.instagram_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
-                    <Instagram size={12} color="#dc2743" />
-                    @{user.instagram_username}
-                    {user.instagram_verified && <Award size={10} color="#d97706" />}
-                  </a>
-                )}
-                {user.facebook_username && (
-                  <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.facebook_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
-                    <Facebook size={12} color="#1877F2" />
-                    @{user.facebook_username}
-                    {user.facebook_verified && <Award size={10} color="#d97706" />}
-                  </a>
-                )}
-                {user.tiktok_username && (
-                  <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.tiktok_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
-                    <Music2 size={12} color="#000" />
-                    @{user.tiktok_username}
-                    {user.tiktok_verified && <Award size={10} color="#d97706" />}
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-
-          {user.bio && <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}><strong>אודות:</strong> {user.bio}</div>}
-
-          {/* Attribution + Platform */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
-            <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
-              <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>מקור הרשמה</div>
-              <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 12 }}>
-                {user.referred_by_agent_code ? `סוכן: ${user.referred_by_agent_code}` : 'אורגני'}
-              </div>
-            </div>
-            <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
-              <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>פלטפורמה</div>
-              <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 12 }}>
-                {(() => {
-                  const plat = user.registration_platform || (user.registration_source === 'native' ? 'native' : 'web');
-                  const map = { ios: 'Apple (iOS)', android: 'Android', native: 'נייטיב', web: 'דפדפן' };
-                  return map[plat] || plat;
-                })()}
-              </div>
-            </div>
-          </div>
-
-          {user.preferred_cities?.length > 0 && <div><strong>ערים:</strong> {user.preferred_cities.join(', ')}</div>}
-          {user.preferred_categories?.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <strong>קטגוריות:</strong>
-              {user.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 11, fontWeight: 600, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '1px 7px', borderRadius: 99 }}>
-                  {getCategoryLabel(c)}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Credits + actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>ג'ובות: <strong style={{ color: '#d97706' }}>{user.worker_credits ?? 0}</strong></span>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowCreditsModal(true); }}
-              style={{ padding: '3px 10px', borderRadius: 10, background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-            >
-              <Coins size={11} /> שלח ג'ובות
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-            {!user.is_approved && (
-              <button
-                onClick={async (e) => { e.stopPropagation(); await onSetAgent(user, { is_approved: true }); }}
-                style={{ padding: '3px 10px', borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-              >
-                אשר גישה
-              </button>
-            )}
-            {user.is_approved && (
-              <button
-                onClick={async (e) => { e.stopPropagation(); await onSetAgent(user, { is_approved: false }); }}
-                style={{ padding: '3px 10px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-              >
-                בטל גישה
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
-            {user.referred_by_agent_code && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#7c3aed', background: '#f5f3ff', padding: '3px 8px', borderRadius: 8, fontWeight: 600 }}>
-                שויך ל: {user.referred_by_agent_code}
-              </span>
-            )}
-            <button
-              onClick={(e) => { e.stopPropagation(); onAssignAgent(user); }}
-              style={{ padding: '3px 10px', borderRadius: 10, background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-            >
-              <UserCheck size={11} /> שייך לסוכן
-            </button>
-          </div>
-          {isAgent && user.agent_code && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f3ff', borderRadius: 8, padding: '6px 10px', marginTop: 2 }}>
-              <div style={{ flex: 1, fontSize: 11, color: '#7c3aed', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {window.location.origin}/?ref={user.agent_code}
-              </div>
-              <button onClick={handleCopyLink} style={{ background:!copied ? '#7c3aed' : '#16a34a', border: 'none', cursor: 'pointer', color: copied ? '#16a34a' : '#7c3aed', display: 'flex', padding: 2 }}>
-                {copied ? <Check size={13} /> : <Copy size={13} />}
-              </button>
-            </div>
-          )}
-          {user.score_tasks > 0 && <div><strong>משימות הושלמו:</strong> {user.score_tasks}</div>}
-          {user.rating_count > 0 && <div><strong>דירוגים שניתנו:</strong> {user.rating_count}</div>}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-              <span style={{ fontSize: 10, color: '#cbd5e1' }}>{user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</span>
-              {user.last_active_at && (() => {
-                const daysSince = Math.floor((Date.now() - new Date(user.last_active_at).getTime()) / 86400000);
-                if (daysSince <= 7) return <span style={{ fontSize: 9, color: '#16a34a', fontWeight: 600 }}>פעיל לאחרונה</span>;
-                if (daysSince > 30) return <span style={{ fontSize: 9, color: '#dc2626', fontWeight: 600 }}>📱 לא פעיל {daysSince} ימים</span>;
-                return <span style={{ fontSize: 9, color: '#d97706', fontWeight: 600 }}>לא פעיל {daysSince} ימים</span>;
-              })()}
-            </div>
-            <CopyableId id={user.id} />
-          </div>
-        </div>
-      )}
-    </div>
-    {showAgentModal && <SetAgentModal user={user} onClose={() => setShowAgentModal(false)} onSave={onSetAgent} />}
-    {showCreditsModal && <SendCreditsModal user={user} onClose={() => setShowCreditsModal(false)} onSave={onSendCredits} />}
-    </>
-  );
-}
 
 function ReportRow({ report, onDismiss, onReview }) {
   const STATUS_MAP = { pending: { label: 'ממתין', color: '#d97706', bg: '#fffbeb' }, reviewed: { label: 'נבדק', color: '#16a34a', bg: '#f0fdf4' }, dismissed: { label: 'נדחה', color: '#94a3b8', bg: '#f1f5f9' } };
@@ -513,82 +93,6 @@ function ReportRow({ report, onDismiss, onReview }) {
           <button onClick={() => onReview(report)} style={{ flex: 1, height: 34, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>סמן כנבדק</button>
           <button onClick={() => onDismiss(report)} style={{ flex: 1, height: 34, borderRadius: 10, background: '#f1f5f9', border: '1px solid #e5e7eb', color: '#64748b', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>דחה</button>
         </div>
-      )}
-    </div>
-  );
-}
-
-function KycButtons({ user, kycStatus }) {
-  const [loading, setLoading] = useState(false);
-  const queryClient = useQueryClient();
-
-  const handleAction = async (updates, successMsg) => {
-    setLoading(true);
-    try {
-      // Route through the adminUpdateVerification function so a push notification
-      // is sent to the user — their device updates instantly instead of waiting
-      // for the 30s poll. The function also writes the User entity (WS fires too).
-      const isVerified = updates.is_verified ?? false;
-      const kycStatus = updates.kyc_status || 'approved';
-      // UH-2: the KYC verdict is written ONLY by the admin function. The
-      // "pending" path routes through it too — it sends no push for pending.
-      await base44.functions.invoke('adminUpdateVerification', {
-        userId: user.id,
-        isVerified,
-        kycStatus,
-      });
-      queryClient.setQueryData(['adminUsers'], (old = []) =>
-        old.map(u => u.id === user.id ? { ...u, is_verified: isVerified, kyc_status: kycStatus } : u)
-      );
-      toast.success(successMsg);
-    } catch (e) {
-      toast.error('שגיאה: ' + (e.message || 'לא ניתן לעדכן'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, marginTop: 4 }}>
-      {loading ? (
-        <div style={{ flex: 1, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Loader2 size={18} className="animate-spin" color="#1a6fd4" />
-        </div>
-      ) : (
-        <>
-          {kycStatus !== 'approved' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: true, kyc_status: 'approved' }, 'אימות אושר'); }}
-              style={{ flex: 1, height: 40, borderRadius: 10, background: '#16a34a', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              <CheckCircle2 size={14} /> אשר אימות
-            </button>
-          )}
-          {kycStatus === 'approved' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: false, kyc_status: 'rejected' }, 'אימות בוטל'); }}
-              style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              <Ban size={14} /> בטל אימות
-            </button>
-          )}
-          {kycStatus === 'pending' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: false, kyc_status: 'rejected' }, 'אימות נדחה'); }}
-              style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              <Ban size={14} /> דחה אימות
-            </button>
-          )}
-          {kycStatus === 'rejected' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: false, kyc_status: 'pending' }, 'סומן כממתין'); }}
-              style={{ flex: 1, height: 40, borderRadius: 10, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              סמן כממתין
-            </button>
-          )}
-        </>
       )}
     </div>
   );
@@ -647,6 +151,22 @@ export default function AdminDashboard() {
     refetchOnWindowFocus: false,
   });
 
+  // Authoritative applicant total per task. Task.applicants only holds the
+  // still-active ones, so counting it would report 0 for a task whose
+  // applicants were all rejected.
+  const { data: applicantCounts = {} } = useQuery({
+    queryKey: ['adminApplicantCounts'],
+    queryFn: async () => {
+      const res = await base44.entities.TaskApplication.aggregate({ groupBy: 'task_id', count: true });
+      const map = {};
+      (res.rows || []).forEach(r => { map[r.task_id] = r.count || 0; });
+      return map;
+    },
+    enabled: me?.role === 'admin' && tab === 'tasks',
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+
   const [selectedSupportUser, setSelectedSupportUser] = useState(null);
   const [supportReply, setSupportReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
@@ -700,6 +220,39 @@ export default function AdminDashboard() {
     } catch {}
     setSendingReply(false);
   };
+
+  // Live task metrics. Views, clicks, applicants and the chosen worker all change
+  // while the dashboard is open, and a stale number here is worse than no number:
+  // Task events patch the cached row in place, while application changes only
+  // invalidate the applicant-count aggregate (debounced — aggregates are limited).
+  useEffect(() => {
+    if (me?.role !== 'admin') return;
+
+    const unsubTasks = base44.entities.Task.subscribe((event) => {
+      if (event.type === 'delete') {
+        queryClient.setQueryData(['adminTasks'], (old = []) => (old || []).filter(t => t.id !== event.id));
+        return;
+      }
+      const next = event.data;
+      if (!next?.id) return;
+      queryClient.setQueryData(['adminTasks'], (old = []) => {
+        const list = old || [];
+        const idx = list.findIndex(t => t.id === next.id);
+        if (idx === -1) return [next, ...list].slice(0, 200);
+        const copy = [...list];
+        copy[idx] = { ...copy[idx], ...next };
+        return copy;
+      });
+    });
+
+    let timer = null;
+    const unsubApps = base44.entities.TaskApplication.subscribe(() => {
+      clearTimeout(timer);
+      timer = setTimeout(() => queryClient.invalidateQueries({ queryKey: ['adminApplicantCounts'] }), 1500);
+    });
+
+    return () => { unsubTasks(); unsubApps(); clearTimeout(timer); };
+  }, [me?.role, queryClient]);
 
   // Guard: admin only — AFTER all hooks
   if (me && me.role !== 'admin') {
@@ -909,6 +462,9 @@ export default function AdminDashboard() {
   const verifiedCount = allUsers.filter(u => isUserVerified(u)).length;
   const goldCount = allUsers.filter(u => isUserVerified(u) && hasSocialVerified(u)).length;
 
+  const badges = { reports: pendingReports, kyc: kycUsers.length, support: unreadSupportCount };
+  const activeTab = TAB_GROUPS.flatMap(g => g.tabs).find(t => t.key === tab);
+
   const stats = [
     { label: 'משימות', value: allTasks.length, color: '#1a6fd4', bg: '#eff6ff' },
     { label: 'משתמשים', value: allUsers.length, color: '#7c3aed', bg: '#f5f3ff' },
@@ -938,47 +494,33 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ padding: '16px 16px 0', display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
-        <TabButton active={tab === 'analytics'} onClick={() => setTab('analytics')}>
-          <TrendingUp size={13} style={{ display: 'inline', marginLeft: 4 }} /> אנליטיקה
-        </TabButton>
-        <TabButton active={tab === 'tasks'} onClick={() => setTab('tasks')}>
-          <ClipboardList size={13} style={{ display: 'inline', marginLeft: 4 }} /> משימות
-        </TabButton>
-        <TabButton active={tab === 'users'} onClick={() => setTab('users')}>
-          <Users size={13} style={{ display: 'inline', marginLeft: 4 }} /> משתמשים
-        </TabButton>
-        <TabButton active={tab === 'reports'} onClick={() => setTab('reports')}>
-          <Flag size={13} style={{ display: 'inline', marginLeft: 4 }} /> דיווחים
-          {pendingReports > 0 && <span style={{ marginRight: 4, background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{pendingReports}</span>}
-        </TabButton>
-        <TabButton active={tab === 'kyc'} onClick={() => setTab('kyc')}>
-          <Shield size={13} style={{ display: 'inline', marginLeft: 4 }} /> KYC
-          {kycUsers.length > 0 && <span style={{ marginRight: 4, background: '#7c3aed', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{kycUsers.length}</span>}
-        </TabButton>
-        <TabButton active={tab === 'support'} onClick={() => setTab('support')}>
-          <Headphones size={13} style={{ display: 'inline', marginLeft: 4 }} /> תמיכה
-          {unreadSupportCount > 0 && <span style={{ marginRight: 4, background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{unreadSupportCount}</span>}
-        </TabButton>
-        <TabButton active={tab === 'notifications'} onClick={() => setTab('notifications')}>
-          <Bell size={13} style={{ display: 'inline', marginLeft: 4 }} /> התראות
-        </TabButton>
-        <TabButton active={tab === 'referrals'} onClick={() => setTab('referrals')}>
-          <TrendingUp size={13} style={{ display: 'inline', marginLeft: 4 }} /> הפניות סוכנים
-        </TabButton>
-        <TabButton active={tab === 'joba_settings'} onClick={() => setTab('joba_settings')}>
-          <Coins size={13} style={{ display: 'inline', marginLeft: 4 }} /> הגדרות ג'ובות
-        </TabButton>
-        <TabButton active={tab === 'brands'} onClick={() => setTab('brands')}>
-          <Shield size={13} style={{ display: 'inline', marginLeft: 4 }} /> מותגים
-        </TabButton>
-        <TabButton active={tab === 'categories'} onClick={() => setTab('categories')}>
-          <Tag size={13} style={{ display: 'inline', marginLeft: 4 }} /> קטגוריות
-        </TabButton>
+      {/* Tabs — grouped by what they are for */}
+      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {TAB_GROUPS.map(group => (
+          <div key={group.label}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.6, marginBottom: 6 }}>{group.label}</div>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
+              {group.tabs.map(t => (
+                <TabButton key={t.key} active={tab === t.key} onClick={() => setTab(t.key)} badge={badges[t.key]}>
+                  <t.icon size={13} /> {t.label}
+                </TabButton>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ padding: '12px 16px 80px' }}>
+      <div style={{ padding: '16px 16px 80px' }}>
+        {/* Each tab states what it is for, so the panel below reads as its topic */}
+        {activeTab && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <activeTab.icon size={17} color="#1a6fd4" />
+              <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)' }}>{activeTab.label}</span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>{activeTab.desc}</div>
+          </div>
+        )}
 
         {/* ANALYTICS TAB */}
         {tab === 'analytics' && (
@@ -1015,7 +557,15 @@ export default function AdminDashboard() {
             ) : (
               <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{filteredTasks.length} משימות</div>
             )}
-            {filteredTasks.map(task => <TaskRow key={task.id} task={task} onStatusChange={handleTaskStatusChange} onDelete={handleTaskDelete} />)}
+            {filteredTasks.map(task => (
+              <AdminTaskRow
+                key={task.id}
+                task={task}
+                applicantCount={applicantCounts[task.id]}
+                onStatusChange={handleTaskStatusChange}
+                onDelete={handleTaskDelete}
+              />
+            ))}
           </>
         )}
 
@@ -1156,7 +706,7 @@ export default function AdminDashboard() {
               </div>
             )}
             {filteredUsers.map(user => (
-              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} isSelected={selectedUsers.has(user.id)} onToggleSelect={() => toggleSelectUser(user.id)} onAssignAgent={(u) => { setAssignTarget(u.id); setShowAssignModal(true); }} />
+              <AdminUserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} isSelected={selectedUsers.has(user.id)} onToggleSelect={() => toggleSelectUser(user.id)} onAssignAgent={(u) => { setAssignTarget(u.id); setShowAssignModal(true); }} />
             ))}
             {showApproveModal && (
               <ApproveAllModal
@@ -1216,129 +766,12 @@ export default function AdminDashboard() {
 
         {/* KYC TAB */}
         {tab === 'kyc' && (
-          <>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>
-              {kycUsers.length} משתמשים ב-KYC · {pendingKyc.length} ממתינים לאישור
-            </div>
-            {pendingKyc.length > 0 && (
-              <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 12, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Shield size={20} color="#d97706" />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>{pendingKyc.length} משתמשים ממתינים לאישור KYC</div>
-                  <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>בדוק את הפרטים ואשר או דחה</div>
-                </div>
-              </div>
-            )}
-            <button
-              onClick={async () => {
-                if (!confirm('האם לאפס את כל האימותים? פעולה זו תוריד את הווי הירוק מכל המשתמשים.')) return;
-                try {
-                  const res = await base44.functions.invoke('resetAllVerifications', {});
-                  if (res.data?.success) {
-                    toast.success(`${res.data.resetCount} משתמשים אופסו`);
-                    refetchUsers();
-                  } else {
-                    toast.error('שגיאה באיפוס');
-                  }
-                } catch (e) {
-                  toast.error('שגיאה: ' + (e.message || ''));
-                }
-              }}
-              style={{ marginBottom: 12, height: 38, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
-            >
-              <RefreshCw size={13} /> אפס את כל האימותים (ווי ירוק)
-            </button>
-            {kycUsers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#0f2b6b' }}>אין נתוני KYC עדיין</div>
-              </div>
-            ) : kycUsers.map(user => {
-              // Derive KYC status from kyc_status only — is_verified is the platform email flag.
-              const kycStatus = user.kyc_status || (user.id_number || user.id_photo_url ? 'pending' : 'none');
-              const statusConfig = {
-                approved: { label: '✓ מאומת', color: '#166534', bg: '#dcfce7', border: '#bbf7d0' },
-                pending: { label: '⏳ ממתין לאישור', color: '#854d0e', bg: '#fef9c3', border: '#fde68a' },
-                rejected: { label: '✗ נדחה', color: '#991b1b', bg: '#fee2e2', border: '#fecaca' },
-              };
-              const sc = statusConfig[kycStatus] || statusConfig.pending;
-              return (
-                <div key={user.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: `1px solid ${sc.border}`, marginBottom: 10, overflow: 'hidden' }}>
-                  <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 15, flexShrink: 0, overflow: 'hidden' }}>
-                      {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 5 }}>
-                        {user.full_name}
-                        {hasSocialVerified(user) && <GoldBadge size="sm" />}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email}</div>
-                      {/* Social links quick view */}
-                      {(user.instagram_username || user.facebook_username || user.tiktok_username) && (
-                        <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                          {user.instagram_username && (
-                            <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-                              style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
-                              <Instagram size={10} color="#dc2743" /> @{user.instagram_username}
-                            </a>
-                          )}
-                          {user.facebook_username && (
-                            <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-                              style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
-                              <Facebook size={10} color="#1877F2" /> @{user.facebook_username}
-                            </a>
-                          )}
-                          {user.tiktok_username && (
-                            <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-                              style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
-                              <Music2 size={10} color="#000" /> @{user.tiktok_username}
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: sc.bg, color: sc.color, flexShrink: 0 }}>
-                      {sc.label}
-                    </span>
-                  </div>
-                  <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
-                    {user.phone && (
-                      <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>📱 טלפון</div>
-                        <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{user.phone}</div>
-                      </div>
-                    )}
-                    {user.id_number && (
-                      <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>🪪 ת.ז.</div>
-                        <div style={{ fontWeight: 700, color: 'var(--text-1)', letterSpacing: 1 }}>{user.id_number}</div>
-                      </div>
-                    )}
-                    {user.id_photo_url && (
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          📷 צילום תעודת זהות
-                          <span style={{ fontSize: 9, color: '#1a6fd4', fontWeight: 700 }}>(לחץ להגדלה)</span>
-                        </div>
-                        <img
-                          src={user.id_photo_url}
-                          alt="ת.ז."
-                          onClick={(e) => { e.stopPropagation(); setKycLightbox({ url: user.id_photo_url, name: user.full_name }); }}
-                          style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff', cursor: 'pointer' }}
-                        />
-                      </div>
-                    )}
-                    <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <CopyableId id={user.id} />
-                      <span style={{ fontSize: 10, color: '#cbd5e1' }}>{user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</span>
-                    </div>
-                    <KycButtons user={user} kycStatus={kycStatus} />
-                  </div>
-                </div>
-              );
-            })}
-          </>
+          <AdminKycTab
+            kycUsers={kycUsers}
+            pendingKyc={pendingKyc}
+            onOpenLightbox={setKycLightbox}
+            refetchUsers={refetchUsers}
+          />
         )}
 
         {/* SUPPORT TAB */}
@@ -1441,6 +874,11 @@ export default function AdminDashboard() {
         {/* REFERRALS TAB */}
         {tab === 'referrals' && (
           <AgentReferralsTab />
+        )}
+
+        {/* CREDITS TAB — the credit position of every user */}
+        {tab === 'credits' && (
+          <AdminCreditsTab allUsers={allUsers} />
         )}
 
         {/* JOBA SETTINGS TAB */}
