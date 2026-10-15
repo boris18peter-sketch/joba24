@@ -21,9 +21,10 @@
          second copy of this snippet. The TaskPublished conversion itself is
          reported from src/lib/analytics/providers/googleads.js, and only after
          the server has confirmed a persisted task.
-         Consent Mode v2: prior opt-in (denied) in the regions whose law
-         requires it, notice + opt-out (granted) everywhere else. The visitor's
-         choice is handled by src/lib/consent.js and src/components/ConsentBanner.jsx.
+         Consent Mode v2: advertising and analytics storage are denied for every
+         visitor until they make an explicit choice — consent is never assumed
+         on their behalf, in any region. The choice is handled by
+         src/lib/consent.js and src/components/ConsentBanner.jsx.
          Enhanced Conversions are NOT enabled and no personal data is sent. -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18513050750"></script>
     <script>
@@ -31,35 +32,27 @@
       function gtag(){dataLayer.push(arguments);}
 
       /* ── Consent Mode v2 ─────────────────────────────────────────────────
-         Region-specific default FIRST, generic default LAST — the region-
-         specific one takes precedence for the regions it names.
-         The EEA (EU-27 + Iceland, Liechtenstein, Norway), the UK and
-         Switzerland require prior opt-in consent for advertising storage, so
-         nothing is measured there until the visitor accepts. */
+         Conservative, uniform default: all four advertising and analytics
+         signals are DENIED, everywhere, until the visitor chooses.
+
+         The EEA, the UK and Switzerland require prior opt-in consent for
+         advertising storage. Rather than assume that every other jurisdiction
+         permits a granted default, this denies for everyone and relies on the
+         banner to collect a real choice — the safe common denominator across
+         the regions this site is served to.
+
+         Nothing is measured until the visitor accepts below; accepting grants
+         all four signals and restores full Google Ads conversion measurement. */
       gtag('consent', 'default', {
         ad_storage: 'denied',
         ad_user_data: 'denied',
         ad_personalization: 'denied',
         analytics_storage: 'denied',
-        region: [
-          'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU',
-          'IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES',
-          'SE','IS','LI','NO','GB','CH'
-        ],
         wait_for_update: 500
       });
-      /* Everywhere else measurement runs on a notice + opt-out basis — the
-         banner below is that notice, and declining it downgrades these signals
-         to 'denied'. */
-      gtag('consent', 'default', {
-        ad_storage: 'granted',
-        ad_user_data: 'granted',
-        ad_personalization: 'granted',
-        analytics_storage: 'granted'
-      });
 
-      /* A choice made on a previous visit overrides both defaults above, in
-         every region — including an explicit decline anywhere in the world.
+      /* A choice made on a previous visit overrides the default above, in every
+         region — including an explicit decline anywhere in the world.
          Read synchronously, BEFORE the tag is configured, so no hit can be sent
          ahead of the visitor's decision. Key must match CONSENT_STORAGE_KEY in
          src/lib/consent.js. */
