@@ -21,20 +21,60 @@
          second copy of this snippet. The TaskPublished conversion itself is
          reported from src/lib/analytics/providers/googleads.js, and only after
          the server has confirmed a persisted task.
-         Consent Mode v2 defaults are granted because the site runs no consent
-         management platform — if a consent banner is added later, switch these
-         to 'denied' and update them from the banner. Enhanced Conversions are
-         NOT enabled and no personal data is sent. -->
+         Consent Mode v2: prior opt-in (denied) in the regions whose law
+         requires it, notice + opt-out (granted) everywhere else. The visitor's
+         choice is handled by src/lib/consent.js and src/components/ConsentBanner.jsx.
+         Enhanced Conversions are NOT enabled and no personal data is sent. -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18513050750"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+
+      /* ── Consent Mode v2 ─────────────────────────────────────────────────
+         Region-specific default FIRST, generic default LAST — the region-
+         specific one takes precedence for the regions it names.
+         The EEA (EU-27 + Iceland, Liechtenstein, Norway), the UK and
+         Switzerland require prior opt-in consent for advertising storage, so
+         nothing is measured there until the visitor accepts. */
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+        region: [
+          'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU',
+          'IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES',
+          'SE','IS','LI','NO','GB','CH'
+        ],
+        wait_for_update: 500
+      });
+      /* Everywhere else measurement runs on a notice + opt-out basis — the
+         banner below is that notice, and declining it downgrades these signals
+         to 'denied'. */
       gtag('consent', 'default', {
         ad_storage: 'granted',
         ad_user_data: 'granted',
         ad_personalization: 'granted',
         analytics_storage: 'granted'
       });
+
+      /* A choice made on a previous visit overrides both defaults above, in
+         every region — including an explicit decline anywhere in the world.
+         Read synchronously, BEFORE the tag is configured, so no hit can be sent
+         ahead of the visitor's decision. Key must match CONSENT_STORAGE_KEY in
+         src/lib/consent.js. */
+      try {
+        var jobaConsent = localStorage.getItem('joba24_ads_consent');
+        if (jobaConsent === 'granted' || jobaConsent === 'denied') {
+          gtag('consent', 'update', {
+            ad_storage: jobaConsent,
+            ad_user_data: jobaConsent,
+            ad_personalization: jobaConsent,
+            analytics_storage: jobaConsent
+          });
+        }
+      } catch (e) { /* storage unavailable — the defaults above still apply */ }
+
       gtag('js', new Date());
       gtag('config', 'AW-18513050750');
     </script>

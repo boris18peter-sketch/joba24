@@ -32,6 +32,7 @@ import NativeOAuthBounce from '@/components/NativeOAuthBounce';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 import BrandSplash from '@/components/BrandSplash';
+import ConsentBanner from '@/components/ConsentBanner';
 
 // Add page imports here
 // lazyRetry — Vite lazy chunks are hashed; after a new deploy the browser may
@@ -333,6 +334,8 @@ function App() {
                 <AuthenticatedApp />
                 <TaskDetailSheet />
                 <DemoModeExitBanner />
+                {/* Advertising-consent notice — shown until the visitor chooses */}
+                <ConsentBanner />
               </TaskSheetProvider>
             </Router>
             <Toaster />
