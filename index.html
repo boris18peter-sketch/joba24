@@ -17,6 +17,27 @@
     <link rel="icon" type="image/jpeg" href="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" />
     <link rel="apple-touch-icon" href="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- Google tag (gtag.js) — Google Ads. ONE installation only; never add a
+         second copy of this snippet. The TaskPublished conversion itself is
+         reported from src/lib/analytics/providers/googleads.js, and only after
+         the server has confirmed a persisted task.
+         Consent Mode v2 defaults are granted because the site runs no consent
+         management platform — if a consent banner is added later, switch these
+         to 'denied' and update them from the banner. Enhanced Conversions are
+         NOT enabled and no personal data is sent. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18513050750"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+        analytics_storage: 'granted'
+      });
+      gtag('js', new Date());
+      gtag('config', 'AW-18513050750');
+    </script>
     <title>Joba24 — משימות מהירות</title>
     <script>
       // Capture OAuth callback token+sid from the URL BEFORE the app module

@@ -14,6 +14,11 @@
  *              exists (sign_up, purchase), a valid custom name otherwise.
  *   tiktok   — TikTok App Events name. A REAL TikTok standard event where one
  *              exists; a custom name otherwise.
+ *   googleads — Google Ads conversion DESTINATION ("AW-<id>/<label>") for the
+ *              website tag. Unlike the columns above this is not an event name:
+ *              the provider always sends Google's standard 'conversion' event
+ *              with this value as send_to. Omitted = the website reports
+ *              nothing for this event.
  *   auto     — true when the provider's own SDK logs this on app activation, so
  *              Joba24 must NOT dispatch it manually (that would double-count).
  *   dedup    — idempotency strategy, applied per provider-agnostic event:
@@ -88,6 +93,9 @@ export const EVENTS = {
     meta: 'TaskPublished',
     firebase: 'task_published',
     tiktok: 'task_published',
+    // Website conversion action "TaskPublished". Fired only after the server
+    // returns a persisted task, with the task id as transaction_id.
+    googleads: 'AW-18513050750/i_fFCKHu7Z0dEP742vtE',
     dedup: 'id',
   },
 

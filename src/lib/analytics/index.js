@@ -6,7 +6,8 @@
  *   trackEvent('task_published', { category, city, value, currency }, { dedupeKey: task.id })
  *
  * and this module distributes it to every enabled provider using the mapping in
- * ./events.js — Meta App Events, Firebase Analytics / Google, TikTok App Events.
+ * ./events.js — Meta App Events, Firebase Analytics / Google, TikTok App Events
+ * and the Google Ads website tag.
  * No UI component talks to an advertising SDK directly.
  *
  * Guarantees:
@@ -33,9 +34,10 @@ import { shouldDispatch } from './dedup';
 import { metaProvider } from './providers/meta';
 import { firebaseProvider } from './providers/firebase';
 import { tiktokProvider } from './providers/tiktok';
+import { googleadsProvider } from './providers/googleads';
 
 // Provider id must match the taxonomy column name in ./events.js
-const PROVIDERS = [metaProvider, firebaseProvider, tiktokProvider];
+const PROVIDERS = [metaProvider, firebaseProvider, tiktokProvider, googleadsProvider];
 
 /* ────────────────────────────── Debug / QA ────────────────────────────── */
 
