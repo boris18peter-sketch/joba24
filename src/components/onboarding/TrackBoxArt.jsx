@@ -78,7 +78,7 @@ export default function TrackBoxArt({ track }) {
               <Avatar key={label} label={label} tone={AVATAR_TONES[i]} index={i} />
             ))}
           </div>
-          <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--brand-primary)' }}>3 מועמדים</span>
+          <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-1)' }}>3 מועמדים</span>
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 12 }}>

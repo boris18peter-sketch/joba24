@@ -634,8 +634,15 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   display: flex; align-items: center; gap: 5px;
   min-height: unset; min-width: unset;
 }
-.j-onb-body {
+.j-onb-stage {
+  position: relative;
   flex: 1 1 auto; min-height: 0;
+  overflow: hidden;
+}
+/* Absolute, so the outgoing and the incoming slide overlap instead of the
+   footer jumping up while the transition runs. */
+.j-onb-body {
+  position: absolute; inset: 0;
   display: flex; flex-direction: column;
 }
 .j-onb-foot {
@@ -670,7 +677,9 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 }
 .j-slide-head {
   flex-shrink: 0;
-  min-height: 138px;
+  /* A fixed band, sized for a two-line title: the illustration starts at the
+     same Y on every slide, so the six screens feel like one flow. */
+  min-height: 126px;
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
 }
@@ -823,7 +832,9 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 /* The two journeys share every pixel of the height that is left over. */
 .j-welcome-boxes { flex: 1 1 auto; display: flex; flex-direction: column; gap: 14px; }
 .j-welcome-box {
-  flex: 1 1 0; min-height: 0;
+  /* Share the leftover height equally, but never shrink below the card's own
+     content — that is what keeps the two journeys exactly symmetric. */
+  flex: 1 1 0; min-height: min-content;
   display: flex; flex-direction: column; gap: 13px;
   padding: 17px;
   border-radius: 22px;

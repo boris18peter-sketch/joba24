@@ -1,15 +1,19 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import SlideFrame from '@/components/onboarding/SlideFrame';
 
 /**
- * A magnified, device-less view of a real app screen built from live components.
+ * A real app screen, magnified to the largest size the preview stage can give
+ * it.
  *
- * The screen is laid out at its real logical width and then scaled to fill the
- * panel — never shrunk into a phone bezel — so its cards, prices and buttons end
- * up as large as the layout can afford. A screen that still cannot fit scrolls;
- * that is the fallback, not the default.
+ * The screen is laid out at its real logical width and then scaled — never
+ * shrunk into a phone bezel — so its cards, prices and buttons end up as large
+ * as the stage can afford. Because the illustration is built from the app's own
+ * components and design tokens, it follows Light/Dark mode exactly like the
+ * live interface does.
+ *
+ * The stage scrolls only if a screen still cannot fit; that is the fallback,
+ * never the default.
  */
-export default function UiStage({ children, width = 393, maxScale = 1.7 }) {
+export default function UiStage({ children, width = 393, maxScale = 1.6 }) {
   const boxRef = useRef(null);
   const innerRef = useRef(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -35,55 +39,56 @@ export default function UiStage({ children, width = 393, maxScale = 1.7 }) {
     return () => ro.disconnect();
   }, []);
 
-  const PAD = 16;
+  const PAD = 14;
   const availW = Math.max(0, box.w - PAD * 2);
   const availH = Math.max(0, box.h - PAD * 2);
 
   let scale = 1;
   if (availW > 0 && natural > 0) {
-    scale = Math.min(availW / width, availH / natural);
-    scale = Math.max(0.7, Math.min(scale, maxScale));
+    scale = Math.min(availW / width, availH / natural, maxScale);
+    scale = Math.max(0.6, scale);
   }
   const scaledH = natural * scale;
   const overflows = scaledH > availH + 1;
 
   return (
-    <SlideFrame>
+    <div
+      ref={boxRef}
+      className="j-preview-scroll"
+      style={{
+        alignItems: overflows ? 'flex-start' : 'center',
+        padding: PAD,
+        boxSizing: 'border-box',
+      }}
+    >
       <div
-        ref={boxRef}
+        className="j-preview-screen"
         style={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: overflows ? 'flex-start' : 'center',
-          padding: PAD,
-          boxSizing: 'border-box',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          overscrollBehavior: 'contain',
-          WebkitOverflowScrolling: 'touch',
+          width: width * scale,
+          height: scaledH,
+          flexShrink: 0,
+          position: 'relative',
+          opacity: natural > 0 ? 1 : 0,
         }}
       >
-        <div style={{ width: width * scale, height: scaledH, flexShrink: 0, position: 'relative', opacity: natural > 0 ? 1 : 0 }}>
-          <div
-            ref={innerRef}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width,
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-              direction: 'rtl',
-              fontFamily: 'var(--font-inter)',
-              color: 'var(--text-1)',
-            }}
-          >
-            {children}
-          </div>
+        <div
+          ref={innerRef}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            direction: 'rtl',
+            fontFamily: 'var(--font-inter)',
+            color: 'var(--text-1)',
+            pointerEvents: 'none',
+          }}
+        >
+          {children}
         </div>
       </div>
-    </SlideFrame>
+    </div>
   );
 }

@@ -1,16 +1,24 @@
 import ScreenshotShowcase from '@/components/onboarding/ScreenshotShowcase';
 import UiStage from '@/components/onboarding/UiStage';
-import DemoTaskScreen from '@/components/onboarding/visuals/DemoTaskScreen';
+import TaskDraftScreen from '@/components/onboarding/visuals/TaskDraftScreen';
+import PricePreviewScreen from '@/components/onboarding/visuals/PricePreviewScreen';
 import WorkerProfileScreen from '@/components/onboarding/visuals/WorkerProfileScreen';
 import FeedScreen from '@/components/onboarding/visuals/FeedScreen';
+import DemoTaskScreen from '@/components/onboarding/visuals/DemoTaskScreen';
 
 /**
- * The picture half of one explainer slide — always real Joba24 UI, always at the
- * largest size the slide can give it:
+ * The picture half of one explainer slide.
  *
- *   shots           real captures of the app, at their own aspect ratio
- *   worker-profile  the real profession + city selection, magnified
- *   feed            the real task feed with a real task notification, magnified
+ * Everything here is the app's OWN design — either a real capture of it, or the
+ * real components laid out statically at the app's real logical width. Both are
+ * rendered inside the same preview frame, so every slide keeps one look, and
+ * both follow Light/Dark mode the way the live interface does.
+ *
+ *   shots           real captures of the app, shown whole
+ *   task-draft      the publish form, filled in
+ *   price           the price step, with the AI suggestion
+ *   worker-profile  the real profession + city selection
+ *   feed            the real task feed with the app's own task notification
  *   task-card       the real task card, with the apply button highlighted
  */
 export default function OnboardingSlideVisual({ slide }) {
@@ -18,25 +26,36 @@ export default function OnboardingSlideVisual({ slide }) {
     return <ScreenshotShowcase shots={slide.shots} />;
   }
 
-  if (slide.visual === 'worker-profile') {
-    return (
-      <UiStage width={393} maxScale={1.7}>
-        <WorkerProfileScreen />
-      </UiStage>
-    );
+  switch (slide.visual) {
+    case 'task-draft':
+      return (
+        <UiStage width={393}>
+          <TaskDraftScreen />
+        </UiStage>
+      );
+    case 'price':
+      return (
+        <UiStage width={393}>
+          <PricePreviewScreen />
+        </UiStage>
+      );
+    case 'worker-profile':
+      return (
+        <UiStage width={393}>
+          <WorkerProfileScreen />
+        </UiStage>
+      );
+    case 'feed':
+      return (
+        <UiStage width={440}>
+          <FeedScreen />
+        </UiStage>
+      );
+    default:
+      return (
+        <UiStage width={393}>
+          <DemoTaskScreen />
+        </UiStage>
+      );
   }
-
-  if (slide.visual === 'feed') {
-    return (
-      <UiStage width={440} maxScale={1.5}>
-        <FeedScreen />
-      </UiStage>
-    );
-  }
-
-  return (
-    <UiStage width={393} maxScale={1.75}>
-      <DemoTaskScreen />
-    </UiStage>
-  );
 }
