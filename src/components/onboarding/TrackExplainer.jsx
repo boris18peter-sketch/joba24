@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { TRACKS } from '@/lib/onboardingTrack';
+import OnboardingSlideVisual from '@/components/onboarding/OnboardingSlideVisual';
 
 /**
  * The three explainer screens for one track.
  *
- * Presentation only: it never publishes a task, never completes a worker
- * profile and fires no analytics events. Finishing (or skipping) simply hands
- * the visitor to the EXISTING flow for that track.
+ * Each screen shows the REAL Joba24 screen for that step inside a phone frame,
+ * followed by the one line that explains it. Presentation only: it never
+ * publishes a task, never completes a worker profile and fires no analytics
+ * events. Finishing (or skipping) simply hands the visitor to the EXISTING flow
+ * for that track.
  */
 export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack }) {
   const [index, setIndex] = useState(0);
@@ -19,8 +22,12 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
   return (
     <div dir="rtl" style={{ position: 'fixed', inset: 0, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
+      {/* Ambient brand glow */}
+      <div style={{ position: 'fixed', top: -170, right: -110, width: 360, height: 360, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.17) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', bottom: -150, left: -110, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.14) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+
       {/* ── Header: back · progress · skip ── */}
-      <div style={{ flexShrink: 0, padding: 'max(14px, env(safe-area-inset-top)) 18px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ position: 'relative', flexShrink: 0, padding: 'max(14px, env(safe-area-inset-top)) 18px 10px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => (index > 0 ? setIndex(index - 1) : onSwitchTrack())}
           aria-label="חזרה"
@@ -43,8 +50,8 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
         </button>
       </div>
 
-      {/* ── Slide ── */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 24px' }}>
+      {/* ── Slide: the real screen, then its one line ── */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
@@ -52,31 +59,30 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: 480, margin: '0 auto', width: '100%', paddingBottom: 12 }}
+            style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
           >
-            <div style={{ position: 'relative', width: 128, height: 128, marginBottom: 26 }}>
-              <div style={{ position: 'absolute', inset: -12, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.18) 0%, transparent 70%)' }} />
-              <div style={{ position: 'relative', width: 128, height: 128, borderRadius: 36, background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 14px 40px rgba(26,111,212,0.30)' }}>
-                <Icon size={56} color="#ffffff" strokeWidth={1.6} />
-              </div>
-              <div style={{ position: 'absolute', top: -6, left: -6, width: 26, height: 26, borderRadius: 10, background: 'var(--brand-accent)', boxShadow: '0 4px 12px rgba(251,191,36,0.45)' }} />
+            <div style={{ flex: '1 1 auto', minHeight: 268, display: 'flex', flexDirection: 'column', padding: '6px 24px 0' }}>
+              <OnboardingSlideVisual slide={slide} />
             </div>
 
-            <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 0.6, color: 'var(--brand-primary)', marginBottom: 10 }}>
-              {slide.badge}
+            <div style={{ flexShrink: 0, width: '100%', maxWidth: 520, margin: '0 auto', padding: '20px 26px 6px', textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 900, letterSpacing: 0.5, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', borderRadius: 999, padding: '4px 12px', marginBottom: 12 }}>
+                <Icon size={13} strokeWidth={2.3} />
+                {slide.badge}
+              </div>
+              <h2 style={{ fontSize: 23, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 10, lineHeight: 1.28, letterSpacing: -0.4 }}>
+                {slide.title}
+              </h2>
+              <p style={{ fontSize: 14.5, color: 'var(--text-2)', margin: 0, lineHeight: 1.65 }}>
+                {slide.body}
+              </p>
             </div>
-            <h2 style={{ fontSize: 25, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 12, lineHeight: 1.3, letterSpacing: -0.4 }}>
-              {slide.title}
-            </h2>
-            <p style={{ fontSize: 15.5, color: 'var(--text-2)', margin: 0, lineHeight: 1.7 }}>
-              {slide.body}
-            </p>
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ flexShrink: 0, padding: '12px 20px max(18px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ position: 'relative', flexShrink: 0, padding: '12px 20px max(18px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button
           onClick={isLast ? onFinish : () => setIndex(index + 1)}
           style={{
