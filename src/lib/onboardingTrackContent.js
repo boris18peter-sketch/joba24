@@ -2,8 +2,9 @@ import { ClipboardList, Coins, MapPin, Send, Star, Users } from 'lucide-react';
 import { TRACKS } from '@/lib/onboardingTrack';
 
 /**
- * Real Joba24 screens, captured on a device. Each explainer step shows the
- * actual screen the visitor will meet — never a drawing of one.
+ * Real Joba24 captures. Two are full screens; three are horizontal slices of a
+ * single form section. Each slide renders its capture at its own aspect ratio,
+ * so none of them is ever cropped.
  */
 const SHOTS = {
   description: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/427e287bb_WhatsAppImage2026-10-16at125311.jpeg',
@@ -25,53 +26,61 @@ const SLIDES = {
     {
       icon: ClipboardList,
       badge: 'המשימה',
-      title: 'ספרו מה צריך לעשות',
-      body: 'מתארים את העבודה במילים שלכם — אפשר גם בהקלטה. הכותרת והקטגוריה נוצרות אוטומטית.',
+      title: 'תאר את המשימה ואת המיקום',
+      body: 'ספר מה צריך לעשות, איפה ומתי. הפרסום בחינם!',
       visual: 'screenshot',
       shot: SHOTS.description,
+      insetShot: SHOTS.location,
+      align: 'top',
     },
     {
       icon: Coins,
-      badge: 'מחיר ומיקום',
-      title: 'קובעים מחיר ומקום',
-      body: 'מציעים תשלום הוגן ומציינים את הכתובת המדויקת. בעלי מקצוע באזור רואים את המשימה מיד.',
+      badge: 'המחיר',
+      title: 'אתה קובע כמה לשלם',
+      body: 'ה־AI יציע מחיר לפי המשימה ומחירי השוק. ההחלטה שלך.',
       visual: 'screenshot',
       shot: SHOTS.price,
-      insetShot: SHOTS.location,
+      align: 'center',
     },
     {
       icon: Users,
-      badge: 'התאמה',
-      title: 'בוחרים מי יבצע',
-      body: 'רואים כל בקשה עם דירוג, מספר משימות ואימות זהות — ומאשרים את מי שמתאים לכם.',
+      badge: 'מועמדויות',
+      title: 'קבל מועמדויות ובחר מי יעזור לך',
+      body: 'אנשים מתאימים יכולים להגיש מועמדות, ואתה בוחר את מי שמתאים לך.',
       visual: 'screenshot',
       shot: SHOTS.applicants,
+      align: 'center',
     },
   ],
   [TRACKS.WORKER]: [
     {
       icon: MapPin,
-      badge: 'חיפוש',
-      title: 'משימות קרוב אליכם',
-      body: 'כל המשימות באזור שלכם על המפה, עם המחיר על כל סיכה — בלי לחפש בכל מקום.',
-      visual: 'screenshot',
-      shot: SHOTS.map,
+      badge: 'הפרופיל',
+      title: 'בחר מה אתה יודע לעשות',
+      body: 'מלא פרופיל ובחר תחומים ואזורים שמתאימים לך.',
+      visual: 'worker-profile',
     },
     {
       icon: Send,
-      badge: 'הגשה',
-      title: 'מגישים בקשה בקליק',
-      body: "שולחים הודעה קצרה למי שפרסם. הגשה צורכת ג'ובות — ואם לא נבחרתם, הן מוחזרות אליכם.",
-      visual: 'task-card',
+      badge: 'חיפוש',
+      title: 'גלה משימות שמתאימות לך',
+      body: 'קבל התראות על משימות חדשות או מצא אותן בעצמך בפיד.',
+      visual: 'feed',
     },
     {
       icon: Star,
-      badge: 'מוניטין',
-      title: 'בונים דירוג וביטחון',
-      body: 'ככל שתשלימו יותר משימות ותקבלו דירוג גבוה, כך ייפתחו לכם הזדמנויות טובות יותר.',
-      visual: 'profile',
+      badge: 'הגשה',
+      title: 'הגש בקשה והתחל להרוויח',
+      body: 'המפרסם בוחר מי יבצע את המשימה. נבחרת? יוצאים לבצע ומרוויחים!',
+      visual: 'task-card',
     },
   ],
+};
+
+/** The closing call to action for each track. */
+export const FINAL_CTA = {
+  [TRACKS.PUBLISH]: 'פרסם משימה בחינם',
+  [TRACKS.WORKER]: 'בוא נתחיל להרוויח',
 };
 
 export function explainerSlides(track) {

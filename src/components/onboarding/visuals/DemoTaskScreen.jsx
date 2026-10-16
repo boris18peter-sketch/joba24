@@ -23,9 +23,9 @@ export default function DemoTaskScreen() {
           <span
             style={{
               position: 'absolute',
-              left: 20,
+              left: 12,
               bottom: 34,
-              width: 138,
+              width: 136,
               height: 46,
               borderRadius: 14,
               border: '2.5px solid var(--brand-primary)',
