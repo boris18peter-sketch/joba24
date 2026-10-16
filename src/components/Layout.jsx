@@ -482,7 +482,12 @@ export default function Layout() {
         return;
       }
       if (effectiveGuest) {
-        if (location.pathname !== '/') {
+        // A guest IS a visitor with no account, and PUBLIC_PATHS_NO_AUTH is
+        // precisely the set a visitor with no account may open — the publish
+        // form included, which asks for a sign-in only at the PUBLISH step.
+        // Bouncing a guest off those was the one thing that stopped the
+        // onboarding's "פרסם משימה בחינם" button from reaching /create-task.
+        if (location.pathname !== '/' && !isPublicPage) {
           login();
           navigate('/', { replace: true });
         }
