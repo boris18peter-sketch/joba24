@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { BrandLogo, BrandName } from '@/components/BrandIdentity';
 import { TRACKS } from '@/lib/onboardingTrack';
-import TrackBoxArt from '@/components/onboarding/TrackBoxArt';
 
 /**
  * The first screen: which journey are you here for?
@@ -14,6 +13,11 @@ import TrackBoxArt from '@/components/onboarding/TrackBoxArt';
  * the screen is symmetric and there is no dead space at the bottom on a tall
  * phone. Each box's button is pinned to its bottom edge, so both buttons line up
  * at the same height.
+ *
+ * A box carries a title, one line of explanation and its button — nothing else.
+ * No preview picture sits inside them: the choice is then READ rather than
+ * decoded, and the two options stay exactly the same size and weight as each
+ * other.
  */
 const BOXES = [
   {
@@ -48,7 +52,6 @@ export default function TrackChoice({ onChoose }) {
 
         <div className="j-welcome-head">
           <h1 className="j-welcome-title">ברוכים הבאים ל־Joba24</h1>
-          <p className="j-welcome-sub">מה תרצו לעשות היום?</p>
         </div>
 
         <div className="j-welcome-boxes">
@@ -64,8 +67,6 @@ export default function TrackChoice({ onChoose }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.06 * i, duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
             >
-              <TrackBoxArt track={box.track} />
-
               <div>
                 <div className="j-welcome-box-title">{box.title}</div>
                 <p className="j-welcome-box-body">{box.body}</p>

@@ -672,8 +672,12 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
    gap that used to sit between the copy and the picture. */
 .j-slide {
   flex: 1 1 auto; min-height: 0;
+  /* One centred column, bounded to the same width as the continue button, so
+     the headline, the explanation, the picture and the button all share the
+     same left and right edge at every screen size. */
+  width: 100%; max-width: 560px; margin: 0 auto;
   display: flex; flex-direction: column; gap: 10px;
-  padding: 0 16px;
+  padding: 0 20px;
 }
 .j-slide-head {
   flex-shrink: 0;
@@ -769,16 +773,15 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 
 /* ── From 900px the copy moves beside the illustration and the illustration
    takes the full height instead of sitting in the middle of an empty page. ── */
+/* From 900px the screen keeps the SAME single column as the phone — headline,
+   then one line, then the picture BELOW it — only centred and larger. Putting
+   the copy beside the picture was what made the flow look asymmetric on a wide
+   screen: the text hugged one edge while the picture stretched to an arbitrary
+   size. Titles on top, illustration underneath, one shared width. */
 @media (min-width: 900px) {
-  .j-slide { flex-direction: row; align-items: stretch; gap: 40px; padding: 0 40px; }
-  .j-slide-head {
-    flex: 0 0 32%; max-width: 400px; min-height: 0;
-    align-items: flex-start; text-align: right;
-    justify-content: center; padding-bottom: 18px;
-  }
-  .j-slide-title { font-size: 32px; }
+  .j-slide-head  { min-height: 130px; }
+  .j-slide-title { font-size: 30px; }
   .j-slide-body  { font-size: 16px; }
-  .j-slide-art   { padding-bottom: 18px; }
 }
 
 /* ── Welcome screen: fills the height, both boxes share it equally ── */

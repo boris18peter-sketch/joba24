@@ -8,11 +8,12 @@ import OnboardingSlideVisual from '@/components/onboarding/OnboardingSlideVisual
 /**
  * The three explainer screens for one track.
  *
- * One clear column: a heading, a single line of explanation, the app's own
- * screen for that step, the progress indicator, and the continue button. The
- * illustration takes every pixel of height the copy leaves, and from 900px up
- * the copy moves beside it so the picture uses the full height instead of
- * sitting in the middle of an empty page.
+ * One clear column at every screen size: a heading, a single line of explanation,
+ * the illustration BELOW it, the progress indicator, and the continue button. The
+ * column is centred and bounded to the continue button's own width, and the
+ * illustration takes every pixel of height the copy leaves — so the screens stay
+ * symmetric on a wide desktop instead of spreading the copy and the picture to
+ * opposite edges.
  *
  * All layout lives in the stylesheet, not in inline styles — an inline
  * `flex-direction` silently beats a media query, which is what previously kept

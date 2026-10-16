@@ -22,43 +22,51 @@ function getDistanceKm(lat1, lng1, lat2, lng2) {
 
 const DURATION = 18;
 
-// Returns a relevance score for showing a popup to a worker
-function calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap }) {
-  if (!task || !currentUser) return 0;
-  let score = 0;
+// ── Relevance ────────────────────────────────────────────────────────────────
+// A task we can already tell is farther than this is never relevant, whatever
+// else about it matches.
+const MAX_DISTANCE_KM = 20;
+// "Close enough to be worth a look" for a worker whose category does not match.
+const NEARBY_KM = 3;
+// A guest has no profile at all, so proximity is the only signal we can trust.
+const GUEST_NEARBY_KM = 5;
 
-  // Ancestor-aware matching: a worker who picked a broad ROOT ("בית ותחזוקה")
-  // must match a task categorised by the exact service beneath it. Comparing
-  // the raw keys silently missed every one of those.
+/**
+ * Why this task might interest this worker — one clear yes/no, not a points
+ * total.
+ *
+ * The old weighted score quietly failed for exactly the people it existed to
+ * serve: a worker whose only signal was being 4 km away totalled 10 and was
+ * dropped, and a worker with no resolved location — or a task with no
+ * coordinates — totalled 0 and was dropped for good, however well the task
+ * fitted. Relevance is now a plain fact: this task fits what you do, OR it is
+ * close enough to be worth a look. Nothing arithmetic sits between a genuinely
+ * relevant worker and the popup.
+ *
+ * Category matching also has to survive the global catalogue still loading: with
+ * an empty map a broad ROOT preference cannot be resolved to the task's service,
+ * which used to be indistinguishable from "no interest at all".
+ */
+function evaluateMatch({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap }) {
   const taskKey = actionableCategoryKey(task);
   const matches = (key) => !!key && (key === taskKey || categoryMatches(taskKey, key, categoryMap));
 
-  // 1. Category match with preferred_categories
-  if ((currentUser.preferred_categories || []).some(matches)) score += 40;
+  const dist = userLocation && task.lat && task.lng
+    ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
+    : null;
 
-  // 2. Category match with past applications
-  const appliedCategories = myApplications.map(a => a._category).filter(Boolean);
-  if (appliedCategories.some(matches)) score += 30;
+  // Never surface a task we can already tell is far away.
+  if (dist !== null && dist > MAX_DISTANCE_KM) return { relevant: false, dist, categoryMatch: false };
 
-  // 3. Category match with completed tasks
-  const completedCategories = myCompletedTasks.map(t => actionableCategoryKey(t)).filter(Boolean);
-  if (completedCategories.some(matches)) score += 35;
+  const categoryMatch =
+    (currentUser?.preferred_categories || []).some(matches) ||
+    myApplications.map(a => a._category).some(matches) ||
+    myCompletedTasks.map(t => actionableCategoryKey(t)).some(matches) ||
+    matches(activeCategory);
 
-  // 4. Currently browsing same category
-  if (matches(activeCategory)) score += 50;
+  const nearby = dist !== null && dist <= NEARBY_KM;
 
-  // 5. Distance score (< 3km = full score, 3-8km = partial, 8-20km = small bonus)
-  if (userLocation && task.lat && task.lng) {
-    const dist = getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng);
-    if (dist !== null) {
-      if (dist <= 3) score += 25;
-      else if (dist <= 8) score += 10;
-      else if (dist <= 20) score += 5;
-      else return 0; // too far — never show
-    }
-  }
-
-  return score;
+  return { relevant: categoryMatch || nearby, dist, categoryMatch };
 }
 
 export default function InstantMatchPopup({ userLocation, currentUserId, activeCategory }) {
@@ -102,8 +110,12 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     matchInputsRef.current = { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap };
   });
 
+  // Already-shown keys live in a ref, not inside the effect: the effect is torn
+  // down and rebuilt whenever the resolved Brand changes, and a fresh Set each
+  // time let the same task pop a second time.
+  const shownRef = useRef(new Set());
+
   useEffect(() => {
-    const shown = new Set();
     const unsub = base44.entities.Task.subscribe(event => {
       const { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap } = matchInputsRef.current;
       const task = event.data;
@@ -121,25 +133,33 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
 
       // Deduplicate — don't show same task twice quickly
       const dedupKey = `${task.id}_${isNewTask ? 'new' : task.last_boost_at}`;
-      if (shown.has(dedupKey)) return;
-      shown.add(dedupKey);
+      if (shownRef.current.has(dedupKey)) return;
+      shownRef.current.add(dedupKey);
 
-      const dist = userLocation
-        ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
-        : null;
-
-      const score = calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap });
+      // A task the worker has already applied to is never news to them.
+      if (myApplications.some(a => a.task_id === task.id)) return;
 
       if (!currentUserId) {
-        if (dist !== null && dist > 5) return;
-      } else {
-        if (score < 25 && !isBoosted) return;
-        // Boosted tasks get a lower threshold — show to relevant workers
-        if (isBoosted && score < 10) return;
+        // A guest has no profile to match against, so only proximity counts.
+        // An unknown location used to mean "show everything", which is the
+        // opposite of precise.
+        const guestDist = userLocation && task.lat && task.lng
+          ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
+          : null;
+        if (guestDist === null || guestDist > GUEST_NEARBY_KM) return;
+        setPopup({ task, dist: guestDist, isBoosted });
+        setCountdown(DURATION);
+        return;
       }
 
+      const { relevant, dist } = evaluateMatch({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap });
+
+      // A boost is the publisher paying for reach, so it clears the category bar
+      // — but it still never travels beyond MAX_DISTANCE_KM.
+      if (!isBoosted && !relevant) return;
+
       // For boosted tasks — also persist to localStorage notifications
-      if (isBoosted && currentUserId) {
+      if (isBoosted) {
         const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
         const alreadyStored = stored.some(n => n.taskId === task.id && n.type === 'boost_signal' &&
           Math.abs(Date.now() - new Date(n.timestamp).getTime()) < 60000);

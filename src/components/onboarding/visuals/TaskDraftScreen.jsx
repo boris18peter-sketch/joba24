@@ -12,8 +12,10 @@ import { MapPin, Sparkles } from 'lucide-react';
  * it is. No status pills and no buttons: nothing that would make the picture
  * look like a form waiting to be completed.
  */
+// No estimated duration: the publisher describes the WORK, and never dictates
+// how long it takes — that is the worker's call.
 const DESCRIPTION =
-  'צריך להתקין גוף תאורה חדש בתקרת הסלון. יש סולם וכלים בבית, העבודה צפויה לקחת כשעה.';
+  'צריך להתקין גוף תאורה חדש בתקרת הסלון. יש סולם וכלים בבית.';
 
 export default function TaskDraftScreen() {
   return (
@@ -38,8 +40,10 @@ export default function TaskDraftScreen() {
             <MapPin size={14} strokeWidth={2.3} color="var(--brand-primary)" />
             <span style={{ fontSize: 13.5, fontWeight: 900, color: 'var(--text-1)' }}>מיקום</span>
           </div>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-1)' }}>פלורנטין, תל אביב</div>
-          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 3 }}>קומה 3 · דירה 5 · יש מעלית</div>
+          {/* Street and city ONLY. A task preview must never show a specific
+              address — the exact building, floor and apartment stay private
+              until a worker is chosen. */}
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-1)' }}>רחוב פלורנטין, תל אביב</div>
         </div>
       </div>
     </>

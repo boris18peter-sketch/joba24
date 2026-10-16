@@ -67,7 +67,11 @@ export default function OnboardingTrackWelcome() {
     const current = track || getOnboardingTrack();
     if (!current) return;
     markExplainerDone(current);
-    navigate(destinationForTrack(current), { replace: true });
+    // PUSH, never replace: leaving the first-run flow has to keep the flow in the
+    // history stack, so pressing Back on the destination (e.g. /join) returns to
+    // these screens instead of stepping past them — past the app itself — and out
+    // to whatever page the visitor arrived from.
+    navigate(destinationForTrack(current));
   };
 
   if (skipFirstRun) return null;
