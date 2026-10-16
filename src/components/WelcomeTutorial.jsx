@@ -5,6 +5,7 @@ import { Sparkles, ArrowLeft, X, Shield, UserCircle2, Plus, Coins, Send } from '
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { getOnboardingTrack } from '@/lib/onboardingTrack';
 
 /**
  * WelcomeTutorial — contextual spotlight tutorial.
@@ -18,7 +19,10 @@ import { useAuth } from '@/lib/AuthContext';
  * Gated by localStorage 'joba_welcome_seen'.
  */
 
-const STORAGE_KEY = 'joba_welcome_seen';
+// Remembered PER TRACK, so finishing the tour as a publisher does not silently
+// skip it for the same person on the worker journey — and the other way round.
+// Kept separate from the explainer-screen state (see lib/onboardingTrack).
+const STORAGE_KEY = (track) => (track ? `joba_welcome_seen_${track}` : 'joba_welcome_seen');
 const PAD = 10; // spotlight padding around the target element
 
 // ── Step definitions ──────────────────────────────────────────────────────
@@ -36,6 +40,7 @@ function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, 
   return [
     {
       id: 'onboarding-verify-banner',
+      tracks: ['publish', 'worker'],
       icon: Shield,
       badge: 'אימות',
       title: 'אמתו את הזהות שלכם',
@@ -43,6 +48,7 @@ function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, 
     },
     {
       id: 'onboarding-profile-banner',
+      tracks: ['worker'],
       icon: UserCircle2,
       badge: 'פרופיל',
       title: 'השלימו את הפרופיל',
@@ -50,6 +56,7 @@ function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, 
     },
     {
       id: 'onboarding-create-btn',
+      tracks: ['publish'],
       icon: Plus,
       badge: 'פרסום',
       title: 'צריכים עזרה? פרסמו משימה',
@@ -57,6 +64,7 @@ function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, 
     },
     {
       id: 'onboarding-credits-pill',
+      tracks: ['publish', 'worker'],
       icon: Coins,
       badge: "ג'ובות",
       title: jobasTitle,
@@ -64,6 +72,7 @@ function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, 
     },
     {
       id: 'onboarding-apply-btn',
+      tracks: ['worker'],
       icon: Send,
       badge: 'הגשה',
       title: 'מצאתם משימה שמתאימה לכם?',
@@ -125,8 +134,12 @@ export default function WelcomeTutorial() {
 
   // Detect available steps once (after a short delay for layout to settle)
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
-    const candidates = buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, actualBonus });
+    const track = getOnboardingTrack();
+    if (localStorage.getItem(STORAGE_KEY(track))) return;
+    // Only the steps that belong to the track this person chose. With no track
+    // saved the full list is kept, exactly as before.
+    const candidates = buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, actualBonus })
+      .filter(s => !track || !s.tracks || s.tracks.includes(track));
 
     const startedAt = Date.now();
     const MAX_WAIT = 60000; // keep waiting while a popup/sheet covers the screen
@@ -198,7 +211,7 @@ export default function WelcomeTutorial() {
 
   const finish = () => {
     setVisible(false);
-    setTimeout(() => localStorage.setItem(STORAGE_KEY, '1'), 250);
+    setTimeout(() => localStorage.setItem(STORAGE_KEY(getOnboardingTrack()), '1'), 250);
   };
 
   const next = () => {

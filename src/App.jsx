@@ -119,6 +119,7 @@ const StoreKitStudio = lazyRetry(() => import('@/pages/StoreKitStudio'));
 const DesignPreviewV2 = lazyRetry(() => import('@/pages/DesignPreviewV2'));
 const BrandManager = lazyRetry(() => import('@/pages/BrandManager'));
 const BrandDashboard = lazyRetry(() => import('@/pages/BrandDashboard'));
+const OnboardingTrackWelcome = lazyRetry(() => import('@/pages/OnboardingTrackWelcome'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -178,7 +179,7 @@ function CaptureRefCode() {
 // screens (chat thread, landing, onboarding, reset-password, referral redirect,
 // support) get their own key and animate (slide) in/out.
 const STANDALONE = (p) =>
-  p === '/lp' || p === '/presentation' || p === '/reset-password' || p === '/join' ||
+  p === '/lp' || p === '/presentation' || p === '/reset-password' || p === '/join' || p === '/welcome' ||
   p === '/design-v2' || p === '/support' || p.startsWith('/chat/') || p.startsWith('/r/');
 function getDepth(pathname) {
   if (!STANDALONE(pathname)) return 0;
@@ -292,6 +293,8 @@ const AuthenticatedApp = () => {
             <Route path="/presentation" element={<Presentation />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/join" element={<WorkerOnboarding />} />
+            {/* First-run track picker + explainer screens (standalone, no layout) */}
+            <Route path="/welcome" element={<OnboardingTrackWelcome />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </motion.div>
