@@ -799,7 +799,9 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-  display: flex; flex-direction: column; gap: 18px;
+  /* Centred as one block, so the header and the two journeys sit together in the
+     middle of the screen instead of the cards stretching to fill it. */
+  display: flex; flex-direction: column; justify-content: center; gap: 20px;
   padding: max(24px, env(safe-area-inset-top)) 20px max(22px, env(safe-area-inset-bottom));
 }
 .j-welcome-top { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -813,15 +815,18 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   font-size: 27px; font-weight: 900; line-height: 1.25; letter-spacing: -0.6px;
   color: var(--text-1);
 }
-.j-welcome-sub { margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--text-2); }
-/* The two journeys share every pixel of the height that is left over. */
-.j-welcome-boxes { flex: 1 1 auto; display: flex; flex-direction: column; gap: 14px; }
+/* Two rows of EQUAL height, each sized to the taller of the two. That keeps the
+   pair symmetric AND content-sized: letting the cards stretch to fill the screen
+   is what left a large dead gap between the copy and the button. */
+.j-welcome-boxes {
+  flex: 0 1 auto;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+}
 .j-welcome-box {
-  /* Share the leftover height equally, but never shrink below the card's own
-     content — that is what keeps the two journeys exactly symmetric. */
-  flex: 1 1 0; min-height: min-content;
   display: flex; flex-direction: column; gap: 13px;
-  padding: 17px;
+  padding: 20px;
   border-radius: 22px;
   border: 1.5px solid var(--border-1);
   background: var(--surface-2);

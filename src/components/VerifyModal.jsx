@@ -8,30 +8,40 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * Identity verification (KYC).
+ *
+ * Logic, order and copy are unchanged — one form step, then a confirmation step.
+ * Only the SURFACE was rebuilt so it is the same sheet as every other popup in
+ * the app: the drag handle, the close button in its own row, the shared sheet
+ * background and border, the same field and button geometry, and the app's own
+ * colour and text tokens instead of hard-coded greys. That is what makes it
+ * follow Light and Dark mode and a Brand's theme like the rest of the app.
+ */
+
 const FIELD_STYLE = (error, focused) => ({
   width: '100%',
-  height: 48,
-  borderRadius: 12,
-  border: `1.5px solid ${error ? '#ef4444' : focused ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : '#e5e7eb'}`,
-  background: error ? '#fff5f5' : '#fff',
+  height: 52,
+  borderRadius: 14,
+  border: `1.5px solid ${error ? 'var(--color-danger)' : focused ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : 'var(--border-1)'}`,
+  background: error ? 'var(--color-danger-bg)' : 'var(--surface-3)',
   padding: '0 14px',
-  fontSize: 15,
-  color: '#111',
+  fontSize: 16,
+  color: 'var(--text-1)',
   outline: 'none',
   boxSizing: 'border-box',
   transition: 'border-color 0.15s',
   fontFamily: 'inherit',
-  boxShadow: focused && !error ? '0 0 0 3px rgba(26,111,212,0.1)' : 'none',
 });
 
 const Label = ({ children }) => (
-  <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, letterSpacing: 0.2 }}>
+  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6, letterSpacing: 0.2 }}>
     {children}
   </div>
 );
 
 const ErrorMsg = ({ msg }) => (
-  <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{msg}</div>
+  <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--color-danger)', marginTop: 4 }}>{msg}</div>
 );
 
 export default function VerifyModal({ onClose, onSuccess }) {
@@ -175,6 +185,8 @@ export default function VerifyModal({ onClose, onSuccess }) {
     setStep(2);
   };
 
+  const ACCENT = 'var(--brand-modal-cta-bg, var(--brand-primary))';
+
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: 999999,
@@ -182,101 +194,110 @@ export default function VerifyModal({ onClose, onSuccess }) {
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       backdropFilter: 'blur(8px)',
     }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-    <div style={{
-        background: 'var(--brand-modal-bg, #fafbff)',
-        borderRadius: '28px 28px 0 0',
+      <div style={{
+        background: 'var(--brand-modal-bg, var(--sheet-bg))',
+        border: '1px solid var(--brand-modal-border, var(--border-1))',
+        borderRadius: '32px 32px 0 0',
         width: '100%', maxWidth: 480,
         maxHeight: '94vh', overflowY: 'auto',
         overscrollBehavior: 'contain',
         WebkitOverflowScrolling: 'touch',
         paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
-        boxShadow: '0 -16px 60px rgba(0,0,0,0.2)',
+        boxShadow: '0 -24px 120px rgba(0,0,0,0.3)',
       }} dir="rtl">
+
+        {/* Drag handle — the same opening every sheet in the app has */}
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
+
+        {/* Close — its own row, top-right, exactly like the other popups */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px 0' }}>
+          <button
+            onClick={onClose}
+            style={{
+              width: 34, height: 34, borderRadius: 11, background: 'var(--surface-3)',
+              border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={16} color="var(--text-3)" />
+          </button>
+        </div>
 
         {step === 1 ? (
           <>
-            {/* Header */}
-            <div style={{ padding: '24px 20px 12px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, background: 'var(--brand-modal-bg, #fafbff)', borderRadius: '28px 28px 0 0' }}>
-              <div style={{ flex: 1 }}>
-                {/* Progress */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <div style={{
-                      height: 4, width: 28, borderRadius: 99,
-                      background: 'var(--brand-modal-cta-bg, var(--brand-primary))',
-                      transition: 'all 0.3s',
-                    }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>שלב אחד · פחות מדקה</span>
+            {/* ── Header ── */}
+            <div style={{ padding: '6px 20px 0' }}>
+              {/* Progress */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <div style={{ height: 4, width: 28, borderRadius: 99, background: ACCENT, transition: 'all 0.3s' }} />
                 </div>
+                <span style={{ fontSize: 11.5, color: 'var(--text-3)', fontWeight: 600 }}>שלב אחד · פחות מדקה</span>
+              </div>
 
-                {/* Icon + Title — prominent green badge to attract verification */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 6 }}>
-                  <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-                    <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.28) 0%, transparent 70%)' }} />
-                    <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg,#10b981,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(16,185,129,0.35)' }}>
-                      <BadgeCheck size={32} color="white" strokeWidth={1.8} />
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-modal-title, #0f1e40)', letterSpacing: -0.3 }}>אימות זהות</div>
-                    <div style={{ fontSize: 12.5, color: '#6b7280', fontWeight: 500, marginTop: 2 }}>
-                      אימות חד־פעמי לכל משתמשי Joba24
-                    </div>
+              {/* Icon + title — the accent badge that draws attention to verification */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.26) 0%, transparent 70%)' }} />
+                  <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: `linear-gradient(135deg, ${ACCENT}, var(--brand-modal-cta-bg, var(--brand-primary-dark)))`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(26,111,212,0.32)' }}>
+                    <BadgeCheck size={32} color="white" strokeWidth={1.8} />
                   </div>
                 </div>
-
-                {/* Trust row */}
-                <div style={{ display: 'flex', gap: 16, marginTop: 14, paddingTop: 12, borderTop: '1px solid #edf0f7' }}>
-                  {[
-                    { icon: <UserCheck size={13} strokeWidth={1.8} />, text: 'אימות חד־פעמי' },
-                    { icon: <Lock size={13} strokeWidth={1.8} />, text: 'מידע מוצפן' },
-                    { icon: <Star size={13} strokeWidth={1.8} />, text: 'קהילה מדורגת' },
-                  ].map(({ icon, text }) => (
-                    <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#6b7280', fontWeight: 500 }}>
-                      <span style={{ color: 'var(--brand-modal-cta-bg, var(--brand-primary))' }}>{icon}</span>
-                      {text}
-                    </div>
-                  ))}
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-modal-title, var(--text-1))', letterSpacing: -0.3 }}>אימות זהות</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--brand-modal-text, var(--text-2))', fontWeight: 500, marginTop: 2 }}>
+                    אימות חד־פעמי לכל משתמשי Joba24
+                  </div>
                 </div>
               </div>
-              <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: 11, background: '#f0f2f7', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                <X size={16} color="#9ca3af" />
-              </button>
+
+              {/* Trust row */}
+              <div style={{ display: 'flex', gap: 16, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-1)' }}>
+                {[
+                  { icon: <UserCheck size={13} strokeWidth={1.8} />, text: 'אימות חד־פעמי' },
+                  { icon: <Lock size={13} strokeWidth={1.8} />, text: 'מידע מוצפן' },
+                  { icon: <Star size={13} strokeWidth={1.8} />, text: 'קהילה מדורגת' },
+                ].map(({ icon, text }) => (
+                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--brand-modal-text, var(--text-2))', fontWeight: 600 }}>
+                    <span style={{ color: ACCENT }}>{icon}</span>
+                    {text}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
               {/* Pending status banner */}
               {isPending && !hasChanges && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 14px' }}>
-                  <Clock size={16} color="#d97706" strokeWidth={2} style={{ flexShrink: 0 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 14, padding: '12px 14px' }}>
+                  <Clock size={16} color="var(--color-warning)" strokeWidth={2} style={{ flexShrink: 0 }} />
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>האימות שלך בבדיקה</div>
-                    <div style={{ fontSize: 11, color: '#b45309', marginTop: 1 }}>הפרטים נשלחו וממתינים לאישור הצוות. ניתן לערוך ולשלוח שינויים.</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-warning)' }}>האימות שלך בבדיקה</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--color-warning)', marginTop: 1 }}>הפרטים נשלחו וממתינים לאישור הצוות. ניתן לערוך ולשלוח שינויים.</div>
                   </div>
                 </div>
               )}
 
               {/* Why verify — collapsible */}
-              <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ border: '1px solid var(--border-1)', borderRadius: 14, overflow: 'hidden' }}>
                 <button
                   onClick={() => setWhyOpen(v => !v)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'white', border: 'none', cursor: 'pointer', textAlign: 'right' }}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'var(--surface-2)', border: 'none', cursor: 'pointer', textAlign: 'right' }}
                 >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>למה נדרש אימות?</span>
-                  {whyOpen ? <ChevronUp size={16} color="#9ca3af" /> : <ChevronDown size={16} color="#9ca3af" />}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>למה נדרש אימות?</span>
+                  {whyOpen ? <ChevronUp size={16} color="var(--text-3)" /> : <ChevronDown size={16} color="var(--text-3)" />}
                 </button>
                 {whyOpen && (
-                  <div style={{ background: '#f8faff', padding: '10px 14px 14px', borderTop: '1px solid #f0f2f7' }}>
+                  <div style={{ background: 'var(--surface-3)', padding: '10px 14px 14px', borderTop: '1px solid var(--border-1)' }}>
                     {[
                       'מונע חשבונות פיקטיביים',
                       'מגדיל ביטחון בין משתמשים',
                       'כולם עוברים אימות זהה',
                     ].map((item, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
-                        <CheckCircle size={14} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
-                        <span style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.5 }}>{item}</span>
+                        <CheckCircle size={14} color={ACCENT} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>{item}</span>
                       </div>
                     ))}
                   </div>
@@ -342,7 +363,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     style={{ ...FIELD_STYLE(fieldError('id_number'), focused === 'id_number'), paddingLeft: 42 }}
                   />
                   <button onClick={() => setShowId(v => !v)} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                    {showId ? <EyeOff size={16} color="#9ca3af" /> : <Eye size={16} color="#9ca3af" />}
+                    {showId ? <EyeOff size={16} color="var(--text-3)" /> : <Eye size={16} color="var(--text-3)" />}
                   </button>
                 </div>
                 {fieldError('id_number') && <ErrorMsg msg={fieldError('id_number')} />}
@@ -354,15 +375,15 @@ export default function VerifyModal({ onClose, onSuccess }) {
                 <input ref={idPhotoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleIdPhotoUpload} />
 
                 {idPhotoUrl ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f0fdf9', border: '1.5px solid #6ee7b7', borderRadius: 14, padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-success-bg)', border: '1.5px solid var(--color-success-border)', borderRadius: 14, padding: '12px 16px' }}>
                     <img src={idPhotoUrl} alt="ת.ז." style={{ width: 52, height: 36, objectFit: 'cover', borderRadius: 8 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#065f46', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <CheckCircle size={14} color="#059669" /> הצילום הועלה
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <CheckCircle size={14} color="var(--color-success)" /> הצילום הועלה
                       </div>
-                      <div style={{ fontSize: 11, color: '#6ee7b7', marginTop: 1 }}>לחץ להחלפה</div>
+                      <div style={{ fontSize: 11, color: 'var(--color-success)', marginTop: 1, opacity: 0.8 }}>לחץ להחלפה</div>
                     </div>
-                    <button onClick={() => idPhotoRef.current?.click()} style={{ fontSize: 12, color: 'var(--brand-modal-cta-bg, var(--brand-primary))', background: 'none', border: '1px solid var(--border-2)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>החלף</button>
+                    <button onClick={() => idPhotoRef.current?.click()} style={{ fontSize: 12, color: ACCENT, background: 'none', border: '1px solid var(--border-1)', borderRadius: 10, padding: '5px 11px', cursor: 'pointer', fontWeight: 700 }}>החלף</button>
                   </div>
                 ) : (
                   <div
@@ -371,9 +392,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
                     style={{
-                      border: `2px dashed ${errors.id_photo ? '#ef4444' : dragOver ? 'var(--brand-modal-cta-bg, var(--brand-primary))' : '#d1dde8'}`,
+                      border: `2px dashed ${errors.id_photo ? 'var(--color-danger)' : dragOver ? ACCENT : 'var(--border-2)'}`,
                       borderRadius: 14,
-                      background: dragOver ? 'var(--brand-primary-light)' : errors.id_photo ? '#fff5f5' : '#f8faff',
+                      background: errors.id_photo ? 'var(--color-danger-bg)' : 'var(--surface-3)',
                       padding: '24px 16px',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
                       cursor: 'pointer',
@@ -381,15 +402,15 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     }}
                   >
                     {uploadingId ? (
-                      <Loader2 size={24} color="var(--brand-modal-cta-bg, var(--brand-primary))" className="animate-spin" />
+                      <Loader2 size={24} color={ACCENT} className="animate-spin" />
                     ) : (
                       <>
-                        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Camera size={22} color="var(--brand-modal-cta-bg, var(--brand-primary))" strokeWidth={1.8} />
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Camera size={22} color={ACCENT} strokeWidth={1.8} />
                         </div>
                         <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-modal-cta-bg, var(--brand-primary))' }}>העלאת תעודת זהות</div>
-                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>לחץ לבחירת תמונה או גרור לכאן</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: ACCENT }}>העלאת תעודת זהות</div>
+                          <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>לחץ לבחירת תמונה או גרור לכאן</div>
                         </div>
                       </>
                     )}
@@ -400,9 +421,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
               </div>
 
               {/* Privacy */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', background: '#f8faff', borderRadius: 12 }}>
-                <Lock size={13} color="#9ca3af" strokeWidth={1.8} />
-                <span style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.5 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', background: 'var(--surface-3)', borderRadius: 12 }}>
+                <Lock size={13} color="var(--text-3)" strokeWidth={1.8} />
+                <span style={{ fontSize: 11.5, color: 'var(--text-3)', lineHeight: 1.5 }}>
                   מוצפן ולא משותף עם אף אחד.
                 </span>
               </div>
@@ -412,15 +433,14 @@ export default function VerifyModal({ onClose, onSuccess }) {
                 onClick={handleSubmit}
                 disabled={submitDisabled}
                 style={{
-                  width: '100%', height: 52, borderRadius: 14,
-                  background: submitDisabled ? '#c9d6e8' : 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))',
-                  color: 'var(--brand-modal-cta-text, white)', fontWeight: 700, fontSize: 15,
+                  width: '100%', height: 52, borderRadius: 16,
+                  background: submitDisabled ? 'var(--brand-btn-disabled-bg, var(--surface-3))' : `linear-gradient(135deg, ${ACCENT}, var(--brand-modal-cta-bg, var(--brand-primary-dark)))`,
+                  color: submitDisabled ? 'var(--text-3)' : 'var(--brand-modal-cta-text, white)', fontWeight: 800, fontSize: 15,
                   border: 'none', cursor: submitDisabled ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   letterSpacing: 0.2,
                   boxShadow: submitDisabled ? 'none' : '0 4px 20px rgba(26,111,212,0.3)',
                   marginBottom: 8,
-                  opacity: submitDisabled ? 0.7 : 1,
                 }}
               >
                 {loading ? (
@@ -435,8 +455,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
           </>
         ) : (
           /* Step 2: Success */
-          <div style={{ padding: '48px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, textAlign: 'center' }}>
-            {/* Animated checkmark */}
+          <div style={{ padding: '16px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, textAlign: 'center' }}>
             <div style={{
               width: 88, height: 88, borderRadius: '50%',
               background: 'linear-gradient(135deg,#10b981,#059669)',
@@ -447,24 +466,24 @@ export default function VerifyModal({ onClose, onSuccess }) {
               <CheckCircle size={44} color="white" strokeWidth={2} />
             </div>
 
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--brand-modal-title, #0f1e40)', marginBottom: 8, letterSpacing: -0.3 }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--brand-modal-title, var(--text-1))', marginBottom: 8, letterSpacing: -0.3 }}>
               הפרטים נשלחו לאימות
             </div>
-            <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
+            <div style={{ fontSize: 13, color: 'var(--brand-modal-text, var(--text-2))', lineHeight: 1.7, marginBottom: 24 }}>
               הווי הירוק יופיע לאחר אישור הצוות.
             </div>
 
             {/* Capabilities */}
-            <div style={{ width: '100%', background: '#f8faff', border: '1px solid #e5e9f5', borderRadius: 16, padding: '16px', marginBottom: 24 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>לאחר אישור תוכל</div>
+            <div style={{ width: '100%', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 16, padding: '16px', marginBottom: 24 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>לאחר אישור תוכל</div>
               {[
                 { icon: <Shield size={15} strokeWidth={1.8} />, text: 'ווי ירוק בפרופיל' },
                 { icon: <UserCheck size={15} strokeWidth={1.8} />, text: 'להגיש בקשות עם ווי ירוק' },
                 { icon: <CheckCircle size={15} strokeWidth={1.8} />, text: 'לבנות אמון עם משתמשים' },
               ].map(({ icon, text }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: text !== 'לבנות אמון עם משתמשים' ? '1px solid #edf0f7' : 'none' }}>
-                  <div style={{ color: '#10b981' }}>{icon}</div>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{text}</span>
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: text !== 'לבנות אמון עם משתמשים' ? '1px solid var(--border-1)' : 'none' }}>
+                  <div style={{ color: 'var(--color-success)' }}>{icon}</div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>{text}</span>
                 </div>
               ))}
             </div>
@@ -472,11 +491,11 @@ export default function VerifyModal({ onClose, onSuccess }) {
             <button
               onClick={() => { onSuccess?.(); onClose(); }}
               style={{
-                width: '100%', height: 52, borderRadius: 14,
-                background: 'linear-gradient(135deg,#10b981,#059669)',
-                color: 'var(--brand-modal-cta-text, white)', fontWeight: 700, fontSize: 15,
+                width: '100%', height: 52, borderRadius: 16,
+                background: 'linear-gradient(135deg, var(--brand-modal-cta-bg, var(--brand-primary)), var(--brand-modal-cta-bg, var(--brand-primary-dark)))',
+                color: 'var(--brand-modal-cta-text, white)', fontWeight: 800, fontSize: 15,
                 border: 'none', cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(16,185,129,0.3)',
+                boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
               }}
             >
               בוא נתחיל

@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
-import { X, Mail, ArrowLeft, Loader2, Eye } from 'lucide-react';
+import { X, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
 import { Capacitor } from '@capacitor/core';
@@ -564,23 +564,28 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                 />
               </div>
 
+              {/* Guest entry — the same button the join screen offers: one line of
+                  text, a solid border in the app's own colour, and the same height
+                  as every option above it. No icon, no dashed outline and no second
+                  line of copy, so it reads as one of the choices rather than a
+                  footnote hanging off the bottom. */}
               <button
                 onClick={handleGuest}
                 style={{
-                  width: '100%', height: 48, borderRadius: 14, marginTop: 6,
-                  background: 'transparent', color: 'var(--text-2)',
-                  border: '1.5px dashed var(--border-2)',
-                  fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  width: '100%', height: 52, borderRadius: 16, marginTop: 4,
+                  background: 'transparent',
+                  color: 'var(--brand-modal-cta-bg, var(--brand-primary))',
+                  border: '1.5px solid var(--brand-modal-cta-bg, var(--brand-primary))',
+                  fontWeight: 800, fontSize: 15, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'opacity 0.15s',
                 }}
+                onPointerDown={e => { e.currentTarget.style.opacity = '0.75'; }}
+                onPointerUp={e => { e.currentTarget.style.opacity = '1'; }}
+                onPointerLeave={e => { e.currentTarget.style.opacity = '1'; }}
               >
-                <Eye size={16} color="var(--text-2)" />
                 {t('continue_as_guest')}
               </button>
-
-              <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.8, fontWeight: 500, marginBottom: 4 }}>
-                {t('completely_free')}
-              </div>
             </>
           )}
         </div>

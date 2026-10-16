@@ -33,9 +33,8 @@ import TrackExplainer from '@/components/onboarding/TrackExplainer';
  * worker-profile continuation, the in-app tutorial and every other gate are
  * untouched. Only the automatic first-run screen is skipped.
  *
- * The ONE exception is a deliberate re-open: the side menu links here with
- * `?switch=1`, because switching your journey is a thing the user asks for on
- * purpose. That path is honoured for anyone.
+ * There is no bypass. The screens are reached automatically, once, by a visitor
+ * with no account — nothing in the app links here for a signed-in user.
  *
  * A visitor with no account is unaffected and still gets the flow, resuming a
  * saved track whose explainer screens were not finished yet.
@@ -46,8 +45,7 @@ export default function OnboardingTrackWelcome() {
 
   // The route is rendered only after auth has resolved (the app shows its splash
   // until then), so `isAuthenticated` is already accurate here.
-  const deliberate = new URLSearchParams(window.location.search).get('switch') === '1';
-  const skipFirstRun = isAuthenticated && !deliberate;
+  const skipFirstRun = isAuthenticated;
 
   const [track, setTrack] = useState(() => {
     const saved = getOnboardingTrack();

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Users, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp, Compass } from 'lucide-react';
+import { X, Home, Map, Plus, User, Users, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -33,11 +33,9 @@ export default function SideMenu({ open, onClose }) {
     { to: '/notifications', icon: Bell, label: t('nav_notifications') },
     { to: '/daily-goal', icon: Target, label: t('nav_daily_goal') },
     { to: '/leaderboard', icon: Trophy, label: t('nav_leaderboard') },
-    // Re-opens the track picker so the journey can be switched at any time.
-    // `switch=1` marks this as a DELIBERATE re-open: without it the first-run
-    // screen is reserved for visitors with no account, so a signed-in user is
-    // never walked through onboarding again. Nothing already filled in is touched.
-    { to: '/welcome?switch=1', icon: Compass, label: 'מסלול ההתחלה' },
+    // No first-run link here on purpose. The onboarding screens belong to a
+    // visitor with no account, so for a signed-in user this entry would only
+    // bounce straight back to the feed and look like a dead button.
   ];
 
   const { data: me } = useQuery({

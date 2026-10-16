@@ -1201,7 +1201,10 @@ export default function CreateTask() {
           <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--brand-hero-bg, #0f2b6b), var(--brand-hero-bg, var(--brand-primary)))', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
-              <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="var(--brand-hero-text, white)" />
+              {/* Back leaves the task form for the home feed. It must NOT walk
+                  back through the onboarding explainers the visitor arrived
+                  from — that is a first-run flow, not a place to return to. */}
+              <BackButton to="/" style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="var(--brand-hero-text, white)" />
               <span style={{ fontWeight: 800, fontSize: 17, color: 'var(--brand-hero-text, white)', flex: 1 }}>
         {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
