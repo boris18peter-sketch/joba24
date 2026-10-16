@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Cookie } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { applyConsent, hasConsentChoice, CONSENT_GRANTED, CONSENT_DENIED } from '@/lib/consent';
+import { isNativeLike } from '@/lib/nativeEnv';
 
 /**
  * Minimal advertising-consent notice.
@@ -21,6 +22,11 @@ import { applyConsent, hasConsentChoice, CONSENT_GRANTED, CONSENT_DENIED } from 
 export default function ConsentBanner() {
   const { lang, isRTL } = useLanguage();
   const [decided, setDecided] = useState(() => hasConsentChoice());
+
+  // Inside the native app there is no web advertising cookie to consent to —
+  // the notice belongs to the browser experience only and must never appear
+  // over the app's own screens.
+  if (isNativeLike()) return null;
 
   if (decided) return null;
 

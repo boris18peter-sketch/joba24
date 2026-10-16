@@ -49,7 +49,7 @@ import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
-import { getOnboardingTrack, isExplainerDone, destinationForTrack } from '@/lib/onboardingTrack';
+
 import BoostOverlay from '@/components/BoostOverlay';
 
 
@@ -473,18 +473,12 @@ export default function Layout() {
   useEffect(() => {
     const isPublicPage = PUBLIC_PATHS_NO_AUTH.includes(location.pathname);
     if (!isAuthenticated && !isPublicPage) {
-      // First-run onboarding, decided by the track the visitor picked. Never a
-      // guest — a guest already made an explicit choice to browse. No track yet
-      // (or the explainer screens still unseen) → the track picker. Otherwise
-      // they continue to that track's EXISTING entry point. Only the root is
-      // affected, so deep links keep their own destination.
+      // The app always OPENS on the track screen. Landing straight on /join
+      // made the worker sign-up look like the app's front door. A returning
+      // visitor's saved track is still pre-selected there — one tap to continue.
+      // Only the root is affected, so deep links keep their own destination.
       if (location.pathname === '/' && !effectiveGuest) {
-        const track = getOnboardingTrack();
-        if (!track || !isExplainerDone(track)) {
-          navigate('/welcome', { replace: true });
-          return;
-        }
-        navigate(destinationForTrack(track), { replace: true });
+        navigate('/welcome', { replace: true });
         return;
       }
       if (effectiveGuest) {

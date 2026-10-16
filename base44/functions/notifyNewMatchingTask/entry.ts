@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { getJobaSettings } from '../../shared/jobaSettings.ts';
 
 // ── City coordinates fallback (same as feedRanker.js) ──────────────────────
 const CITY_COORDS = {
@@ -85,14 +86,38 @@ Deno.serve(async (req) => {
       skip += pageSize;
     }
 
-    // SECURITY (pre-launch gate): only notify APPROVED users. Without this filter,
-    // unapproved users on the waiting page receive push notifications about new
-    // tasks, and tapping the notification opens the TaskDetailSheet on top of
-    // the waiting page — bypassing the gate entirely.
+    // SECURITY (pre-launch gate): only reach users who can actually USE the app —
+    // unapproved users on the waiting page must not receive task notifications.
+    //
+    // This mirrors the app's own access gate (checkApprovalStatus + Layout):
+    // active = approved, admin, or released by the launch settings. Requiring
+    // the literal `is_approved === true` flag alone was too narrow — an account
+    // whose approval lives in its verification state (kyc_status/is_verified)
+    // and which the launch settings had already released was silently skipped,
+    // so a fully active verified professional never heard about a matching job.
+    const settings = await getJobaSettings(base44);
+    const gateActive = settings.pre_launch_gate_active !== false;
+    const releaseMode = settings.pre_launch_release_mode;
+    const releaseAtMs = settings.pre_launch_release_at
+      ? new Date(settings.pre_launch_release_at).getTime()
+      : NaN;
+
+    const isActiveUser = (u) => {
+      if (u.is_blocked === true || u.disabled === true) return false;
+      if (u.is_approved === true || u.role === 'admin') return true;
+      if (gateActive) return false;
+      if (releaseMode === 'all') return true;
+      if (releaseMode === 'new_only' && Number.isFinite(releaseAtMs)) {
+        const createdMs = u.created_date ? new Date(u.created_date).getTime() : NaN;
+        return Number.isFinite(createdMs) && createdMs >= releaseAtMs;
+      }
+      return false;
+    };
+
     const eligibleWorkers = allUsers.filter(u =>
       u.fcm_tokens?.length > 0 &&
       u.id !== data.client_id &&
-      (u.is_approved === true || u.role === 'admin')
+      isActiveUser(u)
     );
 
     if (!eligibleWorkers.length) {

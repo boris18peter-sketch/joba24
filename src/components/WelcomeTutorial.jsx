@@ -2,8 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowLeft, X, Shield, UserCircle2, Plus, Coins, Send } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { getOnboardingTrack } from '@/lib/onboardingTrack';
 
@@ -27,14 +25,12 @@ const PAD = 10; // spotlight padding around the target element
 
 // ── Step definitions ──────────────────────────────────────────────────────
 // Each step targets a real DOM element by id and only runs if that element exists.
-function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, actualBonus }) {
-  // Prefer the ACTUAL bonus the user received (summed from their real credit
-  // transactions) over a settings-based estimate — each user may receive a
-  // different amount depending on referrals, profile completion, etc.
-  const settingsEstimate = (signupBonus || 0) + (hasReferral ? (referralBonus || 0) : 0);
-  const bonus = (isAuthenticated && actualBonus > 0) ? actualBonus : settingsEstimate;
+function buildSteps({ isAuthenticated, balance }) {
+  // Show the EXACT number the header balance pill shows — the user's real
+  // available ג'ובות. A settings estimate, or a sum of bonus transactions,
+  // drifted away from that number: someone credited 5 + 25 was told "25".
   const jobasTitle = isAuthenticated
-    ? `קיבלתם ${bonus} ג'ובות במתנה!`
+    ? `קיבלתם ${balance} ג'ובות במתנה!`
     : "קבלו ג'ובות במתנה בהרשמה!";
 
   return [
@@ -108,29 +104,8 @@ export default function WelcomeTutorial() {
   const [cardPlacement, setCardPlacement] = useState('center'); // 'above' | 'below' | 'center'
   const rafRef = useRef(null);
 
-  // Fetch JobaSettings to sync the bonus message
-  const { data: settings } = useQuery({
-    queryKey: ['jobaSettings'],
-    queryFn: () => base44.entities.JobaSettings.list('-updated_date', 1).then(r => r[0] || null),
-    staleTime: 300000,
-  });
-
-  const signupBonus = settings?.signup_bonus ?? 60;
-  const referralBonus = settings?.referral_signup_bonus ?? 40;
-  const hasReferral = !!(me?.referred_by_agent_code) || !!localStorage.getItem('joba24_ref_code');
-
-  // Sum the ACTUAL signup/referral bonus the user received from their real
-  // credit transactions — this is the true amount credited, not a settings guess.
-  const { data: actualBonus = 0 } = useQuery({
-    queryKey: ['signupBonusTotal', me?.id],
-    queryFn: async () => {
-      if (!me?.id) return 0;
-      const txns = await base44.entities.CreditTransaction.filter({ user_id: me.id, type: 'Signup_Bonus' }, '-created_date', 20);
-      return txns.filter(t => (t.amount || 0) > 0).reduce((s, t) => s + t.amount, 0);
-    },
-    enabled: !!me?.id,
-    staleTime: 60000,
-  });
+  // The user's real available balance — the very number the header shows.
+  const balance = Number(me?.worker_credits) || 0;
 
   // Detect available steps once (after a short delay for layout to settle)
   useEffect(() => {
@@ -138,7 +113,7 @@ export default function WelcomeTutorial() {
     if (localStorage.getItem(STORAGE_KEY(track))) return;
     // Only the steps that belong to the track this person chose. With no track
     // saved the full list is kept, exactly as before.
-    const candidates = buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, actualBonus })
+    const candidates = buildSteps({ isAuthenticated, balance })
       .filter(s => !track || !s.tracks || s.tracks.includes(track));
 
     const startedAt = Date.now();
@@ -161,7 +136,7 @@ export default function WelcomeTutorial() {
     const t = setTimeout(detect, 600);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, signupBonus, referralBonus, actualBonus]);
+  }, [isAuthenticated, balance]);
 
   const currentStep = steps[stepIdx];
 
