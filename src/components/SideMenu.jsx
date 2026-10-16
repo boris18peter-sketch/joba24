@@ -33,9 +33,11 @@ export default function SideMenu({ open, onClose }) {
     { to: '/notifications', icon: Bell, label: t('nav_notifications') },
     { to: '/daily-goal', icon: Target, label: t('nav_daily_goal') },
     { to: '/leaderboard', icon: Trophy, label: t('nav_leaderboard') },
-    // Re-opens the first-run track picker so the journey can be switched at any
-    // time. Nothing already filled in is touched.
-    { to: '/welcome', icon: Compass, label: 'מסלול ההתחלה' },
+    // Re-opens the track picker so the journey can be switched at any time.
+    // `switch=1` marks this as a DELIBERATE re-open: without it the first-run
+    // screen is reserved for visitors with no account, so a signed-in user is
+    // never walked through onboarding again. Nothing already filled in is touched.
+    { to: '/welcome?switch=1', icon: Compass, label: 'מסלול ההתחלה' },
   ];
 
   const { data: me } = useQuery({

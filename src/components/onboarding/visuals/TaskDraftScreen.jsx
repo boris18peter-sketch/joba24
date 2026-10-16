@@ -3,10 +3,14 @@ import { MapPin, Sparkles } from 'lucide-react';
 /**
  * The publish form, FILLED IN.
  *
- * This is the same design language as the live screen — the app's card, chip and
- * text tokens — but it shows a COMPLETED task rather than an empty form: an
+ * This is the same design language as the live screen — the app's card and text
+ * tokens — but it shows a COMPLETED task rather than an empty form: an
  * illustration of an empty form reads as something the visitor is meant to fill
  * in, which is exactly what a preview must never look like.
+ *
+ * Only the two things this slide teaches are shown — what you wrote, and where
+ * it is. No status pills and no buttons: nothing that would make the picture
+ * look like a form waiting to be completed.
  */
 const DESCRIPTION =
   'צריך להתקין גוף תאורה חדש בתקרת הסלון. יש סולם וכלים בבית, העבודה צפויה לקחת כשעה.';
@@ -14,11 +18,8 @@ const DESCRIPTION =
 export default function TaskDraftScreen() {
   return (
     <>
-      <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', background: 'var(--surface-2)', boxShadow: '0 1px 0 var(--border-1)' }}>
+      <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 14px', background: 'var(--surface-2)', boxShadow: '0 1px 0 var(--border-1)' }}>
         <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>פרסם משימה</span>
-        <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 999, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)' }}>
-          חינם
-        </span>
       </div>
 
       <div style={{ background: 'var(--surface-1)', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>

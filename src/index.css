@@ -672,26 +672,17 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
    gap that used to sit between the copy and the picture. */
 .j-slide {
   flex: 1 1 auto; min-height: 0;
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex; flex-direction: column; gap: 10px;
   padding: 0 16px;
 }
 .j-slide-head {
   flex-shrink: 0;
-  /* A fixed band, sized for a two-line title: the illustration starts at the
-     same Y on every slide, so the six screens feel like one flow. */
-  min-height: 126px;
+  /* A fixed band sized for a two-line title and a two-line body: the
+     illustration starts at the same Y on every slide, so the six screens read
+     as one flow. No label sits above the title — the title says it all. */
+  min-height: 104px;
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
-}
-.j-slide-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11.5px; font-weight: 900; letter-spacing: 0.4px;
-  color: var(--brand-primary);
-  background: var(--brand-primary-light);
-  border: 1px solid var(--border-2);
-  border-radius: 999px;
-  padding: 4px 12px;
-  margin-bottom: 9px;
 }
 .j-slide-title {
   margin: 0 0 7px;
@@ -719,17 +710,8 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   overflow: hidden;
   border-radius: var(--r-xl);
   border: 1px solid var(--preview-border);
-  background: var(--preview-bar-bg);
+  background: var(--preview-stage-bg);
   box-shadow: var(--shadow-md);
-}
-.j-preview-bar {
-  flex-shrink: 0;
-  display: flex; align-items: center; gap: 6px;
-  padding: 9px 14px;
-  font-size: 11.5px; font-weight: 800; letter-spacing: 0.2px;
-  color: var(--preview-bar-text);
-  background: var(--preview-bar-bg);
-  border-bottom: 1px solid var(--preview-border);
 }
 .j-preview-stage {
   position: relative;
