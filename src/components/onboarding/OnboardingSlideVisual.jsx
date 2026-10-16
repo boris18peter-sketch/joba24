@@ -1,36 +1,42 @@
-import PhoneFrame from '@/components/onboarding/PhoneFrame';
-import ScreenshotScreen from '@/components/onboarding/visuals/ScreenshotScreen';
+import ScreenshotShowcase from '@/components/onboarding/ScreenshotShowcase';
+import UiStage from '@/components/onboarding/UiStage';
 import DemoTaskScreen from '@/components/onboarding/visuals/DemoTaskScreen';
 import WorkerProfileScreen from '@/components/onboarding/visuals/WorkerProfileScreen';
 import FeedScreen from '@/components/onboarding/visuals/FeedScreen';
-import TrustScreen from '@/components/storekit/screens/TrustScreen';
 
 /**
- * The picture half of one explainer slide — always the same phone, always a
- * real Joba24 screen inside it:
+ * The picture half of one explainer slide — always real Joba24 UI, always at the
+ * largest size the slide can give it:
  *
- *   screenshot      a real capture of the app, at its own aspect ratio
- *   worker-profile  the real profession + city selection
- *   feed            the real task feed with a real task notification
+ *   shots           real captures of the app, at their own aspect ratio
+ *   worker-profile  the real profession + city selection, magnified
+ *   feed            the real task feed with a real task notification, magnified
  *   task-card       the real task card, with the apply button highlighted
- *   profile         the real profile screen, with ratings and verification
  */
 export default function OnboardingSlideVisual({ slide }) {
-  const kind = slide.visual;
+  if (slide.shots?.length) {
+    return <ScreenshotShowcase shots={slide.shots} />;
+  }
+
+  if (slide.visual === 'worker-profile') {
+    return (
+      <UiStage width={393} maxScale={1.7}>
+        <WorkerProfileScreen />
+      </UiStage>
+    );
+  }
+
+  if (slide.visual === 'feed') {
+    return (
+      <UiStage width={440} maxScale={1.5}>
+        <FeedScreen />
+      </UiStage>
+    );
+  }
 
   return (
-    <PhoneFrame statusBar={kind !== 'screenshot'}>
-      {kind === 'worker-profile' ? (
-        <WorkerProfileScreen />
-      ) : kind === 'feed' ? (
-        <FeedScreen />
-      ) : kind === 'task-card' ? (
-        <DemoTaskScreen />
-      ) : kind === 'profile' ? (
-        <TrustScreen />
-      ) : (
-        <ScreenshotScreen src={slide.shot} insetSrc={slide.insetShot} align={slide.align} />
-      )}
-    </PhoneFrame>
+    <UiStage width={393} maxScale={1.75}>
+      <DemoTaskScreen />
+    </UiStage>
   );
 }

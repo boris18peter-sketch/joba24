@@ -1,21 +1,25 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
-import { TRACKS } from '@/lib/onboardingTrack';
 import { FINAL_CTA } from '@/lib/onboardingTrackContent';
 import OnboardingSlideVisual from '@/components/onboarding/OnboardingSlideVisual';
 
 /**
  * The three explainer screens for one track.
  *
- * Each screen shows the REAL Joba24 screen for that step inside a phone frame,
- * followed by the one line that explains it. Presentation only: it never
- * publishes a task, never completes a worker profile and fires no analytics
- * events. Finishing (or skipping) simply hands the visitor to the EXISTING flow
- * for that track.
+ * One clear column: a heading, a single line of explanation, the real Joba24
+ * screen for that step, the progress indicator, and the continue button. The
+ * illustration runs edge to edge on a phone so it is as large as the device
+ * allows; from 900px up the copy moves beside it and the picture takes the full
+ * height instead of sitting in the middle of an empty page.
  *
- * On a wide screen the phone and the copy sit side by side, which lets the
- * phone use the full height and keeps the interface legible.
+ * All layout lives in the stylesheet, not in inline styles — an inline
+ * `flex-direction` silently beats a media query, which is what previously kept
+ * the wide-screen layout from ever applying.
+ *
+ * Presentation only: it never publishes a task, never completes a worker profile
+ * and fires no analytics events. Finishing (or skipping) simply hands the
+ * visitor to the EXISTING flow for that track.
  */
 export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack }) {
   const [index, setIndex] = useState(0);
@@ -27,10 +31,21 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
     <div dir="rtl" style={{ position: 'fixed', inset: 0, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       <style>{`
+        .j-onb-body   { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 0; }
+        .j-onb-text   { flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+                        width: 100%; max-width: 520px; margin: 0 auto; padding: 0 18px; text-align: center; }
+        .j-onb-visual { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 0; }
+        .j-onb-title  { font-size: 26px; }
+        .j-onb-lede   { font-size: 15px; }
+
         @media (min-width: 900px) {
-          .j-onb-body   { flex-direction: row-reverse; align-items: stretch; gap: 28px; padding: 0 40px; }
-          .j-onb-visual { flex: 1 1 56%; min-height: 0; padding: 0 0 12px; }
-          .j-onb-text   { flex: 0 1 40%; display: flex; flex-direction: column; justify-content: center; text-align: right; padding: 0 0 12px; max-width: none; }
+          .j-onb-body   { flex-direction: row; align-items: stretch; gap: 44px; padding: 0 44px; }
+          .j-onb-text   { flex: 0 0 32%; max-width: 400px; margin: 0; justify-content: center;
+                          align-items: flex-start; text-align: right; padding: 0 0 24px; }
+          .j-onb-visual { padding: 0 0 24px; }
+          .j-onb-title  { font-size: 34px; }
+          .j-onb-lede   { font-size: 16.5px; }
+          .j-onb-badge  { margin-bottom: 16px; }
         }
       `}</style>
 
@@ -62,8 +77,8 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
         </button>
       </div>
 
-      {/* ── Slide: the real screen, then its one line ── */}
-      <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
+      {/* ── Slide: heading → one line → the real screen ── */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
@@ -72,23 +87,22 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
             className="j-onb-body"
-            style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
           >
-            <div className="j-onb-visual" style={{ flex: '1 1 auto', minHeight: 300, display: 'flex', flexDirection: 'column', padding: '6px 24px 0' }}>
-              <OnboardingSlideVisual slide={slide} />
-            </div>
-
-            <div className="j-onb-text" style={{ flexShrink: 0, width: '100%', maxWidth: 520, margin: '0 auto', padding: '20px 26px 6px', textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 900, letterSpacing: 0.5, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', borderRadius: 999, padding: '4px 12px', marginBottom: 12 }}>
+            <div className="j-onb-text">
+              <div className="j-onb-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 900, letterSpacing: 0.5, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', borderRadius: 999, padding: '4px 12px', marginBottom: 12 }}>
                 <Icon size={13} strokeWidth={2.3} />
                 {slide.badge}
               </div>
-              <h2 style={{ fontSize: 23, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 10, lineHeight: 1.28, letterSpacing: -0.4 }}>
+              <h2 className="j-onb-title" style={{ fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 9, lineHeight: 1.25, letterSpacing: -0.5 }}>
                 {slide.title}
               </h2>
-              <p style={{ fontSize: 14.5, color: 'var(--text-2)', margin: 0, lineHeight: 1.65 }}>
+              <p className="j-onb-lede" style={{ color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
                 {slide.body}
               </p>
+            </div>
+
+            <div className="j-onb-visual">
+              <OnboardingSlideVisual slide={slide} />
             </div>
           </motion.div>
         </AnimatePresence>

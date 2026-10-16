@@ -2,9 +2,11 @@ import { ClipboardList, Coins, MapPin, Send, Star, Users } from 'lucide-react';
 import { TRACKS } from '@/lib/onboardingTrack';
 
 /**
- * Real Joba24 captures. Two are full screens; three are horizontal slices of a
- * single form section. Each slide renders its capture at its own aspect ratio,
- * so none of them is ever cropped.
+ * Real Joba24 captures. Most are already focused slices of a single form
+ * section; `description` is a whole phone screen, so the slide that uses it
+ * shows only the band of the form the step is about — a full screen shrunk to
+ * fit a slide is unreadable, and the brief is explicit that a focused view beats
+ * it. Nothing is ever stretched, and the crop is vertical only.
  */
 const SHOTS = {
   description: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/427e287bb_WhatsAppImage2026-10-16at125311.jpeg',
@@ -28,28 +30,24 @@ const SLIDES = {
       badge: 'המשימה',
       title: 'תאר את המשימה ואת המיקום',
       body: 'ספר מה צריך לעשות, איפה ומתי. הפרסום בחינם!',
-      visual: 'screenshot',
-      shot: SHOTS.description,
-      insetShot: SHOTS.location,
-      align: 'top',
+      shots: [
+        { src: SHOTS.description, ratio: 1.15, focus: 'center 50%' },
+        SHOTS.location,
+      ],
     },
     {
       icon: Coins,
       badge: 'המחיר',
       title: 'אתה קובע כמה לשלם',
-      body: 'ה־AI יציע מחיר לפי המשימה ומחירי השוק. ההחלטה שלך.',
-      visual: 'screenshot',
-      shot: SHOTS.price,
-      align: 'center',
+      body: 'ה־AI מציע מחיר לפי המשימה ומחירי השוק. ההחלטה שלך.',
+      shots: [SHOTS.price],
     },
     {
       icon: Users,
-      badge: 'מועמדויות',
-      title: 'קבל מועמדויות ובחר מי יעזור לך',
-      body: 'אנשים מתאימים יכולים להגיש מועמדות, ואתה בוחר את מי שמתאים לך.',
-      visual: 'screenshot',
-      shot: SHOTS.applicants,
-      align: 'center',
+      badge: 'בקשות',
+      title: 'קבל בקשות ובחר מי יעזור לך',
+      body: 'אנשים מתאימים יכולים להגיש בקשה תוך דקות. אתה בוחר מי יבצע את המשימה.',
+      shots: [SHOTS.applicants],
     },
   ],
   [TRACKS.WORKER]: [
@@ -63,8 +61,8 @@ const SLIDES = {
     {
       icon: Send,
       badge: 'חיפוש',
-      title: 'גלה משימות שמתאימות לך',
-      body: 'קבל התראות על משימות חדשות או מצא אותן בעצמך בפיד.',
+      title: 'מצא משימות שמתאימות לך',
+      body: 'קבל התראות על משימות חדשות או חפש בעצמך בפיד.',
       visual: 'feed',
     },
     {
