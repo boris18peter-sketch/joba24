@@ -7,6 +7,7 @@
  */
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Sparkles, AlertTriangle, X, Loader2, FlaskConical } from 'lucide-react';
@@ -134,8 +135,17 @@ export function NewUserSimulatorButton({ onOpen }) {
 // ── Floating Exit Banner (shown when in demo mode) ───────────────────────────
 export function DemoModeExitBanner() {
   const [loading, setLoading] = useState(false);
+  const { pathname } = useLocation();
 
   if (!isInDemoMode()) return null;
+
+  // Never over the first-run flow or the publish form. Both screens END in a
+  // full-width action button pinned to the bottom edge, and this banner floats
+  // in exactly that band — on a phone it sat ON the button and swallowed the
+  // tap, so "פרסמו משימה בחינם" appeared to do nothing while working fine on a
+  // desktop-sized window. Neither screen is a trap: the flow has "דלג" and the
+  // form has its close button, so the simulation can always be left from here.
+  if (pathname === '/welcome' || pathname === '/create-task') return null;
 
   const handleExit = async () => {
     setLoading(true);

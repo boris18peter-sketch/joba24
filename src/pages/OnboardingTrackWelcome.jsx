@@ -57,9 +57,22 @@ export default function OnboardingTrackWelcome() {
   // The worker journey's LAST screen: the join screen, rendered in place.
   const [showJoin, setShowJoin] = useState(false);
 
+  // A signed-in visitor is never shown the first-run screens — but WHERE they
+  // go next must be the same decision the /join page makes, not a shortcut past
+  // it. This matters for the sign-in that happens INSIDE the worker flow: OAuth
+  // returns to this URL, so the effect below is what decides the destination.
+  //
+  // A worker-track visitor is therefore sent to /join itself, which applies the
+  // existing rule: a user who already has a profile is dropped into the feed, a
+  // user who has not is walked through the profile steps. Letting that page own
+  // the decision is the only way the two entry points cannot drift apart.
+  const savedTrack = getOnboardingTrack();
+
   useEffect(() => {
-    if (skipFirstRun) navigate('/', { replace: true });
-  }, [skipFirstRun, navigate]);
+    if (!skipFirstRun) return;
+    const workerTrack = savedTrack === TRACKS.WORKER && isExplainerDone(savedTrack);
+    navigate(workerTrack ? '/join' : '/', { replace: true });
+  }, [skipFirstRun, savedTrack, navigate]);
 
   const choose = (next) => {
     setOnboardingTrack(next);

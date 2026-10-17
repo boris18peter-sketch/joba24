@@ -228,15 +228,10 @@ export default function Profile() {
         {/* Verify CTA — status-aware */}
         <VerificationStatusBanner me={me} />
 
-        {/* Reviews — split by the role the owner held when each was received */}
-        <ReviewsSection
-          reviews={reviews}
-          tasks={[...workerTasks, ...postedTasks]}
-          profileUserId={me?.id}
-          rating={rating}
-          scope={scope}
-          showTaskTitle
-        />
+        {/* Reviews are NOT shown inline any more: the block took up half the
+            page and the same content is one tap away in the sheet below. The
+            component itself is unchanged — it simply renders inside that sheet
+            now, so the design is identical to what used to sit here. */}
 
         {/* About */}
         {me?.bio && (
@@ -351,7 +346,17 @@ export default function Profile() {
                 <X size={16} color="var(--text-2)" />
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
+            <div style={{ overflowY: 'auto', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 18 }} dir="rtl">
+              {/* The reviews, in the EXACT design the profile used to show inline */}
+              <ReviewsSection
+                reviews={reviews}
+                tasks={[...workerTasks, ...postedTasks]}
+                profileUserId={me?.id}
+                rating={rating}
+                scope={scope}
+                showTaskTitle
+              />
+
               <TaskReviewHistory tasks={[...workerTasks, ...postedTasks]} reviews={reviews} userId={me.id} onTaskClick={openTaskSheet} scope={scope} />
             </div>
           </div>

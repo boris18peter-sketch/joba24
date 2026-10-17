@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { selectTask } from '@/lib/taskCache';
@@ -15,6 +16,7 @@ import { X, ArrowUp } from 'lucide-react';
 export default function ReturnToTaskPopup() {
   const { hiddenTaskId, clearHiddenTask, openTaskSheet } = useTaskSheet();
   const { t, isRTL } = useLanguage();
+  const { pathname } = useLocation();
   const [visible, setVisible] = useState(false);
 
   const { data: task } = useQuery({
@@ -37,6 +39,9 @@ export default function ReturnToTaskPopup() {
     return () => clearTimeout(timer);
   }, [hiddenTaskId]);
 
+  // Never over the first-run flow or the publish form — this bar floats in the
+  // same bottom band their full-width action button occupies.
+  if (pathname === '/welcome' || pathname === '/create-task') return null;
   if (!hiddenTaskId || !visible) return null;
 
   const dismiss = () => {
