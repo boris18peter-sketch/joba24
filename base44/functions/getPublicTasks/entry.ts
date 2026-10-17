@@ -20,6 +20,44 @@ import { resolveBrandFromRequest } from '../../shared/brandContext.ts';
  */
 const MAX_LIMIT = 200;
 
+/**
+ * Overlay each task's two people with their CURRENT name.
+ *
+ * A task stores the name of the client and the worker at the moment they became
+ * involved. That copy is frozen, so it keeps showing the old name after the
+ * person renames themselves (the chosen name lives in `display_name` on their
+ * User record). The stored task is NEVER modified — the live name is read by
+ * stable user id and put on the RESPONSE only, so every marketplace surface
+ * (feed, map, daily goal, public profile, task detail) shows the current name
+ * from this one place.
+ */
+async function withCurrentNames(svc: any, rows: any[]) {
+  const tasks = rows || [];
+  const ids = [...new Set(
+    tasks.flatMap((t) => [t?.client_id, t?.worker_id]).filter(Boolean)
+  )] as string[];
+  if (!ids.length) return tasks;
+
+  const names: Record<string, string> = {};
+  for (let i = 0; i < ids.length; i += 100) {
+    const users = await svc.entities.User.filter(
+      { id: { $in: ids.slice(i, i + 100) } },
+      '-created_date',
+      100
+    );
+    for (const u of users || []) {
+      const name = (u.display_name || '').trim() || u.full_name || '';
+      if (name) names[u.id] = name;
+    }
+  }
+
+  return tasks.map((t) => ({
+    ...t,
+    client_name: names[t?.client_id] || t?.client_name,
+    worker_name: names[t?.worker_id] || t?.worker_name,
+  }));
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -41,19 +79,19 @@ Deno.serve(async (req) => {
     if (mode === 'single') {
       if (!body?.taskId) return Response.json({ tasks: [], brand_resolved: true });
       const rows = await svc.entities.Task.filter({ id: body.taskId, ...scope });
-      return Response.json({ tasks: rows || [], brand_resolved: true });
+      return Response.json({ tasks: await withCurrentNames(svc, rows), brand_resolved: true });
     }
 
     if (mode === 'byIds') {
       const ids = Array.isArray(body?.taskIds) ? body.taskIds.filter(Boolean).slice(0, MAX_LIMIT) : [];
       if (!ids.length) return Response.json({ tasks: [], brand_resolved: true });
       const rows = await svc.entities.Task.filter({ id: { $in: ids }, ...scope });
-      return Response.json({ tasks: rows || [], brand_resolved: true });
+      return Response.json({ tasks: await withCurrentNames(svc, rows), brand_resolved: true });
     }
 
     if (mode === 'stories') {
       const rows = await svc.entities.Task.filter({ is_story: true, ...scope }, '-created_date', 30);
-      return Response.json({ tasks: rows || [], brand_resolved: true });
+      return Response.json({ tasks: await withCurrentNames(svc, rows), brand_resolved: true });
     }
 
     if (mode === 'completedByCategory') {
@@ -63,7 +101,7 @@ Deno.serve(async (req) => {
         '-completed_at',
         limit
       );
-      return Response.json({ tasks: rows || [], brand_resolved: true });
+      return Response.json({ tasks: await withCurrentNames(svc, rows), brand_resolved: true });
     }
 
     if (mode === 'userCompleted') {
@@ -74,12 +112,12 @@ Deno.serve(async (req) => {
         '-created_date',
         limit
       );
-      return Response.json({ tasks: rows || [], brand_resolved: true });
+      return Response.json({ tasks: await withCurrentNames(svc, rows), brand_resolved: true });
     }
 
     // default: 'open'
     const rows = await svc.entities.Task.filter({ status: 'OPEN', ...scope }, '-created_date', limit);
-    return Response.json({ tasks: rows || [], brand_resolved: true });
+    return Response.json({ tasks: await withCurrentNames(svc, rows), brand_resolved: true });
   } catch (error) {
     console.error('getPublicTasks error:', error?.message, JSON.stringify(error?.data || {}));
     return Response.json({ error: error.message, tasks: [] }, { status: 500 });

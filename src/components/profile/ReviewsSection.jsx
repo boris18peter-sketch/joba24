@@ -4,6 +4,7 @@ import { classifyReviews } from '@/lib/reviewClassification';
 import ReviewCard from './ReviewCard';
 import RatingDistribution from './RatingDistribution';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useDisplayNames } from '@/hooks/useDisplayNames';
 
 const PREVIEW_COUNT = 3;
 
@@ -25,6 +26,9 @@ export default function ReviewsSection({
   collapsible = false,
 }) {
   const { t } = useLanguage();
+  // Reviewers are named by their CURRENT name, resolved by id in one call —
+  // a review records who wrote it, but the person may have renamed since.
+  const resolveName = useDisplayNames(reviews.map((r) => r.reviewer_id));
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(!collapsible);
 
@@ -137,6 +141,7 @@ export default function ReviewsSection({
                   review={review}
                   task={review.task_id ? taskById[review.task_id] : null}
                   kind={filter === 'worker' ? 'about_worker' : filter === 'client' ? 'about_client' : (aboutWorker.includes(review) ? 'about_worker' : 'about_client')}
+                  reviewerName={resolveName(review.reviewer_id) || undefined}
                   scope={scope}
                   showTaskTitle={showTaskTitle}
                 />

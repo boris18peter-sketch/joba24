@@ -60,7 +60,9 @@ export default function TaskApplicants({ task, onApprove }) {
         taskId: task.id,
         applicationId: app.id,
         workerId: app.worker_id,
-        workerName: app.worker_name,
+        // The task stores the worker's CURRENT name, not the copy frozen onto the
+        // application when it was sent. Approval is where that name is written.
+        workerName: applicantProfiles[app.worker_id]?.full_name || app.worker_name,
       });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה באישור');
       // Marketplace — the publisher selected a worker. Deduped per task, so the
@@ -237,7 +239,7 @@ export default function TaskApplicants({ task, onApprove }) {
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚫</div>
               <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('ta_cancel_worker_title')}</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: t('ta_cancel_worker_body', { name: approvedApp?.worker_name }) }} />
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: t('ta_cancel_worker_body', { name: approvedApp ? (applicantProfiles[approvedApp.worker_id]?.full_name || approvedApp.worker_name) : '' }) }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
@@ -268,6 +270,10 @@ export default function TaskApplicants({ task, onApprove }) {
         const isBeingDeclined = decliningIds.has(app.id);
         const isFading = fadingIds.has(app.id);
         const profile = applicantProfiles[app.worker_id];
+        // Shown under the worker's CURRENT name, resolved by their id. The
+        // application's own worker_name is only the fallback for the moment
+        // before the live profile arrives.
+        const currentName = profile?.full_name || app.worker_name || '';
         const photo = profile?.profile_photo;
         const rating = profile?.rating || app.worker_rating || 0;
         const isVerified = isUserVerified(profile) || app.worker_verified;
@@ -308,7 +314,7 @@ export default function TaskApplicants({ task, onApprove }) {
                 {photo ? (
                   <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
-                  app.worker_name?.[0]?.toUpperCase() || '?'
+                  currentName?.[0]?.toUpperCase() || '?'
                 )}
               </div>
 
@@ -319,7 +325,7 @@ export default function TaskApplicants({ task, onApprove }) {
                     onClick={() => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`); }}
                     style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', cursor: 'pointer' }}
                   >
-                    {app.worker_name}
+                    {currentName}
                   </span>
                   {isApproved && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: '#059669', background: '#dcfce7', border: '1px solid #86efac', borderRadius: 20, padding: '2px 8px' }}>

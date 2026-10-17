@@ -21,6 +21,7 @@ import RotatingPromoText from '@/components/RotatingPromoText';
 import { useRegistrationCount } from '@/hooks/useRegistrationCount';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import { isStandaloneApp } from '@/lib/utils';
+import { isNativeLike } from '@/lib/nativeEnv';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
@@ -286,7 +287,7 @@ export default function WorkerOnboarding() {
               admin dashboard (JobaSettings). The ref code is already preserved
               across the OAuth redirect, so downloads here stay attributed to the
               referring agent. */}
-          {!isStandaloneApp && !window.Capacitor?.isNativePlatform?.() && (
+          {!isStandaloneApp && !isNativeLike() && (
             <div style={{ marginTop: 18 }}>
               <StoreDownloadButtons size="sm" />
             </div>

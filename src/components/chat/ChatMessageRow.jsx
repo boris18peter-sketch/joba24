@@ -24,6 +24,14 @@ export default function ChatMessageRow({ msg, isMe, isContinuation, isLastInGrou
   const sending = msg._status === 'sending';
   const isNew = msg.created_date ? Date.now() - new Date(msg.created_date).getTime() < RECENT_MS : false;
 
+  // The name beside a message is the OTHER person's CURRENT name, read from their
+  // live record (already fetched for the header) — never the copy frozen onto the
+  // message when it was sent, which still says whatever they were called then.
+  const liveName = isMe
+    ? ''
+    : (otherUserData?.display_name || '').trim() || otherUserData?.full_name || '';
+  const senderName = liveName || msg.sender_name || '';
+
   // The tail corner sits on the outer bottom edge, so it flips with direction.
   const tail = isRTL
     ? (isMe ? '6px 18px 18px 18px' : '18px 6px 18px 18px')
@@ -50,7 +58,7 @@ export default function ChatMessageRow({ msg, isMe, isContinuation, isLastInGrou
         }}>
           {otherUserData?.profile_photo
             ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : msg.sender_name?.[0] || '?'}
+            : senderName?.[0] || '?'}
         </div>
       )}
 
@@ -63,7 +71,7 @@ export default function ChatMessageRow({ msg, isMe, isContinuation, isLastInGrou
       }}>
         {!isMe && !isContinuation && (
           <div style={{ fontSize: 10.5, color: 'var(--text-3)', fontWeight: 700, marginBottom: 4, paddingInline: 4 }}>
-            {msg.sender_name}
+            {senderName}
           </div>
         )}
 

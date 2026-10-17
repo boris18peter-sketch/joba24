@@ -235,7 +235,13 @@ const AuthenticatedApp = () => {
           variants={isStandalone ? PUSH_VARIANTS : undefined}
           initial={isStandalone ? 'enter' : false}
           animate={isStandalone ? 'center' : { opacity: 1 }}
-          exit={isStandalone ? 'exit' : { opacity: 0 }}
+          // The exiting layer is absolutely positioned over the whole screen. It
+          // must never be able to receive input: if the exit animation is
+          // interrupted (an iOS back-gesture, or the app being backgrounded
+          // mid-transition) the node can stay mounted at opacity 0 and swallow
+          // every tap, which is exactly the "screen freezes, buttons stop
+          // responding" symptom when returning from Terms / Privacy / FAQ.
+          exit={isStandalone ? 'exit' : { opacity: 0, pointerEvents: 'none' }}
           transition={
             isStandalone
               ? { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.22 }

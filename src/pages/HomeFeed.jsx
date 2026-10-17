@@ -208,9 +208,16 @@ export default function HomeFeed() {
     queryFn: () => fetchPublicTasks({ mode: 'open', limit: 100 }),
     staleTime: 60000,
     gcTime: 300000,
-    refetchOnWindowFocus: false,
+    // Returning to the app from the background must re-read the feed: on Android
+    // the interval timer is throttled while backgrounded, so without this a guest
+    // could come back to whatever was on screen (often nothing) until the next tick.
+    refetchOnWindowFocus: true,
     refetchInterval: 60000,
-    retry: 1,
+    // A failed read is a failure, not an empty marketplace — retry before giving
+    // up, and keep the tasks already loaded meanwhile (React Query only keeps
+    // them because fetchPublicTasks now throws instead of returning []).
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 
   // Force refetch when auth state changes (e.g. user logs in) — only on actual login transition

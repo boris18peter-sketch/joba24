@@ -17,10 +17,12 @@ function formatDate(value, lang) {
  * reviewed the profile owner, the rating, the date, the work type and — when
  * the review is backed by a completed Task — a verified-job marker.
  */
-export default function ReviewCard({ review, task, kind, scope, showTaskTitle = false }) {
+export default function ReviewCard({ review, task, kind, scope, showTaskTitle = false, reviewerName: reviewerNameOverride }) {
   const { t, lang } = useLanguage();
   const isAboutWorker = kind === REVIEW_ABOUT_WORKER;
-  const reviewerName = reviewerNameFromTask(review, task, kind);
+  // The reviewer is named by their CURRENT name when the parent resolved it by
+  // id; the name carried on the completed task is the fallback only.
+  const reviewerName = reviewerNameOverride || reviewerNameFromTask(review, task, kind);
   const category = review.task_category || task?.category;
   const completed = task?.status === 'COMPLETED';
 

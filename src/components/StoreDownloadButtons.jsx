@@ -6,6 +6,7 @@
 // Hidden entirely inside the installed PWA/app — no point prompting to install
 // when already in it.
 import { isStandaloneApp } from '@/lib/utils';
+import { isNativeLike } from '@/lib/nativeEnv';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 
 export default function StoreDownloadButtons({
@@ -17,8 +18,15 @@ export default function StoreDownloadButtons({
 }) {
   const { settings } = useJobaSettings();
 
-  // Server-driven master toggle — admin can hide all store buttons remotely
-  if (isStandaloneApp || settings.store_buttons_enabled === false) return null;
+  // Download prompts belong to the BROWSER only. Inside the installed app there
+  // is nothing to download, so these are hidden there no matter what the
+  // dashboard toggle says — the toggle governs the website, not the app.
+  //
+  // isNativeLike() is the app-wide native test (iOS via the Capacitor bridge,
+  // Android via the WebView marker). The previous check only covered the iOS
+  // bridge and an installed PWA, which is why the buttons leaked into the
+  // Android app and into the iOS app's menu.
+  if (isNativeLike() || isStandaloneApp || settings.store_buttons_enabled === false) return null;
 
   // Resolve URLs: explicit prop override → server setting → none
   // Append the agent ref code (if present) so attribution survives the app

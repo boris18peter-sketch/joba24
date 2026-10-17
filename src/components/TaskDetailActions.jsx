@@ -11,6 +11,7 @@ import InvoiceModal from '@/components/InvoiceModal';
 import ApplySheet from '@/components/ApplySheet';
 import { invalidateTaskCaches } from '@/lib/taskSync';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useDisplayNames } from '@/hooks/useDisplayNames';
 
 export default function TaskDetailActions({
   task, me, id, isOwner, isWorker,
@@ -20,6 +21,11 @@ export default function TaskDetailActions({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  // The counterparty is named by their CURRENT name, resolved by id — the name
+  // copied onto the task is only the fallback until that arrives.
+  const resolveName = useDisplayNames([task?.client_id, task?.worker_id]);
+  const counterpartId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
+  const counterpartFallback = me?.id === task?.client_id ? task?.worker_name : task?.client_name;
   const [showRating, setShowRating] = useState(false);
   const [hasRated, setHasRated] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
@@ -85,7 +91,7 @@ export default function TaskDetailActions({
           <button
             onClick={() => setShowRating(true)}
             style={{ width: '100%', height: 52, borderRadius: 'var(--r-md)', background: 'linear-gradient(135deg,var(--brand-accent),var(--brand-accent-dark))', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
-            <Star size={16} style={{ fill: 'white' }} /> {t('tda_rate_person', { name: me?.id === task?.client_id ? task?.worker_name : task?.client_name })}
+            <Star size={16} style={{ fill: 'white' }} /> {t('tda_rate_person', { name: resolveName(counterpartId, counterpartFallback) })}
           </button>
         )}
         {isCompleted && isParticipant && myReview && (
