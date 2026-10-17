@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { FINAL_CTA } from '@/lib/onboardingTrackContent';
@@ -22,10 +21,16 @@ import OnboardingSlideVisual from '@/components/onboarding/OnboardingSlideVisual
  * Presentation only: it never publishes a task, never completes a worker profile
  * and fires no analytics events. Finishing (or skipping) simply hands the
  * visitor to the EXISTING flow for that track.
+ *
+ * The CURRENT SLIDE is owned by the parent, not by this component. The worker
+ * journey's last step (the join screen) replaces these screens inside the same
+ * flow, which unmounts this component — so an index held here would silently
+ * reset to the first slide, and pressing Back from the join screen dropped the
+ * visitor at the beginning instead of the screen they had just left.
  */
-export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack }) {
-  const [index, setIndex] = useState(0);
+export default function TrackExplainer({ track, slides, index = 0, onIndexChange, onFinish, onSwitchTrack }) {
   const slide = slides[index];
+  const goTo = (i) => onIndexChange?.(i);
   const isLast = index === slides.length - 1;
 
   return (
@@ -34,7 +39,7 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
       <div className="j-onb-bar">
         <button
           className="j-onb-icon"
-          onClick={() => (index > 0 ? setIndex(index - 1) : onSwitchTrack())}
+          onClick={() => (index > 0 ? goTo(index - 1) : onSwitchTrack())}
           aria-label="חזרה"
         >
           <ArrowRight size={18} />
@@ -77,7 +82,7 @@ export default function TrackExplainer({ track, slides, onFinish, onSwitchTrack 
       <div className="j-onb-foot">
         <button
           className="j-onb-cta"
-          onClick={isLast ? onFinish : () => setIndex(index + 1)}
+          onClick={isLast ? onFinish : () => goTo(index + 1)}
         >
           {isLast ? FINAL_CTA[track] : (<>הבא <ArrowLeft size={18} /></>)}
         </button>

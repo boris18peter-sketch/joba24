@@ -10,11 +10,27 @@
  * gates a feature, and never touches authentication, OAuth, task publishing or
  * the worker profile.
  *
- * Three independent pieces of state, each kept PER TRACK so finishing one
- * journey never silently skips the other:
- *   joba24_onboarding_track            the chosen track
- *   joba24_onboarding_explainer_<t>    the three explainer screens were seen
- *   joba_welcome_seen_<t>              the in-app spotlight tutorial was seen
+ * ── The states, deliberately kept APART ─────────────────────────────────────
+ * Each answers ONE question and none of them implies another. Nothing here
+ * decides two things at once:
+ *
+ *   joba24_onboarding_track          WHICH journey was chosen (publish/worker)
+ *   joba24_onboarding_explainer_<t>  THAT journey's three screens were finished
+ *   joba_welcome_seen_<t>            the in-app spotlight tutorial was seen
+ *   isAuthenticated (server)         whether an account session exists
+ *   worker profile (server, on User) whether the worker profile was completed
+ *
+ * Therefore:
+ *   · choosing a track is NOT finishing it;
+ *   · finishing the three screens is NOT publishing a task, and NOT completing
+ *     a worker profile;
+ *   · a finished explainer means "never show me the first-run screens again",
+ *     never "send me to the sign-up".
+ *
+ * The CONTINUATION destination is derived from the choice — it is not a fourth
+ * stored state, so it can never fall out of sync with the track:
+ *   publish → /create-task   (open to visitors; sign-in only at publish)
+ *   worker  → /join          (the existing sign-up + worker profile flow)
  */
 
 export const TRACKS = {
