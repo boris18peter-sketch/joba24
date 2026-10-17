@@ -1202,20 +1202,18 @@ export default function CreateTask() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
               {/* CLOSE, not back. A visitor who decides not to publish is not
                   stepping back through the form — they are leaving it, and they
-                  must land in the app able to browse freely. A back arrow made
-                  that read as "undo one screen", and the onboarding flow they
-                  arrived from was not a place to return to.
+                  must land in the app's own feed, never back in the first-run
+                  flow they just walked through.
 
-                  WHERE "leaving" means depends on who is leaving:
-                    · a signed-in user, or a guest → the feed, as before;
-                    · a visitor with NO account → the first-run screen, which is
-                      the only front door they have. Sending them to '/' would
-                      bounce them straight back here (the route guard resumes
-                      their chosen publish journey), so the close button would
-                      read as broken and the form would be impossible to leave. */}
+                  A visitor with NO account cannot reach the feed directly: the
+                  feed is the signed-in experience, and sending them to '/' would
+                  leave them on a spinner. So closing the form opens the app's
+                  own sign-in gate instead, which is the real way in — and the
+                  very next thing it offers is "continue as guest", which lands
+                  them on the feed. Either way the form is left behind. */}
               <button
                 type="button"
-                onClick={() => navigate(isAuthenticated || isGuest ? '/' : '/welcome')}
+                onClick={() => (isAuthenticated || isGuest ? navigate('/') : login('/'))}
                 aria-label="סגירה"
                 style={{
                   width: 34, height: 34, borderRadius: 11, flexShrink: 0, cursor: 'pointer',

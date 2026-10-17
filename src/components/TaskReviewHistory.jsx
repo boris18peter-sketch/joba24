@@ -71,7 +71,6 @@ function Stars({ rating, size = 14 }) {
 export default function TaskReviewHistory({ tasks = [], reviews = [], userId, clickable = true, onTaskClick, hidePrices = false, scope = null }) {
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
-  const [tab, setTab] = useState('worker'); // 'worker' | 'client'
 
   // Split tasks by the profile owner's role
   const workerTasks = tasks.filter(t => t.worker_id === userId);
@@ -85,8 +84,11 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
   // typed differently here than in the reviews section.
   const { aboutWorker: workerReviews, aboutClient: clientReviews } = classifyReviews(reviews, userId, tasks);
 
-  const activeTasks = tab === 'worker' ? workerTasks : clientTasks;
-  const activeReviews = tab === 'worker' ? workerReviews : clientReviews;
+  // ONE unified history — the role tabs are gone. Splitting the history in two
+  // hid half of it behind a switch, and the tab open by default was rarely the
+  // one the reader wanted. Both roles are now read top to bottom as one list.
+  const activeTasks = [...workerTasks, ...clientTasks];
+  const activeReviews = [...workerReviews, ...clientReviews];
 
   const reviewsByTaskId = {};
   const unmatchedReviews = [];
@@ -107,48 +109,16 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
     ...unmatchedReviews.map(r => ({ type: 'review', review: r })),
   ];
 
-  const TABS = [
-    { key: 'worker', label: t('hist_tab_as_worker'), count: workerTasks.length + workerReviews.length, emoji: '🛠️' },
-    { key: 'client', label: t('hist_tab_as_client'), count: clientTasks.length + clientReviews.length, emoji: '📋' },
-  ];
-
   return (
     <div>
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        {TABS.map(tb => {
-          const active = tab === tb.key;
-          return (
-            <button key={tb.key} onClick={() => setTab(tb.key)}
-              style={{
-                flex: 1, height: 42, borderRadius: 12, fontSize: 12.5, fontWeight: 800,
-                border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
-                background: active ? 'linear-gradient(135deg,var(--brand-primary),#0a52b0)' : 'var(--surface-2)',
-                color: active ? 'white' : 'var(--text-2)',
-                borderColor: active ? 'var(--brand-primary)' : 'var(--border-1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : 'none',
-              }}>
-              <span>{tb.emoji}</span>
-              {tb.label}
-              {tb.count > 0 && (
-                <span style={{ fontSize: 10, background: active ? 'rgba(255,255,255,0.25)' : 'var(--surface-3)', color: active ? 'white' : 'var(--text-3)', padding: '1px 6px', borderRadius: 8 }}>
-                  {tb.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
       {allItems.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>{tab === 'worker' ? '🛠️' : '📋'}</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{tab === 'worker' ? t('hist_no_worker') : t('hist_no_client')}</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🛠️</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{t('hist_no_worker')}</div>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>{t('history_will_appear')}</div>
         </div>
       ) : (
-        <div key={tab} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {allItems.map((item, idx) => {
             if (item.type === 'task') {
               const hasReview = !!item.review;

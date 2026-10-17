@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Cookie } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { applyConsent, hasConsentChoice, CONSENT_GRANTED, CONSENT_DENIED } from '@/lib/consent';
@@ -21,13 +21,22 @@ import { isNativeLike } from '@/lib/nativeEnv';
  */
 export default function ConsentBanner() {
   const { lang, isRTL } = useLanguage();
+  const { pathname } = useLocation();
   const [decided, setDecided] = useState(() => hasConsentChoice());
   const cardRef = useRef(null);
+
+  // Never over the first-run flow. That screen is a full-screen presentation
+  // whose single action button is pinned to the bottom edge — exactly the band
+  // this notice occupies — so the notice sat on the button and swallowed the
+  // tap, and "פרסמו משימה בחינם" looked like it did nothing. Every other screen
+  // still shows it, the publish form included, so the choice is collected long
+  // before any advertising measurement runs.
+  const onFirstRun = pathname === '/welcome';
 
   // Inside the native app there is no web advertising cookie to consent to —
   // the notice belongs to the browser experience only and must never appear
   // over the app's own screens.
-  const visible = !isNativeLike() && !decided;
+  const visible = !isNativeLike() && !decided && !onFirstRun;
 
   // Publish the banner's REAL height while it is on screen, so a full-screen
   // page can reserve room for it. The banner is pinned to the bottom of the

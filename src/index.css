@@ -610,6 +610,9 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 }
 .j-onb-bar {
   flex-shrink: 0;
+  /* Above the slide stage: nothing that animates inside it can ever paint over
+     the header or the footer's continue button. */
+  position: relative; z-index: 5;
   display: flex; align-items: center; gap: 12px;
   padding: max(10px, env(safe-area-inset-top)) 18px 6px;
 }
@@ -647,6 +650,9 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 }
 .j-onb-foot {
   flex-shrink: 0;
+  /* The continue button is the whole point of these screens, so its band is
+     lifted above everything else the slide renders. */
+  position: relative; z-index: 5;
   display: flex; flex-direction: column; gap: 8px;
   /* Reserves the consent notice's real height while it is on screen, so the
      continue button is never sitting underneath it. */
