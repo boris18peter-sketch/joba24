@@ -20,6 +20,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  */
 const MAX_IDS = 100;
 
+/**
+ * A real Base44 record id. Simulator/demo ids (`demo_1791285783985_…`) are not,
+ * and the API rejects an ENTIRE $in query that contains one — so a single demo
+ * id in the batch would silently drop every live name. They are filtered out
+ * before the lookup instead.
+ */
+const RECORD_ID = /^[0-9a-f]{24}$/i;
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -29,7 +37,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const ids = [...new Set(
       (Array.isArray(body?.user_ids) ? body.user_ids : [])
-        .filter((id: unknown) => typeof id === 'string' && id)
+        .filter((id: unknown) => typeof id === 'string' && RECORD_ID.test(id))
     )].slice(0, MAX_IDS) as string[];
 
     const names: Record<string, string> = {};

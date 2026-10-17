@@ -31,31 +31,44 @@ const MAX_LIMIT = 200;
  * (feed, map, daily goal, public profile, task detail) shows the current name
  * from this one place.
  */
+const RECORD_ID = /^[0-9a-f]{24}$/i;
+
 async function withCurrentNames(svc: any, rows: any[]) {
   const tasks = rows || [];
+  // Only real record ids may enter the lookup. Simulator/demo tasks carry ids
+  // like `demo_1791285783985_…`, and the API rejects an ENTIRE $in query when any
+  // one of its values is not a valid record id — which took the whole feed down.
+  // A demo id has no live user to look up anyway.
   const ids = [...new Set(
-    tasks.flatMap((t) => [t?.client_id, t?.worker_id]).filter(Boolean)
+    tasks.flatMap((t) => [t?.client_id, t?.worker_id]).filter((id) => id && RECORD_ID.test(id))
   )] as string[];
   if (!ids.length) return tasks;
 
-  const names: Record<string, string> = {};
-  for (let i = 0; i < ids.length; i += 100) {
-    const users = await svc.entities.User.filter(
-      { id: { $in: ids.slice(i, i + 100) } },
-      '-created_date',
-      100
-    );
-    for (const u of users || []) {
-      const name = (u.display_name || '').trim() || u.full_name || '';
-      if (name) names[u.id] = name;
+  try {
+    const names: Record<string, string> = {};
+    for (let i = 0; i < ids.length; i += 100) {
+      const users = await svc.entities.User.filter(
+        { id: { $in: ids.slice(i, i + 100) } },
+        '-created_date',
+        100
+      );
+      for (const u of users || []) {
+        const name = (u.display_name || '').trim() || u.full_name || '';
+        if (name) names[u.id] = name;
+      }
     }
-  }
 
-  return tasks.map((t) => ({
-    ...t,
-    client_name: names[t?.client_id] || t?.client_name,
-    worker_name: names[t?.worker_id] || t?.worker_name,
-  }));
+    return tasks.map((t) => ({
+      ...t,
+      client_name: names[t?.client_id] || t?.client_name,
+      worker_name: names[t?.worker_id] || t?.worker_name,
+    }));
+  } catch (e) {
+    // Showing the CURRENT name is a nicety. It must never cost the marketplace
+    // its tasks, so a failed lookup falls back to the stored name.
+    console.error('withCurrentNames failed:', e?.message);
+    return tasks;
+  }
 }
 
 Deno.serve(async (req) => {

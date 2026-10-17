@@ -215,9 +215,11 @@ export default function HomeFeed() {
     refetchInterval: 60000,
     // A failed read is a failure, not an empty marketplace — retry before giving
     // up, and keep the tasks already loaded meanwhile (React Query only keeps
-    // them because fetchPublicTasks now throws instead of returning []).
-    retry: 3,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    // them because fetchPublicTasks now throws instead of returning []). Two
+    // retries: enough to ride out a blip, short enough that a real failure
+    // settles in ~3s instead of leaving the feed on a spinner.
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
   });
 
   // Force refetch when auth state changes (e.g. user logs in) — only on actual login transition
