@@ -49,6 +49,7 @@ import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
+import { hasSeenFirstRun } from '@/lib/onboardingTrack';
 
 import BoostOverlay from '@/components/BoostOverlay';
 
@@ -483,7 +484,11 @@ export default function Layout() {
       // `effectiveGuest` is still false, and this branch used to bounce the
       // guest straight back to /welcome, which painted the welcome flow over the
       // feed they had just entered.
-      if (location.pathname === '/' && !effectiveGuest && !isGuest) {
+      // …and a visitor who ALREADY walked the first-run flow is never sent back
+      // into it. Without this, closing the publish form (which lands on '/')
+      // dropped them straight back onto the welcome flow — a dead end with no
+      // way out to the app they were trying to reach.
+      if (location.pathname === '/' && !effectiveGuest && !isGuest && !hasSeenFirstRun()) {
         navigate('/welcome', { replace: true });
         return;
       }

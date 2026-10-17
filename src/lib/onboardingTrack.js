@@ -63,6 +63,19 @@ export function markExplainerDone(track) {
   }
 }
 
+/**
+ * Has this visitor already walked the first-run flow?
+ *
+ * True once a track has been chosen AND that track's explainer screens were
+ * finished or skipped. The root gate reads this, so a visitor who has already
+ * been through the flow is never dragged back into it — that bounce is what
+ * turned the publish form's close button into a dead end.
+ */
+export function hasSeenFirstRun() {
+  const track = getOnboardingTrack();
+  return !!track && isExplainerDone(track);
+}
+
 /** Where a track's EXISTING flow starts — never a new route, never a new flow. */
 export function destinationForTrack(track) {
   return track === TRACKS.PUBLISH ? '/create-task' : '/join';

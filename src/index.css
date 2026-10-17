@@ -910,6 +910,78 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   box-shadow: 0 8px 22px rgba(26,111,212,0.28);
 }
 
+/* ── The second journey box's button — deliberately CLEAN ──
+   The two boxes are one choice followed by its alternative, so only the first
+   button carries the brand colour; the second is a plain surface. Two identical
+   filled buttons read as two equal demands on the eye. */
+.j-hero-box-cta-plain {
+  background: var(--surface-3);
+  color: var(--text-1);
+  border: 1.5px solid var(--border-1);
+  box-shadow: none;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   THE JOIN STEP — the worker flow's last screen, in the flow's own shell
+   ════════════════════════════════════════════════════════════════════ */
+.j-joinstep {
+  flex: 1 1 auto; min-height: 0;
+  width: 100%; max-width: 460px; margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 8px 22px; text-align: center;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   THE AI RECOMMENDATION — the one element that must read as "new"
+   A living gradient border plus a soft sheen sweeping across the card, so the
+   AI suggestion is unmistakably the highlight of the screen rather than one
+   more card in the column.
+   ════════════════════════════════════════════════════════════════════ */
+.j-ai-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 1.5px;
+  background: linear-gradient(120deg, #6366f1, var(--brand-primary), #06b6d4, #6366f1);
+  background-size: 300% 300%;
+  animation: jAiBorder 6s ease infinite;
+  box-shadow: 0 6px 24px rgba(99,102,241,0.28);
+}
+.j-ai-inner {
+  position: relative;
+  border-radius: 14.5px;
+  background: var(--surface-2);
+  padding: 12px 14px;
+  overflow: hidden;
+}
+.j-ai-sheen {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 38%;
+  background: linear-gradient(100deg, transparent, rgba(99,102,241,0.16), transparent);
+  animation: jAiSheen 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.j-ai-pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: linear-gradient(135deg, #6366f1, #0ea5e9);
+  color: #ffffff; font-size: 10px; font-weight: 900;
+  letter-spacing: 0.5px; border-radius: 99px; padding: 2px 8px;
+}
+.j-ai-new {
+  font-size: 10px; font-weight: 800;
+  color: var(--brand-primary);
+  background: var(--brand-primary-light);
+  border: 1px solid var(--border-2);
+  border-radius: 99px; padding: 2px 8px;
+}
+@keyframes jAiBorder {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@keyframes jAiSheen {
+  0%        { transform: translateX(-140%); }
+  60%, 100% { transform: translateX(360%); }
+}
+
 /* From 900px the same single column simply gets larger — never a second layout. */
 @media (min-width: 900px) {
   .j-hero-inner { max-width: 520px; padding-top: 44px; padding-bottom: calc(30px + var(--consent-banner-h, 0px)); gap: 26px; }

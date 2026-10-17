@@ -1,18 +1,20 @@
-import { Wand2, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
 
 /**
  * The price step, mirroring `/create-task` — and, above all, stating the model.
  *
- * The publisher has to leave this screen understanding the one thing that makes
- * Joba24 different from asking a professional for a quote: HERE you name the
- * price, everyone sees it, and only the people it suits apply. So the strip at
- * the top says exactly that, and the two things below it show how it works in
- * practice — the field where YOU set the number, and the AI card that helps you
- * pick a fair one.
+ * Two things have to land here:
+ *
+ *   1. HERE you name the price, everyone sees it, and only the people it suits
+ *      apply. That is the strip at the top.
+ *   2. The AI picks a fair number FOR you, from the description you just wrote.
+ *      That is the card below, and it is built to read as the new thing on the
+ *      screen: a living gradient border, a soft sheen, an "AI" pill and a
+ *      "new in Joba24" tag — unmistakably the highlight, not one more card.
  *
  * Colours are the app's own tokens rather than the live component's hardcoded
- * light values, so the card reads correctly in Dark Mode too.
+ * light values, so the whole screen reads correctly in Dark Mode too.
  */
 export default function PricePreviewScreen() {
   return (
@@ -48,8 +50,8 @@ export default function PricePreviewScreen() {
           </div>
         </div>
 
+        {/* The price you set */}
         <div className="j-card" style={{ padding: '14px 14px 16px' }}>
-          {/* The price you set */}
           <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>
             מחיר (₪) *
           </div>
@@ -67,30 +69,36 @@ export default function PricePreviewScreen() {
           </div>
         </div>
 
-        {/* ── The AI recommendation — the app's own suggestion card ── */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand-primary-light), var(--brand-primary-light))',
-          border: '1.5px solid var(--border-2)',
-          borderRadius: 14,
-          padding: '12px 14px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-            <Wand2 size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: 'var(--brand-primary)', fontWeight: 800 }}>המלצת מחיר AI</span>
-          </div>
+        {/* ── The AI recommendation — the element that has to read as NEW ── */}
+        <div className="j-ai-card">
+          <div className="j-ai-inner">
+            <span className="j-ai-sheen" aria-hidden />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8 }}>
-            <div dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -0.5, unicodeBidi: 'isolate' }}>
-              ₪220–₪300
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+              <span className="j-ai-pill"><Sparkles size={10} /> AI</span>
+              <span className="j-ai-new">חדש ב-Joba24</span>
             </div>
-            <div style={{ background: 'var(--brand-primary)', color: '#ffffff', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
-              השתמש
-            </div>
-          </div>
 
-          <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Sparkles size={11} style={{ flexShrink: 0 }} />
-            מבוסס על מחירי שוק עדכניים ועבודות דומות
+            <div style={{ fontSize: 14.5, fontWeight: 900, color: 'var(--text-1)', marginTop: 9, lineHeight: 1.3, position: 'relative' }}>
+              ה־AI ממליץ על המחיר המתאים
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.5, position: 'relative' }}>
+              לפי תיאור המשימה ומחירי השוק
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 11, position: 'relative' }}>
+              <div dir="ltr" style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -0.5, unicodeBidi: 'isolate' }}>
+                ₪220–₪300
+              </div>
+              <div style={{
+                background: 'linear-gradient(135deg,#6366f1,var(--brand-primary))',
+                color: '#ffffff', borderRadius: 11, padding: '8px 15px',
+                fontSize: 12.5, fontWeight: 800, whiteSpace: 'nowrap',
+                boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+              }}>
+                השתמש בהמלצה
+              </div>
+            </div>
           </div>
         </div>
 

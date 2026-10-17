@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowLeft, X, Shield, UserCircle2, Plus, Coins, Send } from 'lucide-react';
@@ -107,8 +108,18 @@ export default function WelcomeTutorial() {
   // The user's real available balance — the very number the header shows.
   const balance = Number(me?.worker_credits) || 0;
 
+  // The tutorial lives inside the keep-alive home tab, and its overlay is
+  // portaled to <body>. Without this it stayed on screen — dimming and blocking
+  // the whole app — after the user navigated away from the feed.
+  const { pathname } = useLocation();
+
   // Detect available steps once (after a short delay for layout to settle)
   useEffect(() => {
+    // Only ever on the feed itself. The tutorial is rendered inside the
+    // keep-alive home tab, and its overlay is portaled to <body> — so without
+    // this guard it stayed on screen (and blocking taps) after the user
+    // navigated away, which is how the publish button appeared dead.
+    if (pathname !== '/') return;
     const track = getOnboardingTrack();
     if (localStorage.getItem(STORAGE_KEY(track))) return;
     // Only the steps that belong to the track this person chose. With no track
@@ -136,7 +147,7 @@ export default function WelcomeTutorial() {
     const t = setTimeout(detect, 600);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, balance]);
+  }, [isAuthenticated, balance, pathname]);
 
   const currentStep = steps[stepIdx];
 
@@ -179,7 +190,7 @@ export default function WelcomeTutorial() {
     };
   }, [visible, currentStep, measure]);
 
-  if (!visible || !currentStep || !rect) return null;
+  if (pathname !== '/' || !visible || !currentStep || !rect) return null;
 
   const Icon = currentStep.icon;
   const isLast = stepIdx === steps.length - 1;
@@ -224,16 +235,18 @@ export default function WelcomeTutorial() {
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 999999, pointerEvents: 'none' }} dir="rtl">
       {/* Dim layer with a hole (SVG mask) */}
-      <svg width="100%" height="100%" style={{ position: 'fixed', inset: 0, pointerEvents: 'auto' }}>
+      {/* Purely visual: the dim layer and the spotlight never take a tap, so the
+          highlighted control — and the whole app — stays usable while the
+          tutorial is up. A coach mark that swallows the very button it points at
+          is a dead end, and that is exactly how "פרסום" appeared to do nothing. */}
+      <svg width="100%" height="100%" style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
         <defs>
           <mask id="jt-mask">
             <rect width="100%" height="100%" fill="white" />
             <rect x={spotLeft} y={spotTop} width={spotWidth} height={spotHeight} rx="16" fill="black" />
           </mask>
         </defs>
-        <rect width="100%" height="100%" fill="rgba(0,0,0,0.72)" mask="url(#jt-mask)" pointerEvents="all" />
-        {/* Transparent rect over the hole to block interaction with the target */}
-        <rect x={spotLeft} y={spotTop} width={spotWidth} height={spotHeight} rx="16" fill="transparent" pointerEvents="all" />
+        <rect width="100%" height="100%" fill="rgba(0,0,0,0.72)" mask="url(#jt-mask)" />
       </svg>
 
       {/* Spotlight border (animated) */}

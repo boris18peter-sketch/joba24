@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import {
+  TRACKS,
   getOnboardingTrack,
   setOnboardingTrack,
   isExplainerDone,
@@ -11,6 +12,7 @@ import {
 import { explainerSlides } from '@/lib/onboardingTrackContent';
 import TrackChoice from '@/components/onboarding/TrackChoice';
 import TrackExplainer from '@/components/onboarding/TrackExplainer';
+import WorkerJoinStep from '@/components/onboarding/WorkerJoinStep';
 
 /**
  * First-run entry: pick a track, then read the three explainer screens.
@@ -52,6 +54,9 @@ export default function OnboardingTrackWelcome() {
     return saved && !isExplainerDone(saved) ? saved : null;
   });
 
+  // The worker journey's LAST screen: the join screen, rendered in place.
+  const [showJoin, setShowJoin] = useState(false);
+
   useEffect(() => {
     if (skipFirstRun) navigate('/', { replace: true });
   }, [skipFirstRun, navigate]);
@@ -65,14 +70,30 @@ export default function OnboardingTrackWelcome() {
     const current = track || getOnboardingTrack();
     if (!current) return;
     markExplainerDone(current);
+
+    // The worker journey continues HERE. Sending the visitor to a separate
+    // /join page broke the flow in two — it read as leaving one screen for
+    // another instead of finishing the one they were on. The join screen is now
+    // this flow's final step, and it keeps its own logic intact: signing in
+    // there still hands the visitor to the worker profile setup, and
+    // continue-as-guest still opens the app.
+    if (current === TRACKS.WORKER) {
+      setShowJoin(true);
+      return;
+    }
+
     // PUSH, never replace: leaving the first-run flow has to keep the flow in the
-    // history stack, so pressing Back on the destination (e.g. /join) returns to
-    // these screens instead of stepping past them — past the app itself — and out
-    // to whatever page the visitor arrived from.
+    // history stack, so pressing Back on the destination returns to these screens
+    // instead of stepping past them — past the app itself — and out to whatever
+    // page the visitor arrived from.
     navigate(destinationForTrack(current));
   };
 
   if (skipFirstRun) return null;
+
+  if (showJoin) {
+    return <WorkerJoinStep onBack={() => setShowJoin(false)} />;
+  }
 
   if (!track) {
     return <TrackChoice currentTrack={getOnboardingTrack()} onChoose={choose} />;

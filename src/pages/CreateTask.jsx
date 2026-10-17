@@ -14,7 +14,6 @@ import { getRequirementCategories, getActiveRequirements } from '@/lib/requireme
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
@@ -1201,10 +1200,24 @@ export default function CreateTask() {
           <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--brand-hero-bg, #0f2b6b), var(--brand-hero-bg, var(--brand-primary)))', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
-              {/* Back leaves the task form for the home feed. It must NOT walk
-                  back through the onboarding explainers the visitor arrived
-                  from — that is a first-run flow, not a place to return to. */}
-              <BackButton to="/" style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="var(--brand-hero-text, white)" />
+              {/* CLOSE, not back. A visitor who decides not to publish is not
+                  stepping back through the form — they are leaving it, and they
+                  must land in the app able to browse freely. A back arrow made
+                  that read as "undo one screen", and the onboarding flow they
+                  arrived from was not a place to return to. */}
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                aria-label="סגירה"
+                style={{
+                  width: 34, height: 34, borderRadius: 11, flexShrink: 0, cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+                }}
+              >
+                <X size={18} color="var(--brand-hero-text, white)" strokeWidth={2.4} />
+              </button>
               <span style={{ fontWeight: 800, fontSize: 17, color: 'var(--brand-hero-text, white)', flex: 1 }}>
         {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
