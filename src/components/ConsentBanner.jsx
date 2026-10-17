@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Cookie } from 'lucide-react';
@@ -22,13 +22,36 @@ import { isNativeLike } from '@/lib/nativeEnv';
 export default function ConsentBanner() {
   const { lang, isRTL } = useLanguage();
   const [decided, setDecided] = useState(() => hasConsentChoice());
+  const cardRef = useRef(null);
 
   // Inside the native app there is no web advertising cookie to consent to —
   // the notice belongs to the browser experience only and must never appear
   // over the app's own screens.
-  if (isNativeLike()) return null;
+  const visible = !isNativeLike() && !decided;
 
-  if (decided) return null;
+  // Publish the banner's REAL height while it is on screen, so a full-screen
+  // page can reserve room for it. The banner is pinned to the bottom of the
+  // viewport, which put it directly on top of the onboarding flow's continue
+  // button and the welcome page's footer links — the reason those controls
+  // looked like they simply did not respond to a tap.
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = cardRef.current;
+    if (!visible || !el) {
+      root.style.removeProperty('--consent-banner-h');
+      return;
+    }
+    const update = () => root.style.setProperty('--consent-banner-h', `${el.offsetHeight + 24}px`);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty('--consent-banner-h');
+    };
+  }, [visible]);
+
+  if (!visible) return null;
 
   const he = lang === 'he';
   const copy = he
@@ -72,6 +95,7 @@ export default function ConsentBanner() {
       }}
     >
       <div
+        ref={cardRef}
         className="j-modal-surface"
         style={{
           pointerEvents: 'auto',

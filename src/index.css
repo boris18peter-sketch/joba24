@@ -648,7 +648,9 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 .j-onb-foot {
   flex-shrink: 0;
   display: flex; flex-direction: column; gap: 8px;
-  padding: 10px 20px max(14px, env(safe-area-inset-bottom));
+  /* Reserves the consent notice's real height while it is on screen, so the
+     continue button is never sitting underneath it. */
+  padding: 10px 20px calc(max(14px, env(safe-area-inset-bottom)) + var(--consent-banner-h, 0px));
 }
 .j-onb-cta {
   width: 100%; max-width: 520px; margin: 0 auto;
@@ -810,7 +812,10 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   margin: 0 auto;
   box-sizing: border-box;
   display: flex; flex-direction: column; justify-content: space-between; gap: 20px;
-  padding: max(28px, env(safe-area-inset-top)) 22px max(18px, env(safe-area-inset-bottom));
+  /* The consent notice is pinned to the bottom of the viewport, so its real
+     height is reserved here while it is on screen — otherwise it covered the
+     policy links and the buttons below them. */
+  padding: max(28px, env(safe-area-inset-top)) 22px calc(max(18px, env(safe-area-inset-bottom)) + var(--consent-banner-h, 0px));
 }
 
 /* Brand lockup — one size and one position, on both pages */
@@ -907,7 +912,7 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 
 /* From 900px the same single column simply gets larger — never a second layout. */
 @media (min-width: 900px) {
-  .j-hero-inner { max-width: 520px; padding-top: 44px; padding-bottom: 30px; gap: 26px; }
+  .j-hero-inner { max-width: 520px; padding-top: 44px; padding-bottom: calc(30px + var(--consent-banner-h, 0px)); gap: 26px; }
   .j-hero-logo { width: 100px; height: 100px; border-radius: 28px; }
   .j-hero-brand { font-size: 16px; }
   .j-hero-title { font-size: 34px; }

@@ -1,11 +1,16 @@
 import { MapPin, Send, Clock, FileText } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
+import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
 
 /**
  * The task detail screen, mirroring the real task sheet: the gradient banner
  * with the title, the price and the location, then the detail rows and the
  * apply button exactly as they appear — including the credits line that shows
  * what submitting a request costs.
+ *
+ * The apply button is the whole point of the screen, so it carries a soft
+ * attention pulse and a light sweeping across it. That is what makes the one
+ * action obvious at a glance instead of blending into the banner.
  *
  * The banner is the app's own brand gradient, which is dark in Light and Dark
  * Mode alike, so the white-on-banner controls stay legible in both.
@@ -26,24 +31,32 @@ export default function TaskDetailScreen() {
           boxShadow: '0 6px 22px rgba(26,111,212,0.28)',
         }}>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#ffffff', lineHeight: 1.3 }}>
-            התקנת גוף תאורה בסלון
+            {ONBOARDING_TASK.title}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 24, fontWeight: 900, color: '#ffffff', letterSpacing: -0.5 }}>₪250</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: '#ffffff', letterSpacing: -0.5 }}>{ONBOARDING_TASK.priceLabel}</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
-              <MapPin size={12} /> רחוב פלורנטין, תל אביב
+              <MapPin size={12} /> {ONBOARDING_TASK.location}
             </span>
           </div>
 
-          {/* Apply — the one action this screen teaches */}
+          {/* Apply — the one action this screen teaches, and the reason it
+              carries an attention pulse. */}
           <div style={{
+            position: 'relative', overflow: 'hidden',
             width: '100%', height: 46, borderRadius: 13, marginTop: 14,
-            background: 'rgba(255,255,255,0.2)',
-            border: '1.5px solid rgba(255,255,255,0.4)',
+            background: 'rgba(255,255,255,0.22)',
+            border: '1.5px solid rgba(255,255,255,0.45)',
             color: '#ffffff', fontWeight: 800, fontSize: 14,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            animation: 'onbApplyPulse 1.9s ease-in-out infinite',
           }}>
+            <span aria-hidden style={{
+              position: 'absolute', top: 0, bottom: 0, left: 0, width: '38%',
+              background: 'linear-gradient(100deg, rgba(255,255,255,0), rgba(255,255,255,0.5), rgba(255,255,255,0))',
+              animation: 'onbApplySheen 2.4s ease-in-out infinite',
+            }} />
             <Send size={15} strokeWidth={1.8} />
             הגש מועמדות למשימה — 13 <CreditIcon size={14} />
           </div>
@@ -63,7 +76,7 @@ export default function TaskDetailScreen() {
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>קטגוריה</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>חשמל</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{ONBOARDING_TASK.categoryLabel}</div>
             </div>
           </div>
 
@@ -73,7 +86,7 @@ export default function TaskDetailScreen() {
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>מועד מדויק</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>מחר, 10:00</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{ONBOARDING_TASK.time}</div>
             </div>
           </div>
 
@@ -84,13 +97,25 @@ export default function TaskDetailScreen() {
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>תיאור</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
-                צריך להתקין גוף תאורה חדש בתקרת הסלון.
+                {ONBOARDING_TASK.description}
               </div>
             </div>
           </div>
         </div>
 
       </div>
+
+      <style>{`
+        @keyframes onbApplyPulse {
+          0%, 100% { transform: scale(1);     box-shadow: 0 0 0 0 rgba(255,255,255,0.55); }
+          50%      { transform: scale(1.028); box-shadow: 0 0 0 7px rgba(255,255,255,0); }
+        }
+        @keyframes onbApplySheen {
+          0%   { transform: translateX(-120%); }
+          55%  { transform: translateX(330%); }
+          100% { transform: translateX(330%); }
+        }
+      `}</style>
     </>
   );
 }

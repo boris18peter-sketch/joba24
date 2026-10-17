@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 
 /**
@@ -8,6 +9,12 @@ import BackButton from '@/components/BackButton';
  *   backTo:  string  — optional explicit back path (default: navigate(-1))
  */
 export default function PageHeader({ title, right, backTo }) {
+  const location = useLocation();
+  // A link that recorded where it came from wins: Back then returns the visitor
+  // to the exact screen they left — the welcome flow or the join flow — instead
+  // of a fixed destination that is only right for one of them.
+  const target = location.state?.from || backTo;
+
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 50,
@@ -26,7 +33,7 @@ export default function PageHeader({ title, right, backTo }) {
       borderBottom: '1px solid var(--border-1)',
       display: 'flex', alignItems: 'center', gap: 12
     }}>
-      <BackButton to={backTo} />
+      <BackButton to={target} />
       
       {right && <div style={{ flexShrink: 0 }}>{right}</div>}
     </div>);

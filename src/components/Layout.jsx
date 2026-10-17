@@ -477,7 +477,13 @@ export default function Layout() {
       // made the worker sign-up look like the app's front door. A returning
       // visitor's saved track is still pre-selected there — one tap to continue.
       // Only the root is affected, so deep links keep their own destination.
-      if (location.pathname === '/' && !effectiveGuest) {
+      // A visitor who explicitly chose "continue as guest" is NEVER sent to the
+      // first-run track screen. Guest access is a real choice, and the setting
+      // that enables it loads asynchronously — for the moment before it arrives
+      // `effectiveGuest` is still false, and this branch used to bounce the
+      // guest straight back to /welcome, which painted the welcome flow over the
+      // feed they had just entered.
+      if (location.pathname === '/' && !effectiveGuest && !isGuest) {
         navigate('/welcome', { replace: true });
         return;
       }

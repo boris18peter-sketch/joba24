@@ -1,40 +1,20 @@
 import { MapPin } from 'lucide-react';
+import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
 
 /**
  * The publish form's description + location, FILLED IN.
  *
  * This mirrors the real `/create-task` section card for section card: the same
  * section label and the same text field styling (`--input-bg`, 1.5px
- * `--border-1`, radius 12) the live form uses, with the same detected-category
- * chip underneath. It shows a COMPLETED task rather than an empty form — an
- * empty form reads as something the visitor is meant to fill in, which is
- * exactly what a preview must never look like.
+ * `--border-1`, radius 12) the live form uses.
  *
- * Only the two things this screen teaches are shown: what you wrote and where.
- * No status pills and no buttons.
+ * It shows a COMPLETED task rather than an empty form — an empty form reads as
+ * something the visitor is meant to fill in, which is exactly what a preview
+ * must never look like. Only the two things this screen teaches are shown: what
+ * you wrote and where. No category chip, no building/floor fields and no
+ * buttons — the address details stay private until a worker is chosen, and the
+ * illustration has no reason to hint at either.
  */
-const DESCRIPTION =
-  'צריך להתקין גוף תאורה חדש בתקרת הסלון. יש סולם וכלים בבית.';
-
-function Field({ children, muted }) {
-  return (
-    <div
-      style={{
-        background: 'var(--input-bg)',
-        border: '1.5px solid var(--border-1)',
-        borderRadius: 12,
-        padding: '11px 14px',
-        fontSize: 13.5,
-        fontWeight: muted ? 500 : 700,
-        color: muted ? 'var(--text-2)' : 'var(--text-1)',
-        lineHeight: 1.5,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
 export default function TaskDraftScreen() {
   return (
     <>
@@ -51,20 +31,7 @@ export default function TaskDraftScreen() {
           </div>
 
           <div style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, padding: '11px 14px' }}>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-1)' }}>{DESCRIPTION}</p>
-          </div>
-
-          {/* The real auto-detected category chip that appears under the field */}
-          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>קטגוריה שזוהתה:</span>
-            <span style={{
-              background: 'var(--brand-primary-light)',
-              border: '1px solid var(--border-2)',
-              borderRadius: 10, padding: '3px 10px',
-              fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)',
-            }}>
-              🏷️ חשמל
-            </span>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-1)' }}>{ONBOARDING_TASK.description}</p>
           </div>
         </div>
 
@@ -78,17 +45,11 @@ export default function TaskDraftScreen() {
           {/* Street and city ONLY. A task preview must never show a specific
               address — building, floor and apartment stay private until a
               worker is chosen. */}
-          <Field>רחוב פלורנטין, תל אביב</Field>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-            <div>
-              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, margin: '0 0 4px' }}>בניין / מספר בית</p>
-              <Field muted>12</Field>
-            </div>
-            <div>
-              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, margin: '0 0 4px' }}>קומה</p>
-              <Field muted>3</Field>
-            </div>
+          <div style={{
+            background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12,
+            padding: '11px 14px', fontSize: 13.5, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.5,
+          }}>
+            {ONBOARDING_TASK.location}
           </div>
         </div>
 
