@@ -57,6 +57,13 @@ export default function OnboardingTrackWelcome() {
   // The worker journey's LAST screen: the join screen, rendered in place.
   const [showJoin, setShowJoin] = useState(false);
 
+  // Which explainer screen the visitor is on. Held HERE, not inside
+  // TrackExplainer, because the join step replaces the explainer inside this
+  // same flow — and a slide index owned by a component that unmounts would
+  // reset to the first screen, so pressing Back from the join step returned the
+  // visitor to the start of the journey instead of the screen they left.
+  const [slideIndex, setSlideIndex] = useState(0);
+
   // A signed-in visitor is never shown the first-run screens — but WHERE they
   // go next must be the same decision the /join page makes, not a shortcut past
   // it. This matters for the sign-in that happens INSIDE the worker flow: OAuth
@@ -77,6 +84,12 @@ export default function OnboardingTrackWelcome() {
   const choose = (next) => {
     setOnboardingTrack(next);
     setTrack(next);
+    setSlideIndex(0);
+  };
+
+  const switchTrack = () => {
+    setTrack(null);
+    setSlideIndex(0);
   };
 
   const finish = () => {
@@ -116,8 +129,10 @@ export default function OnboardingTrackWelcome() {
     <TrackExplainer
       track={track}
       slides={explainerSlides(track)}
+      index={slideIndex}
+      onIndexChange={setSlideIndex}
       onFinish={finish}
-      onSwitchTrack={() => setTrack(null)}
+      onSwitchTrack={switchTrack}
     />
   );
 }

@@ -49,7 +49,7 @@ import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
-import { hasSeenFirstRun } from '@/lib/onboardingTrack';
+import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack } from '@/lib/onboardingTrack';
 
 import BoostOverlay from '@/components/BoostOverlay';
 
@@ -473,40 +473,46 @@ export default function Layout() {
 
   useEffect(() => {
     const isPublicPage = PUBLIC_PATHS_NO_AUTH.includes(location.pathname);
-    if (!isAuthenticated && !isPublicPage) {
-      // The app always OPENS on the track screen. Landing straight on /join
-      // made the worker sign-up look like the app's front door. A returning
-      // visitor's saved track is still pre-selected there — one tap to continue.
-      // Only the root is affected, so deep links keep their own destination.
-      // A visitor who explicitly chose "continue as guest" is NEVER sent to the
-      // first-run track screen. Guest access is a real choice, and the setting
-      // that enables it loads asynchronously — for the moment before it arrives
-      // `effectiveGuest` is still false, and this branch used to bounce the
-      // guest straight back to /welcome, which painted the welcome flow over the
-      // feed they had just entered.
-      // …and a visitor who ALREADY walked the first-run flow is never sent back
-      // into it. Without this, closing the publish form (which lands on '/')
-      // dropped them straight back onto the welcome flow — a dead end with no
-      // way out to the app they were trying to reach.
-      if (location.pathname === '/' && !effectiveGuest && !isGuest && !hasSeenFirstRun()) {
-        navigate('/welcome', { replace: true });
-        return;
+    if (isAuthenticated || isPublicPage) return;
+
+    // A guest whose settings have not loaded yet is STILL a guest. Guest access
+    // is a real choice and the setting that enables it arrives asynchronously;
+    // for the moment before it does, `effectiveGuest` is false — and bouncing
+    // the guest on that stale value painted the first-run flow over the feed
+    // they had just entered.
+    if (effectiveGuest) {
+      // A guest IS a visitor with no account, and PUBLIC_PATHS_NO_AUTH is
+      // precisely the set a visitor with no account may open — the publish
+      // form included, which asks for a sign-in only at the PUBLISH step.
+      if (location.pathname !== '/' && !isPublicPage) {
+        login();
+        navigate('/', { replace: true });
       }
-      if (effectiveGuest) {
-        // A guest IS a visitor with no account, and PUBLIC_PATHS_NO_AUTH is
-        // precisely the set a visitor with no account may open — the publish
-        // form included, which asks for a sign-in only at the PUBLISH step.
-        // Bouncing a guest off those was the one thing that stopped the
-        // onboarding's "פרסם משימה בחינם" button from reaching /create-task.
-        if (location.pathname !== '/' && !isPublicPage) {
-          login();
-          navigate('/', { replace: true });
-        }
-        return;
-      }
-      navigate('/join');
+      return;
     }
-  }, [isAuthenticated, effectiveGuest, navigate, location.pathname]);
+    if (isGuest) return;
+
+    // ── A visitor with no account ────────────────────────────────────────────
+    // They are never left on a route they cannot use, and they are NEVER
+    // dropped on the worker sign-up by default. They continue the journey they
+    // actually chose:
+    //
+    //   publish → the publish form, which a visitor may fill freely (the
+    //             sign-in is asked for only at the PUBLISH step)
+    //   worker  → the existing sign-up + worker profile flow
+    //   no choice yet → the first-run screen
+    //
+    // This is the branch that used to send EVERY returning visitor to /join.
+    // That single line is why closing the app after the publisher onboarding
+    // and re-opening it dumped the visitor onto the worker sign-up page, with
+    // no way forward that matched what they had picked.
+    const destination = hasSeenFirstRun()
+      ? destinationForTrack(getOnboardingTrack())
+      : '/welcome';
+    if (location.pathname !== destination) {
+      navigate(destination, { replace: true });
+    }
+  }, [isAuthenticated, effectiveGuest, isGuest, navigate, location.pathname]);
 
   // Pre-launch gate: show waiting page for unapproved users (admins and agents always pass)
   // Placed AFTER all hooks to comply with Rules of Hooks

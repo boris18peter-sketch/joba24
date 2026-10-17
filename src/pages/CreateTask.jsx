@@ -210,7 +210,7 @@ export default function CreateTask() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t, isRTL } = useLanguage();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, isGuest, login } = useAuth();
   const editId = searchParams.get('editId');
   const isEditMode = !!editId;
   const isRepostMode = isEditMode && searchParams.get('repost') === '1';
@@ -1204,10 +1204,18 @@ export default function CreateTask() {
                   stepping back through the form — they are leaving it, and they
                   must land in the app able to browse freely. A back arrow made
                   that read as "undo one screen", and the onboarding flow they
-                  arrived from was not a place to return to. */}
+                  arrived from was not a place to return to.
+
+                  WHERE "leaving" means depends on who is leaving:
+                    · a signed-in user, or a guest → the feed, as before;
+                    · a visitor with NO account → the first-run screen, which is
+                      the only front door they have. Sending them to '/' would
+                      bounce them straight back here (the route guard resumes
+                      their chosen publish journey), so the close button would
+                      read as broken and the form would be impossible to leave. */}
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => navigate(isAuthenticated || isGuest ? '/' : '/welcome')}
                 aria-label="סגירה"
                 style={{
                   width: 34, height: 34, borderRadius: 11, flexShrink: 0, cursor: 'pointer',
