@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,9 +19,7 @@ import { trackEvent } from '@/lib/analytics';
 import { useLanguage } from '@/lib/LanguageContext';
 import RotatingPromoText from '@/components/RotatingPromoText';
 import { useRegistrationCount } from '@/hooks/useRegistrationCount';
-import StoreDownloadButtons from '@/components/StoreDownloadButtons';
-import { isStandaloneApp } from '@/lib/utils';
-import { isNativeLike } from '@/lib/nativeEnv';
+import OnboardingFooter from '@/components/onboarding/OnboardingFooter';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
@@ -226,79 +224,51 @@ export default function WorkerOnboarding() {
 
   // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
+    // The SAME shell as Welcome — brand lockup, headline, actions, shared
+    // footer — so moving between the two pages shifts nothing but the words.
     return (
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, background: 'linear-gradient(165deg, var(--brand-hero-bg, #0a1f4e) 0%, var(--brand-hero-bg, #0f2b6b) 35%, var(--brand-primary) 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(36px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', overflow: 'hidden' }}>
+      <div className="j-hero" dir={isRTL ? 'rtl' : 'ltr'}>
         {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
 
-        {/* Decorative blurred glow circles */}
-        <div style={{ position: 'absolute', top: '-10%', right: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', left: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.3) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+        <div className="j-hero-glow j-hero-glow-a" />
+        <div className="j-hero-glow j-hero-glow-b" />
 
-        {/* Top — Brand */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1, flexShrink: 0 }}>
-          <div style={{ width: 88, height: 88, borderRadius: 24, overflow: 'hidden', marginBottom: 20, border: '2px solid rgba(255,255,255,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}>
-            <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.7)', letterSpacing: 5, textTransform: 'uppercase' }}>
-            <BrandName />
-          </div>
-        </div>
-
-        {/* Middle — Headline */}
-        <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
-          <h1 style={{ fontSize: 30, fontWeight: 900, color: 'var(--brand-hero-text, white)', margin: 0, marginBottom: 16, lineHeight: 1.2 }}>
-            {t('wo_hero_title')}
-          </h1>
-          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380 }}>
-            {brandText(t('wo_hero_body'))}
-          </p>
-          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.95)', margin: 0, lineHeight: 1.6, maxWidth: 380, fontWeight: 700 }}>
-            {t('wo_hero_body2')}
-          </p>
-          <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '10px 24px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-              <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 900 }}>{regCount.toLocaleString()}</span>
-              <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700 }}>{`כבר הצטרפו ל-${identity.name}`}</span>
+        <div className="j-hero-inner">
+          <div className="j-hero-top">
+            <div className="j-hero-logo">
+              <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <span className="j-hero-brand">
+              <BrandName />
             </span>
           </div>
-        </div>
 
-        {/* Bottom — CTA */}
-        <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1, flexShrink: 0, paddingBottom: 8 }}>
-          <button
-            onClick={() => setShowLogin(true)}
-            style={{ width: '100%', padding: '20px 0', borderRadius: 18, background: 'white', color: 'var(--brand-hero-bg, #0f2b6b)', fontSize: 20, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
-          >
-            {t('wo_register_btn')}
-          </button>
-          <div style={{ marginTop: 14, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-            {t('wo_setup_note')}
-          </div>
-          {guestEnabled && (
-            <button
-              onClick={() => { enterGuestMode(); navigate('/'); }}
-              style={{ width: '100%', marginTop: 14, padding: '14px 0', borderRadius: 16, background: 'rgba(255,255,255,0.1)', color: 'var(--brand-hero-text, white)', fontSize: 16, fontWeight: 800, border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
-            >
-              {t('continue_as_guest')}
-            </button>
-          )}
-          {/* Store download buttons — browser only (hidden inside the native app /
-              installed PWA). Renders only when store URLs are configured in the
-              admin dashboard (JobaSettings). The ref code is already preserved
-              across the OAuth redirect, so downloads here stay attributed to the
-              referring agent. */}
-          {!isStandaloneApp && !isNativeLike() && (
-            <div style={{ marginTop: 18 }}>
-              <StoreDownloadButtons size="sm" />
+          <div className="j-hero-main">
+            <h1 className="j-hero-title">{t('wo_hero_title')}</h1>
+            <p className="j-hero-body">{brandText(t('wo_hero_body'))}</p>
+            <p className="j-hero-body" style={{ fontWeight: 700, color: 'var(--text-1)' }}>{t('wo_hero_body2')}</p>
+
+            <div>
+              <span className="j-hero-count">
+                <span className="j-hero-count-n">{regCount.toLocaleString()}</span>
+                <span className="j-hero-count-t">{`כבר הצטרפו ל-${identity.name}`}</span>
+              </span>
             </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, flexWrap: 'nowrap' }}>
-            <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
-            <Link to="/privacy" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
-            <Link to="/faq" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('faq_title')}</Link>
           </div>
+
+          <div className="j-hero-actions">
+            <button className="j-hero-cta" onClick={() => setShowLogin(true)}>
+              {t('wo_register_btn')}
+            </button>
+            <div className="j-hero-note">{t('wo_setup_note')}</div>
+            {guestEnabled && (
+              <button className="j-hero-cta-2" onClick={() => { enterGuestMode(); navigate('/'); }}>
+                {t('continue_as_guest')}
+              </button>
+            )}
+          </div>
+
+          <OnboardingFooter />
         </div>
       </div>
     );

@@ -39,7 +39,9 @@ export default function UiStage({ children, width = 393, maxScale = 1.6 }) {
     return () => ro.disconnect();
   }, []);
 
-  const PAD = 14;
+  // Tight padding: every pixel kept here is a pixel the illustration gets, and
+  // the whole point is that it shows as large as the frame allows.
+  const PAD = 10;
   const availW = Math.max(0, box.w - PAD * 2);
   const availH = Math.max(0, box.h - PAD * 2);
 

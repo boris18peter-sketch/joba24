@@ -1,18 +1,6 @@
 import { TRACKS } from '@/lib/onboardingTrack';
 
 /**
- * One real Joba24 capture, kept for the step where a genuine screenshot says
- * more than any redraw: the applicant list, with real candidates and the
- * approve/reject decision the publisher actually makes.
- *
- * It is shown whole (`contain`) inside the shared preview frame — never cropped,
- * never stretched — and the frame is inert, so its buttons cannot be tapped.
- */
-const SHOTS = {
-  applicants: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/1d3942496_WhatsAppImage2026-10-16at130127.jpeg',
-};
-
-/**
  * The three explainer slides shown after a track is picked.
  *
  * Copy and pictures only — no analytics, no side effects, no writes. These
@@ -21,46 +9,46 @@ const SHOTS = {
  *
  * Every screen is the same four things and nothing else: a headline, one line of
  * explanation, one illustration, and the continue button. There are deliberately
- * no labels above the headline — the headline alone says what the screen is.
+ * no labels above the headline and no tags anywhere — the headline alone says
+ * what the screen is.
  *
- * A slide names its illustration with `visual` (the app's own components, laid
- * out statically at their real width, so it matches the interface and follows
- * Light/Dark automatically) or with `shots` (real captures). Both render inside
- * the same preview frame, so every screen keeps one design language.
+ * `visual` names the illustration: the app's OWN components, laid out statically
+ * at their real logical width, so each screen shows exactly the interface the
+ * visitor is about to meet and follows Light/Dark automatically.
  */
 const SLIDES = {
   [TRACKS.PUBLISH]: [
     {
-      title: 'תאר את המשימה ואת המיקום',
-      body: 'ספר מה צריך לעשות, איפה ומתי. הפרסום בחינם!',
+      title: 'צריכים עזרה? פשוט מפרסמים!',
+      body: 'תארו מה צריך לעשות, איפה ומתי. הפרסום בחינם.',
       visual: 'task-draft',
     },
     {
-      title: 'אתה קובע כמה לשלם',
-      body: 'ה־AI מציע מחיר לפי המשימה ומחירי השוק. ההחלטה שלך.',
+      title: 'נמאס לכם ממחירים מוגזמים?',
+      body: 'כאן אתם קובעים כמה לשלם! ה־AI עוזר לכם לבחור מחיר לפי המשימה ומחירי השוק.',
       visual: 'price',
     },
     {
-      title: 'קבל בקשות ובחר מי יעזור לך',
-      body: 'אנשים מתאימים יכולים להגיש בקשה תוך דקות. אתה בוחר מי יבצע את המשימה.',
-      shots: [SHOTS.applicants],
+      title: 'פרסמו עכשיו, קבלו מועמדויות תוך דקות!',
+      body: 'אנשים שמעוניינים לבצע את המשימה יכולים להגיש בקשה. אתם בוחרים מי יגיע.',
+      visual: 'applicants',
     },
   ],
   [TRACKS.WORKER]: [
     {
-      title: 'בחר מה אתה יודע לעשות',
-      body: 'מלא פרופיל ובחר תחומים ואזורים שמתאימים לך.',
+      title: 'יש לכם כישורים? תהפכו אותם להכנסה!',
+      body: 'בחרו מה אתם יודעים לעשות ובאילו אזורים תרצו לעבוד.',
       visual: 'worker-profile',
     },
     {
-      title: 'מצא משימות שמתאימות לך',
-      body: 'קבל התראות על משימות חדשות או חפש בעצמך בפיד.',
+      title: 'המשימות מגיעות גם אליכם!',
+      body: 'קבלו התראות על משימות מתאימות או מצאו אותן בעצמכם בפיד.',
       visual: 'feed',
     },
     {
-      title: 'הגש בקשה והתחל להרוויח',
-      body: 'המפרסם בוחר מי יבצע את המשימה. נבחרת? יוצאים לבצע ומרוויחים!',
-      visual: 'task-card',
+      title: 'מצאתם משימה? הגישו בקשה!',
+      body: 'המפרסם בוחר מי יבצע. נבחרתם? צאו לבצע והרוויחו.',
+      visual: 'task-detail',
     },
   ],
 };
