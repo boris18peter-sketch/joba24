@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -222,56 +222,18 @@ export default function WorkerOnboarding() {
     );
   }
 
-  // ── Not authenticated — landing hero with inline login ──
+  // ── Not authenticated — this route is NOT a join page ──
+  //
+  // The join screen ("רוצה יותר עבודות? הרשם עכשיו") lives in exactly ONE place:
+  // the last step of the first-run flow. It used to be duplicated here, which
+  // meant two copies of the same screen could be open at once — and the copy
+  // that was still animating out kept painting over the app, so the join page
+  // appeared INSIDE the feed after continuing as a guest.
+  //
+  // This route is now only the worker PROFILE STEPPER, for a signed-in account.
+  // A visitor who lands here is handed to the flow that owns the join screen.
   if (!isAuthenticated) {
-    // The SAME shell as Welcome — brand lockup, headline, actions, shared
-    // footer — so moving between the two pages shifts nothing but the words.
-    return (
-      <div className="j-hero" dir={isRTL ? 'rtl' : 'ltr'}>
-        {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
-
-        <div className="j-hero-glow j-hero-glow-a" />
-        <div className="j-hero-glow j-hero-glow-b" />
-
-        <div className="j-hero-inner">
-          <div className="j-hero-top">
-            <div className="j-hero-logo">
-              <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <span className="j-hero-brand">
-              <BrandName />
-            </span>
-          </div>
-
-          <div className="j-hero-main">
-            <h1 className="j-hero-title">{t('wo_hero_title')}</h1>
-            <p className="j-hero-body">{brandText(t('wo_hero_body'))}</p>
-            <p className="j-hero-body" style={{ fontWeight: 700, color: 'var(--text-1)' }}>{t('wo_hero_body2')}</p>
-
-            <div>
-              <span className="j-hero-count">
-                <span className="j-hero-count-n">{regCount.toLocaleString()}</span>
-                <span className="j-hero-count-t">{`כבר הצטרפו ל-${identity.name}`}</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="j-hero-actions">
-            <button className="j-hero-cta" onClick={() => setShowLogin(true)}>
-              {t('wo_register_btn')}
-            </button>
-            <div className="j-hero-note">{t('wo_setup_note')}</div>
-            {guestEnabled && (
-              <button className="j-hero-cta-2" onClick={() => { enterGuestMode(); navigate('/'); }}>
-                {t('continue_as_guest')}
-              </button>
-            )}
-          </div>
-
-          <OnboardingFooter />
-        </div>
-      </div>
-    );
+    return <Navigate to="/welcome" replace />;
   }
 
   // ── Just authenticated — useEffect will advance to step 0, show spinner meanwhile ──

@@ -30,7 +30,7 @@
  * The CONTINUATION destination is derived from the choice — it is not a fourth
  * stored state, so it can never fall out of sync with the track:
  *   publish → /create-task   (open to visitors; sign-in only at publish)
- *   worker  → /join          (the existing sign-up + worker profile flow)
+ *   worker  → /welcome       (the flow that ENDS in the join step)
  */
 
 export const TRACKS = {
@@ -92,7 +92,18 @@ export function hasSeenFirstRun() {
   return !!track && isExplainerDone(track);
 }
 
-/** Where a track's EXISTING flow starts — never a new route, never a new flow. */
+/**
+ * Where a track's flow continues.
+ *
+ *   publish → the publish form, open to visitors
+ *   worker  → the first-run flow itself, whose LAST step is the join screen.
+ *
+ * The worker journey no longer continues to a separate /join page. That page
+ * showed the same join screen the flow's final step already shows, so the two
+ * could both be open at once and the join screen ended up painted over the app.
+ * There is now ONE join screen, in ONE place, and /join is only ever the
+ * worker PROFILE STEPPER for a signed-in account.
+ */
 export function destinationForTrack(track) {
-  return track === TRACKS.PUBLISH ? '/create-task' : '/join';
+  return track === TRACKS.PUBLISH ? '/create-task' : '/welcome';
 }
