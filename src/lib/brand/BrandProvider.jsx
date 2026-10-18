@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { BRAND_STATE, resolveBrandContext, effectiveBrandConfig } from '@/lib/brand/brandResolver';
+import {
+  BRAND_STATE, resolveBrandContext, effectiveBrandConfig,
+  cachedBrandContext, brandCacheAgeMs, BRAND_CACHE_MAX_AGE_MS,
+} from '@/lib/brand/brandResolver';
 import { setCurrentBrandId } from '@/lib/brand/currentBrand';
 import { base44 } from '@/api/base44Client';
 
@@ -24,7 +27,28 @@ const INITIAL = {
 };
 
 export function BrandProvider({ children }) {
-  const [ctx, setCtx] = useState(INITIAL);
+  // ── Paint from the cached Brand on the very first frame ─────────────────
+  // Resolution costs three serialised round-trips and the whole app waits on
+  // it, so a cold start used to sit on the loading screen for seconds. With a
+  // cached entry the Brand is known immediately and the network check runs in
+  // the background; with no cache (a first-ever visit, or an unknown domain)
+  // behaviour is exactly as before.
+  const [ctx, setCtx] = useState(() => {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    const cached = cachedBrandContext(hostname);
+    if (!cached) return INITIAL;
+    return {
+      ...cached,
+      brandId: cached.brand?.id || null,
+      isPlatformBrand: cached.brand?.is_default === true,
+    };
+  });
+
+  // The Brand a new record belongs to follows whatever context is current —
+  // including the cached one painted on the very first frame.
+  useEffect(() => {
+    if (ctx.brandId) setCurrentBrandId(ctx.brandId);
+  }, [ctx.brandId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,13 +59,20 @@ export function BrandProvider({ children }) {
       const request = ++revision;
       return resolveBrandContext(hostname).then(resolved => {
         if (cancelled || request !== revision) return;
-        setCurrentBrandId(resolved.brand?.id || null);
         setCtx({ ...resolved, brandId: resolved.brand?.id || null, isPlatformBrand: resolved.brand?.is_default === true });
       });
     };
     refresh().catch(() => { if (!cancelled) setCtx({ ...INITIAL, state: BRAND_STATE.UNKNOWN, hostname }); });
     const onSaved = () => { refresh(); };
-    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      // Re-resolving is three round-trips, so returning to the app no longer
+      // pays for it on every foreground. A real configuration change still
+      // arrives instantly through the BrandConfig subscription and the
+      // brand-config-saved event above; this is only a slow safety net.
+      if (brandCacheAgeMs(hostname) < BRAND_CACHE_MAX_AGE_MS) return;
+      refresh();
+    };
     const unsubscribe = base44.entities.BrandConfig.subscribe(onSaved);
     window.addEventListener('brand-config-saved', onSaved);
     document.addEventListener('visibilitychange', onVisible);

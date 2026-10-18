@@ -156,6 +156,19 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      // ── RELEASE THE LOADING SCREEN HERE — NOT AFTER THE HOUSEKEEPING ─────
+      // Everything below this line is post-auth bookkeeping: linking the
+      // referral device, writing registration_source, refreshing last_active_at.
+      // Each one is a SEPARATE network round-trip.
+      //
+      // checkAppState only cleared isLoadingPublicSettings AFTER awaiting this
+      // whole function, so the app stayed on the loading screen until all of
+      // that finished — three extra serialised writes added to every cold
+      // start. On a slow connection the boot regularly exceeded the 5s safety
+      // timeout, which is what actually released the UI. The user is fully
+      // known at this point, so the app is shown now and the housekeeping
+      // completes in the background.
+      setIsLoadingPublicSettings(false);
       // Logging in exits guest mode
       localStorage.removeItem('joba24_guest_mode');
       setIsGuest(false);

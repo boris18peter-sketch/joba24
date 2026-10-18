@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { useLanguage } from '@/lib/LanguageContext';
 import { trackEvent } from '@/lib/analytics';
+import { loadTranzilaSdk } from '@/lib/tranzilaSdk';
 
 /**
  * TranzilaIframe — Full-screen payment modal using Tranzila's iFrame.
@@ -66,6 +67,10 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
       console.error('[TranzilaIframe] Invalid notify_url configuration:', notifyConfigError, notifyUrl);
     }
   }, [notifyConfigError]);
+
+  // The Apple Pay SDK is fetched HERE, the first time a payment screen opens —
+  // never during launch. Fire-and-forget: the iframe works without it.
+  useEffect(() => { loadTranzilaSdk(); }, []);
 
   // Redirect URL — Tranzila redirects the iframe here after payment (browser).
   // This is the PRIMARY mechanism. Uses our static callback page.

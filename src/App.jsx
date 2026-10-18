@@ -84,19 +84,17 @@ if (typeof window !== 'undefined') {
   const preloadPages = () => {
     // Root tabs (keep-alive) + most-visited non-root pages — preloading the
     // chunks means navigation never hits the Suspense full-screen spinner.
+    // Deliberately SHORT. This runs while the app is still booting, so every
+    // chunk listed here competes for bandwidth with the critical path (the
+    // entry bundle, the Brand queries and the auth check). Warming thirteen
+    // routes starved the launch on a slow connection to speed up pages most
+    // visitors never open. Only the other three root tabs and the publish form
+    // — the routes a visitor actually reaches next — are warmed; every other
+    // route still loads normally on first visit.
     warm(() => import('@/pages/MapView'));
     warm(() => import('@/pages/ChatInbox'));
     warm(() => import('@/pages/Profile'));
     warm(() => import('@/pages/CreateTask'));
-    warm(() => import('@/pages/Wallet'));
-    warm(() => import('@/pages/MyTasks'));
-    warm(() => import('@/pages/MySchedule'));
-    warm(() => import('@/pages/WorkerProfile'));
-    warm(() => import('@/pages/EarningsDashboard'));
-    warm(() => import('@/pages/Notifications'));
-    warm(() => import('@/pages/Chat'));
-    warm(() => import('@/pages/SupportChat'));
-    warm(() => import('@/pages/AgentDashboard'));
   };
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(preloadPages, { timeout: 4000 });

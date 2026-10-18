@@ -27,6 +27,60 @@ export const BRAND_STATE = {
   UNAVAILABLE: 'unavailable',
 };
 
+/* ── Brand cache ─────────────────────────────────────────────────────────────
+ * Resolving the Brand costs THREE serialised network round-trips
+ * (BrandDomain → Brand → BrandConfig), and the app cannot paint until they
+ * finish — so on every cold start the visitor waited on the loading screen
+ * while they ran. The resolved context is therefore cached per hostname and
+ * used to paint immediately, while the network resolution revalidates in the
+ * background.
+ *
+ * Keyed by hostname on purpose: an unknown domain never has an entry, so it
+ * still resolves to nothing and can never inherit another host's Brand. The
+ * cache is cleared whenever a host stops resolving to a live Brand.
+ */
+const BRAND_CACHE_KEY = 'joba24_brand_cache';
+
+/** How long a cached Brand may be trusted before a foreground return re-checks. */
+export const BRAND_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+
+function writeBrandCache(host, ctx) {
+  try {
+    if (!ctx || ctx.state !== BRAND_STATE.RESOLVED) {
+      localStorage.removeItem(BRAND_CACHE_KEY);
+      return;
+    }
+    localStorage.setItem(BRAND_CACHE_KEY, JSON.stringify({ host, ctx, at: Date.now() }));
+  } catch {
+    /* storage unavailable — resolution simply runs on every launch */
+  }
+}
+
+/** The cached BrandContext for this hostname, or null when there is none. */
+export function cachedBrandContext(hostname) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BRAND_CACHE_KEY) || 'null');
+    const host = normalizeHostname(hostname);
+    if (!raw || !host || raw.host !== host) return null;
+    if (raw.ctx?.state !== BRAND_STATE.RESOLVED) return null;
+    return raw.ctx;
+  } catch {
+    return null;
+  }
+}
+
+/** Age of the cached entry in ms — Infinity when there is none. */
+export function brandCacheAgeMs(hostname) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BRAND_CACHE_KEY) || 'null');
+    const host = normalizeHostname(hostname);
+    if (!raw || raw.host !== host || typeof raw.at !== 'number') return Infinity;
+    return Date.now() - raw.at;
+  } catch {
+    return Infinity;
+  }
+}
+
 /** Lowercase host, no protocol / port / trailing dot. */
 export function normalizeHostname(raw) {
   return String(raw || '')
@@ -114,6 +168,7 @@ export async function resolveBrandContext(hostname) {
       brand = brands?.[0] || null;
     } else if (domains?.length) {
       // Registered but not active (pending / disabled) — the Brand must not resolve.
+      writeBrandCache(host, null);
       return { state: BRAND_STATE.UNKNOWN, hostname: host, brand: null, config: null, matchedDomain: domains[0] };
     }
   }
@@ -125,16 +180,20 @@ export async function resolveBrandContext(hostname) {
 
   // 3. Unknown production domain → nothing. Never fall back to Joba24.
   if (!brand) {
+    writeBrandCache(host, null);
     return { state: BRAND_STATE.UNKNOWN, hostname: host, brand: null, config: null, matchedDomain };
   }
 
   if (brand.status === 'suspended' || brand.status === 'archived') {
+    writeBrandCache(host, null);
     return { state: BRAND_STATE.UNAVAILABLE, hostname: host, brand, config: null, matchedDomain };
   }
 
   const config = await loadConfig(brand.id);
   const inheritedTheme = await loadInheritedTheme(brand, config);
-  return { state: BRAND_STATE.RESOLVED, hostname: host, brand, config, inheritedTheme, matchedDomain };
+  const resolved = { state: BRAND_STATE.RESOLVED, hostname: host, brand, config, inheritedTheme, matchedDomain };
+  writeBrandCache(host, resolved);
+  return resolved;
 }
 
 /**

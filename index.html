@@ -151,13 +151,19 @@
       .preload-text { font-family:-apple-system,BlinkMacSystemFont,sans-serif; font-size:14px; color:#94a3b8; font-weight:500; }
       @keyframes preload-spin { to{transform:rotate(360deg)} }
     </style>
-    <!-- Tranzila Apple Pay SDK — direct domain integration.
-         Runs Apple Pay from our top-level origin (required by Apple),
-         so the iframe's Apple Pay button can delegate the session to us.
-         jQuery is isolated via noConflict(true) → no pollution to the React app. -->
-    <script type="text/javascript" src="https://direct.tranzila.com/Tranzila_files/jquery.js"></script>
-    <script>document.write('<script src="https://direct.tranzila.com/js/tranzilanapple_v3.js?v=' + Date.now() + '"><\/script>');</script>
-    <script>var $n = jQuery.noConflict(true);</script>
+    <!-- ── Tranzila Apple Pay SDK — REMOVED FROM <head>, LOADED ON DEMAND ──
+         These were plain, render-blocking <script> tags, so every launch
+         stopped and waited on Tranzila's CDN before the app's own module was
+         even requested — and the Apple Pay file carried a Date.now()
+         cache-buster, so it was re-downloaded in full on EVERY launch and could
+         never be cached.
+
+         The checkout flow does not use them: it POSTs a plain form into
+         Tranzila's own iframe. They are only needed for that iframe's Apple Pay
+         button, which is a checkout-time concern, not a launch-time one.
+
+         They are now injected by src/lib/tranzilaSdk.js the first time the
+         payment screen opens. Do NOT move them back into <head>. -->
   </head>
   <body>
     <div id="root">
