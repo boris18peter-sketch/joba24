@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { Bell, X } from 'lucide-react';
+
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import { isNativeLike } from '@/lib/nativeEnv';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
@@ -97,39 +97,16 @@ export default function AppDownloadPopup() {
           boxShadow: '0 -20px 60px rgba(0,0,0,0.22)',
         }}
       >
-        <button
-          onClick={close}
-          aria-label={t('app_dl_later')}
-          style={{
-            position: 'absolute', top: 14, insetInlineEnd: 14,
-            width: 32, height: 32, minWidth: 32, minHeight: 32, borderRadius: 10,
-            background: 'var(--surface-3)', border: 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-          }}
-        >
-          <X size={15} color="var(--text-3)" />
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <div style={{
-            width: 46, height: 46, borderRadius: 14, flexShrink: 0,
-            background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 6px 18px rgba(26,111,212,0.28)',
-          }}>
-            <Bell size={22} color="#fff" />
-          </div>
-          <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.35 }}>
-            {t('app_dl_title')}
-          </div>
+        {/* Title, one clear explanation, the buttons, and the way out. Nothing
+            else competes for the eye — this is the moment the publisher has the
+            most reason to install, so the screen says one thing only. */}
+        <div style={{ fontSize: 21, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.3, marginBottom: 10 }}>
+          {t('app_dl_title')}
         </div>
 
-        <p style={{ margin: '0 0 6px', fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)' }}>
+        <p style={{ margin: '0 0 20px', fontSize: 14.5, lineHeight: 1.65, color: 'var(--text-2)' }}>
           {t('app_dl_body')}
         </p>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', marginBottom: 16 }}>
-          {t('app_dl_hint')}
-        </div>
 
         <StoreDownloadButtons size="md" align="center" />
 

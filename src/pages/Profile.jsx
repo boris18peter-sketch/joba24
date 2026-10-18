@@ -86,7 +86,9 @@ export default function Profile() {
     } catch (e) {
       try { await base44.auth.updateMe({ account_deleted: true }); } catch {}
     }
-    await base44.auth.logout('/');
+    // The app's own logout, so a deleted account lands on the welcome screen
+    // with a clean session rather than on the publish form.
+    logout();
     setDeleteLoading(false);
   };
 

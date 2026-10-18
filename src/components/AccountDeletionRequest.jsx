@@ -8,7 +8,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 
 export default function AccountDeletionRequest() {
   const { t, isRTL } = useLanguage();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,9 @@ export default function AccountDeletionRequest() {
     } catch (e) {
       try { await base44.auth.updateMe({ account_deleted: true }); } catch {}
     }
-    await base44.auth.logout('/');
+    // The app's own logout, so the deleted account lands on the welcome screen
+    // with a clean session rather than on the publish form.
+    logout();
     setLoading(false);
   };
 

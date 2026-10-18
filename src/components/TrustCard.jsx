@@ -257,19 +257,24 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
         onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: `${barColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Shield size={17} color={barColor} />
+        {/* What this is, and what it currently says — one line, both ends. */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+            <Shield size={15} color={barColor} style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>{t('pr_reliability')}</span>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('pr_reliability')}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 1 }}>
-              <span style={{ fontSize: 21, fontWeight: 900, color: barColor, lineHeight: 1, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: barColor, transition: 'color 0.15s' }}>{getTrustLevelLabel(trustLevel, t)}</span>
-            </div>
-          </div>
+          <span style={{ fontSize: 12, fontWeight: 800, color: barColor, flexShrink: 0, transition: 'color 0.15s' }}>
+            {getTrustLevelLabel(trustLevel, t)}
+          </span>
         </div>
-        <div style={{ height: 6, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
+
+        {/* The score itself — the one number the card exists to show. */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 9 }}>
+          <span style={{ fontSize: 27, fontWeight: 900, color: barColor, lineHeight: 1, letterSpacing: -1, transition: 'color 0.15s' }}>{displayWidth}</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: barColor, opacity: 0.65 }}>%</span>
+        </div>
+
+        <div style={{ height: 8, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: barColor, transition: 'background-color 0.1s' }} />
         </div>
       </div>

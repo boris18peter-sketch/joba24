@@ -427,8 +427,27 @@ export const AuthProvider = ({ children }) => {
     } catch {}
     localStorage.removeItem('joba24_guest_mode');
     setIsGuest(false);
+
+    // ── Where a signed-out visitor lands ────────────────────────────────────
+    // The welcome screen: the first-run choice between publishing and earning,
+    // which is also where they sign back in.
+    //
+    // Redirecting to '/' was not enough on its own. A visitor who had already
+    // been through the first-run flow is sent on from '/' by the Layout gate to
+    // the destination of the track they once chose — and for the publish track
+    // that is the publish form. So logging out looked exactly like being pushed
+    // into creating a task. Clearing the first-run state is what makes the
+    // welcome screen the real destination rather than a one-frame detour: a
+    // signed-out visitor is a visitor starting over, and this is the screen
+    // that starts over.
+    try {
+      localStorage.removeItem('joba24_onboarding_track');
+      localStorage.removeItem('joba24_onboarding_explainer_publish');
+      localStorage.removeItem('joba24_onboarding_explainer_worker');
+    } catch {}
+
     if (shouldRedirect) {
-      window.location.replace('/');
+      window.location.replace('/welcome');
     }
   };
 

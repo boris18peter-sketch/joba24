@@ -98,26 +98,17 @@ export default function TrackChoice({ onChoose }) {
               </motion.div>
             ))}
           </div>
-        </div>
 
-        {/* One line, above the shared footer: the way back in for someone who
-            already has an account. Deliberately quiet — it is a shortcut past the
-            flow, not a third journey competing with the two boxes above it. */}
-        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button
-            type="button"
-            onClick={() => setShowLogin(true)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '4px 8px', alignSelf: 'center',
-              color: 'var(--brand-primary)', fontSize: 13.5, fontWeight: 800,
-              minHeight: 'unset', minWidth: 'unset',
-            }}
-          >
+          {/* The way back in for someone who already has an account — directly
+              under the two boxes, at the same type size as the buttons inside
+              them. Sitting down at the page footer made it read as a footnote;
+              here it reads as the third thing you can do on this screen. */}
+          <button type="button" className="j-hero-login" onClick={() => setShowLogin(true)}>
             {t('onb_login_cta')}
           </button>
-          <OnboardingFooter />
         </div>
+
+        <OnboardingFooter />
       </div>
 
       {showLogin && (

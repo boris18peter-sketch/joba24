@@ -28,11 +28,12 @@ export default function ProfileAvatar({
   const photos = [user?.profile_photo, ...(user?.profile_photos || [])].filter(Boolean);
   const initials = (user?.full_name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
-  // The camera button is part of the avatar, so it scales WITH it: a fixed 26px
-  // badge sat almost as large as the picture itself once the avatar was made
-  // smaller, which is what made the pair read as oversized.
-  const badgeSize = Math.max(18, Math.round(size * 0.28));
-  const badgeIcon = Math.max(9, Math.round(size * 0.15));
+  // The camera button is part of the avatar, so it scales WITH it — as one unit.
+  // The circle and the glyph inside it are derived from each other, not from two
+  // independent numbers, so shrinking the avatar can never leave a small camera
+  // rattling around inside a circle that stayed large.
+  const badgeSize = Math.max(16, Math.round(size * 0.26));
+  const badgeIcon = Math.max(9, Math.round(badgeSize * 0.58));
 
   return (
     <>

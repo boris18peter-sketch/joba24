@@ -36,11 +36,21 @@ export default function MarketServiceFilter({ tasks, selected = [], onChange }) 
         })();
 
     // One label resolution for every option, in the reader's language.
-    return raw.map((o) => ({
-      ...o,
-      label: localizedCategoryLabel(o.value, globalMap[o.value], lang, t),
-      icon: globalMap[o.value]?.icon || o.icon || '',
-    }));
+    //
+    // localizedCategoryLabel already PREFIXES the label with the category's
+    // emoji (taken from the Hebrew label or the legacy i18n entry). Reading the
+    // icon separately as well printed it twice — "🔌 🔌 אינסטלציה". So the
+    // leading emoji is split off here: it becomes `icon`, and the label keeps
+    // only the words.
+    return raw.map((o) => {
+      const full = localizedCategoryLabel(o.value, globalMap[o.value], lang, t);
+      const lead = full.match(/^[^\p{L}\p{N}]+/u);
+      return {
+        ...o,
+        label: lead ? full.slice(lead[0].length) : full,
+        icon: (lead ? lead[0].trim() : '') || globalMap[o.value]?.icon || o.icon || '',
+      };
+    });
   }, [categories, globalMap, isPlatformBrand, lang, t]);
 
   const counts = useMemo(() => {

@@ -329,6 +329,7 @@ const AuthenticatedApp = () => {
           // visitor sees the app — never a stale screen on top of it. Without a
           // z-index both layers sat at auto, and DOM order alone decided which
           // one covered the other.
+          className="j-app-shell"
           style={{ position: 'absolute', inset: 0, zIndex: isStandalone ? 1 : 2 }}
         >
           {/* ── THE SUSPENSE BOUNDARY BELONGS INSIDE THE LAYER ───────────────

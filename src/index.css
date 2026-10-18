@@ -889,6 +889,20 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 }
 .j-hero-note { text-align: center; font-size: 13.5px; color: var(--text-3); font-weight: 600; }
 
+/* The way back in for a returning visitor — deliberately the same size as the
+   text inside the two boxes' buttons, and only just below them, so it reads as
+   the third thing on the screen rather than a footnote at its bottom edge. */
+.j-hero-login {
+  display: block;
+  margin: 14px auto 0;
+  padding: 6px 10px;
+  background: none; border: none; cursor: pointer;
+  color: var(--brand-primary);
+  font-family: var(--font-inter);
+  font-size: 16.5px; font-weight: 800;
+  min-height: unset; min-width: unset;
+}
+
 /* Footer — the SAME links and the SAME store badges on both pages */
 .j-hero-foot { flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; align-items: center; }
 .j-hero-links { display: flex; justify-content: center; align-items: center; gap: 9px; }
@@ -1004,4 +1018,59 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   .j-hero-body { font-size: 17px; }
   .j-hero-box-title { font-size: 23px; }
   .j-hero-box-body { font-size: 15.5px; }
+  .j-hero-login { font-size: 17px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   DESKTOP — the SAME app, in a properly sized column
+   ════════════════════════════════════════════════════════════════════
+   The app is mobile-first and stays that way: every screen keeps its exact
+   structure, its order and its behaviour. The ONE thing that changes on a
+   computer is the width.
+
+   Stretched edge to edge on a 1440px screen, a mobile layout is not "bigger",
+   it is worse: rows become unreadably long, and 14px type on a 1400px card
+   reads as tiny and unfinished. So on a desktop the app becomes one centred
+   column — the phone layout at a comfortable reading width — with the page
+   behind it giving the frame.
+
+   Centred with `margin: auto` (not `transform`) on purpose: a transform would
+   make this element the containing block for every `position: fixed`
+   descendant, and the bottom nav, sheets and popups are all portaled to
+   <body> precisely so that they are NOT trapped inside a parent.
+   ════════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  /* The backdrop the column sits on. Unlayered, so it wins over @layer base. */
+  html, body { background: var(--surface-3); }
+
+  /* The app column itself. Absolutely positioned with left/right: 0, so auto
+     margins centre it without touching a single child. */
+  .j-app-shell {
+    max-width: 780px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-shadow: 0 0 0 1px var(--border-1), 0 0 80px rgba(15,40,107,0.10);
+  }
+
+  /* Portaled to <body>, so it must be centred to match the column it belongs
+     to — otherwise the nav runs the full width of the screen while the app
+     sits in the middle. */
+  .j-bottom-nav {
+    left: 0 !important;
+    right: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100%;
+    max-width: 780px;
+  }
+
+  /* Bottom sheets are fixed and span left: 0 / right: 0, so they too would run
+     edge to edge. A sheet without its own maxWidth is capped to the column. */
+  .mobile-sheet {
+    left: 0 !important;
+    right: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    max-width: 780px;
+  }
 }
