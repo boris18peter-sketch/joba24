@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 import { reloadFresh } from '@/lib/reloadFresh'
+import { bootMark } from '@/lib/bootTrace'
 
 // ── "React actually started" — the signal the HTML healers were missing ──────
 // The inline guards in index.html used to decide a launch was broken purely by
@@ -18,6 +19,13 @@ import { reloadFresh } from '@/lib/reloadFresh'
 // and the guards still heal exactly as before. So the heal now fires only for a
 // genuinely dead launch, never for a merely slow one.
 window.__joba24ReactStarted = true
+bootMark(
+  'env',
+  'ok',
+  window.Capacitor?.isNativePlatform?.()
+    ? `native:${window.Capacitor?.getPlatform?.() || 'unknown'}`
+    : 'web'
+)
 
 // Protective handler: the vite plugin's unhandled-rejection handler accesses
 // event.reason.stack.match(...), which crashes when a promise rejects with a

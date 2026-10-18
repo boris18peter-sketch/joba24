@@ -51,6 +51,7 @@ import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import AppLoading from '@/components/AppLoading';
 import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack } from '@/lib/onboardingTrack';
+import { bootMark } from '@/lib/bootTrace';
 
 import BoostOverlay from '@/components/BoostOverlay';
 import { myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery } from '@/lib/queries';
@@ -495,9 +496,9 @@ export default function Layout() {
     // That single line is why closing the app after the publisher onboarding
     // and re-opening it dumped the visitor onto the worker sign-up page, with
     // no way forward that matched what they had picked.
-    const destination = hasSeenFirstRun()
-      ? destinationForTrack(getOnboardingTrack())
-      : '/welcome';
+    const seen = hasSeenFirstRun();
+    const destination = seen ? destinationForTrack(getOnboardingTrack()) : '/welcome';
+    bootMark('route', 'ok', `${seen ? 'returning' : 'first-run'} → ${destination}`);
     if (location.pathname !== destination) {
       navigate(destination, { replace: true });
     }

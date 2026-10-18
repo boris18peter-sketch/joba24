@@ -1,5 +1,6 @@
 import React from 'react';
 import { reloadFresh } from '@/lib/reloadFresh';
+import { bootMark } from '@/lib/bootTrace';
 
 /**
  * A lazily-loaded route chunk can end up on a different module generation than
@@ -42,11 +43,28 @@ export default class AppErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     console.error('[Joba24] React crash:', error.message, info.componentStack);
+    bootMark('react-crash', 'fail', String(error?.message || '').slice(0, 120));
     if (STALE_MODULE_RE.test(error?.message || '')) {
       // If the throttle blocked the reload, fall back to the normal crash screen
       // rather than leaving the user on a spinner forever.
-      if (!healStaleModule()) this.setState({ recovering: false });
+      if (!healStaleModule()) {
+        this.setState({ recovering: false });
+        return;
+      }
+      // The reload IS the heal — but a reload that never actually takes effect
+      // (a WebView that refuses the navigation, a page that is torn down before
+      // it fires) would leave `recovering` true and the spinner on screen for
+      // good. That is a loading screen with no end and no error, which is the
+      // one outcome this boundary exists to prevent. Fall through to the crash
+      // screen, which offers a real retry.
+      this.recoverTimer = setTimeout(() => {
+        if (this.state.recovering) this.setState({ recovering: false });
+      }, 4000);
     }
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.recoverTimer);
   }
 
   render() {

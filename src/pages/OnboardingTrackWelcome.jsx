@@ -13,6 +13,7 @@ import { explainerSlides } from '@/lib/onboardingTrackContent';
 import TrackChoice from '@/components/onboarding/TrackChoice';
 import TrackExplainer from '@/components/onboarding/TrackExplainer';
 import WorkerJoinStep from '@/components/onboarding/WorkerJoinStep';
+import { bootMark } from '@/lib/bootTrace';
 
 /**
  * First-run entry: pick a track, then read the three explainer screens.
@@ -74,6 +75,9 @@ export default function OnboardingTrackWelcome() {
   // user who has not is walked through the profile steps. Letting that page own
   // the decision is the only way the two entry points cannot drift apart.
   const savedTrack = getOnboardingTrack();
+
+  // The last stage of the boot chain: the Welcome screen is on screen.
+  useEffect(() => { bootMark('welcome', 'ok'); }, []);
 
   useEffect(() => {
     if (!skipFirstRun) return;

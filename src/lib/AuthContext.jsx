@@ -9,6 +9,7 @@ import { applyDisplayName } from '@/lib/displayName';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import { bootMark } from '@/lib/bootTrace';
 
 // IMPORTANT: This module owns the React context object. When Vite hot-reloads
 // this file, `createContext()` runs again and produces a NEW context object,
@@ -79,6 +80,7 @@ export const AuthProvider = ({ children }) => {
   const checkAppState = async () => {
     try {
       console.log('[Joba24] Auth: checkAppState start');
+      bootMark('auth', 'start');
       setIsLoadingPublicSettings(true);
       setAuthError(null);
       
@@ -97,12 +99,17 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingAuth(false);
         setIsAuthenticated(false);
         setAuthChecked(true);
-      }
+        // No session is a NORMAL state — a visitor with no account. It must never
+        // read as a failure or hold the app on the splash.
+        bootMark('session', 'ok', 'guest (no session)');
+        }
       clearTimeout(safetyTimeout);
       console.log('[Joba24] Auth: checkAppState done — isLoadingPublicSettings=false');
+      bootMark('auth', 'ok');
       setIsLoadingPublicSettings(false);
-    } catch (error) {
+      } catch (error) {
       console.error('[Joba24] Auth: checkAppState error:', error.message);
+      bootMark('auth', 'fail', error.message);
       setAuthError({
         type: 'unknown',
         message: error.message || 'An unexpected error occurred'

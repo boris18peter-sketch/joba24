@@ -5,6 +5,7 @@ import {
 } from '@/lib/brand/brandResolver';
 import { setCurrentBrandId } from '@/lib/brand/currentBrand';
 import { base44 } from '@/api/base44Client';
+import { bootMark } from '@/lib/bootTrace';
 
 /**
  * BrandProvider — resolves the current Brand ONCE and shares it with the whole
@@ -62,6 +63,9 @@ export function BrandProvider({ children }) {
       return resolveBrandContextSafe(hostname).then(resolved => {
         if (cancelled || request !== revision) return;
         setCtx({ ...resolved, brandId: resolved.brand?.id || null, isPlatformBrand: resolved.brand?.is_default === true });
+        // `degraded` means the real configuration could not be read and a
+        // fallback is being shown — a fail, not a success, and worth seeing.
+        bootMark('brand', resolved.degraded ? 'fail' : 'ok', `${resolved.state}:${resolved.hostname}`);
 
         // ── A degraded result is a fallback, not an answer ──────────────────
         // It exists so the app can never sit on the loading screen, and it is
@@ -75,7 +79,10 @@ export function BrandProvider({ children }) {
         retryTimer = setTimeout(() => { if (!cancelled) refresh(); }, 3000 * degradedAttempts);
       });
     };
-    refresh().catch(() => { if (!cancelled) setCtx({ ...INITIAL, state: BRAND_STATE.UNKNOWN, hostname }); });
+    refresh().catch(() => {
+      bootMark('brand', 'fail', 'resolution threw');
+      if (!cancelled) setCtx({ ...INITIAL, state: BRAND_STATE.UNKNOWN, hostname });
+    });
     const onSaved = () => { refresh(); };
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return;

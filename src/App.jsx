@@ -33,6 +33,7 @@ import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 import AppLoading from '@/components/AppLoading';
 import ConsentBanner from '@/components/ConsentBanner';
+import { bootMark } from '@/lib/bootTrace';
 
 // Add page imports here
 // lazyRetry — Vite lazy chunks are hashed; after a new deploy the browser may
@@ -40,20 +41,45 @@ import ConsentBanner from '@/components/ConsentBanner';
 // the dynamic import 404s ("Failed to fetch dynamically imported module").
 // Catch that and reload once (throttled to 10s) to fetch fresh assets.
 const lazyRetry = (importFn) => lazy(() =>
-  importFn().catch((err) => {
+  importFn().catch(async (err) => {
+    // ── THIS PROMISE MUST ALWAYS SETTLE ─────────────────────────────────────
+    // It used to end in `return new Promise(() => {})` — a promise that NEVER
+    // resolves. When that branch was taken, React's lazy() waited on it
+    // forever: Suspense kept the loading screen up for good, no error was
+    // raised, no boundary ran, and nothing in the app could recover. That is a
+    // loading screen with no end, and it is the one outcome a boot path must
+    // never be able to produce. Every path below now settles.
+    //
+    // 1. A transient failure — a dropped connection on a cold launch, the
+    //    common case — needs no reload at all: one more fetch usually succeeds.
+    try {
+      const mod = await importFn();
+      bootMark('chunk', 'ok', 'recovered on retry');
+      return mod;
+    } catch {
+      /* still failing — fall through to the stale-build heal */
+    }
+
+    // 2. Still failing: the chunk is genuinely gone (a cached index.html
+    //    pointing at a build that no longer exists), which only a reload onto
+    //    the current build fixes.
     const KEY = 'joba24_chunk_reload_ts';
     const last = Number(sessionStorage.getItem(KEY) || 0);
     if (Date.now() - last > 10000) {
       sessionStorage.setItem(KEY, String(Date.now()));
-      // reloadFresh, not location.reload — a stale service worker / HTTP cache can
-      // keep serving the broken chunk URL even after a rebuild, so the reload must
-      // navigate with a cache-buster to actually fetch the fresh chunk.
+      bootMark('chunk', 'fail', 'reloading onto the current build');
+      // reloadFresh, not location.reload — a stale service worker / HTTP cache
+      // can keep serving the broken chunk URL even after a rebuild, so the
+      // reload must navigate with a cache-buster to actually fetch it.
       reloadFresh();
-      // Stay suspended while the fresh build loads. Rethrowing here would throw
-      // into React's lazy() and flash the crash screen on top of a page that is
-      // already healing itself.
-      return new Promise(() => {});
+      // The reload navigates away, so this normally never runs. If it does NOT
+      // — a WebView that refuses the navigation — the promise must still
+      // settle, so the error boundary can show a real, retryable error instead
+      // of leaving the spinner up forever.
+      return new Promise((_, reject) => setTimeout(() => reject(err), 3000));
     }
+
+    // 3. The heal is throttled (it already ran moments ago) — surface it.
     throw err;
   })
 );
@@ -239,7 +265,6 @@ const AuthenticatedApp = () => {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <GlobalPopups />
-      <Suspense fallback={<AppLoading />}>
       <AnimatePresence custom={slideDir} initial={false}>
         <motion.div
           key={animKey}
@@ -279,6 +304,26 @@ const AuthenticatedApp = () => {
           // one covered the other.
           style={{ position: 'absolute', inset: 0, zIndex: isStandalone ? 1 : 2 }}
         >
+          {/* ── THE SUSPENSE BOUNDARY BELONGS INSIDE THE LAYER ───────────────
+              A lazily-loaded route fetches its chunk the first time it is
+              opened. With this boundary OUTSIDE AnimatePresence, that first
+              fetch suspended the ENTIRE route stack: React unwound to the
+              boundary, AnimatePresence was torn down mid-transition, and the
+              layer it was animating out could be left mounted on top of the
+              app. That is the "old screen stuck over the new one" fault this
+              file has had to fix twice already.
+
+              On the first launch after a fresh install it is exactly what
+              happens: /welcome has never been fetched, so the visitor's very
+              first navigation suspends — and the splash they were already
+              looking at stays on screen instead of the Welcome screen. On the
+              next launch the chunk is cached, nothing suspends, and it works.
+
+              Inside the layer, a route's first fetch shows this fallback
+              within its own layer and leaves AnimatePresence's bookkeeping
+              untouched: the old layer exits, the new one slides in, and the
+              route resolves into place. */}
+          <Suspense fallback={<AppLoading />}>
           <Routes location={location}>
             <Route path="/r/:code" element={<ReferralRedirect />} />
             <Route path="/auth-callback" element={<AuthCallback />} />
@@ -333,9 +378,9 @@ const AuthenticatedApp = () => {
             <Route path="/welcome" element={<OnboardingTrackWelcome />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
+          </Suspense>
         </motion.div>
       </AnimatePresence>
-      </Suspense>
     </div>
   );
 };
