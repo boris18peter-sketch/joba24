@@ -161,16 +161,9 @@ export default function PublicProfile() {
         {/* SECTION 2b — Reliability */}
         <TrustCard user={liveUser} reviews={reviews} tasks={[]} isPublic />
 
-        {/* Reviews — split by the role the owner held when each was received.
-            Task titles are intentionally not shown on a public profile: a
-            client's job title is not the worker's to publish. */}
-        <ReviewsSection
-          reviews={reviews}
-          tasks={[...completedTasks, ...postedTasks]}
-          profileUserId={userId}
-          rating={liveRating}
-          scope={scope}
-        />
+        {/* Reviews are NOT rendered inline: the block ate half the page and the
+            same content is one tap away in the history sheet below — which is
+            exactly how the personal profile is laid out. */}
 
         {/* About */}
         {user.bio && (
@@ -325,7 +318,18 @@ export default function PublicProfile() {
                 <X size={16} color="#64748b" />
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir={isRTL ? 'rtl' : 'ltr'}>
+            <div style={{ overflowY: 'auto', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 18 }} dir={isRTL ? 'rtl' : 'ltr'}>
+              {/* The reviews, in the EXACT design the personal profile shows —
+                  the same component, the same order, the same props. */}
+              <ReviewsSection
+                reviews={reviews}
+                tasks={[...completedTasks, ...postedTasks]}
+                profileUserId={userId}
+                rating={liveRating}
+                scope={scope}
+                showTaskTitle
+              />
+
               <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={reviews} userId={userId} clickable={false} hidePrices scope={scope} />
             </div>
           </div>

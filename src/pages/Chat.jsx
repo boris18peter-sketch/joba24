@@ -127,7 +127,7 @@ export default function Chat() {
 
   // Single source of truth for this thread — fetch, realtime, pagination and
   // optimistic sends all merge through it (see useChatThread).
-  const { messages, initialLoading, hasMore, loadingOlder, loadOlder, send, retry, dropLocal } = useChatThread({
+  const { messages, initialLoading, hasMore, loadingOlder, loadOlder, send, retry } = useChatThread({
     taskId, threadKey, meId: me?.id, meName: me?.full_name, otherId: otherPersonId, pairIds,
   });
 
@@ -242,22 +242,35 @@ export default function Chat() {
   // ── Sending ──────────────────────────────────────────────────────────────
   const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
     gate(async () => {
-      const localId = await send(content, mediaUrl, mediaType);
+      const trimmed = content.trim();
+
+      // ── MODERATION RUNS BEFORE THE MESSAGE IS CREATED ────────────────────
+      // The message used to be sent first and moderated afterwards, so a
+      // blocked message was already on the server — and already delivered to
+      // the other person over realtime — by the time the red notice appeared
+      // here. Pulling it back out locally afterwards changes nothing for the
+      // recipient. The check therefore has to gate the create: the bubble still
+      // appears instantly, but nothing is written until the check clears.
+      const preflight = (!mediaUrl && trimmed.length > 1)
+        ? async () => {
+            const res = await moderateText(trimmed);
+            if (res?.flagged) {
+              setBlockedMsg(trimmed);
+              setTimeout(() => setBlockedMsg(null), 5000);
+              return { blocked: true };
+            }
+            return null;
+          }
+        : null;
+
+      const localId = await send(content, mediaUrl, mediaType, preflight);
+
+      // Blocked: the composer keeps the text so the sender can rewrite it.
       if (!localId) return;
+
       setInput('');
       if (inputRef.current) inputRef.current.style.height = 'auto';
       stickRef.current = true;
-
-      // Moderation runs alongside the send; a flagged message is pulled back out.
-      if (!mediaUrl && content.trim().length > 1) {
-        moderateText(content.trim()).then(res => {
-          if (res?.flagged) {
-            dropLocal(localId);
-            setBlockedMsg(content.trim());
-            setTimeout(() => setBlockedMsg(null), 5000);
-          }
-        });
-      }
     });
   };
 

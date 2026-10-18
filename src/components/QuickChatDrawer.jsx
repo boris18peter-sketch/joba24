@@ -220,13 +220,19 @@ export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
     setSending(true);
 
     if (!mediaUrl && content.trim().length > 1) {
-      moderateText(content.trim()).then(modResult => {
-        if (modResult.flagged) {
-          setMessages(prev => prev.filter(m => m.id !== optimisticId));
-          setBlockedMsg(content.trim());
-          setTimeout(() => setBlockedMsg(null), 5000);
-        }
-      });
+      // ── The check must clear BEFORE the message is created ──
+      // It used to run alongside the create, so a blocked message was still
+      // written to the server — and the other person had already received it —
+      // by the time the red notice appeared here.
+      const modResult = await moderateText(content.trim());
+      if (modResult?.flagged) {
+        setMessages(prev => prev.filter(m => m.id !== optimisticId));
+        setBlockedMsg(content.trim());
+        setTimeout(() => setBlockedMsg(null), 5000);
+        setInput(content);   // give the text back so it can be rewritten
+        setSending(false);
+        return;
+      }
     }
 
     try {

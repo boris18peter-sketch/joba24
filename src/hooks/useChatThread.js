@@ -203,8 +203,16 @@ export default function useChatThread({ taskId, threadKey, meId, meName, otherId
    * Optimistic send: the bubble is on screen and the composer is cleared before
    * the request leaves. On failure the bubble stays put and is marked failed so
    * the user can retry instead of losing what they wrote.
+   *
+   * `preflight` — an optional async gate that must PASS before the message is
+   * created on the server. This is how content moderation actually blocks a
+   * message: sending first and deleting afterwards is not a block, because the
+   * message is already on the server and the other side has already received it
+   * over the realtime socket. With a preflight the bubble still appears
+   * instantly, but the create only happens once the check clears; a blocked
+   * message is dropped from the screen and never reaches the server at all.
    */
-  const send = useCallback(async (text, mediaUrl = null, mediaType = 'img') => {
+  const send = useCallback(async (text, mediaUrl = null, mediaType = 'img', preflight = null) => {
     const { taskId: tid, threadKey: tk, meId: mid, otherId: oid, meName: name } = ctxRef.current;
     const trimmed = (text || '').trim();
     if (!tid || !tk || !mid || (!trimmed && !mediaUrl)) return null;
@@ -232,6 +240,18 @@ export default function useChatThread({ taskId, threadKey, meId, meName, otherId
       created_date: new Date().toISOString(),
     });
     commit();
+
+    // The gate runs AFTER the bubble is on screen (so sending still feels
+    // instant) but BEFORE anything is written to the server. A blocked message
+    // is pulled back out and never created.
+    if (preflight) {
+      const verdict = await preflight();
+      if (verdict?.blocked) {
+        storeRef.current.delete(localId);
+        commit();
+        return null;
+      }
+    }
 
     deliver(localId);
     return localId;
