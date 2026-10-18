@@ -1393,4 +1393,21 @@ export const zh = {
   worker_avail_trust_msg: '发布任务并在几分钟内获得报价',
   worker_avail_select_city: '选择城市以查看本地可用性',
   worker_avail_publish_hint: '立即发布 — 他们将收到通知',
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: '⏱️ 准时到达',
+  rc_chip_ontime_delivery: '⏱️ 准时送达',
+  rc_chip_ontime_w: '⏱️ 提前约定',
+  rc_chip_pro: '💼 专业',
+  rc_chip_pro_delivery: '📦 处理细致',
+  rc_chip_pro_care: '🤗 耐心又贴心',
+  rc_chip_pro_session: '🧠 专业且讲解清楚',
+  rc_chip_pro_creative: '🎨 有创意且高质量',
+  rc_chip_pro_moving: '📦 搬运小心',
+  rc_chip_comm: '💬 沟通顺畅',
+  rc_chip_comm_w: '💬 说明清晰',
+  rc_chip_price: '💰 价格公道',
+  rc_chip_price_w: '💰 按约定付款',
+  rc_chip_again: '🔁 还会再雇',
+  rc_chip_again_w: '🔁 还会再合作',
 };

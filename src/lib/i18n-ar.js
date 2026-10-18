@@ -1420,4 +1420,21 @@ export const ar = {
   worker_avail_trust_msg: 'انشر مهمة واحصل على عروض خلال دقائق',
   worker_avail_select_city: 'اختر مدينة لمعرفة التوفر المحلي',
   worker_avail_publish_hint: 'انشر الآن — سيتم إخطارهم',
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: '⏱️ وصل في الوقت المحدد',
+  rc_chip_ontime_delivery: '⏱️ سُلّم في الوقت المحدد',
+  rc_chip_ontime_w: '⏱️ اتفق مسبقاً',
+  rc_chip_pro: '💼 احترافية',
+  rc_chip_pro_delivery: '📦 تعامل بدقة',
+  rc_chip_pro_care: '🤗 صبور ومهتم',
+  rc_chip_pro_session: '🧠 ملمّ ويشرح جيداً',
+  rc_chip_pro_creative: '🎨 إبداع وجودة',
+  rc_chip_pro_moving: '📦 حذر مع الأغراض',
+  rc_chip_comm: '💬 تواصل جيد',
+  rc_chip_comm_w: '💬 تعليمات واضحة',
+  rc_chip_price: '💰 سعر عادل',
+  rc_chip_price_w: '💰 دفع كما اتفقنا',
+  rc_chip_again: '🔁 سأستعين به مجدداً',
+  rc_chip_again_w: '🔁 سأعمل معه مجدداً',
 };

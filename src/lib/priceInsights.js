@@ -101,8 +101,12 @@ function normalizeConfidence(raw, hasPhotos, description) {
 // ── The analysis call ──
 // Returns null when the LLM produced nothing usable (caller falls back to the
 // curated category range).
-export async function analyzePrice({ category, estimatedTime, description, location, isHourly, distance, images, lang, detailsText, requirementsText }) {
+export async function analyzePrice({ category, categoryLabel, estimatedTime, description, location, isHourly, distance, images, lang, detailsText, requirementsText }) {
   const configRange = getRateRange(category, isHourly);
+  // The category reaches the model as the catalogue's own name with its
+  // taxonomy path ("חשמל › לוח חשמל"), never the internal slug — a slug tells
+  // the model nothing, and the taxonomy path pins both the trade and the job.
+  const catLabel = (categoryLabel || '').trim() || category;
   const taskCount = countDistinctTasks(description);
   const isMultiTask = !isHourly && taskCount >= 2;
   const photoUrls = Array.isArray(images) ? images.filter(Boolean).slice(0, 4) : [];
@@ -116,7 +120,7 @@ export async function analyzePrice({ category, estimatedTime, description, locat
     ? `מרחק בין מוצא ליעד: ${distance < 1 ? `${Math.round(distance * 1000)} מטר` : `${distance.toFixed(1)} ק"מ`}\nעלות דלק וזמן נסיעה: יש להוסיף למחיר כ-${Math.max(2, Math.round(distance * 2.5))}–${Math.max(4, Math.round(distance * 4))} ₪ עבור דלק ובלאי`
     : '';
   const historyLine = history
-    ? `מחירים אמיתיים ששולמו בפלטפורמה שלנו עבור משימות ${category} שהושלמו: חציון ₪${history.median}, טווח ₪${history.min}–₪${history.max} (מתוך ${history.count} משימות). זהו הנתון האמין ביותר — תן לו משקל גבוה.`
+    ? `מחירים אמיתיים ששולמו בפלטפורמה שלנו עבור משימות ${catLabel} שהושלמו: חציון ₪${history.median}, טווח ₪${history.min}–₪${history.max} (מתוך ${history.count} משימות). זהו הנתון האמין ביותר — תן לו משקל גבוה.`
     : '';
 
   const photoInstructions = hasPhotos
@@ -141,7 +145,7 @@ export async function analyzePrice({ category, estimatedTime, description, locat
 אתה מומחה תמחור בכיר לפלטפורמת עבודות קטנות בישראל (בסגנון TaskRabbit / Fixlers).
 הערך את הג'ובה הבאה והחזר המלצת מחיר מקצועית. המחיר הוא ${unit}.
 
-קטגוריה: ${category}
+קטגוריה: ${catLabel}
 סוג תמחור: ${isHourly ? 'לפי שעה' : 'מחיר כולל למשימה'}
 ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: לא צוין'}
 תיאור: ${description || 'לא צוין'}
@@ -152,7 +156,7 @@ ${historyLine}
 
 ${photoInstructions}
 
-השתמש בחיפוש אינטרנט כדי לאמת מחירי שוק עדכניים בישראל לתחום ${category}.
+השתמש בחיפוש אינטרנט כדי לאמת מחירי שוק עדכניים בישראל לתחום ${catLabel}.
 
 השב בלבד עם JSON תקין בפורמט:
 {"min": <מספר>, "max": <מספר>, "identified": "<מה זוהה>", "required_work": "<מה נדרש>", "materials": "<פירוט החומרים ועלותם>", "materials_cost_min": <מספר>, "materials_cost_max": <מספר>, "confidence": "high|medium|low", "reason": "<משפט קצר עד 8 מילים>"}
@@ -172,7 +176,7 @@ ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר:
 - הטה את ההמלצה לכיוון העליון של הטווח הריאלי כדי שהמשימה תהיה אטרקטיבית לעובדים — עדיף להמליץ על מחיר גבוה יותר שימשוך יותר עובדים מקצועיים.
 - מחיר המינימום: ₪${configRange.min} ${isHourly ? 'לשעה' : ''}
 - ${isHourly ? 'המחיר הוא לשעה אחת בלבד, לא לכל המשימה' : `כשיש מספר עבודות נפרדות, המחיר יכול לעלות משמעותית על ₪${configRange.max} — הערך כל עבודה בנפרד וסכום אותן`}
-- בסס את ההמלצה על מחירי שוק ריאליים בישראל לשנת 2025 לתחום ${category}
+- בסס את ההמלצה על מחירי שוק ריאליים בישראל לשנת 2025 לתחום ${catLabel}
 - שדות identified, required_work, materials ו-reason חייבים להיות כתובים בשפה הבאה: ${langName}
 - שדה confidence חייב להיות בדיוק אחד מהערכים: high, medium, low
 `;

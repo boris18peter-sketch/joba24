@@ -1417,4 +1417,21 @@ export const es = {
   worker_avail_trust_msg: 'Publica una tarea y recibe ofertas en minutos',
   worker_avail_select_city: 'Selecciona una ciudad para ver disponibilidad local',
   worker_avail_publish_hint: 'Publica ahora — serán notificados',
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: '⏱️ Llegó a tiempo',
+  rc_chip_ontime_delivery: '⏱️ Entregado a tiempo',
+  rc_chip_ontime_w: '⏱️ Acordó con antelación',
+  rc_chip_pro: '💼 Profesionalidad',
+  rc_chip_pro_delivery: '📦 Trató todo con cuidado',
+  rc_chip_pro_care: '🤗 Paciente y atento',
+  rc_chip_pro_session: '🧠 Conocedor y claro',
+  rc_chip_pro_creative: '🎨 Creatividad y calidad',
+  rc_chip_pro_moving: '📦 Cuidadoso con las pertenencias',
+  rc_chip_comm: '💬 Buena comunicación',
+  rc_chip_comm_w: '💬 Instrucciones claras',
+  rc_chip_price: '💰 Precio justo',
+  rc_chip_price_w: '💰 Pagó según lo acordado',
+  rc_chip_again: '🔁 Volvería a contratar',
+  rc_chip_again_w: '🔁 Volvería a trabajar',
 };

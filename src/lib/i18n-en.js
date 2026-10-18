@@ -1468,4 +1468,21 @@ export const en = {
   worker_avail_trust_msg: 'Post a task and get offers within minutes',
   worker_avail_select_city: 'Select a city to see local availability',
   worker_avail_publish_hint: "Publish now — they'll get notified",
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: '⏱️ Arrived on time',
+  rc_chip_ontime_delivery: '⏱️ Delivered on time',
+  rc_chip_ontime_w: '⏱️ Agreed in advance',
+  rc_chip_pro: '💼 Professional',
+  rc_chip_pro_delivery: '📦 Handled thoroughly',
+  rc_chip_pro_care: '🤗 Patient and caring',
+  rc_chip_pro_session: '🧠 Knowledgeable and clear',
+  rc_chip_pro_creative: '🎨 Creative and high quality',
+  rc_chip_pro_moving: '📦 Careful with belongings',
+  rc_chip_comm: '💬 Good communication',
+  rc_chip_comm_w: '💬 Clear instructions',
+  rc_chip_price: '💰 Fair price',
+  rc_chip_price_w: '💰 Paid as agreed',
+  rc_chip_again: '🔁 Would hire again',
+  rc_chip_again_w: '🔁 Would work again',
   };

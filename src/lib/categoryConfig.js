@@ -1,6 +1,9 @@
-// Category-specific workflow and rating configuration
-// Single source of truth for per-category customization of ActiveTaskBanner and RatingModal
-// Groups 25 categories into 6 workflow types, each with tailored steps, labels, and rating questions
+// Category-specific workflow configuration — the lifecycle copy (steps, CTAs,
+// proof wording) and the rating prose, grouped into 6 workflow families.
+// WHICH family a category belongs to is resolved by ratingConfig: a legacy key
+// directly, otherwise the family of the taxonomy root the category hangs off.
+
+import { resolveRatingWorkflow } from '@/lib/ratingConfig';
 
 export const WORKFLOW_TYPES = {
   // ── Onsite service: plumbing, electricity, handyman, cleaning, etc. ──
@@ -33,19 +36,6 @@ export const WORKFLOW_TYPES = {
       workerSub: 'הביקורת תעזור לבעל המשימה לשפר את החוויה לעובדים הבאים',
       ownerChipsLabel: 'מה היה טוב? (לא חובה)',
       workerChipsLabel: 'איך היה הלקוח?',
-      ownerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ הגיע בזמן' },
-        { key: 'professional', label: '💼 מקצועיות' },
-        { key: 'goodCommunication', label: '💬 תקשורת טובה' },
-        { key: 'fairPricing', label: '💰 מחיר הוגן' },
-        { key: 'wouldHireAgain', label: '🔁 אשכור שוב' },
-      ],
-      workerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ תיאם מראש' },
-        { key: 'goodCommunication', label: '💬 הסבר ברור' },
-        { key: 'fairPricing', label: '💰 שילם כמוסכם' },
-        { key: 'wouldHireAgain', label: '🔁 אעבוד שוב' },
-      ],
       ownerConfirmTitle: '✅ העבודה בוצעה לשביעות רצוני',
       ownerConfirmSub: 'אשר שהתשלום יבוצע כמוסכם והעבודה הושלמה כראוי',
       workerConfirmTitle: '✅ ביצעתי את העבודה בהצלחה',
@@ -85,19 +75,6 @@ export const WORKFLOW_TYPES = {
       workerSub: 'הביקורת תעזור לשולח לשפר את החוויה למובילים הבאים',
       ownerChipsLabel: 'מה היה טוב במשלוח? (לא חובה)',
       workerChipsLabel: 'איך היה השולח?',
-      ownerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ נמסר בזמן' },
-        { key: 'professional', label: '📦 טיפל ביסודיות' },
-        { key: 'goodCommunication', label: '💬 עדכן לאורך הדרך' },
-        { key: 'fairPricing', label: '💰 מחיר הוגן' },
-        { key: 'wouldHireAgain', label: '🔁 אשתמש שוב' },
-      ],
-      workerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ היה מוכן בזמן' },
-        { key: 'goodCommunication', label: '💬 כתובת והנחיות ברורות' },
-        { key: 'fairPricing', label: '💰 שילם כמוסכם' },
-        { key: 'wouldHireAgain', label: '🔁 אעביר שוב' },
-      ],
       ownerConfirmTitle: '✅ המשלוח התקבל במלואו',
       ownerConfirmSub: 'אשר שהמשלוח הגיע שלם והתשלום יבוצע כמוסכם',
       workerConfirmTitle: '✅ המשלוח נמסר בהצלחה',
@@ -137,19 +114,6 @@ export const WORKFLOW_TYPES = {
       workerSub: 'הביקורת תעזור למפרסם לשפר את החוויה למטפלים הבאים',
       ownerChipsLabel: 'מה היה טוב בטיפול? (לא חובה)',
       workerChipsLabel: 'איך היה המפרסם?',
-      ownerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ הגיע בזמן' },
-        { key: 'professional', label: '🤗 סבלני ואכפתי' },
-        { key: 'goodCommunication', label: '💬 תקשורת טובה' },
-        { key: 'fairPricing', label: '💰 מחיר הוגן' },
-        { key: 'wouldHireAgain', label: '🔁 אשמח להפקיד שוב' },
-      ],
-      workerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ חזר בזמן' },
-        { key: 'goodCommunication', label: '💬 הנחיות ברורות' },
-        { key: 'fairPricing', label: '💰 שילם כמוסכם' },
-        { key: 'wouldHireAgain', label: '🔁 אשמח לטפל שוב' },
-      ],
       ownerConfirmTitle: '✅ הטיפול בוצע לשביעות רצוני',
       ownerConfirmSub: 'אשר שהטיפול עבר בהצלחה והתשלום יבוצע כמוסכם',
       workerConfirmTitle: '✅ סיימתי את הטיפול בהצלחה',
@@ -189,19 +153,6 @@ export const WORKFLOW_TYPES = {
       workerSub: 'הביקורת תעזור לתלמיד לדעת איך להשתפר',
       ownerChipsLabel: 'מה היה טוב בשיעור? (לא חובה)',
       workerChipsLabel: 'איך היה התלמיד?',
-      ownerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ הגיע בזמן' },
-        { key: 'professional', label: '🧠 ידעני ומסביר' },
-        { key: 'goodCommunication', label: '💬 תקשורת טובה' },
-        { key: 'fairPricing', label: '💰 מחיר הוגן' },
-        { key: 'wouldHireAgain', label: '🔁 אזמין שוב' },
-      ],
-      workerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ הגיע מוכן' },
-        { key: 'goodCommunication', label: '💬 הקשיב והשתתף' },
-        { key: 'fairPricing', label: '💰 שילם כמוסכם' },
-        { key: 'wouldHireAgain', label: '🔁 אלמד שוב' },
-      ],
       ownerConfirmTitle: '✅ השיעור עבר בהצלחה',
       ownerConfirmSub: 'אשר שהשיעור התקיים כמוסכם והתשלום יבוצע',
       workerConfirmTitle: '✅ סיימתי את השיעור בהצלחה',
@@ -241,19 +192,6 @@ export const WORKFLOW_TYPES = {
       workerSub: 'הביקורת תעזור ללקוח לשפר את החוויה למצלמים הבאים',
       ownerChipsLabel: 'מה היה טוב? (לא חובה)',
       workerChipsLabel: 'איך היה הלקוח?',
-      ownerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ הגיע בזמן' },
-        { key: 'professional', label: '🎨 יצירתיות ואיכות' },
-        { key: 'goodCommunication', label: '💬 תקשורת טובה' },
-        { key: 'fairPricing', label: '💰 מחיר הוגן' },
-        { key: 'wouldHireAgain', label: '🔁 אשכור שוב' },
-      ],
-      workerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ היה מוכן בזמן' },
-        { key: 'goodCommunication', label: '💬 בריף ברור' },
-        { key: 'fairPricing', label: '💰 שילם כמוסכם' },
-        { key: 'wouldHireAgain', label: '🔁 אצלם שוב' },
-      ],
       ownerConfirmTitle: '✅ העבודה בוצעה והחומרים נמסרו',
       ownerConfirmSub: 'אשר שהחומרים נמסרו לשביעות רצונך והתשלום יבוצע כמוסכם',
       workerConfirmTitle: '✅ סיימתי ומסרתי את החומרים',
@@ -293,19 +231,6 @@ export const WORKFLOW_TYPES = {
       workerSub: 'הביקורת תעזור ללקוח לשפר את החוויה למובילים הבאים',
       ownerChipsLabel: 'מה היה טוב בהובלה? (לא חובה)',
       workerChipsLabel: 'איך היה הלקוח?',
-      ownerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ הגיע בזמן' },
-        { key: 'professional', label: '📦 זהירות בחפצים' },
-        { key: 'goodCommunication', label: '💬 תקשורת טובה' },
-        { key: 'fairPricing', label: '💰 מחיר הוגן' },
-        { key: 'wouldHireAgain', label: '🔁 אשתמש שוב' },
-      ],
-      workerChips: [
-        { key: 'arrivedOnTime', label: '⏱️ היה מוכן בזמן' },
-        { key: 'goodCommunication', label: '💬 הסבר ברור מה להוביל' },
-        { key: 'fairPricing', label: '💰 שילם כמוסכם' },
-        { key: 'wouldHireAgain', label: '🔁 אוביל שוב' },
-      ],
       ownerConfirmTitle: '✅ ההובלה בוצעה לשביעות רצוני',
       ownerConfirmSub: 'אשר שכל החפצים הגיעו שלמים והתשלום יבוצע כמוסכם',
       workerConfirmTitle: '✅ סיימתי את ההובלה בהצלחה',
@@ -316,36 +241,15 @@ export const WORKFLOW_TYPES = {
   },
 };
 
-export const CATEGORY_WORKFLOW = {
-  plumbing: 'onsite_service',
-  electricity: 'onsite_service',
-  handyman: 'onsite_service',
-  cleaning: 'onsite_service',
-  carpentry: 'onsite_service',
-  ac: 'onsite_service',
-  locksmith: 'onsite_service',
-  painting: 'onsite_service',
-  gardening: 'onsite_service',
-  home_maintenance: 'onsite_service',
-  it_support: 'onsite_service',
-  personal_help: 'onsite_service',
-  car: 'onsite_service',
-  other: 'onsite_service',
-  delivery: 'delivery',
-  transportation: 'delivery',
-  shopping: 'delivery',
-  babysitting: 'care',
-  elderly_care: 'care',
-  pets: 'care',
-  tutoring: 'session',
-  fitness: 'session',
-  photography: 'creative',
-  events: 'creative',
-  moving: 'moving',
-  heavy_lifting: 'moving',
-};
-
-export function getCategoryConfig(category) {
-  const type = CATEGORY_WORKFLOW[category] || 'onsite_service';
+/**
+ * The workflow config for a category.
+ *
+ * `map` is the GlobalCategory catalogue. Without it only the legacy keys
+ * resolve — the previous behaviour exactly. With it, a category that is not a
+ * legacy key inherits the family of the taxonomy root it hangs off, so a
+ * newly-added service never silently wears the plumber's copy.
+ */
+export function getCategoryConfig(category, map) {
+  const type = resolveRatingWorkflow(category, map);
   return WORKFLOW_TYPES[type] || WORKFLOW_TYPES.onsite_service;
 }

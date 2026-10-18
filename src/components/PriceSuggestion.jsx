@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Loader2, Wand2, Search, Wrench, Package } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useGlobalCategories, globalFieldChain } from '@/lib/brand/globalCategories';
 import { analyzePrice, getRateRange } from '@/lib/priceInsights';
 
 // Confidence → chip styling. Keys match the `confidence` values the engine returns.
@@ -25,7 +26,17 @@ function AnalysisRow({ icon, label, value }) {
 
 export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, distance, images, detailsText, requirementsText, onAccept }) {
   const { t, isRTL, lang } = useLanguage();
+  const { map: categoryMap } = useGlobalCategories();
   const [result, setResult] = useState(null);
+
+  // The model must receive the category as a HUMAN NAME with its taxonomy
+  // context, never the raw slug: "elec_panel" means nothing to it, while
+  // "חשמל › לוח חשמל" pins both the trade and the specific job. Built from the
+  // same catalogue the rest of the app reads, so it is already in memory.
+  const row = category ? categoryMap[category] : null;
+  const categoryLabel = row
+    ? globalFieldChain(row, categoryMap).map(n => n.label).filter(Boolean).join(' › ')
+    : '';
 
   // Re-run when the photo set changes. Joined so the effect deps stay stable
   // (a new array identity on every render would loop forever).
@@ -45,7 +56,11 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     // Structured form details count as "described" — a moving job with the
     // addresses and floors filled in is analysable even with a short text.
     const hasDetails = (detailsText || '').trim().length > 0;
-    if ((description || '').trim().length < 15 && !hasPhotos && !hasDetails) {
+    // Requirements the publisher ticked are a description of the job in their
+    // own right — "truck + 3 floors + piano" prices a move with no prose at
+    // all, so they count as "described" exactly like the free text does.
+    const hasRequirements = (requirementsText || '').trim().length > 0;
+    if ((description || '').trim().length < 15 && !hasPhotos && !hasDetails && !hasRequirements) {
       setResult(fallback());
       return;
     }
@@ -54,7 +69,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     const timer = setTimeout(async () => {
       try {
         const res = await analyzePrice({
-          category, estimatedTime, description, location, isHourly, distance, images, lang,
+          category, categoryLabel, estimatedTime, description, location, isHourly, distance, images, lang,
           detailsText, requirementsText,
         });
         if (!cancelled) setResult(res || fallback());
@@ -65,7 +80,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     }, 1200);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [category, estimatedTime, description, location, isHourly, distance, photoKey, lang, t, detailsText, requirementsText]);
+  }, [category, categoryLabel, estimatedTime, description, location, isHourly, distance, photoKey, lang, t, detailsText, requirementsText]);
 
   if (!category) return null;
 

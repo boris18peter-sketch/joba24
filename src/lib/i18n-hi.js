@@ -1393,4 +1393,21 @@ export const hi = {
   worker_avail_trust_msg: 'कार्य पोस्ट करें और मिनटों में ऑफर पाएं',
   worker_avail_select_city: 'स्थानीय उपलब्धता देखने के लिए शहर चुनें',
   worker_avail_publish_hint: 'अभी प्रकाशित करें — उन्हें सूचित किया जाएगा',
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: '⏱️ समय पर पहुंचे',
+  rc_chip_ontime_delivery: '⏱️ समय पर डिलीवर',
+  rc_chip_ontime_w: '⏱️ पहले से तय किया',
+  rc_chip_pro: '💼 पेशेवर',
+  rc_chip_pro_delivery: '📦 ध्यान से संभाला',
+  rc_chip_pro_care: '🤗 धैर्यवान और देखभाल करने वाले',
+  rc_chip_pro_session: '🧠 जानकार और स्पष्ट',
+  rc_chip_pro_creative: '🎨 रचनात्मकता और गुणवत्ता',
+  rc_chip_pro_moving: '📦 सामान के प्रति सावधान',
+  rc_chip_comm: '💬 अच्छा संवाद',
+  rc_chip_comm_w: '💬 स्पष्ट निर्देश',
+  rc_chip_price: '💰 उचित कीमत',
+  rc_chip_price_w: '💰 तय के अनुसार भुगतान',
+  rc_chip_again: '🔁 दोबारा काम दूंगा',
+  rc_chip_again_w: '🔁 दोबारा काम करूंगा',
 };

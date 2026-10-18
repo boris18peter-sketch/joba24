@@ -1512,4 +1512,21 @@ export const he = {
   worker_avail_trust_msg: 'פרסם משימה וקבל הצעות תוך דקות',
   worker_avail_select_city: 'בחר עיר לראות כמה זמינים באזורך',
   worker_avail_publish_hint: 'פרסם עכשיו — הם יקבלו הודעה',
+
+  // ── Rating tags (ratingConfig) — one vocabulary, translated, per category family ──
+  rc_chip_ontime: '⏱️ הגיע בזמן',
+  rc_chip_ontime_delivery: '⏱️ נמסר בזמן',
+  rc_chip_ontime_w: '⏱️ תיאם מראש',
+  rc_chip_pro: '💼 מקצועיות',
+  rc_chip_pro_delivery: '📦 טיפל ביסודיות',
+  rc_chip_pro_care: '🤗 סבלני ואכפתי',
+  rc_chip_pro_session: '🧠 ידעני ומסביר',
+  rc_chip_pro_creative: '🎨 יצירתיות ואיכות',
+  rc_chip_pro_moving: '📦 זהירות בחפצים',
+  rc_chip_comm: '💬 תקשורת טובה',
+  rc_chip_comm_w: '💬 הסבר ברור',
+  rc_chip_price: '💰 מחיר הוגן',
+  rc_chip_price_w: '💰 שילם כמוסכם',
+  rc_chip_again: '🔁 אשכור שוב',
+  rc_chip_again_w: '🔁 אעבוד שוב',
   };

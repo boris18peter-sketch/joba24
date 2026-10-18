@@ -1393,4 +1393,21 @@ export const fil = {
   worker_avail_trust_msg: 'Mag-post ng gawain at makakuha ng mga alok sa loob ng ilang minuto',
   worker_avail_select_city: 'Pumili ng lungsod para makita ang lokal na availability',
   worker_avail_publish_hint: 'I-publish na — sila ay mapapaalalahanan',
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: '⏱️ Dumating sa oras',
+  rc_chip_ontime_delivery: '⏱️ Naihatid sa oras',
+  rc_chip_ontime_w: '⏱️ Napagkasunduan nang maaga',
+  rc_chip_pro: '💼 Propesyonal',
+  rc_chip_pro_delivery: '📦 Maingat na inasikaso',
+  rc_chip_pro_care: '🤗 Matiyaga at maalaga',
+  rc_chip_pro_session: '🧠 Marunong at malinaw magpaliwanag',
+  rc_chip_pro_creative: '🎨 Malikha at de-kalidad',
+  rc_chip_pro_moving: '📦 Maingat sa mga gamit',
+  rc_chip_comm: '💬 Maayos ang komunikasyon',
+  rc_chip_comm_w: '💬 Malinaw ang instructions',
+  rc_chip_price: '💰 Makatarungang presyo',
+  rc_chip_price_w: '💰 Nagbayad ayon sa napagkasunduan',
+  rc_chip_again: '🔁 Kukunin ko ulit',
+  rc_chip_again_w: '🔁 Magtatrabaho ako ulit',
 };

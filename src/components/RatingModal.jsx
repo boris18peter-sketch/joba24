@@ -6,6 +6,8 @@ import { Star, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { moderateText } from '@/hooks/useModeration';
 import { getCategoryConfig } from '@/lib/categoryConfig';
+import { resolveRatingWorkflow, ratingChips } from '@/lib/ratingConfig';
+import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function RatingModal({ task, me, onClose }) {
@@ -23,8 +25,12 @@ export default function RatingModal({ task, me, onClose }) {
 
   const toggleStructured = (key) => setStructured(s => ({ ...s, [key]: s[key] === true ? null : true }));
 
+  // The catalogue decides which family this category belongs to, so a DJ is
+  // asked about the event and a plumber about the repair — see ratingConfig.
+  const { map: categoryMap } = useGlobalCategories();
   const isOwner = me?.id === task.client_id;
-  const catConfig = getCategoryConfig(task.category);
+  const catConfig = getCategoryConfig(task.category, categoryMap);
+  const chips = ratingChips(resolveRatingWorkflow(task.category, categoryMap), isOwner);
   const revieweeId = isOwner ? task.worker_id : task.client_id;
   const revieweeName = isOwner ? task.worker_name : task.client_name;
   const role = isOwner ? 'client' : 'worker';
@@ -153,10 +159,10 @@ export default function RatingModal({ task, me, onClose }) {
               {isOwner ? catConfig.rating.ownerChipsLabel : catConfig.rating.workerChipsLabel}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-              {(isOwner ? catConfig.rating.ownerChips : catConfig.rating.workerChips).map(item => (
+              {chips.map(item => (
                 <button key={item.key} onClick={() => toggleStructured(item.key)}
                   style={{ padding: '6px 13px', borderRadius: 'var(--r-full)', fontSize: 12, fontWeight: 700, border: `1.5px solid ${structured[item.key] ? 'var(--brand-primary)' : 'var(--border-1)'}`, background: structured[item.key] ? 'var(--brand-primary-light)' : 'var(--surface-2)', color: structured[item.key] ? 'var(--brand-primary)' : 'var(--text-2)', cursor: 'pointer', transition: 'all 0.15s' }}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </button>
               ))}
             </div>

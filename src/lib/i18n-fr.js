@@ -1379,4 +1379,21 @@ export const fr = {
   worker_avail_trust_msg: 'Publiez une tâche et recevez des offres en quelques minutes',
   worker_avail_select_city: 'Sélectionnez une ville pour voir la disponibilité locale',
   worker_avail_publish_hint: 'Publier maintenant — ils seront notifiés',
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: "⏱️ Arrivé à l'heure",
+  rc_chip_ontime_delivery: "⏱️ Livré à l'heure",
+  rc_chip_ontime_w: "⏱️ A convenu à l'avance",
+  rc_chip_pro: '💼 Professionnalisme',
+  rc_chip_pro_delivery: '📦 A manipulé avec soin',
+  rc_chip_pro_care: '🤗 Patient et attentionné',
+  rc_chip_pro_session: '🧠 Compétent et pédagogue',
+  rc_chip_pro_creative: '🎨 Créativité et qualité',
+  rc_chip_pro_moving: '📦 Prudent avec les affaires',
+  rc_chip_comm: '💬 Bonne communication',
+  rc_chip_comm_w: '💬 Consignes claires',
+  rc_chip_price: '💰 Prix juste',
+  rc_chip_price_w: "💰 A payé comme convenu",
+  rc_chip_again: '🔁 Je referais appel',
+  rc_chip_again_w: '🔁 Je retravaillerais',
 };

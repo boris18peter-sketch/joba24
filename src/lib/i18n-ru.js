@@ -1382,4 +1382,21 @@ export const ru = {
   worker_avail_trust_msg: 'Опубликуйте задание и получите предложения за минуты',
   worker_avail_select_city: 'Выберите город, чтобы увидеть местную доступность',
   worker_avail_publish_hint: 'Опубликовать сейчас — они получат уведомление',
+
+  // ── Rating tags (ratingConfig) ──
+  rc_chip_ontime: '⏱️ Пришёл вовремя',
+  rc_chip_ontime_delivery: '⏱️ Доставлено вовремя',
+  rc_chip_ontime_w: '⏱️ Согласовал заранее',
+  rc_chip_pro: '💼 Профессионализм',
+  rc_chip_pro_delivery: '📦 Аккуратно всё сделал',
+  rc_chip_pro_care: '🤗 Терпеливый и заботливый',
+  rc_chip_pro_session: '🧠 Знающий и понятно объясняет',
+  rc_chip_pro_creative: '🎨 Креативность и качество',
+  rc_chip_pro_moving: '📦 Аккуратен с вещами',
+  rc_chip_comm: '💬 Хорошая связь',
+  rc_chip_comm_w: '💬 Чёткие инструкции',
+  rc_chip_price: '💰 Честная цена',
+  rc_chip_price_w: '💰 Заплатил как договорились',
+  rc_chip_again: '🔁 Нанял бы снова',
+  rc_chip_again_w: '🔁 Работал бы снова',
 };
