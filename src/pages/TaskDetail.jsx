@@ -22,6 +22,7 @@ import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
+import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
 import { getActiveRequirements } from '@/lib/requirements';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
@@ -139,7 +140,7 @@ export default function TaskDetail(props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, login, user: authUser } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [showVerificationRequired, setShowVerificationRequired] = useState(false);
@@ -1349,7 +1350,7 @@ export default function TaskDetail(props) {
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('category_label')}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{service?.label || getCategoryLabel(serviceKey, t)}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{localizedCategoryLabel(serviceKey, service, lang, t)}</div>
                   </div>
                 </div>
               );

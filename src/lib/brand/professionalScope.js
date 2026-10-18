@@ -1,6 +1,7 @@
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { getCategoryLabel } from '@/lib/categories';
+import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
 import { useLanguage } from '@/lib/LanguageContext';
 
 /**
@@ -29,17 +30,14 @@ import { useLanguage } from '@/lib/LanguageContext';
  * "אינסטלציה" in their profile. Keys the catalogue has no translation for still
  * fall back to the stored label, so nothing is ever shown blank.
  */
-export function professionalLabel(key, map, t) {
-  if (!key) return '';
-  const fromI18n = t ? t(`cat_${key}`) : null;
-  if (fromI18n && fromI18n !== `cat_${key}`) return fromI18n;
-  return map?.[key]?.label || getCategoryLabel(key);
+export function professionalLabel(key, map, t, lang) {
+  return localizedCategoryLabel(key, map?.[key], lang, t);
 }
 
 export function useProfessionalScope() {
   const { categories, roots, globalMap, isLoading } = useBrandCategories();
   const { isPlatformBrand } = useBrand();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const keys = categories.map((c) => c.category_key);
   const keySet = new Set(keys);
@@ -49,7 +47,7 @@ export function useProfessionalScope() {
   // never here — so a plumber picks "אינסטלציה" and not "לתקן נזילה".
   const professions = (roots || []).map((r) => ({
     value: r.category_key,
-    label: professionalLabel(r.category_key, globalMap, t),
+    label: professionalLabel(r.category_key, globalMap, t, lang),
   }));
 
   return {
@@ -63,7 +61,7 @@ export function useProfessionalScope() {
     has: (key) => isPlatformBrand || (!!key && keySet.has(key)),
     /** Keep only the categories this Brand exposes. Joba24 keeps everything. */
     filter: (list) => (isPlatformBrand ? (list || []) : (list || []).filter((k) => keySet.has(k))),
-    label: (key, t) => professionalLabel(key, globalMap, t),
+    label: (key, t) => professionalLabel(key, globalMap, t, lang),
   };
 }
 

@@ -17,14 +17,22 @@
  * example that Joba24 consumes. Improving it once improves it for every Brand.
  */
 
-export const GENERIC_DESCRIPTION_EXAMPLE =
-  'ספרו בקצרה מה צריך לעשות — כולל כל פרט שיעזור לנותן השירות להבין את העבודה.';
+import { genericCategoryCopy } from '@/lib/brand/genericCategoryCopy';
 
-export const GENERIC_TASK_EXAMPLES = [
-  'צריך עזרה עם משהו בבית',
-  'מחפש מישהו שיסדר לי משהו',
-  'צריך עזרה מקצועית',
-];
+export const GENERIC_DESCRIPTION_EXAMPLE = genericCategoryCopy('he').description_example;
+export const GENERIC_TASK_EXAMPLES = genericCategoryCopy('he').examples;
+
+/**
+ * The translated value of a content field on a catalogue row.
+ *
+ * The Hebrew fields stay the source of truth; `translations[lang]` is the
+ * presentation overlay written on every category. Reading the translation FIRST
+ * is what keeps a French screen from falling back to a Hebrew example.
+ */
+function translated(row, field, lang) {
+  if (!row || !lang || lang === 'he') return null;
+  return row.translations?.[lang]?.[field] || null;
+}
 
 function clean(list) {
   return (list || []).filter((x) => typeof x === 'string' && x.trim());
@@ -41,7 +49,7 @@ function brandOverride(brand, categoryKey) {
  * The resolved content for ONE actionable category.
  * Pure function — usable from React and from non-React code alike.
  */
-export function resolveCategoryContent(globals, categoryKey, brand) {
+export function resolveCategoryContent(globals, categoryKey, brand, lang = 'he') {
   const rows = globals || [];
   const map = Object.fromEntries(rows.map((g) => [g.category_key, g]));
   const row = map[categoryKey] || null;
@@ -59,12 +67,17 @@ export function resolveCategoryContent(globals, categoryKey, brand) {
 
   return {
     categoryKey: categoryKey || '',
-    label: row?.label || '',
+    label: translated(row, 'label', lang) || row?.label || '',
     rootKey: root?.category_key || row?.category_key || '',
-    rootLabel: root?.label || row?.label || '',
+    rootLabel: translated(root, 'label', lang) || root?.label || row?.label || '',
     descriptionExample:
-      pick(override?.description_example, row?.description_example, root?.description_example) ||
-      GENERIC_DESCRIPTION_EXAMPLE,
+      pick(
+        override?.description_example,
+        translated(row, 'description_example', lang),
+        row?.description_example,
+        translated(root, 'description_example', lang),
+        root?.description_example,
+      ) || genericCategoryCopy(lang).description_example,
     examples: clean(
       pick(override?.examples, row?.examples, root?.examples) || [],
     ),
@@ -78,7 +91,7 @@ export function resolveCategoryContent(globals, categoryKey, brand) {
  * Drawn from the Brand's own actionable categories, so a Plumbing Brand never
  * shows a babysitting example and a generic Joba24 Brand stays broad.
  */
-export function resolveBrandExamples(globals, services, brand, limit = 4) {
+export function resolveBrandExamples(globals, services, brand, limit = 4, lang = 'he') {
   const out = [];
   const seen = new Set();
   const usedRoots = new Set();
@@ -90,7 +103,7 @@ export function resolveBrandExamples(globals, services, brand, limit = 4) {
   };
 
   const items = (services || []).map((svc) => {
-    const c = resolveCategoryContent(globals, svc.category_key, brand);
+    const c = resolveCategoryContent(globals, svc.category_key, brand, lang);
     return { key: svc.category_key, root: c.rootKey || svc.category_key, examples: c.examples };
   });
 
@@ -106,11 +119,11 @@ export function resolveBrandExamples(globals, services, brand, limit = 4) {
   for (const it of items) for (const ex of it.examples) push(ex, it.key);
 
   // Fall back to generic examples only when the active scope has no content.
-  for (const ex of GENERIC_TASK_EXAMPLES) push(ex, '');
+  for (const ex of genericCategoryCopy(lang).examples) push(ex, '');
   return out.slice(0, limit);
 }
 
 /** Backwards-compatible helper: just the example strings. */
-export function brandExampleStrings(globals, services, brand, limit = 4) {
-  return resolveBrandExamples(globals, services, brand, limit).map((e) => e.text);
+export function brandExampleStrings(globals, services, brand, limit = 4, lang = 'he') {
+  return resolveBrandExamples(globals, services, brand, limit, lang).map((e) => e.text);
 }

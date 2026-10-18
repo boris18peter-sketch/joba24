@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { categoryKeyForTask, categoryMatches, rootOf } from '@/lib/brand/categoryTree';
+import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
 import { useLanguage } from '@/lib/LanguageContext';
 
 /**
@@ -10,54 +11,53 @@ import { useLanguage } from '@/lib/LanguageContext';
  * the broad ROOT categories ("אינסטלציה"), and a task counts towards the root it
  * sits under. A partner Brand keeps listing the exact services it offers.
  *
- * Every option is VISIBLE immediately — grouping is only a section header for
- * ordering, so nothing hides behind an accordion.
+ * The list shows ONLY categories that currently have an open task. A dropdown
+ * full of empty categories is a list of dead ends — tapping one produces an
+ * empty feed. Group headings are gone for the same reason: they were a second
+ * layer of text between the user and the choice they came here to make.
  */
 export default function MarketServiceFilter({ tasks, selected = [], onChange }) {
-  const { groups, categories, isLoading, globalMap, isPlatformBrand } = useBrandCategories();
-  const { t } = useLanguage();
+  const { categories, isLoading, globalMap, isPlatformBrand } = useBrandCategories();
+  const { t, lang } = useLanguage();
 
   // Platform Brand → the roots behind the offered services, de-duplicated.
   const options = useMemo(() => {
-    if (!isPlatformBrand) return categories;
-    const byRoot = new Map();
-    for (const c of categories) {
-      const root = rootOf(globalMap[c.value], globalMap);
-      const key = root?.category_key || c.value;
-      if (byRoot.has(key)) continue;
-      byRoot.set(key, { ...c, value: key, label: root?.label || c.label, icon: root?.icon || c.icon });
-    }
-    return [...byRoot.values()];
-  }, [categories, globalMap, isPlatformBrand]);
+    const raw = !isPlatformBrand
+      ? categories.map((c) => ({ ...c, value: c.category_key || c.value }))
+      : (() => {
+          const byRoot = new Map();
+          for (const c of categories) {
+            const root = rootOf(globalMap[c.value], globalMap);
+            const key = root?.category_key || c.value;
+            if (byRoot.has(key)) continue;
+            byRoot.set(key, { ...c, value: key });
+          }
+          return [...byRoot.values()];
+        })();
 
-  // The same visual sections, rebuilt over the roots.
-  const optionGroups = useMemo(() => {
-    const byGroup = new Map();
-    for (const o of options) {
-      const group = globalMap[o.value]?.group_key ? globalMap[globalMap[o.value].group_key] : null;
-      const key = group?.category_key || 'other';
-      if (!byGroup.has(key)) {
-        byGroup.set(key, {
-          category_key: key,
-          label: group?.label || t('svc_other'),
-          icon: group?.icon || '',
-          sort_order: group?.sort_order ?? 999,
-          services: [],
-        });
+    // One label resolution for every option, in the reader's language.
+    return raw.map((o) => ({
+      ...o,
+      label: localizedCategoryLabel(o.value, globalMap[o.value], lang, t),
+      icon: globalMap[o.value]?.icon || o.icon || '',
+    }));
+  }, [categories, globalMap, isPlatformBrand, lang, t]);
+
+  const counts = useMemo(() => {
+    const c = {};
+    for (const task of tasks || []) {
+      if (task.status !== 'OPEN') continue;
+      const key = categoryKeyForTask(task);
+      for (const o of options) {
+        if (categoryMatches(key, o.value, globalMap)) c[o.value] = (c[o.value] || 0) + 1;
       }
-      byGroup.get(key).services.push(o);
     }
-    return [...byGroup.values()].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-  }, [options, globalMap]);
+    return c;
+  }, [tasks, options, globalMap]);
 
-  const counts = {};
-  for (const task of tasks) {
-    if (task.status !== 'OPEN') continue;
-    const key = categoryKeyForTask(task);
-    for (const o of options) {
-      if (categoryMatches(key, o.value, globalMap)) counts[o.value] = (counts[o.value] || 0) + 1;
-    }
-  }
+  // Only categories with at least one open task. A category the user already
+  // picked always stays, so a filter can never become impossible to clear.
+  const visible = options.filter((o) => (counts[o.value] || 0) > 0 || selected.includes(o.value));
 
   const option = (c) => (
     <button
@@ -72,24 +72,7 @@ export default function MarketServiceFilter({ tasks, selected = [], onChange }) 
   );
 
   if (isLoading) return <p className="p-3 text-sm text-jtext-3">{t('svc_loading')}</p>;
-  if (!options.length) return <p className="p-3 text-sm text-jtext-3">{t('svc_none')}</p>;
+  if (!visible.length) return <p className="p-3 text-sm text-jtext-3">{t('svc_none')}</p>;
 
-  if (isPlatformBrand) {
-    if (optionGroups.length <= 1) return optionGroups.flatMap(g => g.services).map(option);
-    return optionGroups.map(g => (
-      <div key={g.category_key}>
-        <div className="px-3 pt-3 pb-1 text-xs font-bold text-jtext-3">{g.icon} {g.label}</div>
-        {g.services.map(option)}
-      </div>
-    ));
-  }
-
-  // A single group IS the whole list — a header would only repeat the brand name.
-  if (groups.length <= 1) return categories.map(option);
-  return groups.map(g => (
-    <div key={g.category_key}>
-      {!g.hideHeader && <div className="px-3 pt-3 pb-1 text-xs font-bold text-jtext-3">{g.icon} {g.label}</div>}
-      {g.services.map(option)}
-    </div>
-  ));
+  return visible.map(option);
 }

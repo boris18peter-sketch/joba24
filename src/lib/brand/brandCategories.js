@@ -6,6 +6,8 @@ import { CATEGORIES } from '@/lib/categories';
 import { useGlobalCategories, globalFormFields } from '@/lib/brand/globalCategories';
 import { deriveServices, deriveRoots, serviceGroups } from '@/lib/brand/categoryTree';
 import { resolveCategoryContent, resolveBrandExamples } from '@/lib/brand/categoryContent';
+import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
+import { useLanguage } from '@/lib/LanguageContext';
 export const PLATFORM_CATEGORY_KEYS = CATEGORIES.map(c => c.value);
 export const isBrandSpecificKey = key => !!key && !PLATFORM_CATEGORY_KEYS.includes(key);
 export const platformCategoryLabel = key => CATEGORIES.find(c => c.value === key)?.label || key;
@@ -14,6 +16,7 @@ export async function fetchBrandCategoryRows(brandId) {
 }
 export function useBrandCategories() {
   const { brandId,brand,isPlatformBrand } = useBrand(), cache = useQueryClient();
+  const { t, lang } = useLanguage();
   const scopeQuery = useQuery({ queryKey:['brandScope',brandId], queryFn:async () => (await base44.entities.Brand.filter({ id:brandId }))?.[0], enabled:!!brandId, staleTime:60000 });
   const effectiveBrand = scopeQuery.data || brand;
   const legacy = useQuery({ queryKey:['brandCategories',brandId], queryFn:() => fetchBrandCategoryRows(brandId), enabled:!!brandId && effectiveBrand?.category_model_version !== 2 });
@@ -22,11 +25,14 @@ export function useBrandCategories() {
   const services = deriveServices(global.rows,effectiveBrand,legacy.data || []);
   // Top-level categories — what a PROFILE offers (a trade, not a single job).
   const roots = deriveRoots(global.rows,effectiveBrand);
-  const categories = services.map(g => ({ ...g,value:g.category_key,label:g.label || platformCategoryLabel(g.category_key),fields:globalFormFields(g,global.map),brandSpecific:isBrandSpecificKey(g.category_key) }));
+  // The label is resolved ONCE, here, in the reader's language — every consumer
+  // of `categories` (pickers, forms, filters) then shows the same translated
+  // text without each one re-deriving it.
+  const categories = services.map(g => ({ ...g,value:g.category_key,label:localizedCategoryLabel(g.category_key, global.map[g.category_key], lang, t) || g.label || platformCategoryLabel(g.category_key),fields:globalFormFields(g,global.map),brandSpecific:isBrandSpecificKey(g.category_key) }));
   // Single source of truth for every Brand-facing task example / placeholder.
-  const examplesFor = (limit = 4) => resolveBrandExamples(global.rows, categories, effectiveBrand, limit).map(e => e.text);
+  const examplesFor = (limit = 4) => resolveBrandExamples(global.rows, categories, effectiveBrand, limit, lang).map(e => e.text);
   return { categories,roots,isPlatformBrand,examples:examplesFor(4),examplesFor,groups:serviceGroups(global.rows,categories,effectiveBrand),rows:legacy.data || [],globalRows:global.rows,globalMap:global.map,
-    contentFor:value => resolveCategoryContent(global.rows,value,effectiveBrand),
+    contentFor:value => resolveCategoryContent(global.rows,value,effectiveBrand,lang),
     configured:effectiveBrand?.category_model_version === 2 || !!legacy.data?.length,
     isLoading:scopeQuery.isLoading || global.isLoading || (effectiveBrand?.category_model_version !== 2 && legacy.isLoading),
     taskCategoryFor:value => value,

@@ -191,6 +191,11 @@
           "key"
         ]
       }
+    },
+    "translations": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Localized content per language code, e.g. { \"fr\": { \"label\": \"Court-circuit\", \"description_example\": \"...\" } }. Hebrew remains the source of truth in `label`/`description_example`; these are presentation overlays only and never change the taxonomy."
     }
   },
   "required": [

@@ -16,21 +16,25 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import FilterSheet from '@/components/FilterSheet';
+import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { resolveTheme } from '@/lib/brand/themeTokens';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
-const MAP_STYLE = 'mapbox://styles/mapbox/standard?language=he';
+// The base map's own place labels follow the UI language — a French user must
+// not read Hebrew street names under their own task pins.
+const MAP_LANG = { he: 'he', en: 'en', ar: 'ar', es: 'es', fr: 'fr', ru: 'ru', hi: 'hi', fil: 'en', zh: 'zh' };
+const mapStyleFor = (lang) => `mapbox://styles/mapbox/standard?language=${MAP_LANG[lang] || 'en'}`;
 
-function formatDist(meters) {
-  if (meters < 1000) return `${Math.round(meters)} מ'`;
-  return `${(meters / 1000).toFixed(1)} ק"מ`;
+function formatDist(meters, t) {
+  if (meters < 1000) return `${Math.round(meters)}${t('m_short')}`;
+  return `${(meters / 1000).toFixed(1)} ${t('km_short')}`;
 }
 
-function formatTime(seconds) {
+function formatTime(seconds, t) {
   const mins = Math.round(seconds / 60);
-  if (mins < 60) return `${mins} דק'`;
-  return `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')} ש'`;
+  if (mins < 60) return `${mins}${t('min_short')}`;
+  return `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')} ${t('h_short')}`;
 }
 
 function getETA(seconds) {
@@ -104,7 +108,7 @@ export default function MapView() {
   const location = useLocation();
   const { openTaskSheet } = useTaskSheet();
   const { isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang, isRTL } = useLanguage();
 
   const [userLocation, setUserLocation] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -336,7 +340,7 @@ export default function MapView() {
             {...viewState}
             onMove={e => setViewState(e.viewState)}
             mapboxAccessToken={mapToken}
-            mapStyle={MAP_STYLE}
+            mapStyle={mapStyleFor(lang)}
             style={{ width: '100%', height: '100%' }}
             maxPitch={85}
             minZoom={8}
@@ -435,7 +439,7 @@ export default function MapView() {
                 {filters.categories?.length > 0
                   ? <span style={{ background: 'var(--brand-primary)', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
                   : null}
-                {filters.categories?.length === 1 ? categoryMap[filters.categories[0]]?.label || getCategoryLabel(filters.categories[0], t) : t('category')}
+                {filters.categories?.length === 1 ? localizedCategoryLabel(filters.categories[0], categoryMap[filters.categories[0]], lang, t) : t('category')}
                 {showCategoryDropdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
 
@@ -513,7 +517,7 @@ export default function MapView() {
                 {/* Distance + street */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 36, fontWeight: 900, color: 'white', lineHeight: 1, letterSpacing: -1.5, marginBottom: 4 }}>
-                    {formatDist(step.distance || 0)}
+                    {formatDist(step.distance || 0, t)}
                   </div>
                   <div style={{
                     fontSize: 15, color: 'rgba(255,255,255,0.9)', fontWeight: 600,
@@ -538,7 +542,7 @@ export default function MapView() {
                     {t('then_label') || 'Then'}: {nextStep.name || nextStep.maneuver?.instruction || (t('continue_straight') || 'Continue straight')}
                   </span>
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginRight: 'auto' }}>
-                    {formatDist(nextStep.distance || 0)}
+                    {formatDist(nextStep.distance || 0, t)}
                   </span>
                 </div>
               )}
@@ -585,7 +589,7 @@ export default function MapView() {
                 {/* Remaining distance */}
                 <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
                   <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--brand-primary)', letterSpacing: -0.5 }}>
-                    {formatDist(remainDist)}
+                    {formatDist(remainDist, t)}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>{t('remaining')}</div>
                 </div>
@@ -621,7 +625,7 @@ export default function MapView() {
             boxShadow: '0 10px 50px rgba(15,43,107,0.22)',
             padding: '18px 18px 16px', border: '1px solid var(--border-1)',
             animation: 'slideUpCard 0.25s cubic-bezier(0.34,1.3,0.64,1)',
-          }} dir="rtl">
+          }} dir={isRTL ? 'rtl' : 'ltr'}>
             <button onClick={() => setSelectedTask(null)} style={{
               position: 'absolute', top: 14, left: 14, width: 30, height: 30,
               borderRadius: 9, background: 'var(--surface-3)', border: 'none',
@@ -641,7 +645,7 @@ export default function MapView() {
                 <div style={{ fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                   {selectedTask.location_name && <><MapPin size={10} /><span>{translatedSelectedTask?.location_name || selectedTask.location_name}</span></>}
                   {selectedTask.estimated_time && <><Clock size={10} /><span>{selectedTask.estimated_time}</span></>}
-                  <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{categoryMap[categoryKeyForTask(selectedTask)]?.label || getCategoryLabel(selectedTask.category, t)}</span>
+                  <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{localizedCategoryLabel(categoryKeyForTask(selectedTask), categoryMap[categoryKeyForTask(selectedTask)], lang, t)}</span>
                 </div>
               </div>
             </div>
@@ -658,14 +662,14 @@ export default function MapView() {
                 <div style={{ flex: 1, background: 'var(--brand-primary-light)', border: '1px solid #bfdbfe', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Navigation size={13} color="var(--brand-primary)" />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-primary-dark)' }}>{formatDist(routeMeta.totalDist)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-primary-dark)' }}>{formatDist(routeMeta.totalDist, t)}</div>
                     <div style={{ fontSize: 10, color: '#60a5fa' }}>{t('road_distance')}</div>
                   </div>
                 </div>
                 <div style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Clock size={13} color="#16a34a" />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#15803d' }}>{formatTime(routeMeta.totalTime)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#15803d' }}>{formatTime(routeMeta.totalTime, t)}</div>
                     <div style={{ fontSize: 10, color: '#4ade80' }}>{t('travel_time')}</div>
                   </div>
                 </div>
