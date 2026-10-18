@@ -46,7 +46,7 @@ export default function GlobalPopups() {
     <>
       {celebration && <VerificationApprovedPopup variant={celebration} onClose={clearCelebration} />}
 
-      {bonus && <LoyaltyBonusPopup amount={bonus.amount} tasksCompleted={bonus.tasksCompleted} onClose={clearBonus} />}
+      {bonus && <LoyaltyBonusPopup amount={bonus.amount} user={user} onClose={clearBonus} />}
 
       {taskAlert?.kind === 'cancelled' && createPortal(
         <WorkerCancelledPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />,

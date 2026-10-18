@@ -6,8 +6,7 @@ import confetti from 'canvas-confetti';
 import CreditIcon from '@/components/CreditIcon';
 import { motion } from 'framer-motion';
 import { spawnCoinBurst } from '@/lib/coinBurst';
-import LoyaltyProgressMeter from '@/components/loyalty/LoyaltyProgressMeter';
-import { getLoyaltyProgress } from '@/lib/loyaltyProgress';
+import TrustCard from '@/components/TrustCard';
 import { useLanguage } from '@/lib/LanguageContext';
 
 /**
@@ -30,7 +29,7 @@ const THEME = {
 
 const PERK_KEYS = ['lp_perk_1', 'lp_perk_2', 'lp_perk_3'];
 
-export default function LoyaltyBonusPopup({ amount = 0, tasksCompleted = 0, onClose }) {
+export default function LoyaltyBonusPopup({ amount = 0, user, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const [claimed, setClaimed] = useState(false);
@@ -39,7 +38,6 @@ export default function LoyaltyBonusPopup({ amount = 0, tasksCompleted = 0, onCl
   // raised it. Never a running total, never a previous bonus, never a settings
   // value — so the figure here always matches the one the worker was told about.
   const bonusAmount = Math.max(0, Math.round(Number(amount) || 0));
-  const progress = getLoyaltyProgress(tasksCompleted);
 
   const handleCollect = () => {
     if (claimed) return;
@@ -148,11 +146,13 @@ export default function LoyaltyBonusPopup({ amount = 0, tasksCompleted = 0, onCl
             {claimed ? t('lp_cta_done') : t('lp_cta')}
           </button>
 
-          {/* ── Rank meter — the SHARED component, exactly as it renders
-              anywhere else in the app. No wrapper, no extra decoration: a
-              loyalty bonus is also progress, and the ladder is the same ladder
-              the worker sees everywhere. ── */}
-          <LoyaltyProgressMeter progress={progress} />
+          {/* ── Trust meter — the SHARED card, in its read-only form. A 5-star
+              rating is exactly what moves this score, so the worker sees the
+              very number that just went up, right where the bonus is announced.
+              Read-only because a nested popup would open behind this one. ── */}
+          <div style={{ marginTop: 14, marginBottom: 18 }}>
+            <TrustCard user={user} interactive={false} />
+          </div>
 
           <div style={{ textAlign: 'center', marginTop: 2, fontSize: 12, color: 'var(--text-3)', fontWeight: 500 }}>
             {t('lp_footer')}

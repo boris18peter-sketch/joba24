@@ -211,7 +211,12 @@ function getBarColor(w) {
   return '#16a34a';
 }
 
-export default function TrustCard({ user, reviews = [], tasks = [], isPublic = false }) {
+/**
+ * `interactive` — the card is normally a tap target that opens the full
+ * breakdown. Set it to false to render it read-only, which is what a popup
+ * that is already open needs: a nested popup would sit behind its own parent.
+ */
+export default function TrustCard({ user, reviews = [], tasks = [], isPublic = false, interactive = true }) {
   const { t, isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
   const [displayWidth, setDisplayWidth] = useState(0);
@@ -243,43 +248,38 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
     <>
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
-        onClick={() => setOpen(true)}
+        onClick={interactive ? () => setOpen(true) : undefined}
         style={{
           background: 'var(--surface-2)',
           border: '1px solid var(--border-1)',
           borderRadius: 14,
           padding: '12px 14px 10px',
-          cursor: 'pointer', userSelect: 'none',
+          cursor: interactive ? 'pointer' : 'default', userSelect: 'none',
           boxShadow: 'var(--shadow-xs)',
           transition: 'box-shadow 0.15s, transform 0.1s',
         }}
-        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.99)'; }}
-        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        onMouseDown={interactive ? e => { e.currentTarget.style.transform = 'scale(0.99)'; } : undefined}
+        onMouseUp={interactive ? e => { e.currentTarget.style.transform = 'scale(1)'; } : undefined}
+        onMouseLeave={interactive ? e => { e.currentTarget.style.transform = 'scale(1)'; } : undefined}
       >
-        {/* What this is, and what it currently says — one line, both ends. */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-            <Shield size={15} color={barColor} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>{t('pr_reliability')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: `${barColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Shield size={17} color={barColor} />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 800, color: barColor, flexShrink: 0, transition: 'color 0.15s' }}>
-            {getTrustLevelLabel(trustLevel, t)}
-          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('pr_reliability')}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 1 }}>
+              <span style={{ fontSize: 21, fontWeight: 900, color: barColor, lineHeight: 1, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: barColor, transition: 'color 0.15s' }}>{getTrustLevelLabel(trustLevel, t)}</span>
+            </div>
+          </div>
         </div>
-
-        {/* The score itself — the one number the card exists to show. */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 9 }}>
-          <span style={{ fontSize: 27, fontWeight: 900, color: barColor, lineHeight: 1, letterSpacing: -1, transition: 'color 0.15s' }}>{displayWidth}</span>
-          <span style={{ fontSize: 14, fontWeight: 800, color: barColor, opacity: 0.65 }}>%</span>
-        </div>
-
-        <div style={{ height: 8, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ height: 6, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: barColor, transition: 'background-color 0.1s' }} />
         </div>
       </div>
 
-      {open && (
+      {interactive && open && (
         <DetailsPopup user={user} reviews={reviews} tasks={tasks} trustScore={trustScore} trustLevel={trustLevel} mainColor={barColor} onClose={() => setOpen(false)} isPublic={isPublic} />
       )}
     </>
