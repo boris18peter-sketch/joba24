@@ -9,9 +9,12 @@
  * an illustration built from the app's real UI can never behave like a live
  * form, and a real capture's buttons can never be pressed.
  */
+import { useLanguage } from '@/lib/LanguageContext';
+
 export default function PreviewCard({ children }) {
+  const { isRTL } = useLanguage();
   return (
-    <div className="j-preview" dir="rtl">
+    <div className="j-preview" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="j-preview-stage">{children}</div>
     </div>
   );
