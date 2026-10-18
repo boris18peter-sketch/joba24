@@ -31,7 +31,15 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inlin
       setHoursLeft(hours);
       if (hours > 0) {
         setTimeLeft(`${hours}${t('hours_short')} ${mins}${t('minutes_short')}`);
-        timer = setTimeout(tick, 60000);
+        // Fire the next tick exactly when the DISPLAYED value changes. `diff`
+        // counts DOWN, so the minutes field drops the moment diff passes just
+        // below a whole minute — `diff % 60000` is the distance to that boundary
+        // and the +1ms lands just past it. A plain 60s cadence would instead let
+        // the minutes field sit up to a minute behind the true value (still
+        // reading "1h 0m" when the real remaining time is already 59m) — the one
+        // case a coarser clock gets visibly wrong. This is therefore at least as
+        // accurate as the old per-second tick, at one wake-up per minute.
+        timer = setTimeout(tick, (diff % 60000) + 1);
       } else {
         const secs = Math.floor((diff % 60000) / 1000);
         setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);

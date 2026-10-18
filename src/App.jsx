@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import { LanguageProvider } from '@/lib/LanguageContext';
+import { LanguageProvider, useLanguage } from '@/lib/LanguageContext';
 import { BrandProvider } from '@/lib/brand/BrandProvider';
 import BrandGate from '@/components/BrandGate';
 import BrandTheme from '@/components/BrandTheme';
@@ -19,9 +19,6 @@ import { reloadFresh } from '@/lib/reloadFresh';
 import AdminRoute from '@/components/AdminRoute';
 import { TaskSheetProvider } from '@/lib/TaskSheetContext';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
-import EarningsDashboard from '@/pages/EarningsDashboard';
-import ResetPassword from '@/pages/ResetPassword';
-import AdminDashboard from '@/pages/AdminDashboard';
 import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
@@ -158,6 +155,16 @@ const DesignPreviewV2 = lazyRetry(() => import('@/pages/DesignPreviewV2'));
 const BrandManager = lazyRetry(() => import('@/pages/BrandManager'));
 const BrandDashboard = lazyRetry(() => import('@/pages/BrandDashboard'));
 const OnboardingTrackWelcome = lazyRetry(() => import('@/pages/OnboardingTrackWelcome'));
+// Admin-only and rarely-reached screens. These were the ONLY three pages in the
+// file still imported statically, so the admin dashboard — its tables, its KYC
+// tab, its brand manager, its charts — was parsed and executed on EVERY launch,
+// including for guests who can never open it. They now load on demand like the
+// other thirty pages, through the same lazyRetry so a stale chunk after a deploy
+// still heals itself. Route guards are untouched: AdminRoute / ProtectedRoute
+// still wrap the same elements.
+const AdminDashboard = lazyRetry(() => import('@/pages/AdminDashboard'));
+const EarningsDashboard = lazyRetry(() => import('@/pages/EarningsDashboard'));
+const ResetPassword = lazyRetry(() => import('@/pages/ResetPassword'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -244,6 +251,10 @@ const PUSH_VARIANTS = {
 const AuthenticatedApp = () => {
   const location = useLocation();
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+  // False only while a NON-Hebrew dictionary is still being fetched. Hebrew is
+  // compiled in, so for a Hebrew launch — and for every first-ever launch — this
+  // is true on the very first render and adds no wait whatsoever.
+  const { ready: langReady } = useLanguage();
   const prevDepthRef = useRef(getDepth(location.pathname));
   const curDepth = getDepth(location.pathname);
   const slideDir = curDepth >= prevDepthRef.current ? 1 : -1;
@@ -254,7 +265,11 @@ const AuthenticatedApp = () => {
 
 
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  // langReady is the dictionary gate: holding the first paint here is what stops
+  // the app flashing Hebrew at a visitor whose saved language is not Hebrew. It
+  // is read from the context rather than gating inside the provider because this
+  // point already sits BELOW <BrandProvider>, which AppLoading needs for its logo.
+  if (isLoadingPublicSettings || isLoadingAuth || !langReady) {
     return <AppLoading />;
   }
 

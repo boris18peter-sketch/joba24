@@ -1,19 +1,22 @@
 /**
  * Joba24 — Internationalization system
- * Supports: Hebrew (he), Arabic (ar), English (en), Spanish (es), French (fr), Russian (ru)
- * RTL: he, ar  |  LTR: en, es, fr, ru
- * he and en live in separate files (i18n-he.js, i18n-en.js) to keep this file manageable.
+ * Supports: Hebrew (he), Arabic (ar), English (en), Spanish (es), French (fr),
+ * Russian (ru), Filipino (fil), Hindi (hi), Chinese (zh)
+ * RTL: he, ar  |  LTR: everything else
+ *
+ * ── HEBREW IS COMPILED IN, THE OTHER EIGHT LOAD ON DEMAND ───────────────────
+ * Every dictionary used to be imported here, so all nine were parsed and kept
+ * in memory on every launch — roughly 700 KB of source, of which a visitor ever
+ * reads one. Hebrew alone is now a static import; the rest are dynamic chunks
+ * fetched by loadLanguage() the moment a language is actually needed.
+ *
+ * Hebrew stays static on purpose. It is the default, it is the fallback every
+ * other language falls back to (see t() in LanguageContext), and it is the
+ * language of the overwhelming majority of launches — so the default cold start
+ * touches no network for translations at all and cannot regress.
  */
 
 import { he } from '@/lib/i18n-he';
-import { en } from '@/lib/i18n-en';
-import { ar } from '@/lib/i18n-ar';
-import { es } from '@/lib/i18n-es';
-import { fr } from '@/lib/i18n-fr';
-import { ru } from '@/lib/i18n-ru';
-import { fil } from '@/lib/i18n-fil';
-import { hi } from '@/lib/i18n-hi';
-import { zh } from '@/lib/i18n-zh';
 import { onboardingI18n } from '@/lib/i18n-onboarding';
 // Keys that exist in Hebrew but were never propagated to the other eight
 // languages, plus the newer strings (subscription card, review tags, invoices,
@@ -35,15 +38,14 @@ export const LANGUAGES = [
 
 export const RTL_LANGS = new Set(['he', 'ar']);
 
-export const translations = {
-  // The first-run flow's copy is merged in from its own module (i18n-onboarding),
-  // so its screens are translated in every language without nine more edits here.
-  he: { ...he, ...onboardingI18n.he, ...extraI18n.he },
-  en: { ...en, ...onboardingI18n.en, ...extraI18n.en },
+/** Every language code the app ships. */
+export const LANG_CODES = new Set(LANGUAGES.map((l) => l.code));
+
+// Per-language copy that belongs to the app shell rather than to a translation
+// file (the notification-permission prompt). Declared here so it survives the
+// move to on-demand dictionaries.
+const OVERRIDES = {
   ar: {
-    ...ar,
-    ...onboardingI18n.ar,
-    ...extraI18n.ar,
     notif_permission_title: 'تفعيل الإخطارات؟',
     notif_permission_body: 'احصل على تنبيهات فورية عند توافق مهام جديدة، أو رد أحد على دردشتك، أو جهوزية دفعتك.',
     notif_permission_allow: 'نعم، فعّل',
@@ -52,9 +54,6 @@ export const translations = {
     notifications: 'الإخطارات',
   },
   es: {
-    ...es,
-    ...onboardingI18n.es,
-    ...extraI18n.es,
     notif_permission_title: '¿Habilitar notificaciones?',
     notif_permission_body: 'Recibe alertas instantáneas cuando se asigne una tarea, alguien responda tu chat, o tu pago esté listo.',
     notif_permission_allow: 'Sí, Habilitar',
@@ -63,9 +62,6 @@ export const translations = {
     notifications: 'Notificaciones',
   },
   fr: {
-    ...fr,
-    ...onboardingI18n.fr,
-    ...extraI18n.fr,
     notif_permission_title: 'Activer les notifications ?',
     notif_permission_body: 'Recevez des alertes instantanées quand une tâche vous correspond, quelqu\'un répond à votre chat, ou votre paiement est prêt.',
     notif_permission_allow: 'Oui, Activer',
@@ -74,9 +70,6 @@ export const translations = {
     notifications: 'Notifications',
   },
   ru: {
-    ...ru,
-    ...onboardingI18n.ru,
-    ...extraI18n.ru,
     notif_permission_title: 'Включить уведомления?',
     notif_permission_body: 'Получайте мгновенные оповещения, когда вам подходит задача, кто-то отвечает в чате или платеж готов.',
     notif_permission_allow: 'Да, Включить',
@@ -84,15 +77,81 @@ export const translations = {
     location: 'Местоположение',
     notifications: 'Уведомления',
   },
-  fil: { ...fil, ...onboardingI18n.fil, ...extraI18n.fil },
-  hi: { ...hi, ...onboardingI18n.hi, ...extraI18n.hi },
-  zh: { ...zh, ...onboardingI18n.zh, ...extraI18n.zh },
 };
+
+/**
+ * The loaded dictionaries. Hebrew is the only one present at boot; every other
+ * entry is added by loadLanguage() the first time that language is used.
+ *
+ * The first-run flow's copy is merged in from its own module (i18n-onboarding),
+ * so its screens are translated in every language without nine more edits here.
+ */
+export const translations = {
+  he: { ...he, ...onboardingI18n.he, ...extraI18n.he },
+};
+
+/**
+ * One explicit loader per language. Written out rather than assembled from the
+ * code so the bundler can see each import and emit a real chunk for it.
+ */
+const LOADERS = {
+  en: () => import('@/lib/i18n-en'),
+  ar: () => import('@/lib/i18n-ar'),
+  es: () => import('@/lib/i18n-es'),
+  fr: () => import('@/lib/i18n-fr'),
+  ru: () => import('@/lib/i18n-ru'),
+  fil: () => import('@/lib/i18n-fil'),
+  hi: () => import('@/lib/i18n-hi'),
+  zh: () => import('@/lib/i18n-zh'),
+};
+
+/** True when this language's dictionary is already in memory. */
+export const isLanguageLoaded = (code) => !!translations[code];
+
+/**
+ * Load a language's dictionary into `translations`.
+ *
+ * NEVER REJECTS. The caller waits on this before painting, so a rejection would
+ * have to be handled at every call site — and a stalled fetch would leave the
+ * app on a loading screen with no way out. Instead it retries once (the common
+ * failures are a transient dropped connection, or a stale chunk right after a
+ * deploy) and then gives up silently, leaving the Hebrew fallback in place. The
+ * app always renders; it simply renders Hebrew if the dictionary could not be
+ * fetched.
+ *
+ * @returns the code that is actually usable — 'he' when the load failed
+ */
+export async function loadLanguage(code) {
+  if (!LOADERS[code]) return code;     // Hebrew, or an unknown code — nothing to fetch
+  if (translations[code]) return code; // already in memory
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const mod = await LOADERS[code]();
+      const base = mod[code];
+      if (!base) break;
+      translations[code] = {
+        ...base,
+        ...onboardingI18n[code],
+        ...extraI18n[code],
+        ...(OVERRIDES[code] || {}),
+      };
+      return code;
+    } catch (_) {
+      /* first failure — fall through and try once more */
+    }
+  }
+  return 'he';
+}
 
 /** Detect language from IP (uses free ipapi.co), fallback to browser/localStorage */
 export async function detectLanguage() {
   const saved = localStorage.getItem('joba24_lang');
-  if (saved && translations[saved]) return saved;
+  // Validated against the shipped language list, NOT against `translations`:
+  // that object now holds only the dictionaries already loaded, so checking it
+  // would make a saved 'en' look like an unsupported language and re-detect the
+  // language from scratch on every launch.
+  if (saved && LANG_CODES.has(saved)) return saved;
 
   try {
     const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) });
@@ -106,11 +165,11 @@ export async function detectLanguage() {
       PH: 'fil', IN: 'hi', CN: 'zh',
     };
     const lang = countryLangMap[data.country_code];
-    if (lang && translations[lang]) return lang;
+    if (lang && LANG_CODES.has(lang)) return lang;
   } catch (_) {}
 
   const browserLang = navigator.language?.slice(0, 2);
-  if (browserLang && translations[browserLang]) return browserLang;
+  if (browserLang && LANG_CODES.has(browserLang)) return browserLang;
 
   return 'he';
 }
