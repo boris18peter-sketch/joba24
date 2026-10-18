@@ -10,6 +10,9 @@ export function LanguageProvider({ children }) {
   // FIRST render. `ready` is false only for a returning visitor whose saved
   // language is not Hebrew, and only until that language's chunk arrives.
   const [ready, setReady] = useState(() => isLanguageLoaded(lang));
+  // Bumped when a dictionary lands AFTER the guard already released the screen,
+  // so that arrival actually reaches the UI. See the load below.
+  const [, setDictTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,7 +35,16 @@ export function LanguageProvider({ children }) {
     // never rejects; this guards a stalled network, it is not a failure path.)
     if (isLanguageLoaded(lang)) return;
     const guard = setTimeout(() => { if (!cancelled) setReady(true); }, 3000);
-    loadLanguage(lang).then(() => { if (!cancelled) setReady(true); });
+    loadLanguage(lang).then(() => {
+      if (cancelled) return;
+      setReady(true);
+      // The guard may already have released the screen. setReady(true) is then a
+      // no-op to React — the same value — so without this bump the dictionary
+      // would sit in memory and never reach the UI: the visitor would keep
+      // reading the Hebrew fallback until some unrelated render came along.
+      // One bump per load, so there is no render loop.
+      setDictTick((n) => n + 1);
+    });
     return () => { cancelled = true; clearTimeout(guard); };
   }, []);
 

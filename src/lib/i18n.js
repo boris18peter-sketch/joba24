@@ -17,12 +17,12 @@
  */
 
 import { he } from '@/lib/i18n-he';
-import { onboardingI18n } from '@/lib/i18n-onboarding';
-// Keys that exist in Hebrew but were never propagated to the other eight
-// languages, plus the newer strings (subscription card, review tags, invoices,
-// chat, price suggestions). Kept in one data file so a missing-key audit stays
-// a single place to look, and merged below exactly like the onboarding copy.
-import extraI18n from './i18n-extra.json';
+// Hebrew's first-run copy and Hebrew's `extra` strings are compiled in: a new
+// visitor sees /welcome before any language has been chosen, and a Hebrew launch
+// must touch no network at all for translations. Every other language loads its
+// share of both on demand — see loadLanguage() below.
+import onboardingHe from '@/lib/i18n-onboarding-he';
+import extraHe from '@/lib/i18n-extra-he.json';
 
 export const LANGUAGES = [
   { code: 'he', label: 'עברית',   flag: '🇮🇱', rtl: true  },
@@ -83,11 +83,13 @@ const OVERRIDES = {
  * The loaded dictionaries. Hebrew is the only one present at boot; every other
  * entry is added by loadLanguage() the first time that language is used.
  *
- * The first-run flow's copy is merged in from its own module (i18n-onboarding),
- * so its screens are translated in every language without nine more edits here.
+ * Two companions are merged in here as well — the first-run flow's copy and the
+ * `extra` strings (subscription card, review tags, invoices, chat, price
+ * suggestions). For Hebrew both come from compiled-in modules; for the other
+ * eight languages both are fetched alongside that language's dictionary.
  */
 export const translations = {
-  he: { ...he, ...onboardingI18n.he, ...extraI18n.he },
+  he: { ...he, ...onboardingHe, ...extraHe },
 };
 
 /**
@@ -104,6 +106,28 @@ const LOADERS = {
   hi: () => import('@/lib/i18n-hi'),
   zh: () => import('@/lib/i18n-zh'),
 };
+
+/**
+ * A lazily-imported module, cached after the first load.
+ *
+ * Both companions below are deliberately kept OUT of the entry bundle: a Hebrew
+ * launch never fetches either, and a language switch reuses the same module
+ * instead of re-fetching it.
+ *
+ * A failure is swallowed on purpose — it must not cost the visitor their whole
+ * language. The dictionary itself still loads and only the companion keys fall
+ * back to Hebrew.
+ */
+const lazyModule = (load) => {
+  let promise = null;
+  return () => {
+    if (!promise) promise = load().catch(() => null);
+    return promise;
+  };
+};
+
+const loadOnboardingDictionaries = lazyModule(() => import('@/lib/i18n-onboarding'));
+const loadExtraDictionaries = lazyModule(() => import('@/lib/i18n-extra.json'));
 
 /** True when this language's dictionary is already in memory. */
 export const isLanguageLoaded = (code) => !!translations[code];
@@ -130,10 +154,18 @@ export async function loadLanguage(code) {
       const mod = await LOADERS[code]();
       const base = mod[code];
       if (!base) break;
+      // This language's share of both companions, fetched alongside the
+      // dictionary so they are already in memory by the time the screen is
+      // allowed to paint — no key can flash as missing.
+      const [onb, extra] = await Promise.all([
+        loadOnboardingDictionaries(),
+        loadExtraDictionaries(),
+      ]);
+      const extraDict = extra?.default || extra || {};
       translations[code] = {
         ...base,
-        ...onboardingI18n[code],
-        ...extraI18n[code],
+        ...(onb?.onboardingI18n?.[code] || {}),
+        ...(extraDict[code] || {}),
         ...(OVERRIDES[code] || {}),
       };
       return code;
