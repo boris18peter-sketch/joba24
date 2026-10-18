@@ -324,7 +324,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
   );
 }
 
-export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
+export default function LoginPromptModal({ onLogin, onClose, type = 'apply', titleKey }) {
   const [showEmail, setShowEmail] = useState(false);
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
@@ -510,9 +510,10 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
             <EmailForm onBack={() => setShowEmail(false)} onSuccess={() => { localStorage.removeItem('joba24_last_user_id'); onLogin?.(); window.location.reload(); }} />
           ) : (
             <>
-              {/* Title */}
+              {/* Title — the visitor's own action, continued. Falls back to the
+                  generic headline when the caller gave no context. */}
               <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.5, textAlign: 'center', marginBottom: 24 }}>
-                {t('login_modal_title')}
+                {t(titleKey || (type === 'publish' ? 'login_title_publish_task' : 'login_modal_title'))}
               </div>
 
               {/* Login buttons */}

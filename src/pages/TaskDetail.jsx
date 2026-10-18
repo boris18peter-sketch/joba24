@@ -757,7 +757,7 @@ export default function TaskDetail(props) {
         <LoginPromptModal
           onLogin={() => {
             setShowLoginPrompt(false);
-            login();
+            login('login_title_apply_task');
           }}
           onClose={() => setShowLoginPrompt(false)}
           type="apply" />,

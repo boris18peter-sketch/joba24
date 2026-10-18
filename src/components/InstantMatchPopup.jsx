@@ -214,12 +214,12 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
         borderRadius: 22,
         overflow: 'hidden',
         boxShadow: '0 16px 60px rgba(0,0,0,0.2)',
-        border: isUrgent ? '2px solid #ef4444' : '1.5px solid #e2e8f0',
+        border: isUrgent ? '2px solid #ef4444' : '1.5px solid var(--border-1)',
         animation: 'slideUpPop 0.38s cubic-bezier(0.32, 1.2, 0.64, 1)',
         transition: 'border 0.3s',
       }}>
         {/* Progress bar */}
-        <div style={{ height: 3, background: '#f1f5f9' }}>
+        <div style={{ height: 3, background: 'var(--surface-3)' }}>
           <div style={{
             height: '100%',
             background: isUrgent ? '#ef4444' : '#f59e0b',
@@ -236,7 +236,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
             width: 48,
             height: 48,
             borderRadius: 14,
-            background: isUrgent ? '#fee2e2' : '#fef3c7',
+            background: isUrgent ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -251,19 +251,19 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
             <div style={{ fontSize: 11, fontWeight: 700, color: isUrgent ? '#ef4444' : isBoosted ? '#7c3aed' : '#f59e0b', marginBottom: 3 }}>
               {isBoosted ? t('match_boost_title') : t('match_new_title')} • {countdown}s
             </div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--brand-modal-title, #0f2b6b)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--brand-modal-title, var(--text-1))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
               {task.title}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 16, fontWeight: 900, color: '#111' }}>₪{task.price}</span>
+              <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)' }}>₪{task.price}</span>
               {dist !== null && (
-                <span style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 3 }}>
                   <MapPin size={11} />
                   {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
                 </span>
               )}
               {task.category && (
-                <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>
+                <span style={{ fontSize: 11, background: 'var(--surface-3)', color: 'var(--text-2)', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>
                   {globalCategoryFor(actionableCategoryKey(task))?.label || getCategoryLabel(actionableCategoryKey(task), t)}
                 </span>
               )}

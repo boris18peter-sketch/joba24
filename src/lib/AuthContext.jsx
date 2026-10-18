@@ -32,6 +32,10 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
   const [showLoginModal, setShowLoginModal] = useState(false);
+  // The login popup's headline continues whatever the visitor was trying to do
+  // when it appeared, so the ask reads as the next step of their own action
+  // rather than a generic invitation. null = the generic headline.
+  const [loginPromptTitleKey, setLoginPromptTitleKey] = useState(null);
   // Guest mode — lets unauthenticated users browse the main feed only (Apple Guideline 5.1.1).
   const [isGuest, setIsGuest] = useState(() => localStorage.getItem('joba24_guest_mode') === '1');
   // Refs to store unsubscribe functions — prevents leaked subscriptions on re-auth
@@ -386,7 +390,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = () => {
+  const login = (titleKey) => {
+    // Accepts either nothing, a legacy redirect path (ignored), or a
+    // 'login_title_*' translation key that becomes the popup's headline.
+    setLoginPromptTitleKey(
+      typeof titleKey === 'string' && titleKey.startsWith('login_title_') ? titleKey : null,
+    );
     setShowLoginModal(true);
   };
 
@@ -466,6 +475,7 @@ export const AuthProvider = ({ children }) => {
       {children}
       {showLoginModal && (
         <LoginPromptModal
+          titleKey={loginPromptTitleKey}
           onClose={() => setShowLoginModal(false)}
           onLogin={() => setShowLoginModal(false)}
         />

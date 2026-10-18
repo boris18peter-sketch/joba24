@@ -59,6 +59,22 @@ export function TaskSheetProvider({ children }) {
     setHiddenTaskId(null);
   }, []);
 
+  // Dismisses the sheet WITHOUT offering to return to it.
+  //
+  // Used when something else takes over the whole screen (the Boost overlay):
+  // the sheet must simply go away. hideTaskSheet would leave `hiddenTaskId` set
+  // — which raises the "return to task" bar the moment the overlay closes — and
+  // would leave the {taskSheet} history marker behind, so Back could restore a
+  // sheet the user never asked for. Both are cleared here.
+  const dismissTaskSheet = useCallback(() => {
+    sheetTaskIdRef.current = null;
+    setSheetTaskId(null);
+    setHiddenTaskId(null);
+    if (window.history.state?.taskSheet) {
+      window.history.replaceState({ ...window.history.state, taskSheet: null }, '');
+    }
+  }, []);
+
   // Listen for popstate (hardware back button, swipe-back) to close or restore the sheet
   useEffect(() => {
     const handlePopState = () => {
@@ -82,7 +98,7 @@ export function TaskSheetProvider({ children }) {
   }, []);
 
   return (
-    <TaskSheetContext.Provider value={{ sheetTaskId, hiddenTaskId, openTaskSheet, closeTaskSheet, hideTaskSheet, clearHiddenTask }}>
+    <TaskSheetContext.Provider value={{ sheetTaskId, hiddenTaskId, openTaskSheet, closeTaskSheet, hideTaskSheet, dismissTaskSheet, clearHiddenTask }}>
       {children}
     </TaskSheetContext.Provider>
   );
@@ -90,6 +106,6 @@ export function TaskSheetProvider({ children }) {
 
 export function useTaskSheet() {
   const ctx = useContext(TaskSheetContext);
-  if (!ctx) return { sheetTaskId: null, hiddenTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {}, hideTaskSheet: () => {}, clearHiddenTask: () => {} };
+  if (!ctx) return { sheetTaskId: null, hiddenTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {}, hideTaskSheet: () => {}, dismissTaskSheet: () => {}, clearHiddenTask: () => {} };
   return ctx;
 }

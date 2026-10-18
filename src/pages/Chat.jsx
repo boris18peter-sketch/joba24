@@ -319,7 +319,14 @@ export default function Chat() {
         height: '100dvh',
         display: 'flex', flexDirection: 'column',
         background: 'var(--surface-1)',
-        zIndex: 999999, overflow: 'hidden',
+        // Deliberately BELOW the task-detail sheet (1000000). A full-screen page
+        // that portals itself to <body> at 999999 gets lifted to 2000000 by the
+        // legacy z-index rules in index.css, which put the chat ON TOP of the
+        // sheet — tapping the task inside a conversation opened it behind the
+        // chat, so it looked like nothing happened. 900000 keeps the chat above
+        // the app layers while leaving room for the sheet and the popups it
+        // opens.
+        zIndex: 900000, overflow: 'hidden',
       }}
       dir={isRTL ? 'rtl' : 'ltr'}
     >

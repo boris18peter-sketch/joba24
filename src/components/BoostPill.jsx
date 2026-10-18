@@ -109,7 +109,11 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['allTasks'] });
-      window.dispatchEvent(new CustomEvent('hide_task_sheet'));
+      // dismiss_task_sheet (not hide_task_sheet): the sheet must disappear
+      // completely while the Boost overlay owns the screen. hide_task_sheet
+      // would leave a "return to task" bar waiting behind the overlay, which
+      // then popped up the moment the user closed it.
+      window.dispatchEvent(new CustomEvent('dismiss_task_sheet'));
       window.dispatchEvent(new CustomEvent('show_boost_overlay', {
         detail: { taskId: task.id, taskTitle: task.title, taskPrice: task.price, taskCategory: task.category }
       }));
@@ -187,7 +191,10 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
 
       {/* Confirm sheet */}
       {showConfirm && createPortal(
-        <div className="mobile-sheet-overlay" onClick={() => setShowConfirm(false)}>
+        // The portal bubbles through the REACT tree, so without stopping the
+        // event here a tap on the backdrop would also reach the task card that
+        // renders this pill — and reopen the task detail sheet.
+        <div className="mobile-sheet-overlay" onClick={(e) => { e.stopPropagation(); setShowConfirm(false); }}>
           <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -216,7 +223,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
 
       {/* Cooldown popup — shows a live countdown until the next boost is available */}
       {showCooldown && createPortal(
-        <div className="mobile-sheet-overlay" onClick={() => setShowCooldown(false)}>
+        <div className="mobile-sheet-overlay" onClick={(e) => { e.stopPropagation(); setShowCooldown(false); }}>
           <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>

@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { autoDetectCategory } from '@/lib/taskFlowConfig';
-import { getCategoryPluralLabel } from '@/lib/categories';
+import { getCategoryLabel, getCategoryPluralLabel } from '@/lib/categories';
 import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRegistry';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
@@ -518,7 +518,12 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
   // title-based guess is a last resort for genuinely uncategorised tasks only.
   const effectiveCategory = actionableCategoryKey(taskCategory)
     || (taskCategory === 'other' ? (autoDetectCategory(taskTitle || '') || 'other') : taskCategory);
-  const workerLabel = globalCategoryFor(effectiveCategory)?.label || getCategoryPluralLabel(effectiveCategory, t);
+  // The copy reads "sending to workers who deal with <category>", so it needs the
+  // category NAME — in the reader's own language. The global catalogue's label is
+  // stored in Hebrew, so it is only a last resort: the translated `cat_*` label
+  // comes first (with its leading emoji stripped, since it sits inside a sentence).
+  const translatedCategory = String(getCategoryLabel(effectiveCategory, t) || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  const workerLabel = translatedCategory || globalCategoryFor(effectiveCategory)?.label || getCategoryPluralLabel(effectiveCategory, t);
 
   const goToTask = () => {
     onNavigate?.();

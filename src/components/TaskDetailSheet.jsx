@@ -17,7 +17,7 @@ const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 // in TaskDetail so they sit together in one neat row. This wrapper only
 // provides the sheet chrome (drag handle + scrollable content).
 export default function TaskDetailSheet() {
-  const { sheetTaskId, closeTaskSheet, hideTaskSheet } = useTaskSheet();
+  const { sheetTaskId, closeTaskSheet, hideTaskSheet, dismissTaskSheet } = useTaskSheet();
   const { isRTL } = useLanguage();
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
@@ -48,6 +48,15 @@ export default function TaskDetailSheet() {
     window.addEventListener('hide_task_sheet', handler);
     return () => window.removeEventListener('hide_task_sheet', handler);
   }, [hideTaskSheet]);
+
+  // Silent dismissal — hides the popup and clears every trace of it, so the
+  // screen that replaced it (the Boost overlay) can be closed without anything
+  // else appearing underneath.
+  useEffect(() => {
+    const handler = () => dismissTaskSheet();
+    window.addEventListener('dismiss_task_sheet', handler);
+    return () => window.removeEventListener('dismiss_task_sheet', handler);
+  }, [dismissTaskSheet]);
 
   // Escape key
   useEffect(() => {
