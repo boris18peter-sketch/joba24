@@ -198,7 +198,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      // ['myTasks'] no longer exists — ['myPublishedTasks'] is the one shared list.
+      queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
       // Marketplace — deeper quality event for BOTH funnels. Deduped per task.
       trackEvent(
         'task_completed',

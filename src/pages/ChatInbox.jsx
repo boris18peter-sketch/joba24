@@ -9,6 +9,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { chatMessagePreview } from '@/lib/chatPreview';
 import { threadCounterpart } from '@/lib/chatThread';
 import ConversationRow from '@/components/chat/ConversationRow';
+import { myApplicationsQuery } from '@/lib/queries';
 
 const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
 
@@ -91,13 +92,10 @@ export default function ChatInbox() {
 
   // Tasks the worker applied to (but isn't approved yet) — so conversations
   // started before approval still appear in the inbox.
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myApplicationsFeed', me?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
-    enabled: !!me?.id,
-    staleTime: 30000,
-    refetchOnWindowFocus: false,
-  });
+  // Reads the ONE canonical applications list (see @/lib/queries), so this
+  // screen and the feed share a single request instead of two caches that could
+  // disagree on how much history they held.
+  const { data: myApplications = [] } = useQuery(myApplicationsQuery(me?.id));
 
   const { data: appliedTasks = [] } = useQuery({
     queryKey: ['appliedTasks', me?.id],

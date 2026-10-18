@@ -30,18 +30,21 @@ export function invalidateTaskCaches(queryClient, { taskId, meId, includeCredits
     queryClient.invalidateQueries({ queryKey: ['lockedPopupTasks'] });
   }
 
-  // Task lists (feed, my tasks, published, worker's tasks)
+  // Task lists (feed, my tasks, published, worker's tasks).
+  // Only keys something actually QUERIES are listed — invalidating a key with no
+  // live observer is a no-op, and the duplicate keys this used to carry
+  // (['myTasks'] alongside ['myPublishedTasks'], ['myApplicationsLayout']
+  // alongside ['myApplicationsFeed']) turned one action into two identical
+  // refetches of the same records. There is now one key per list
+  // (see @/lib/queries), so one action means one refetch per list.
   queryClient.invalidateQueries({ queryKey: ['tasks'] });
   queryClient.invalidateQueries({ queryKey: ['allTasks'] });
-  queryClient.invalidateQueries({ queryKey: ['myTasks'] });
   queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
 
   if (meId) {
     queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', meId] });
     queryClient.invalidateQueries({ queryKey: ['myPublishedTasks', meId] });
-    queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout', meId] });
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', meId] });
-    queryClient.invalidateQueries({ queryKey: ['appliedTasks', meId] });
     queryClient.invalidateQueries({ queryKey: ['appliedTasksData', meId] });
     // Active-task banners (feed + inside the task sheet) — read the same caches
     queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', meId] });
@@ -50,7 +53,6 @@ export function invalidateTaskCaches(queryClient, { taskId, meId, includeCredits
     // No id known — invalidate by prefix so every user-scoped variant refreshes
     queryClient.invalidateQueries({ queryKey: ['workerTasksLayout'] });
     queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
-    queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout'] });
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
     queryClient.invalidateQueries({ queryKey: ['activeWorkerTask'] });
     queryClient.invalidateQueries({ queryKey: ['activeClientTask'] });

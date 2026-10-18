@@ -53,6 +53,7 @@ import AppLoading from '@/components/AppLoading';
 import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack } from '@/lib/onboardingTrack';
 
 import BoostOverlay from '@/components/BoostOverlay';
+import { myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery } from '@/lib/queries';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -240,15 +241,13 @@ export default function Layout() {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', me.id] });
       queryClient.invalidateQueries({ queryKey: ['myPublishedTasks', me.id] });
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
       queryClient.invalidateQueries({ queryKey: ['approvalStatus', me.id] });
       queryClient.invalidateQueries({ queryKey: ['notifUnread'] });
       // Critical: invalidate active task caches so banner updates instantly on resume
       queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me.id] });
       queryClient.invalidateQueries({ queryKey: ['activeClientTask', me.id] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks', me.id] });
       queryClient.invalidateQueries({ queryKey: ['allTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
@@ -276,14 +275,10 @@ export default function Layout() {
   const [cancelWarningTask, setCancelWarningTask] = useState(null);
   const [cancelWarningLoading, setCancelWarningLoading] = useState(false);
 
-  const { data: workerTasks = [] } = useQuery({
-    queryKey: ['workerTasksLayout', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
-    enabled: !!me?.id && isAuthenticated,
-    staleTime: 60000,
-    gcTime: 600000,
-    refetchOnWindowFocus: false,
-  });
+  // The user's own three lists. Defined once in @/lib/queries and shared with
+  // the feed and the inbox, so all of them collapse onto a SINGLE request each
+  // instead of downloading the same records under several different keys.
+  const { data: workerTasks = [] } = useQuery(workerTasksQuery(me?.id));
 
   // Seed activeWorkerTask cache on load
   useEffect(() => {
@@ -292,13 +287,7 @@ export default function Layout() {
     queryClient.setQueryData(['activeWorkerTask', me.id], (old) => old !== undefined ? old : takenTask);
   }, [workerTasks, me?.id]);
 
-  const { data: myPublishedTasks = [] } = useQuery({
-    queryKey: ['myPublishedTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
-    enabled: !!me?.id && isAuthenticated,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
+  const { data: myPublishedTasks = [] } = useQuery(myPublishedTasksQuery(me?.id));
 
   // Seed activeClientTask cache on load — ensures TaskDetail banner works from first render
   useEffect(() => {
@@ -307,13 +296,7 @@ export default function Layout() {
     queryClient.setQueryData(['activeClientTask', me.id], (old) => old !== undefined ? old : takenTask);
   }, [myPublishedTasks, me?.id]);
 
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myApplicationsLayout', me?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me?.id }, '-created_date', 50),
-    enabled: !!me?.id && isAuthenticated,
-    staleTime: 120000,
-    refetchOnWindowFocus: false,
-  });
+  const { data: myApplications = [] } = useQuery(myApplicationsQuery(me?.id));
 
   // Seed refs
   useEffect(() => {

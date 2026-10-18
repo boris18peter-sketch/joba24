@@ -508,7 +508,7 @@ export default function TaskDetail(props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       toast.success(t('task_reopened_toast'));
       navigate(`/?newTaskId=${id}`);

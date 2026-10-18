@@ -69,8 +69,13 @@ export default function useRealtimeSync({
       const t_data = event.data || {};
       const cleanPatch = Object.fromEntries(Object.entries(t_data).filter(([, v]) => v !== undefined));
 
-      // 1. Multi-cache sync
-      const updateListCache = (key) => {
+      // 1. Multi-cache sync.
+      // Each list is patched with the ownership it actually represents. The old
+      // version accepted a new task into EITHER list when the user was client OR
+      // worker, so a task you were merely working on could be injected into the
+      // list of tasks you PUBLISHED — which fed the client-side banner and the
+      // "my published" tab. Ownership is now explicit.
+      const updateListCache = (key, ownerField) => {
         queryClient.setQueryData([key, me.id], (old = []) => {
           if (!Array.isArray(old)) return old;
           if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
@@ -78,16 +83,14 @@ export default function useRealtimeSync({
             const exists = old.find((x) => x.id === event.id);
             return exists ? old.map((x) => x.id === event.id ? { ...x, ...cleanPatch } : x) : old;
           }
-          if (event.type === 'create' && (t_data.client_id === me.id || t_data.worker_id === me.id)) {
+          if (event.type === 'create' && t_data[ownerField] === me.id) {
             return [...old.filter(x => x.id !== t_data.id), t_data];
           }
           return old;
         });
       };
-      updateListCache('workerTasksLayout');
-      updateListCache('myPublishedTasks');
-      updateListCache('myTasks');
-      updateListCache('tasks');
+      updateListCache('workerTasksLayout', 'worker_id');
+      updateListCache('myPublishedTasks', 'client_id');
 
       // A task reaching a terminal state settles its applications (credits are
       // released or consumed), and a DELETED task releases every applicant's
@@ -96,7 +99,6 @@ export default function useRealtimeSync({
       if (event.type === 'delete' || (event.type === 'update' && TERMINAL_STATUSES.includes(t_data.status))) {
         queryClient.invalidateQueries({ queryKey: ['myLockedJobas'] });
         queryClient.invalidateQueries({ queryKey: ['myApplications'] });
-        queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout'] });
         queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
         queryClient.invalidateQueries({ queryKey: ['applications'] });
         queryClient.invalidateQueries({ queryKey: ['applications-pulse'] });
@@ -335,7 +337,7 @@ export default function useRealtimeSync({
 
         // Task-bearing caches the applicant count is derived from.
         const CACHE_KEYS = [
-          ['allTasks'], ['tasks'], ['myTasks', me.id], ['myTasksPage', me.id],
+          ['allTasks'], ['tasks'], ['myTasksPage', me.id],
           ['workerTasksLayout', me.id], ['myPublishedTasks', me.id],
           ['appliedTasksData', me.id], ['lockedPopupTasks'],
         ];

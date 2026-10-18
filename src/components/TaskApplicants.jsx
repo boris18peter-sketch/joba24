@@ -83,9 +83,8 @@ export default function TaskApplicants({ task, onApprove }) {
         queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) =>
           Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...updatedTask } : t) : old
         );
-        queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
-          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...updatedTask } : t) : old
-        );
+        // (the old ['myTasks'] copy is gone — ['myPublishedTasks'] above is now
+        // the one shared list, so patching it once is patching it everywhere)
         queryClient.setQueryData(['allTasks'], (old = []) =>
           Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...updatedTask } : t) : old
         );
@@ -132,7 +131,6 @@ export default function TaskApplicants({ task, onApprove }) {
       const patchTask = (t) => t ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== cancelledWorkerId), worker_id: null, worker_name: null, worker_status: null, status: 'OPEN' } : t;
       patchTaskCache(queryClient, task.id, patchTask(selectTask(queryClient.getQueryData(['task', task.id]))));
       queryClient.setQueryData(['allTasks'], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
-      queryClient.setQueryData(['myTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
       queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
       invalidateTaskCaches(queryClient, { taskId: task.id, meId: me?.id });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });

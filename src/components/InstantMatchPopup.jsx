@@ -9,6 +9,7 @@ import { categoryMatches } from '@/lib/brand/categoryTree';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { useQuery } from '@tanstack/react-query';
+import { myApplicationsQuery } from '@/lib/queries';
 import { useLanguage } from '@/lib/LanguageContext';
 
 function getDistanceKm(lat1, lng1, lat2, lng2) {
@@ -86,11 +87,11 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     enabled: !!currentUserId,
     staleTime: 120000,
   });
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myApplicationsFeed', currentUserId],
-    enabled: !!currentUserId,
-    staleTime: 120000,
-  });
+  // The canonical applications list (@/lib/queries). It used to declare the same
+  // key with NO queryFn, which meant it could only ever read a cache somebody
+  // else happened to have filled — and if it mounted first, React Query had no
+  // fetcher for the key at all.
+  const { data: myApplications = [] } = useQuery(myApplicationsQuery(currentUserId));
   const { data: myCompletedTasks = [] } = useQuery({
     queryKey: ['myCompletedTasks', currentUserId],
     queryFn: () => base44.entities.Task.filter({ worker_id: currentUserId, status: 'COMPLETED' }, '-created_date', 30),

@@ -27,6 +27,10 @@ import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
+import {
+  myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery,
+  selectActiveWorkerTask, selectActiveClientTask,
+} from '@/lib/queries';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import HomeBannersCarousel from '@/components/HomeBannersCarousel';
@@ -36,9 +40,6 @@ import { recoverIosSubscriptionCredits } from '@/lib/iosIap';
 export default function HomeFeed() {
   const { globalMap: categoryMap } = useBrandCategories();
   const { brandId, isPlatformBrand } = useBrand();
-  // Joba24 (the platform Brand) is the marketplace-wide surface: it aggregates
-  // Tasks from every Brand. Any other Brand shows only its own Tasks.
-  const brandScope = isPlatformBrand ? {} : { origin_brand_id: brandId };
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -115,39 +116,38 @@ export default function HomeFeed() {
   }, [me?.id, me?.worker_credits, giftAmount, giftKey]);
 
 
-  // My published tasks — WS handles real-time; polling is safety net only
-  const { data: myTasks = [], isLoading: myTasksLoading } = useQuery({
-    queryKey: ['myTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, ...brandScope }, '-created_date', 20),
-    enabled: !!me?.id && !!brandId,
-    staleTime: 60000,
-    refetchInterval: 60000,
-    refetchOnWindowFocus: false,
-  });
+  // ── My published tasks — the ONE shared list ──────────────────────────────
+  // This screen used to run its own query (['myTasks'], limit 20) while the app
+  // shell fetched the very same records under ['myPublishedTasks'] (limit 50) —
+  // the same rows downloaded twice on every start. It now reads the canonical
+  // query from @/lib/queries (identical key AND queryFn, so React Query issues a
+  // single request) and applies the Brand scope in memory, which returns exactly
+  // what the scoped query did.
+  // Joba24 (the platform Brand) is the marketplace-wide surface: it aggregates
+  // Tasks from every Brand. Any other Brand shows only its own Tasks — applied
+  // in memory below, so the shared list stays a single request.
+  const { data: allMyPublishedTasks = [], isLoading: myTasksLoading } = useQuery(myPublishedTasksQuery(me?.id));
+  const myTasks = useMemo(
+    () => (isPlatformBrand
+      ? allMyPublishedTasks
+      : allMyPublishedTasks.filter(t => !t.origin_brand_id || t.origin_brand_id === brandId)),
+    [allMyPublishedTasks, isPlatformBrand, brandId]
+  );
 
-  // Active task I'm working on as a worker — WS primary, 30s safety-net polling
-  const { data: activeWorkerTask } = useQuery({
-    queryKey: ['activeWorkerTask', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN', ...brandScope }, '-created_date', 1).then(r => r?.[0] || null),
-    enabled: !!me?.id && !!brandId,
-    staleTime: 30000,
-    gcTime: 300000,
-    placeholderData: (prev) => prev,
-    refetchInterval: 30000,
-    refetchOnWindowFocus: false,
-  });
-
-  // Active task I published that is currently TAKEN — WS primary, 30s safety-net polling
-  const { data: activeClientTask } = useQuery({
-    queryKey: ['activeClientTask', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN', ...brandScope }, '-created_date', 1).then(r => r?.[0] || null),
-    enabled: !!me?.id && !!brandId,
-    staleTime: 30000,
-    gcTime: 300000,
-    placeholderData: (prev) => prev,
-    refetchInterval: 30000,
-    refetchOnWindowFocus: false,
-  });
+  // ── Active tasks are DERIVED, never fetched ───────────────────────────────
+  // Both used to be their own one-row query — plus a 30-second poll each — for
+  // data already sitting in the two lists above. They are now read straight out
+  // of those lists. The ['activeWorkerTask'] / ['activeClientTask'] caches are
+  // untouched: the app shell seeds them and the realtime layer keeps them live,
+  // so every other consumer of those caches behaves exactly as before.
+  const { data: workerTasks = [] } = useQuery(workerTasksQuery(me?.id));
+  const activeWorkerTask = useMemo(() => {
+    const taken = selectActiveWorkerTask(workerTasks);
+    if (!taken) return null;
+    // Same Brand scope the query applied.
+    return (isPlatformBrand || !taken.origin_brand_id || taken.origin_brand_id === brandId) ? taken : null;
+  }, [workerTasks, isPlatformBrand, brandId]);
+  const activeClientTask = useMemo(() => selectActiveClientTask(myTasks), [myTasks]);
 
   // Fetch the approved worker's user record so the owner's ActiveTaskBanner can
   // show a direct-dial phone button (workerUser.phone) right after approval.
@@ -180,14 +180,9 @@ export default function HomeFeed() {
 
   // Completion celebration is handled globally by Layout (after rating modal closes)
 
-  // My applications — to show status on feed cards
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myApplicationsFeed', me?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 100),
-    enabled: !!me?.id,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
+  // My applications — to show status on feed cards. The canonical list from
+  // @/lib/queries, shared with the app shell and the inbox.
+  const { data: myApplications = [] } = useQuery(myApplicationsQuery(me?.id));
 
   // Fetch actual task data for applications (feed cache only has OPEN tasks,
   // so we need this to build an accurate behavioral profile from ALL history)
@@ -291,78 +286,13 @@ export default function HomeFeed() {
         return old;
       });
 
-      // 2b. Update myTasks cache — update status live, remove CANCELLED/COMPLETED
-      queryClient.setQueryData(['myTasks', me.id], (old = []) => {
-        if (event.type === 'create') {
-          // Add new task if I'm the client AND it belongs to THIS Brand
-          if (updatedTask.client_id === me.id
-            && (isPlatformBrand || !updatedTask.origin_brand_id || updatedTask.origin_brand_id === brandId)
-            && !old.find((t) => t.id === event.id)) {
-            return [updatedTask, ...old];
-          }
-          return old;
-        }
-        if (event.type === 'update') {
-          const merged = { ...updatedTask };
-          // Keep CANCELLED and COMPLETED visible for repost, but update status
-          return old.map((t) => t.id === event.id ? { ...t, ...merged } : t);
-        }
-        if (event.type === 'delete') {
-          return old.filter((t) => t.id !== event.id);
-        }
-        return old;
-      });
-
-      // 3. Update activeWorkerTask cache live — includes worker_status sub-updates
-      const TERMINAL_STATUSES = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
-      if (event.type === 'update') {
-        // Strip undefined fields so partial payloads never overwrite existing values with undefined
-        const cleanPatch = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
-        queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
-          if (old?.id === event.id) {
-            if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) {
-              return null;
-            }
-            return { ...old, ...cleanPatch };
-          }
-          if (cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
-            // Try to get full task data from allTasks cache for complete banner
-            const allTasksData = queryClient.getQueryData(['allTasks']) || [];
-            const fullTask = allTasksData.find(t => t.id === event.id);
-            if (fullTask) return { ...fullTask, ...cleanPatch };
-            // Fallback: partial patch — refetch for complete data
-            setTimeout(() => queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me.id] }), 200);
-            return cleanPatch;
-          }
-          return old;
-        });
-      }
-      if (event.type === 'delete') {
-        queryClient.setQueryData(['activeWorkerTask', me.id], (old) =>
-          old?.id === event.id ? null : old
-        );
-      }
-
-      // 4. Keep activeClientTask cache in sync so ActiveTaskBanner always reflects live state
-      if (event.type === 'update') {
-        const cleanPatchCT = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
-        queryClient.setQueryData(['activeClientTask', me.id], (old) => {
-          if (old?.id === event.id) {
-            if (cleanPatchCT.status && ['CANCELLED', 'COMPLETED', 'EXPIRED'].includes(cleanPatchCT.status)) return null;
-            return { ...old, ...cleanPatchCT };
-          }
-          // Not tracking — try to populate from myTasks cache (just updated above)
-          if (!old && cleanPatchCT.status === 'TAKEN') {
-            const liveMyTasks = queryClient.getQueryData(['myTasks', me.id]) || [];
-            const fullTask = liveMyTasks.find(t => t.id === event.id);
-            if (fullTask && fullTask.client_id === me.id) return fullTask;
-          }
-          return old;
-        });
-      }
-      if (event.type === 'delete') {
-        queryClient.setQueryData(['activeClientTask', me.id], (old) => old?.id === event.id ? null : old);
-      }
+      // 3. The ['myPublishedTasks'], ['activeWorkerTask'] and ['activeClientTask']
+      // caches are NOT patched here any more. The shared realtime layer
+      // (useRealtimeSync, mounted by the app shell) already owns all three, so
+      // this handler was doing the same work a second time for every event —
+      // and its ['myTasks'] copy was a whole second cache of the same records.
+      // What is left here is genuinely this screen's own concern: the global
+      // feed, the My Tasks page cache, and the applicants arrays.
     });
 
     // Live application updates — sync immediately on create/update/delete
@@ -426,14 +356,14 @@ export default function HomeFeed() {
           }
           return old;
         };
-        queryClient.setQueryData(['myTasks', me.id], (old) => updateApplicantsGlobal(old || []));
+        queryClient.setQueryData(['myPublishedTasks', me.id], (old) => updateApplicantsGlobal(old || []));
         queryClient.setQueryData(['allTasks'], (old) => updateApplicantsGlobal(old || []));
       }
 
       // If it's an application for one of MY published tasks — sync the applicants panel
       // Read from cache (not closed-over myTasks) to always use the live task list
       {
-        const liveMyTasks = queryClient.getQueryData(['myTasks', me.id]) || [];
+        const liveMyTasks = queryClient.getQueryData(['myPublishedTasks', me.id]) || [];
         const isForMyTaskLive = appData.task_id && liveMyTasks.some(t => t.id === appData.task_id);
         if (isForMyTaskLive) {
           // Use setQueryData instead of invalidate to avoid extra API calls
@@ -599,7 +529,7 @@ export default function HomeFeed() {
   const { refreshing, pullProgress } = usePullToRefresh(async () => {
     await queryClient.refetchQueries({ queryKey: ['allTasks'] });
     if (me?.id) {
-      queryClient.invalidateQueries({ queryKey: ['myTasks', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['myPublishedTasks', me.id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
     }
   });
@@ -630,8 +560,8 @@ export default function HomeFeed() {
     if (!highlightTaskId) return;
     const taskInCache = myTasks.find(t => t.id === highlightTaskId);
     if (!taskInCache) {
-      if (me?.id) queryClient.invalidateQueries({ queryKey: ['myTasks', me.id] });
-      return;
+    if (me?.id) queryClient.invalidateQueries({ queryKey: ['myPublishedTasks', me.id] });
+    return;
     }
     const scrollTimer = setTimeout(() => {
       const el = document.getElementById(`task-card-${highlightTaskId}`);

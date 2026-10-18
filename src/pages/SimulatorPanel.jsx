@@ -248,7 +248,7 @@ export default function SimulatorPanel() {
   );
 
   const inv = () => {
-    ['sim_tasks', 'sim_apps', 'sim_credit_txs', 'sim_reviews', 'tasks', 'myTasks', 'me', 'allTasks', 'myApp'].forEach(k =>
+    ['sim_tasks', 'sim_apps', 'sim_credit_txs', 'sim_reviews', 'tasks', 'myPublishedTasks', 'myApplicationsFeed', 'me', 'allTasks', 'myApp'].forEach(k =>
       queryClient.invalidateQueries({ queryKey: [k] })
     );
   };
