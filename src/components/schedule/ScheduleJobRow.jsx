@@ -2,6 +2,7 @@ import { MapPin } from 'lucide-react';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { formatClock } from '@/lib/time';
 import { roleStyle } from '@/lib/scheduleUi';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * ScheduleJobRow — one OCCURRENCE of an existing Task.
@@ -12,8 +13,9 @@ import { roleStyle } from '@/lib/scheduleUi';
  */
 export default function ScheduleJobRow({ entry, showDay = false, dayLabel = '', compact = false }) {
   const { openTaskSheet } = useTaskSheet();
+  const { t, isRTL } = useLanguage();
   const { task, occurrence, role } = entry;
-  const style = roleStyle(role);
+  const style = roleStyle(role, t);
 
   const startClock = occurrence.startClock || formatClock(occurrence.start);
   const endClock = occurrence.endClock || '';
@@ -21,7 +23,7 @@ export default function ScheduleJobRow({ entry, showDay = false, dayLabel = '', 
   return (
     <button
       onClick={() => openTaskSheet(task.id)}
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         width: '100%', textAlign: 'start', cursor: 'pointer',
         position: 'relative', overflow: 'hidden',

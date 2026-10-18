@@ -1,10 +1,8 @@
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { dateKey } from '@/lib/scheduleEntries';
 import { roleStyle } from '@/lib/scheduleUi';
+import { useLanguage } from '@/lib/LanguageContext';
 import ScheduleDayCell from '@/components/schedule/ScheduleDayCell';
-
-const WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
-const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 
 const NAV_BTN = {
   width: 32, height: 32, borderRadius: 10, flexShrink: 0,
@@ -23,6 +21,7 @@ const NAV_BTN = {
  * counts alone, with no gamification layered on top.
  */
 export default function ScheduleCalendar({ monthCursor, onMonthChange, entriesByDay, selectedDay, onSelectDay }) {
+  const { t, isRTL } = useLanguage();
   const year = monthCursor.getFullYear();
   const month = monthCursor.getMonth();
   const todayKey = dateKey(new Date());
@@ -48,35 +47,37 @@ export default function ScheduleCalendar({ monthCursor, onMonthChange, entriesBy
   const shiftMonth = (delta) => onMonthChange(new Date(year, month + delta, 1));
 
   return (
-    <div dir="rtl" style={{
+    <div dir={isRTL ? 'rtl' : 'ltr'} style={{
       background: 'var(--brand-card-bg, var(--surface-2))',
       border: '1px solid var(--border-1)', borderRadius: 20,
       padding: '14px 12px 12px', boxShadow: 'var(--shadow-sm)',
     }}>
       {/* Month navigation — clear, but deliberately secondary to the content */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '0 2px' }}>
-        <button onClick={() => shiftMonth(-1)} aria-label="חודש קודם" className="j-icon-btn" style={NAV_BTN}>
+        <button onClick={() => shiftMonth(-1)} aria-label={t('sched_prev_month')} className="j-icon-btn" style={NAV_BTN}>
           <ChevronRight size={17} color="var(--text-2)" />
         </button>
 
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.1 }}>
-            {MONTHS[month]} {year}
+            {t(`mo_${month}`)} {year}
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginTop: 2 }}>
-            {monthJobs === 0 ? 'אין עבודות החודש' : `${monthJobs} עבודות · ${monthDays} ימים`}
+            {monthJobs === 0
+              ? t('sched_no_jobs_month')
+              : t('sched_month_summary', { jobs: monthJobs, days: monthDays })}
           </div>
         </div>
 
-        <button onClick={() => shiftMonth(1)} aria-label="חודש הבא" className="j-icon-btn" style={NAV_BTN}>
+        <button onClick={() => shiftMonth(1)} aria-label={t('sched_next_month')} className="j-icon-btn" style={NAV_BTN}>
           <ChevronLeft size={17} color="var(--text-2)" />
         </button>
       </div>
 
       {/* Weekday header */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 5 }}>
-        {WEEKDAYS.map((w) => (
-          <div key={w} style={{ textAlign: 'center', fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{w}</div>
+        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t(`wds_${i}`)}</div>
         ))}
       </div>
 
@@ -106,7 +107,7 @@ export default function ScheduleCalendar({ monthCursor, onMonthChange, entriesBy
         {['worker', 'client'].map((role) => (
           <span key={role} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, color: 'var(--text-2)' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: roleStyle(role).accent }} />
-            {roleStyle(role).label}
+            {roleStyle(role, t).label}
           </span>
         ))}
       </div>

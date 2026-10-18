@@ -23,6 +23,7 @@ import { he } from '@/lib/i18n-he';
 // share of both on demand — see loadLanguage() below.
 import onboardingHe from '@/lib/i18n-onboarding-he';
 import extraHe from '@/lib/i18n-extra-he.json';
+import uiHe from '@/lib/i18n-ui-he.json';
 import { loadTaskFlowI18n } from '@/lib/taskFlowI18nLoader';
 
 export const LANGUAGES = [
@@ -90,7 +91,7 @@ const OVERRIDES = {
  * eight languages both are fetched alongside that language's dictionary.
  */
 export const translations = {
-  he: { ...he, ...onboardingHe, ...extraHe },
+  he: { ...he, ...onboardingHe, ...extraHe, ...uiHe },
 };
 
 /**
@@ -129,6 +130,7 @@ const lazyModule = (load) => {
 
 const loadOnboardingDictionaries = lazyModule(() => import('@/lib/i18n-onboarding'));
 const loadExtraDictionaries = lazyModule(() => import('@/lib/i18n-extra.json'));
+const loadUiDictionaries = lazyModule(() => import('@/lib/i18n-ui.json'));
 
 /** True when this language's dictionary is already in memory. */
 export const isLanguageLoaded = (code) => !!translations[code];
@@ -158,9 +160,10 @@ export async function loadLanguage(code) {
       // This language's share of both companions, fetched alongside the
       // dictionary so they are already in memory by the time the screen is
       // allowed to paint — no key can flash as missing.
-      const [onb, extra] = await Promise.all([
+      const [onb, extra, ui] = await Promise.all([
         loadOnboardingDictionaries(),
         loadExtraDictionaries(),
+        loadUiDictionaries(),
         // The task-flow dictionaries (~256 KB of translated category-form
         // strings) are read by the category forms the instant they render, so a
         // visitor whose language is not Hebrew fetches them HERE — as part of the
@@ -172,10 +175,12 @@ export async function loadLanguage(code) {
         loadTaskFlowI18n(),
       ]);
       const extraDict = extra?.default || extra || {};
+      const uiDict = ui?.default || ui || {};
       translations[code] = {
         ...base,
         ...(onb?.onboardingI18n?.[code] || {}),
         ...(extraDict[code] || {}),
+        ...(uiDict[code] || {}),
         ...(OVERRIDES[code] || {}),
       };
       return code;

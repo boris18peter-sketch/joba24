@@ -10,17 +10,19 @@ import ScheduleCalendar from '@/components/schedule/ScheduleCalendar';
 import ScheduleJobRow from '@/components/schedule/ScheduleJobRow';
 import { useLanguage } from '@/lib/LanguageContext';
 
-const WEEKDAYS_HE = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
-const MONTHS_HE = ['בינואר', 'בפברואר', 'במרץ', 'באפריל', 'במאי', 'ביוני', 'ביולי', 'באוגוסט', 'בספטמבר', 'באוקטובר', 'בנובמבר', 'בדצמבר'];
+/** "18 באוקטובר" — the date part, localised as ONE string so every language can order it. */
+function datePart(d, t) {
+  return t('sched_date_md', { day: d.getDate(), month: t(`mo_${d.getMonth()}`) });
+}
 
 /** The agenda's heading — always dated, with the relative word when there is one. */
-function agendaTitle(dayKey, todayKey, tomorrowKey) {
+function agendaTitle(dayKey, todayKey, tomorrowKey, t) {
   const d = new Date(`${dayKey}T00:00:00`);
   if (isNaN(d.getTime())) return dayKey;
-  const datePart = `${d.getDate()} ${MONTHS_HE[d.getMonth()]}`;
-  if (dayKey === todayKey) return `היום · ${datePart}`;
-  if (dayKey === tomorrowKey) return `מחר · ${datePart}`;
-  return `${WEEKDAYS_HE[d.getDay()]}, ${datePart}`;
+  const date = datePart(d, t);
+  if (dayKey === todayKey) return t('sched_today_date', { date });
+  if (dayKey === tomorrowKey) return t('sched_tomorrow_date', { date });
+  return t('sched_date_full', { weekday: t(`wd_${d.getDay()}`), date });
 }
 
 /**
@@ -36,7 +38,7 @@ function agendaTitle(dayKey, todayKey, tomorrowKey) {
  * simply jumps to that day inside the same list.
  */
 export default function MySchedule() {
-  const { isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const { tasks, meId, isLoading } = useMyScheduleTasks();
   const { settings } = useJobaSettings();
@@ -104,8 +106,8 @@ export default function MySchedule() {
             <CalendarDays size={18} color="#ffffff" />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.15 }}>יומן עבודות</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>מה שאתה מפרסם ומה שאתה מבצע</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.15 }}>{t('sched_title')}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('sched_sub')}</div>
           </div>
         </div>
         <button
@@ -116,7 +118,7 @@ export default function MySchedule() {
             color: 'var(--brand-primary)', fontSize: 12, fontWeight: 900,
           }}
         >
-          היום
+          {t('sched_today')}
         </button>
       </div>
 
@@ -141,10 +143,10 @@ export default function MySchedule() {
           {/* ── The agenda — one continuous list from today forward ── */}
           <section>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 10, padding: '0 2px' }}>
-              <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>העבודות שלי</span>
+              <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>{t('sched_my_jobs')}</span>
               {agendaCount > 0 && (
                 <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-primary)' }}>
-                  {agendaCount} עבודות מתוכננות
+                  {t('sched_jobs_planned', { n: agendaCount })}
                 </span>
               )}
             </div>
@@ -157,10 +159,10 @@ export default function MySchedule() {
               }}>
                 <div style={{ fontSize: 26, marginBottom: 6 }}>📅</div>
                 <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 3 }}>
-                  אין עבודות מתוכננות
+                  {t('sched_empty_title')}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>
-                  עבודות שתפרסם או שתבצע יופיעו כאן
+                  {t('sched_empty_sub')}
                 </div>
                 <button
                   onClick={() => navigate('/')}
@@ -171,7 +173,7 @@ export default function MySchedule() {
                     boxShadow: '0 4px 14px rgba(26,111,212,0.28)',
                   }}
                 >
-                  מצא עבודה
+                  {t('sched_find_job')}
                 </button>
               </div>
             ) : (
@@ -191,10 +193,10 @@ export default function MySchedule() {
                           background: isToday ? 'var(--brand-primary)' : 'var(--border-2)',
                         }} />
                         <span style={{ fontSize: 13, fontWeight: 900, color: isToday ? 'var(--brand-primary)' : 'var(--text-1)' }}>
-                          {agendaTitle(dayKey, todayKey, tomorrowKey)}
+                          {agendaTitle(dayKey, todayKey, tomorrowKey, t)}
                         </span>
                         <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)' }}>
-                          {dayEntries.length === 1 ? 'עבודה אחת' : `${dayEntries.length} עבודות`}
+                          {dayEntries.length === 1 ? t('sched_one_job') : t('sched_n_jobs', { n: dayEntries.length })}
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>

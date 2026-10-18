@@ -29,8 +29,12 @@ export const ROLE_STYLE = {
   },
 };
 
-export function roleStyle(role) {
-  return ROLE_STYLE[role] || ROLE_STYLE.worker;
+export function roleStyle(role, t) {
+  const base = ROLE_STYLE[role] || ROLE_STYLE.worker;
+  if (!t) return base;
+  // The label is the only translated part; every colour stays in the token layer.
+  const key = role === 'client' ? 'sched_role_client' : 'sched_role_worker';
+  return { ...base, label: t(key) };
 }
 
 /**
@@ -50,12 +54,13 @@ export function densityTint(count) {
  * Returns null beyond a day, where the day label ("מחר", "יום שישי") says it
  * better than an hour count.
  */
-export function countdownLabel(start, now = Date.now()) {
+export function countdownLabel(start, now = Date.now(), t) {
   if (!start) return null;
+  const tr = (key, params, fallback) => (t ? t(key, params) : fallback);
   const minutes = Math.round((start.getTime() - now) / 60000);
-  if (minutes <= 0) return 'עכשיו';
-  if (minutes < 60) return `בעוד ${minutes} דק׳`;
+  if (minutes <= 0) return tr('sched_now', undefined, 'עכשיו');
+  if (minutes < 60) return tr('sched_in_minutes', { n: minutes }, `בעוד ${minutes} דק׳`);
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `בעוד ${hours} שעות`;
+  if (hours < 24) return tr('sched_in_hours', { n: hours }, `בעוד ${hours} שעות`);
   return null;
 }

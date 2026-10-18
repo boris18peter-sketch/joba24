@@ -2,12 +2,14 @@ import { Menu } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { APP_ICON } from '@/lib/storekit/specs';
 import { DEMO_BALANCE, DEMO_LOCKED } from '@/lib/storekit/demoData';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * The real Joba24 app top bar — same lockup, same Joba balance pill treatment
  * and same menu button the live app header renders.
  */
 export default function AppTopBar({ balance = DEMO_BALANCE, locked = DEMO_LOCKED }) {
+  const { t } = useLanguage();
   return (
     <div
       style={{
@@ -63,7 +65,7 @@ export default function AppTopBar({ balance = DEMO_BALANCE, locked = DEMO_LOCKED
                 whiteSpace: 'nowrap',
               }}
             >
-              {locked} נעולים
+              {locked} {t('locked_label')}
             </span>
           )}
         </div>

@@ -438,7 +438,7 @@ export default function Layout() {
     if (newEligible.length === 1) {
       addNotification({ type: 'boost_available', taskTitle: newEligible[0].title, taskId: newEligible[0].id });
     } else {
-      addNotification({ type: 'boost_available', taskTitle: `${newEligible.length} משימות ממתינות לבוסט`, taskId: newEligible[0].id, boostCount: newEligible.length });
+      addNotification({ type: 'boost_available', taskTitle: t('notif_boost_available').replace('{n}', newEligible.length), taskId: newEligible[0].id, boostCount: newEligible.length });
     }
   }, [myPublishedTasks, me?.id]);
 

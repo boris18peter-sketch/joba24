@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { categoryKeyForTask, categoryMatches, rootOf } from '@/lib/brand/categoryTree';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * The category picker shown next to search (Home + Map).
@@ -14,6 +15,7 @@ import { categoryKeyForTask, categoryMatches, rootOf } from '@/lib/brand/categor
  */
 export default function MarketServiceFilter({ tasks, selected = [], onChange }) {
   const { groups, categories, isLoading, globalMap, isPlatformBrand } = useBrandCategories();
+  const { t } = useLanguage();
 
   // Platform Brand → the roots behind the offered services, de-duplicated.
   const options = useMemo(() => {
@@ -37,7 +39,7 @@ export default function MarketServiceFilter({ tasks, selected = [], onChange }) 
       if (!byGroup.has(key)) {
         byGroup.set(key, {
           category_key: key,
-          label: group?.label || 'שירותים נוספים',
+          label: group?.label || t('svc_other'),
           icon: group?.icon || '',
           sort_order: group?.sort_order ?? 999,
           services: [],
@@ -69,8 +71,8 @@ export default function MarketServiceFilter({ tasks, selected = [], onChange }) 
     </button>
   );
 
-  if (isLoading) return <p className="p-3 text-sm text-jtext-3">טוען שירותים…</p>;
-  if (!options.length) return <p className="p-3 text-sm text-jtext-3">אין שירותים זמינים</p>;
+  if (isLoading) return <p className="p-3 text-sm text-jtext-3">{t('svc_loading')}</p>;
+  if (!options.length) return <p className="p-3 text-sm text-jtext-3">{t('svc_none')}</p>;
 
   if (isPlatformBrand) {
     if (optionGroups.length <= 1) return optionGroups.flatMap(g => g.services).map(option);

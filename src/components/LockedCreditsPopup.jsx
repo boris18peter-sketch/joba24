@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/AuthContext';
  * a cancel button, so cancellation works identically to the feed.
  */
 export default function LockedCreditsPopup({ applications, lockedTotal, onClose }) {
-  const { isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { user: me } = useAuth();
   const [cancellingId, setCancellingId] = useState(null);
 
@@ -93,16 +93,16 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
               <Lock size={20} color="white" strokeWidth={2} />
             </div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>ג'ובות בהתחייבות</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{t('locked_title')}</div>
               <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 1 }}>
-                ג'ובות שהוקפאו עבור בקשות שממתינות לאישור
+                {t('locked_sub')}
               </div>
             </div>
           </div>
 
           {/* Total locked badge */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 14, padding: '12px 16px' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>סה"כ בהתחייבות</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>{t('locked_total')}</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 20, fontWeight: 900, color: '#b45309' }}>
               {lockedTotal}
               <CreditIcon size={18} />
@@ -113,7 +113,7 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
         {/* Compact explanation — one clean line */}
         <div style={{ padding: '12px 20px 4px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
           <Lock size={12} color="#d97706" style={{ flexShrink: 0 }} />
-          <span>חוזרות אוטומטית ליתרה אם הבקשה נדחית, פגה או נבחר עובד אחר.</span>
+          <span>{t('locked_note')}</span>
         </div>
 
         {/* Applications list — real TaskCards for full visual consistency with the feed */}
@@ -121,7 +121,7 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
           {pendingApps.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-3)', fontSize: 14 }}>
               <Lock size={36} color="var(--border-2)" style={{ margin: '0 auto 12px', display: 'block' }} />
-              אין כרגע ג'ובות בהתחייבות
+              {t('locked_empty')}
             </div>
           ) : tasksLoading && tasks.length === 0 ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
@@ -136,7 +136,7 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
                   <div style={{ padding: '0 4px 6px' }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <Lock size={11} strokeWidth={2.5} /> {app.credits_charged || 0}
-                      <CreditIcon size={12} /> בהתחייבות
+                      <CreditIcon size={12} /> {t('locked_in_commitment')}
                     </span>
                   </div>
                   {task ? (
@@ -144,14 +144,14 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
                   ) : (
                     <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 'var(--r-lg)', padding: 14 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {app.task_title || 'משימה'}
+                        {app.task_title || t('locked_task_fallback')}
                       </div>
                       <button
                         onClick={() => handleCancelFallback(app)}
                         disabled={cancellingId === app.id}
                         style={{ height: 38, padding: '0 14px', borderRadius: 10, background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
                       >
-                        {cancellingId === app.id ? <Loader2 size={14} className="animate-spin" /> : <><RotateCcw size={13} /> בטל בקשה</>}
+                        {cancellingId === app.id ? <Loader2 size={14} className="animate-spin" /> : <><RotateCcw size={13} /> {t('locked_cancel_app')}</>}
                       </button>
                     </div>
                   )}
