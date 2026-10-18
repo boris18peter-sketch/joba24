@@ -194,6 +194,22 @@
               // so src is NOT adjacent to type="module" — the old pattern never
               // matched in production and this whole guard was dead code. Allow
               // any attributes between them.
+              // ── DO NOT RELOAD A WORKING APP ──────────────────────────────
+              // A differing chunk hash only means a NEWER DEPLOY EXISTS. That is
+              // not a failure and not a reason to yank the visitor out of what
+              // they are doing: on iOS the WebView loads the LIVE site, so after
+              // every publish this check was true on launch and reloaded the app
+              // mid-onboarding — which is what threw people back to the start of
+              // the flow ("the form only opens on the second launch").
+              //
+              // The skeleton is still in #root only while React has NOT mounted.
+              // That is the one case this heal exists for: a genuinely stuck
+              // launch running stale code. Once React is up the app is working,
+              // and the next natural launch picks up the new build.
+              var rootEl = document.getElementById('root');
+              var appStuck = !!(rootEl && rootEl.querySelector('.preload-spinner'));
+              if (!appStuck) return;
+
               var m = html.match(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"/);
               var freshSrc = m ? m[1] : '';
               if (freshSrc && curSrc && freshSrc !== curSrc) {
