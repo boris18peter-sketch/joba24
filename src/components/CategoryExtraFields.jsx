@@ -5,7 +5,7 @@ import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
 import { isFieldVisible } from '@/lib/brand/globalCategories';
 import SchedulePicker from '@/components/SchedulePicker';
 import { useLanguage } from '@/lib/LanguageContext';
-import { tTaskFlow } from '@/lib/taskFlowI18n';
+import useTaskFlowI18n from '@/hooks/useTaskFlowI18n';
 
 function distKm(a, b) {
   if (!a || !b) return null;
@@ -20,6 +20,7 @@ function distKm(a, b) {
 
 function SelectField({ field, value, onChange }) {
   const { t, lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   const [showAll, setShowAll] = useState(false);
   const opts = field.options || [];
   const visible = showAll ? opts : opts.slice(0, 6);
@@ -67,6 +68,7 @@ function SelectField({ field, value, onChange }) {
 
 function MultiSelectField({ field, value, onChange }) {
   const { t, lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   const selected = Array.isArray(value) ? value : [];
   const opts = field.options || [];
   const toggle = (opt) => {
@@ -111,6 +113,7 @@ function MultiSelectField({ field, value, onChange }) {
 
 function ToggleField({ field, value, onChange }) {
   const { lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   const isActive = !!value;
   return (
     <button
@@ -141,6 +144,7 @@ function ToggleField({ field, value, onChange }) {
 
 function NumberField({ field, value, onChange }) {
   const { lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   return (
     <div style={{ position: 'relative', maxWidth: 200 }}>
       <input
@@ -164,6 +168,7 @@ function NumberField({ field, value, onChange }) {
 
 function TextField({ field, value, onChange }) {
   const { lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   return (
     <input
       value={value || ''}
@@ -184,6 +189,7 @@ function TextField({ field, value, onChange }) {
 
 function TextareaField({ field, value, onChange }) {
   const { lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   return (
     <textarea
       value={value || ''}
@@ -205,6 +211,7 @@ function TextareaField({ field, value, onChange }) {
 
 function AddressField({ field, value, onChange, onCoords, originLat, originLng }) {
   const { t, lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   return (
     <AddressAutocomplete
       value={value || ''}
@@ -224,6 +231,7 @@ function AddressField({ field, value, onChange, onCoords, originLat, originLng }
 
 export default function CategoryExtraFields({ category, originLat, originLng, initialValues, onChange }) {
   const { t, lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   const config = getCategoryConfig(category);
   const [values, setValues] = useState(initialValues || {});
   // Filter out urgency fields — urgency is already handled in the main form

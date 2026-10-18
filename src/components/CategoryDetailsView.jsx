@@ -11,10 +11,11 @@
  */
 import { getCategoryConfig, getCategoryExtraFields } from '@/lib/taskFlowConfig';
 import { useLanguage } from '@/lib/LanguageContext';
-import { tTaskFlow } from '@/lib/taskFlowI18n';
+import useTaskFlowI18n from '@/hooks/useTaskFlowI18n';
 
 export default function CategoryDetailsView({ task, compact = false }) {
   const { lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   if (!task?.category) return null;
 
   const config = getCategoryConfig(task.category);

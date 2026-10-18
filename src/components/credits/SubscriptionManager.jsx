@@ -25,7 +25,9 @@ export default function SubscriptionManager() {
       user_id: me.id,
       type: 'subscription',
       status: 'completed',
-      subscription_status: 'active',
+      // A cancelled subscription stays ENTITLED until the paid period ends, so
+      // it must still be listed — marked as cancelled, never silently hidden.
+      subscription_status: { $in: ['active', 'cancelled'] },
     }, '-created_date', 10),
     enabled: !!me?.id,
   });
@@ -59,6 +61,10 @@ export default function SubscriptionManager() {
 
   if (!subscriptions || subscriptions.length === 0) return null;
 
+  // The card's own badge reflects the real state: green only while something
+  // still renews, amber once every subscription has been cancelled.
+  const anyActive = subscriptions.some((s) => s.subscription_status !== 'cancelled');
+
   return (
     <>
       {(subscriptions && subscriptions.length > 0) && (
@@ -78,13 +84,13 @@ export default function SubscriptionManager() {
             {t('buy_my_subs')}
           </span>
           <span style={{
-            background: 'var(--color-success-bg)',
-            color: 'var(--color-success)',
+            background: anyActive ? 'var(--color-success-bg)' : 'var(--color-warning-bg)',
+            color: anyActive ? 'var(--color-success)' : 'var(--color-warning)',
             fontSize: 10, fontWeight: 800,
             padding: '2px 8px', borderRadius: 99,
-            border: '1px solid var(--color-success-border)',
+            border: `1px solid ${anyActive ? 'var(--color-success-border)' : 'var(--color-warning-border)'}`,
           }}>
-            {t('buy_sub_active')}
+            {anyActive ? t('buy_sub_active') : t('buy_sub_cancelled')}
             </span>
         </div>
 
@@ -108,25 +114,29 @@ export default function SubscriptionManager() {
                     <Calendar size={10} /> {t('buy_sub_activated')} {format(new Date(sub.created_date), 'dd/MM/yyyy HH:mm')}
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <RefreshCw size={10} /> {t('buy_sub_next_renewal')} {format(addMonths(new Date(sub.created_date), 1), 'dd/MM/yyyy')}
+                    {sub.subscription_status === 'cancelled'
+                      ? <>{t('buy_sub_active_until')} {format(addMonths(new Date(sub.created_date), 1), 'dd/MM/yyyy')}</>
+                      : <><RefreshCw size={10} /> {t('buy_sub_next_renewal')} {format(addMonths(new Date(sub.created_date), 1), 'dd/MM/yyyy')}</>}
                   </span>
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setShowCancel(sub)}
-              style={{
-                background: 'var(--color-danger-bg)',
-                color: 'var(--color-danger)',
-                border: '1px solid var(--color-danger-border)',
-                borderRadius: 10,
-                padding: '7px 14px',
-                fontSize: 12, fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              {t('buy_cancel_sub_btn')}
-            </button>
+            {sub.subscription_status !== 'cancelled' && (
+              <button
+                onClick={() => setShowCancel(sub)}
+                style={{
+                  background: 'var(--color-danger-bg)',
+                  color: 'var(--color-danger)',
+                  border: '1px solid var(--color-danger-border)',
+                  borderRadius: 10,
+                  padding: '7px 14px',
+                  fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('buy_cancel_sub_btn')}
+              </button>
+            )}
           </div>
         ))}
       </div>
