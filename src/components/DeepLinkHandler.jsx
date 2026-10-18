@@ -38,7 +38,14 @@ export default function DeepLinkHandler() {
     const params = new URLSearchParams(window.location.search);
     const taskId = params.get('open_task');
     if (taskId) {
-      sessionStorage.setItem(PENDING_KEY, taskId);
+      // Written to BOTH stores on purpose. The URL param is stripped right
+      // below (so a refresh doesn't re-trigger the popup), which means these
+      // two are the only copy left. A Facebook link opens in the in-app
+      // browser, unauthenticated: the sign-in round-trip can hand the visitor
+      // to a fresh WebView where sessionStorage is gone, and localStorage is
+      // what carries the task across that gap.
+      try { sessionStorage.setItem(PENDING_KEY, taskId); } catch { /* storage blocked */ }
+      try { localStorage.setItem(PENDING_KEY, taskId); } catch { /* storage blocked */ }
       // Remove the param so it doesn't re-trigger on refresh / back-nav
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', clean);
@@ -53,10 +60,13 @@ export default function DeepLinkHandler() {
     if (isLoadingAuth || !isAuthenticated) return;
     if (!isApproved) return; // unapproved — stay on waiting page, don't open task
     if (location.pathname === '/join') return; // wait for onboarding to finish
-    const pending = sessionStorage.getItem(PENDING_KEY);
+    let pending = null;
+    try { pending = sessionStorage.getItem(PENDING_KEY); } catch { /* storage blocked */ }
+    if (!pending) { try { pending = localStorage.getItem(PENDING_KEY); } catch { /* storage blocked */ } }
     if (!pending) return;
     openedRef.current = true;
-    sessionStorage.removeItem(PENDING_KEY);
+    try { sessionStorage.removeItem(PENDING_KEY); } catch { /* storage blocked */ }
+    try { localStorage.removeItem(PENDING_KEY); } catch { /* storage blocked */ }
     // Resolve the Task's own Brand: a link for a Task created on another Brand
     // opens on THAT Brand's domain instead of failing here as "Task not found".
     resolveTaskBrandUrl(pending, currentBrandId, isPlatformBrand).then((brandUrl) => {

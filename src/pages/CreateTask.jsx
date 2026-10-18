@@ -384,8 +384,25 @@ export default function CreateTask() {
   // Brand from the request host and resolves the actionable category itself, so
   // a child service (e.g. DJs) is persisted as itself and never becomes 'other'.
   const createTaskViaServer = async (payload) => {
-    const res = await base44.functions.invoke('createTask', { task: payload });
-    return res?.data?.task;
+    // A request that never settles leaves the publish button spinning for ever —
+    // which is exactly what a dropped mobile connection produces. The timeout
+    // turns that dead end into a normal, retryable error the user can see.
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('publish_timeout')), 45000);
+    });
+    try {
+      const res = await Promise.race([
+        base44.functions.invoke('createTask', { task: payload }),
+        timeout,
+      ]);
+      if (res?.data?.error) throw new Error(res.data.message || res.data.error);
+      const task = res?.data?.task;
+      if (!task) throw new Error('publish_no_task');
+      return task;
+    } finally {
+      clearTimeout(timer);
+    }
   };
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const isHourly = isHourlyCategory(form.category);
@@ -497,6 +514,7 @@ export default function CreateTask() {
     payment_method: useRef(null),
     contactPhone: useRef(null),
     categoryForm: useRef(null),
+    categoryPicker: useRef(null),
     publishBtn: useRef(null),
   };
 
@@ -736,8 +754,14 @@ export default function CreateTask() {
     // Prompting earlier is a dead end — they sign in and still cannot publish —
     // so every required field is checked first, and while one is missing the
     // user is scrolled straight to it instead of being sent to the login popup.
-    if (categoriesLoading || (!isEditMode && !brandCategories.some(c => c.value === form.category))) {
-      toast.error('יש לבחור שירות זמין במותג'); return;
+    if (categoriesLoading) return;
+    if (!form.category || (!isEditMode && !brandCategories.some(c => c.value === form.category))) {
+      // Nothing filled in yet? The service choice IS the missing field, so that
+      // is where the user is taken — never a toast they might not even see.
+      setShowErrorBanner(true);
+      fieldRefs.categoryPicker.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      toast.error('יש לבחור שירות זמין במותג');
+      return;
     }
     const formError = globalFormError(formFieldsFor(form.category), categoryDetails);
     if (formError) {
@@ -1336,6 +1360,7 @@ export default function CreateTask() {
         {/* Category */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
+          <div ref={fieldRefs.categoryPicker}>
           <CategoryServiceSelector value={form.category} allowHistorical={isEditMode} onChange={val => {
             set('category', val);
             setCategoryDetails({});
@@ -1343,6 +1368,7 @@ export default function CreateTask() {
             set('category_details', {});
             setModerationErrors(p => ({ ...p, categoryMismatch: null }));
           }} />
+          </div>
         </SectionCard>
 
         {/* Category mismatch warning — shown right below category picker */}
@@ -1378,7 +1404,7 @@ export default function CreateTask() {
         {/* Description — the main input. Title and category are auto-generated from this. */}
         {void (sections.description = (<>
         {fieldOn('description') && (
-        <div ref={fieldRefs.description}>
+        <div ref={fieldRefs.description} style={errors.description ? { borderRadius: 18, outline: '2px solid #ef4444', outlineOffset: 4 } : undefined}>
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{t('ct_describe_task')}</Label>

@@ -1,44 +1,33 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { useBrand } from '@/lib/brand/BrandProvider';
-import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
 
 /**
- * TaskDetailRedirect — replaces the legacy standalone /task/:id PAGE.
+ * TaskDetailRedirect — the handler for the /task/:id deep-link URL.
  *
- * Every task deep-link (push-notification tap on web, share links like
- * joba24.com/task/{id}, in-app navigations to /task/{id}) now opens the
- * global TaskDetailSheet overlay instead of a full-page view, matching the
- * in-app notification popup behaviour. The underlying URL snaps back to the
- * feed so the back button never lands on a no-op redirect.
+ * It does NOT open the task itself. It hands the id to DeepLinkHandler, which
+ * is the one component that knows how to open a task safely: it waits for auth
+ * to resolve, respects the pre-launch gate, waits out the /join onboarding
+ * redirect, and resolves the Task's own Brand before opening the sheet.
+ *
+ * Opening the sheet from here instead raced every one of those. A cold open
+ * from a Facebook link is unauthenticated, so the sheet was opened and then
+ * immediately hidden again by the login/onboarding redirect — the visitor saw
+ * the feed and never the task. Routing the id through the proven handler fixes
+ * that without duplicating its logic.
  */
 export default function TaskDetailRedirect() {
   const { id } = useParams();
-  const { openTaskSheet } = useTaskSheet();
-  const { currentBrandId, isPlatformBrand } = useBrand();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!id) return;
-    let cancelled = false;
-    (async () => {
-      // A Task that belongs to another Brand must open on THAT Brand's domain,
-      // not fail here as "Task not found". Same-Brand tasks open in place.
-      const brandUrl = await resolveTaskBrandUrl(id, currentBrandId, isPlatformBrand);
-      if (cancelled) return;
-      if (brandUrl) { window.location.href = brandUrl; return; }
-      // ORDER MATTERS: navigate FIRST, then openTaskSheet.
-      // openTaskSheet pushes a history entry with { taskSheet: id } state.
-      // If navigate('/', { replace: true }) runs AFTER, it overwrites that entry
-      // — the { taskSheet } state is lost, and TaskDetailSheet's route-change
-      // effect sees no taskSheet state and hides the sheet immediately.
-      navigate('/', { replace: true });
-      openTaskSheet(id);
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, currentBrandId, isPlatformBrand]);
+    // Both stores: the sign-in round-trip can land the visitor in a fresh
+    // WebView where sessionStorage no longer exists (see DeepLinkHandler).
+    try { sessionStorage.setItem('joba24_pending_task', id); } catch { /* storage blocked */ }
+    try { localStorage.setItem('joba24_pending_task', id); } catch { /* storage blocked */ }
+    // Replace, so the back button never lands on this no-op redirect.
+    navigate('/', { replace: true });
+  }, [id, navigate]);
 
   return null;
 }
