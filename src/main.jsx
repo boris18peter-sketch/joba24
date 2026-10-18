@@ -64,11 +64,25 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 }, true); // capture phase — runs before the vite plugin's bubble-phase handler
 
-// Vite's own signal for a chunk that failed to load — the canonical hook for
-// this failure. It fires for preloads and dynamic imports alike, including the
-// cases whose message the regex above does not match, so the same one-shot heal
-// covers them too.
-window.addEventListener('vite:preloadError', () => healStaleImport());
+// ── REMOVED: window.addEventListener('vite:preloadError', healStaleImport) ──
+//
+// DO NOT RE-ADD THIS. This was the single biggest regression in the app.
+//
+// vite:preloadError fires for EVERY failed <link rel="modulepreload"> — i.e. for
+// every PRELOAD, not just for a real page import. The app preloads 13 route
+// chunks on idle (App.jsx), and on iOS the WebView loads the LIVE site
+// (capacitor.config.json → server.url = https://joba24.com/), so right after any
+// deploy the cached index.html still points at chunk names that no longer exist
+// and a preload fails.
+//
+// The handler above then called healStaleImport() → reloadFresh() → a FULL APP
+// RELOAD, for a prefetch whose only job was to warm the cache. During onboarding
+// that reload threw the user back to the start of the flow, which is exactly the
+// reported "the form only opens on the second launch". A failed preload must be
+// silent — the route's own loader (lazyRetry) already heals a real failure when
+// the user actually navigates there, and the two handlers below still cover a
+// genuine static-module or dynamic-import failure.
+
 
 // Catch static module script load failures (these fire as 'error' events on
 // window, NOT as promise rejections — the unhandledrejection handler above
