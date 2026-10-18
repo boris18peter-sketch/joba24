@@ -240,7 +240,7 @@ export function effectiveBrandConfig(ctx) {
  * The bound below makes termination a property of the code rather than of the
  * network: two bounded attempts, then a fallback that ALWAYS settles.
  */
-export const BRAND_ATTEMPT_TIMEOUT_MS = 6000;
+export const BRAND_ATTEMPT_TIMEOUT_MS = 5000;
 const BRAND_MAX_ATTEMPTS = 2;
 
 /** The platform's own hostnames — surfaces the platform can trust as its own. */
@@ -287,8 +287,13 @@ export async function resolveBrandContextSafe(hostname) {
   for (let attempt = 0; attempt < BRAND_MAX_ATTEMPTS; attempt++) {
     try {
       return await withTimeout(resolveBrandContext(host), BRAND_ATTEMPT_TIMEOUT_MS);
-    } catch {
-      /* timed out or failed — retry once, then fall back below */
+    } catch (err) {
+      // A STALL falls straight through to the fallback. Making the visitor wait
+      // a second full timeout on a request that has already proven unresponsive
+      // is worse than opening the app now and letting the caller's background
+      // retry restore the real Brand a moment later. A rejection, by contrast,
+      // costs nothing to retry.
+      if (err?.message === 'brand-resolution-timeout') break;
     }
   }
 
