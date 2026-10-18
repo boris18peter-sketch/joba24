@@ -11,6 +11,7 @@ import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
+import ProfessionalCategoryPicker from '@/components/ProfessionalCategoryPicker';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCityLabel } from '@/lib/cityLabels';
 import { toast } from 'sonner';
@@ -143,9 +144,12 @@ export default function WorkerProfile() {
   const removeCertDoc = (url) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).filter(c => c.url !== url) }));
   const updateCertDocName = (url, name) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).map(c => c.url === url ? { ...c, name } : c) }));
 
-  const categoryOptions = isViewingOther
+  // Viewing someone else: their own professions, read-only. Editing uses the
+  // shared picker below — the same one the first-run worker flow offers, so the
+  // two screens can never offer different categories.
+  const viewedCategories = isViewingOther
     ? scope.filter(currentUser?.preferred_categories || []).map(k => ({ value: k, label: scope.label(k, t) }))
-    : scope.services.map(s => ({ value: s.category_key, label: s.label }));
+    : [];
 
   if (currentUser && !form) {
     setForm({
@@ -380,23 +384,25 @@ export default function WorkerProfile() {
         {/* ── Categories ── */}
         <SectionCard title={t('wp_task_types')}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {/* Only the categories this Brand offers. Editing here never removes
-                a global category the user already has outside this scope. */}
-            {categoryOptions.map(c => {
-              const sel = form.preferred_categories.includes(c.value);
-              return (
-                <button key={c.value}
-                  onClick={() => !isViewingOther && toggleCategory(c.value)}
-                  disabled={isViewingOther}
-                  style={{
-                    padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
-                    background: sel ? 'var(--brand-primary)' : 'var(--brand-status-bg, var(--surface-3))',
-                    color: sel ? 'var(--brand-btn-primary-text, white)' : 'var(--brand-status-text, var(--text-2))',
-                    borderColor: sel ? 'var(--brand-primary)' : 'var(--border-1)',
-                  }}
-                >{c.label}</button>
-              );
-            })}
+            {/* Only the professions this Brand offers, translated, and only at
+                the top level — the deep services belong to the task form.
+                Editing here never removes a global category the user already
+                has outside this scope. */}
+            {isViewingOther ? (
+              viewedCategories.map(c => (
+                <span key={c.value} style={{
+                  padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                  background: 'var(--brand-status-bg, var(--surface-3))',
+                  color: 'var(--brand-status-text, var(--text-2))',
+                  border: '1px solid var(--border-1)',
+                }}>{c.label}</span>
+              ))
+            ) : (
+              <ProfessionalCategoryPicker
+                selected={form.preferred_categories}
+                onToggle={toggleCategory}
+              />
+            )}
           </div>
         </SectionCard>
 

@@ -24,6 +24,21 @@ const WEIGHTS = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+import { categoryMatches } from '@/lib/brand/categoryTree';
+
+/**
+ * Does a task's category fall under one of the user's chosen categories?
+ *
+ * A profile now offers whole TRADES (a plumber picks "אינסטלציה"), while a task
+ * carries the exact service it needs ("לתקן נזילה"). A plain string comparison
+ * therefore penalised a perfectly matched worker — the same ancestor rule the
+ * feed's own relevance gate and instant matching already use applies here.
+ */
+function matchesPreferred(taskCategory, preferredCategories, globalMap) {
+  if (!preferredCategories?.length) return false;
+  return preferredCategories.some((k) => categoryMatches(taskCategory, k, globalMap));
+}
+
 export function haversineKm(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
   const R = 6371;
@@ -202,7 +217,7 @@ function scorePersonalFit(task, profile) {
   if (!profile || !profile.hasStrongPattern) return 0.3; // neutral
 
   // If user has explicit preferred categories and task doesn't match — strong penalty
-  if (profile.preferredCategories?.length > 0 && task.category && !profile.preferredCategories.includes(task.category)) {
+  if (profile.preferredCategories?.length > 0 && task.category && !matchesPreferred(task.category, profile.preferredCategories, profile.globalMap)) {
     return 0.05;
   }
 
@@ -298,12 +313,9 @@ function scoreTaskRelevance(task, workerProfile) {
   const cat = task.category || '';
   let catScore;
   if (preferredCategories.length > 0) {
-    // User has explicit preferred categories — strongly penalize non-matching tasks
-    if (preferredCategories.includes(cat)) {
-      catScore = 1.0;
-    } else {
-      catScore = 0.05;
-    }
+    // User has explicit preferred categories — strongly penalize non-matching
+    // tasks. "Matching" is ancestor-aware, so a trade covers its services.
+    catScore = matchesPreferred(cat, preferredCategories, workerProfile.globalMap) ? 1.0 : 0.05;
   } else {
     // No explicit preferences — use behavioral history affinity
     const maxCount = Math.max(...Object.values(categoryHistory), 1);

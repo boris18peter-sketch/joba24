@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
+import ProfessionalCategoryPicker from '@/components/ProfessionalCategoryPicker';
 import { BrandLogo, BrandName, useBrandIdentity, useBrandText } from '@/components/BrandIdentity';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCityLabel } from '@/lib/cityLabels';
@@ -528,31 +529,14 @@ export default function WorkerOnboarding() {
               )}
 
               {currentStep.type === 'chips' && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {/* Only the services this Brand offers. A category the user
-                      already has outside this scope stays stored globally. */}
-                  {scope.services.map(cat => {
-                    const active = (data.preferred_categories || []).includes(cat.category_key);
-                    return (
-                      <button
-                        key={cat.category_key}
-                        onClick={() => toggleCategory(cat.category_key)}
-                        style={{
-                          padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
-                          fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-                          background: active ? 'var(--brand-primary, var(--brand-primary))' : 'var(--surface-2)',
-                          color: active ? 'white' : 'var(--text-2)',
-                          border: `1.5px solid ${active ? 'var(--brand-primary, var(--brand-primary))' : 'var(--border-1)'}`,
-                          boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
-                          transition: 'all 0.15s',
-                          minHeight: 'unset',
-                        }}
-                      >
-                        {active && '✓ '}{cat.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                /* The SAME profession picker the profile edit screen offers, from
+                   the same source — top-level, translated categories only. A
+                   category the user already has outside this scope stays stored
+                   globally. */
+                <ProfessionalCategoryPicker
+                  selected={data.preferred_categories || []}
+                  onToggle={toggleCategory}
+                />
               )}
 
               {currentStep.type === 'photo' && (

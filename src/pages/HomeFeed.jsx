@@ -391,8 +391,11 @@ export default function HomeFeed() {
       preferredCategories: me?.preferred_categories || [],
       preferredCities: me?.preferred_cities || [],
       categoryHistory,
+      // The taxonomy, so a chosen TRADE still matches the exact service a task
+      // asks for ("אינסטלציה" → "לתקן נזילה").
+      globalMap: categoryMap,
     };
-  }, [myTasks, me?.preferred_categories, me?.preferred_cities]);
+  }, [myTasks, me?.preferred_categories, me?.preferred_cities, categoryMap]);
 
   // Build behavioral profile from applications + completed tasks
   // Uses fetched task data (appliedTasksData) instead of feed cache,
@@ -413,8 +416,9 @@ export default function HomeFeed() {
       });
       profile.hasStrongPattern = true;
     }
+    profile.globalMap = categoryMap;
     return profile;
-  }, [myApplications, myTasks, appliedTasksData, me?.id, me?.preferred_categories]);
+  }, [myApplications, myTasks, appliedTasksData, me?.id, me?.preferred_categories, categoryMap]);
 
   // Categorize my applications — memoized to avoid recomputing every render
   const { approvedTaskIds, pendingTaskIds } = useMemo(() => {
