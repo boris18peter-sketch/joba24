@@ -35,6 +35,8 @@ import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolSca
 import { trackEvent } from '@/lib/analytics';
 import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { isTaskFormFieldOn } from '@/lib/taskFormFields';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // The COMPLETE form, stashed the moment a visitor is asked to sign in before
@@ -465,6 +467,13 @@ export default function CreateTask() {
       set('scheduled_time', dt.toISOString());
     }
   }, [hasScheduleField, scheduleSlots]);
+  // ── Admin control over this form ───────────────────────────────────────────
+  // The dashboard can switch any field off. A switched-off field must be both
+  // invisible AND not required — otherwise the admin removes a question and the
+  // publish button still refuses, with nothing left on screen to fill in.
+  const { settings: jobaSettings } = useJobaSettings();
+  const fieldOn = (key) => isTaskFormFieldOn(jobaSettings, key);
+
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [moderationErrors, setModerationErrors] = useState({});
@@ -675,20 +684,30 @@ export default function CreateTask() {
   // Shared by the pre-sign-in gate and the submit path, so "the form is
   // complete" can never mean two different things depending on whether the
   // person filling it has an account.
+  // The fields that stand between the user and publishing, in the order they
+  // appear on screen. Only fields the admin left switched ON qualify, so a field
+  // removed in the dashboard can never block a publish. ONE definition, used by
+  // the required-field check, the progress bar and the publish button alike.
+  const requiredFieldOrder = () =>
+    ['description', 'location_name', 'price', 'payment_method', 'contactPhone'].filter(fieldOn);
+
+  // Is a required field actually filled? Used by every readiness indicator.
+  const requiredValues = () => ({
+    description: !!form.description,
+    location_name: !!(form.location_name && addressConfirmed),
+    price: !!form.price,
+    payment_method: !!form.payment_method,
+    contactPhone: (form.contactPhone || '').replace(/\D/g, '').length >= 9,
+  });
+
   const collectRequiredErrors = () => {
     const errs = {};
-    if (!form.description) errs.description = true;
-    if (!form.price) errs.price = true;
-    if (!form.location_name || !addressConfirmed) errs.location_name = true;
-    if (!form.payment_method) errs.payment_method = true;
-    if (!form.contactPhone || form.contactPhone.replace(/\D/g, '').length < 9) errs.contactPhone = true;
+    const values = requiredValues();
+    requiredFieldOrder().forEach(key => { if (!values[key]) errs[key] = true; });
     return errs;
   };
   const focusFirstMissingField = (errs) => {
-    // Visual order of the form — the first missing field must be the one the
-    // user reaches first when scrolling.
-    const order = ['description', 'location_name', 'price', 'payment_method', 'contactPhone'];
-    const first = order.find(k => errs[k]);
+    const first = requiredFieldOrder().find(k => errs[k]);
     if (!first || !fieldRefs[first]?.current) return;
     fieldRefs[first].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     fieldRefs[first].current.querySelector?.('input,textarea')?.focus();
@@ -1194,8 +1213,13 @@ export default function CreateTask() {
       )}
       {/* Sticky header + progress bar combined */}
       {(() => {
-        const filled = [form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
-        const pct = Math.round((filled / 4) * 100);
+        // Measured against the fields the admin actually kept — including the
+        // phone, which used to be missing from this count and let the bar read
+        // 100% while the form still refused to publish.
+        const required = requiredFieldOrder();
+        const values = requiredValues();
+        const filled = required.filter(k => values[k]).length;
+        const pct = required.length ? Math.round((filled / required.length) * 100) : 100;
         return (
           <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--brand-hero-bg, #0f2b6b), var(--brand-hero-bg, var(--brand-primary)))', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
@@ -1324,6 +1348,7 @@ export default function CreateTask() {
         {/* Worker count hint — removed per design decision */}
 
         {/* One selected actionable service, one global form; no parent form alongside it. */}
+        {fieldOn('category_form') && (
         <div ref={fieldRefs.categoryForm} style={errors.categoryForm ? { borderRadius: 18, outline: '2px solid #ef4444', outlineOffset: 4 } : undefined}>
           <SelectedCategoryForm
             key={form.category}
@@ -1337,8 +1362,10 @@ export default function CreateTask() {
           />
           {errors.categoryForm && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_required')}</p>}
         </div>
+        )}
 
         {/* Description — the main input. Title and category are auto-generated from this. */}
+        {fieldOn('description') && (
         <div ref={fieldRefs.description}>
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1394,14 +1421,21 @@ export default function CreateTask() {
 
 
         </div>
+        )}
+
         {/* Images + Video */}
+        {fieldOn('media') && (
         <SectionCard>
           <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
           <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
         </SectionCard>
+        )}
 
-        {/* Expiry + Urgency */}
+        {/* Expiry + Urgency — each part can be switched off on its own from the
+            dashboard, and the whole card disappears when all three are off. */}
+        {(fieldOn('expiry') || fieldOn('urgency') || fieldOn('exact_datetime')) && (
         <SectionCard>
+          {fieldOn('expiry') && (<>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <Clock size={14} /> {t('ct_expiry')}
           </Label>
@@ -1418,9 +1452,12 @@ export default function CreateTask() {
               style={{ width: '100%', marginTop: 8, padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
             />
           )}
+          </>)}
 
           {/* Urgency tag */}
-          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
+          {(fieldOn('urgency') || fieldOn('exact_datetime')) && (
+          <div style={{ marginTop: fieldOn('expiry') ? 18 : 0, paddingTop: fieldOn('expiry') ? 16 : 0, borderTop: fieldOn('expiry') ? '1px solid var(--border-1)' : 'none' }}>
+          {fieldOn('urgency') && (<>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <Zap size={14} color="var(--text-3)" strokeWidth={1.8} />
             <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{t('ct_when_worker')}</span>
@@ -1445,9 +1482,10 @@ export default function CreateTask() {
                 );
               })}
             </div>
+          </>)}
 
             {/* Specific date/time picker — hidden when category has a schedule table (avoids duplication) */}
-            {!hasScheduleField && (
+            {fieldOn('exact_datetime') && !hasScheduleField && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <Calendar size={14} color="var(--text-3)" strokeWidth={1.8} />
@@ -1481,7 +1519,7 @@ export default function CreateTask() {
               <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.4 }}>{t('ct_exact_dt_help')}</p>
             </div>
             )}
-            {hasScheduleField && scheduleMinutes != null && (
+            {fieldOn('exact_datetime') && hasScheduleField && scheduleMinutes != null && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <Calendar size={14} color="var(--color-success)" strokeWidth={1.8} />
@@ -1494,10 +1532,12 @@ export default function CreateTask() {
             </div>
             )}
           </div>
+          )}
         </SectionCard>
+        )}
 
         {/* Story — only when creating new task */}
-        {!isEditMode && <div
+        {!isEditMode && fieldOn('story') && <div
           onClick={() => {
             if (!form.is_story) {
               // Trying to enable — check credits
@@ -1538,6 +1578,7 @@ export default function CreateTask() {
         </div>}
 
         {/* Location */}
+        {fieldOn('location_name') && (
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <MapPin size={14} /> {t('ct_location_req')}
@@ -1568,6 +1609,7 @@ export default function CreateTask() {
           </div>
           {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{t('ct_addr_err')}</p>}
           {/* Extra address details */}
+          {fieldOn('address_details') && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
             <div>
               <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>{t('ct_building')}</p>
@@ -1602,11 +1644,14 @@ export default function CreateTask() {
               />
             </div>
           </div>
+          )}
         </SectionCard>
+        )}
 
         {/* Worker Pool Scanner banners removed */}
 
         {/* Requirements */}
+        {fieldOn('requirements') && (
         <SectionCard>
           <button type="button" onClick={() => setShowRequirements(v => !v)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showRequirements ? 14 : 0 }}>
@@ -1677,8 +1722,10 @@ export default function CreateTask() {
             </div>
           )}
         </SectionCard>
+        )}
 
         {/* Verification Requirement */}
+        {fieldOn('verification') && (
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
             <ShieldCheck size={14} color="var(--color-success)" strokeWidth={1.8} />
@@ -1722,8 +1769,10 @@ export default function CreateTask() {
             </div>
           )}
         </SectionCard>
+        )}
 
         {/* Price — moved here from above, just before payment */}
+        {fieldOn('price') && (
         <div ref={fieldRefs.price}>
         <SectionCard>
           {isHourly ? (
@@ -1809,6 +1858,7 @@ export default function CreateTask() {
           />
 
           {/* Auto bump */}
+          {fieldOn('auto_bump') && (<>
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
             style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : 'var(--surface-3)', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : 'var(--border-1)'}` }}
           >
@@ -1834,11 +1884,14 @@ export default function CreateTask() {
               )}
             </div>
           )}
+          </>)}
         </SectionCard>
 
         </div>
+        )}
 
         {/* Payment Method */}
+        {fieldOn('payment_method') && (
         <div ref={fieldRefs.payment_method}>
         <SectionCard>
         <div style={{ marginBottom: 12 }}>
@@ -1861,8 +1914,10 @@ export default function CreateTask() {
 
         </SectionCard>
         </div>
+        )}
 
         {/* Contact Phone */}
+        {fieldOn('contactPhone') && (
         <div ref={fieldRefs.contactPhone}>
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
@@ -1884,10 +1939,14 @@ export default function CreateTask() {
           {errors.contactPhone && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_phone_err')}</p>}
         </SectionCard>
         </div>
+        )}
 
         {/* Submit */}
         {(() => {
-          const isReady = !!(form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
+          // Ready means every remaining required field is filled — the same list
+          // the validation uses, so the green button can never lie.
+          const values = requiredValues();
+          const isReady = requiredFieldOrder().every(k => values[k]);
           return (
             <div ref={fieldRefs.publishBtn} style={{ marginTop: 8, paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
               <button

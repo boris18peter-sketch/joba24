@@ -28,6 +28,9 @@ export const DEFAULT_JOBA_SETTINGS = {
   google_play_url: '',
   store_buttons_enabled: true,
   guest_access_enabled: true,
+  // Admin control over the publish form. An empty map means every field is ON,
+  // so the full form is the default until the admin turns something off.
+  task_form_fields: {},
 };
 
 /** Pricing keys a Brand is allowed to override (mirrors base44/shared/brandSettings.ts). */

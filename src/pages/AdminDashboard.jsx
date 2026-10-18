@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store } from 'lucide-react';
+import { Users, ClipboardList, ListChecks, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import NotificationManagerTab from '@/components/NotificationManagerTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
@@ -13,6 +13,7 @@ import { exportToCSV } from '@/lib/csvExport';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import BrandsTab from '@/components/admin/BrandsTab';
 import GlobalCategoriesTab from '@/components/admin/GlobalCategoriesTab';
+import TaskFormFieldsTab from '@/components/admin/TaskFormFieldsTab';
 import KycImageLightbox from '@/components/admin/KycImageLightbox';
 import AdminCreditsTab from '@/components/admin/AdminCreditsTab';
 import AdminTaskRow, { STATUS_COLORS } from '@/components/admin/AdminTaskRow';
@@ -31,6 +32,7 @@ const TAB_GROUPS = [
   ] },
   { label: 'תפעול', tabs: [
     { key: 'tasks', label: 'משימות', icon: ClipboardList, desc: 'כל המשימות, הביקוש שלהן ומי הגיש מועמדות' },
+    { key: 'task_form', label: 'טופס משימה', icon: ListChecks, desc: 'שליטה בכל שדות טופס פרסום המשימה — הדלקה וכיבוי של כל שדה' },
     { key: 'users', label: 'משתמשים', icon: Users, desc: 'ניהול משתמשים, אישורי גישה, סוכנים והרשאות' },
     { key: 'kyc', label: 'KYC', icon: Shield, desc: 'אימותי זהות — בדיקה, אישור ודחייה' },
     { key: 'reports', label: 'דיווחים', icon: Flag, desc: 'דיווחי משתמשים על תוכן בעייתי' },
@@ -893,6 +895,11 @@ export default function AdminDashboard() {
         {/* JOBA SETTINGS TAB */}
         {tab === 'joba_settings' && (
           <JobaSettingsTab />
+        )}
+
+        {/* TASK FORM TAB — one switch per field of the publish form */}
+        {tab === 'task_form' && (
+          <TaskFormFieldsTab />
         )}
       </div>
 
