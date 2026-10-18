@@ -28,6 +28,12 @@ export default function ProfileAvatar({
   const photos = [user?.profile_photo, ...(user?.profile_photos || [])].filter(Boolean);
   const initials = (user?.full_name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
+  // The camera button is part of the avatar, so it scales WITH it: a fixed 26px
+  // badge sat almost as large as the picture itself once the avatar was made
+  // smaller, which is what made the pair read as oversized.
+  const badgeSize = Math.max(18, Math.round(size * 0.28));
+  const badgeIcon = Math.max(9, Math.round(size * 0.15));
+
   return (
     <>
       <div style={{ position: 'relative' }}>
@@ -62,11 +68,11 @@ export default function ProfileAvatar({
           <button
             onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
             aria-label="Change photo"
-            style={{ position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', background: 'white', border: `2px solid ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
+            style={{ position: 'absolute', bottom: 0, right: 0, width: badgeSize, height: badgeSize, borderRadius: '50%', background: 'white', border: `1.5px solid ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
           >
             {uploading
-              ? <Loader2 size={12} color={accent} className="animate-spin" />
-              : <Camera size={12} color={accent} />}
+              ? <Loader2 size={badgeIcon} color={accent} className="animate-spin" />
+              : <Camera size={badgeIcon} color={accent} />}
           </button>
         )}
       </div>

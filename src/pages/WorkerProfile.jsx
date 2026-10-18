@@ -267,8 +267,8 @@ export default function WorkerProfile() {
         <div style={{ marginBottom: 14 }}>
           <ProfileAvatar
             user={currentUser}
-            size={88}
-            textSize={30}
+            size={72}
+            textSize={24}
             editable={!isViewingOther}
             onUpload={handlePhotoUpload}
             uploading={uploadingPhoto}

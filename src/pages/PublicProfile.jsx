@@ -13,7 +13,7 @@ import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ReviewsSection from '@/components/profile/ReviewsSection';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import ProfileAvatar from '@/components/profile/ProfileAvatar';
-import { profileHeroBackground } from '@/lib/profileTier';
+import { profileHeroBackground, profileBarBackground } from '@/lib/profileTier';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
@@ -92,8 +92,10 @@ export default function PublicProfile() {
 
   return (
     <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* ── Back bar ── */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(10,82,176,0.97)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, backdropFilter: 'blur(8px)' }}>
+      {/* ── Back bar ── the SAME colour the profile below it starts on, so the
+          header can never clash with the surface under it — it follows the
+          rank (green / gold) exactly as the hero does. */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: profileBarBackground(user, 'var(--brand-primary-dark)'), padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => navigate(-1)} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <ChevronLeft size={17} color="white" style={{ transform: 'rotate(180deg)' }} />
         </button>
@@ -112,8 +114,8 @@ export default function PublicProfile() {
           <div style={{ marginBottom: 8 }}>
             <ProfileAvatar
               user={user}
-              size={80}
-              textSize={28}
+              size={64}
+              textSize={22}
               background="rgba(255,255,255,0.15)"
               borderColor="rgba(255,255,255,0.3)"
             />

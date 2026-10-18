@@ -434,12 +434,12 @@ export default function Layout() {
       localStorage.setItem(`boost_notif_${task.id}`, '1');
     });
 
-    // Single consolidated notification instead of one-per-task
-    if (newEligible.length === 1) {
-      addNotification({ type: 'boost_available', taskTitle: newEligible[0].title, taskId: newEligible[0].id });
-    } else {
-      addNotification({ type: 'boost_available', taskTitle: t('notif_boost_available').replace('{n}', newEligible.length), taskId: newEligible[0].id, boostCount: newEligible.length });
-    }
+    // Single consolidated notification instead of one-per-task. The headline is
+    // the generic "time to boost" line and the task's own title carries the
+    // specifics — the count is never spliced into a string that only reads
+    // correctly in the plural (which is how the alert ended up showing a raw
+    // "{n}" for a single task).
+    addNotification({ type: 'boost_available', taskTitle: newEligible[0].title, taskId: newEligible[0].id });
   }, [myPublishedTasks, me?.id]);
 
   const activeClientTask = useMemo(() => myPublishedTasks.find((t) => t.status === 'TAKEN') || null, [myPublishedTasks]);
