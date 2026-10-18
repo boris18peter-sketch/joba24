@@ -292,19 +292,10 @@ function extractMainDescription(description: string): string {
 const CARD_RULE = '━━━━━━━━━━━━━━━━━━━';
 const CARD_DIVIDER = '┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈';
 
-function formatTaskWhen(task: any): string {
-  if (!task?.scheduled_time) return '';
-  const d = new Date(task.scheduled_time);
-  if (isNaN(d.getTime())) return '';
-  const date = d.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', timeZone: 'Asia/Jerusalem' });
-  const time = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
-  return `${date}, ${time}`;
-}
-
 function formatPost(task: any): string {
   const lines: string[] = [];
 
-  // ── Headline band ──
+  // ── Card header ──
   lines.push(CARD_RULE);
   lines.push('🔔  עבודה חדשה ב-Joba24');
   lines.push(CARD_RULE);
@@ -323,23 +314,8 @@ function formatPost(task: any): string {
     lines.push('');
   }
 
-  // ── Details block — one aligned label/value row per line ──
-  const rows: string[] = [];
-  if (task.city) rows.push(`📍  מיקום:   ${task.city}`);
-  if (task.price) rows.push(`💰  תקציב:   ₪${task.price}`);
-  const when = formatTaskWhen(task);
-  if (when) rows.push(`🕐  מועד:    ${when}`);
-  const categoryLabel = task.category ? CATEGORY_LABELS[task.category] : null;
-  if (categoryLabel) rows.push(`🏷️  תחום:    ${categoryLabel}`);
-
-  if (rows.length) {
-    lines.push(CARD_DIVIDER);
-    lines.push(...rows);
-    lines.push(CARD_DIVIDER);
-    lines.push('');
-  }
-
   // ── Call to action + clean link on its own line (no trailing text) ──
+  lines.push(CARD_DIVIDER);
   lines.push('👇  מתאים לך? כל הפרטים והגשה כאן:');
   // Link on its own line with no trailing punctuation/spaces — Facebook
   // sometimes concatenates trailing characters into the URL, breaking the

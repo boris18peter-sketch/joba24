@@ -260,39 +260,39 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           let hero, heroSub;
           if (isUpcoming) {
             // The engagement is agreed but not started — say WHEN, not what to do.
-            hero = tIsWorker ? 'מועד מתוכנן' : 'המשימה מתוכננת';
+            hero = tIsWorker ? t('atb_planned_worker') : t('atb_planned_owner');
             heroSub = nextOccurrence
               ? (tIsWorker
-                  ? `הביצוע ייפתח סמוך ל-${formatOccurrence(nextOccurrence)}`
-                  : `העובד יגיע ב-${formatOccurrence(nextOccurrence)}`)
+                  ? t('atb_planned_worker_sub', { when: formatOccurrence(nextOccurrence) })
+                  : t('atb_planned_owner_sub', { when: formatOccurrence(nextOccurrence) }))
               : '';
           } else if (tIsWorker) {
             if (tStepIdx < 0) {
-              hero = 'יצאת לדרך';
-              heroSub = nextBtnLabel ? `לחץ/י "${nextBtnLabel}" כדי להתחיל` : 'עדכן/י את הסטטוס שלך';
+              hero = t('atb_set_out');
+              heroSub = nextBtnLabel ? t('atb_sub_btn_start', { btn: nextBtnLabel }) : t('atb_sub_update_status');
             } else if (tStepIdx === 0) {
-              hero = 'אתה בדרך למשימה';
-              heroSub = nextBtnLabel ? `לחץ/י "${nextBtnLabel}" כשתגיע` : 'המשך/י בדרך';
+              hero = t('atb_on_way');
+              heroSub = nextBtnLabel ? t('atb_sub_btn_arrive', { btn: nextBtnLabel }) : t('atb_sub_keep_going');
             } else if (tStepIdx === 1) {
-              hero = cfgStatusLabel || 'בעבודה';
-              heroSub = nextBtnLabel ? `לחץ/י "${nextBtnLabel}" בסיום` : 'העבודה בעיצומה';
+              hero = cfgStatusLabel || t('atb_working');
+              heroSub = nextBtnLabel ? t('atb_sub_btn_finish', { btn: nextBtnLabel }) : t('atb_sub_work_in_progress');
             } else {
-              hero = cfgStatusLabel || 'סיימת — ממתין לאישור';
-              heroSub = 'המפרסם יאשר/י את הסיום';
+              hero = cfgStatusLabel || t('atb_done_wait');
+              heroSub = t('atb_sub_publisher_approves');
             }
           } else {
             if (tStepIdx < 0) {
-              hero = 'ממתין לעדכון העובד';
-              heroSub = 'העובד יעדכן את הסטטוס בקרוב';
+              hero = t('atb_await_worker');
+              heroSub = t('atb_sub_worker_updates');
             } else if (tStepIdx === 0) {
-              hero = cfgStatusLabel || 'העובד בדרך אליך';
-              heroSub = 'תקבל/י עדכון כשיגיע';
+              hero = cfgStatusLabel || t('atb_worker_coming');
+              heroSub = t('atb_sub_youll_know');
             } else if (tStepIdx === 1) {
-              hero = cfgStatusLabel || 'העובד הגיע ומבצע';
-              heroSub = 'העבודה בעיצומה';
+              hero = cfgStatusLabel || t('atb_worker_here');
+              heroSub = t('atb_sub_work_in_progress');
             } else {
-              hero = cfgStatusLabel || 'העובד סיים — אשר/י סיום';
-              heroSub = 'לחץ/י על אישור הסיום';
+              hero = cfgStatusLabel || t('atb_worker_done');
+              heroSub = t('atb_sub_tap_approve');
             }
           }
           const heroDone = tStepIdx === 2;

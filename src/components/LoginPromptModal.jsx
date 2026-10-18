@@ -37,6 +37,7 @@ function ProviderButton({ icon, label, onClick, bg, color, border }) {
 }
 
 function EmailForm({ onBack, onSuccess }) {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [mode, setMode] = useState('email'); // 'email' | 'otp'
@@ -104,15 +105,15 @@ function EmailForm({ onBack, onSuccess }) {
               setMode('otp');
               return;
             } catch {
-              setError('לא הצלחנו לשלוח קוד. נסה שוב או התחבר עם Google.');
+              setError(t('lpm_err_code_send'));
             }
           } else {
             // Registered via Google or other provider — can't login with email
-            setError('האימייל רשום דרך Google. התחבר עם Google במקום.');
+            setError(t('lpm_err_google_registered'));
           }
         }
       } else {
-        setError(regMsg || 'שגיאה. נסה שוב.');
+        setError(regMsg || t('lpm_err_generic'));
       }
     } finally {
       setLoading(false);
@@ -136,9 +137,9 @@ function EmailForm({ onBack, onSuccess }) {
         } catch {
           try {
             await base44.auth.register({ email: email.trim(), password });
-            setError('חשבון הבדיקה אינו מאומת. יש לאמת אותו פעם אחת מראש.');
+            setError(t('lpm_err_test_unverified'));
           } catch {
-            setError('חשבון הבדיקה אינו מוגדר. יש ליצור ולאמת אותו פעם אחת מראש.');
+            setError(t('lpm_err_test_missing'));
           }
           return;
         }
@@ -149,7 +150,7 @@ function EmailForm({ onBack, onSuccess }) {
       onSuccess();
     } catch (err) {
       const msg = String(err?.response?.data?.detail || err?.message || '');
-      setError(msg || 'קוד אימות שגוי, נסה שוב');
+      setError(msg || t('lpm_err_bad_code'));
     } finally {
       setLoading(false);
     }
@@ -162,9 +163,9 @@ function EmailForm({ onBack, onSuccess }) {
     try {
       const actualEmail = resolveEmail();
       await base44.auth.resendOtp(actualEmail);
-      setInfo('קוד חדש נשלח לאימייל שלך.');
+      setInfo(t('lpm_info_code_sent'));
     } catch {
-      setError('שגיאה בשליחת קוד נוסף. נסה שוב.');
+      setError(t('lpm_err_resend'));
     } finally {
       setLoading(false);
     }
@@ -174,13 +175,13 @@ function EmailForm({ onBack, onSuccess }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
-          <ArrowLeft size={14} /> חזרה
+          <ArrowLeft size={14} /> {t('lpm_back')}
         </button>
-        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>אימות באימייל</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('lpm_verify_email_title')}</div>
         <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
           {isReviewerEmail()
-            ? <>הזן את קוד הגישה עבור <strong style={{ color: 'var(--text-1)' }}>{email}</strong>.</>
-            : <>שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.</>}
+            ? t('lpm_reviewer_enter_code', { email })
+            : t('lpm_code_sent_to', { email })}
         </div>
         <input
           type="text"
@@ -207,14 +208,14 @@ function EmailForm({ onBack, onSuccess }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
         >
-          {loading ? <Loader2 size={18} className="animate-spin" /> : 'אמת והתחבר'}
+          {loading ? <Loader2 size={18} className="animate-spin" /> : t('lpm_verify_and_login')}
         </button>
         <button
           onClick={handleResendOtp}
           disabled={loading}
           style={{ background: 'none', border: 'none', color: 'var(--brand-modal-cta-bg, var(--brand-primary))', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', padding: 0, textAlign: 'center', width: '100%' }}
         >
-          שלח קוד נוסף
+          {t('lpm_send_again')}
         </button>
       </div>
     );
@@ -223,9 +224,9 @@ function EmailForm({ onBack, onSuccess }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
-        <ArrowLeft size={14} /> חזרה
+        <ArrowLeft size={14} /> {t('lpm_back')}
       </button>
-      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>כניסה עם אימייל</div>
+      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('lpm_login_with_email')}</div>
       <input
         type="email"
         dir="ltr"
@@ -251,14 +252,15 @@ function EmailForm({ onBack, onSuccess }) {
           transition: 'all 0.2s',
         }}
       >
-        {loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={16} /> שלח קוד אימות</>}
+        {loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={16} /> {t('lpm_send_code')}</>}
       </button>
-      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.5 }}>נשלח קוד אימות לאימייל שלך. משתמשים חדשים ירשמו אוטומטית — ללא צורך בסיסמה.</div>
+      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.5 }}>{t('lpm_code_note')}</div>
     </div>
   );
 }
 
 function WaitingForAuthScreen({ onCancel, loginUrl }) {
+  const { t } = useLanguage();
   const { name: brandName } = useBrandIdentity();
   const [showManual, setShowManual] = useState(false);
   // Poll the server handshake directly from the modal. NativeAuthListener also
@@ -285,16 +287,16 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
     // real user TAP on an <a href=intent://> is the gesture the WebView most
     // reliably launches an intent from — far more reliable than the programmatic
     // window.location.href auto-fire.
-    const t = setTimeout(() => { if (!stopped) setShowManual(true); }, 1500);
-    return () => { stopped = true; clearTimeout(t); };
+    const manualTimer = setTimeout(() => { if (!stopped) setShowManual(true); }, 1500);
+    return () => { stopped = true; clearTimeout(manualTimer); };
   }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
       <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: 'var(--brand-modal-cta-bg, var(--brand-primary))' }} />
-      <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{`מתחבר ל-${brandName}...`}</div>
+      <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{t('lpm_connecting', { brand: brandName })}</div>
       <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
-        סיים את ההתחברות בדפדפן. האפליקציה תזהה את ההתחברות אוטומטית ותחזור אליך.
+        {t('lpm_finish_in_browser')}
       </div>
       {showManual && loginUrl && (
         <a
@@ -308,7 +310,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
             fontWeight: 700, fontSize: 15, boxShadow: '0 4px 14px rgba(26,111,212,0.3)',
           }}
         >
-          לא נפתח? לחץ לפתיחת הדפדפן
+          {t('lpm_open_browser')}
         </a>
       )}
       <button
@@ -318,7 +320,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
           fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 16px',
         }}
       >
-        ביטול
+        {t('lpm_cancel')}
       </button>
     </div>
   );
@@ -329,7 +331,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply', tit
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
   const { enterGuestMode } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   const handleGuest = () => {
     enterGuestMode();
@@ -484,7 +486,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply', tit
           boxShadow: '0 -24px 120px rgba(0,0,0,0.3)',
           paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
         }}
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Drag handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
