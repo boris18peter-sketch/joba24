@@ -256,9 +256,9 @@ export default function useRealtimeSync({
       if (tx.balance_after != null) {
         queryClient.setQueryData(['me'], (old) => old ? { ...old, worker_credits: tx.balance_after } : old);
       }
-      if (tx.type === 'Loyalty_Reward') {
-        notify({ type: 'new_review', taskId: tx.task_id, actorId: 'system', preview: t('loyalty_reward_notif').replace('{n}', tx.amount) });
-      }
+      // A Loyalty_Reward is announced by its own celebration popup
+      // (useLoyaltyBonus → LoyaltyBonusPopup), which reveals the amount as a
+      // surprise. Raising a banner here as well would double the same news.
     });
 
     return unsub;

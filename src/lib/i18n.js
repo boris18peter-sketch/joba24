@@ -24,6 +24,7 @@ import { he } from '@/lib/i18n-he';
 import onboardingHe from '@/lib/i18n-onboarding-he';
 import extraHe from '@/lib/i18n-extra-he.json';
 import uiHe from '@/lib/i18n-ui-he.json';
+import loyaltyHe from '@/lib/i18n-loyalty-he.json';
 import { loadTaskFlowI18n } from '@/lib/taskFlowI18nLoader';
 
 export const LANGUAGES = [
@@ -91,7 +92,7 @@ const OVERRIDES = {
  * eight languages both are fetched alongside that language's dictionary.
  */
 export const translations = {
-  he: { ...he, ...onboardingHe, ...extraHe, ...uiHe },
+  he: { ...he, ...onboardingHe, ...extraHe, ...uiHe, ...loyaltyHe },
 };
 
 /**
@@ -131,6 +132,7 @@ const lazyModule = (load) => {
 const loadOnboardingDictionaries = lazyModule(() => import('@/lib/i18n-onboarding'));
 const loadExtraDictionaries = lazyModule(() => import('@/lib/i18n-extra.json'));
 const loadUiDictionaries = lazyModule(() => import('@/lib/i18n-ui.json'));
+const loadLoyaltyDictionaries = lazyModule(() => import('@/lib/i18n-loyalty.json'));
 
 /** True when this language's dictionary is already in memory. */
 export const isLanguageLoaded = (code) => !!translations[code];
@@ -160,10 +162,11 @@ export async function loadLanguage(code) {
       // This language's share of both companions, fetched alongside the
       // dictionary so they are already in memory by the time the screen is
       // allowed to paint — no key can flash as missing.
-      const [onb, extra, ui] = await Promise.all([
+      const [onb, extra, ui, loyalty] = await Promise.all([
         loadOnboardingDictionaries(),
         loadExtraDictionaries(),
         loadUiDictionaries(),
+        loadLoyaltyDictionaries(),
         // The task-flow dictionaries (~256 KB of translated category-form
         // strings) are read by the category forms the instant they render, so a
         // visitor whose language is not Hebrew fetches them HERE — as part of the
@@ -176,11 +179,13 @@ export async function loadLanguage(code) {
       ]);
       const extraDict = extra?.default || extra || {};
       const uiDict = ui?.default || ui || {};
+      const loyaltyDict = loyalty?.default || loyalty || {};
       translations[code] = {
         ...base,
         ...(onb?.onboardingI18n?.[code] || {}),
         ...(extraDict[code] || {}),
         ...(uiDict[code] || {}),
+        ...(loyaltyDict[code] || {}),
         ...(OVERRIDES[code] || {}),
       };
       return code;

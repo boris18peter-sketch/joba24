@@ -18,6 +18,8 @@ import ReviewsSection from '@/components/profile/ReviewsSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
+import ProfileAvatar from '@/components/profile/ProfileAvatar';
+import { profileHeroBackground } from '@/lib/profileTier';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -75,7 +77,7 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const photoInputRef = useRef(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
@@ -91,9 +93,14 @@ export default function Profile() {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.auth.updateMe({ profile_photo: file_url });
-    await refreshUser();
+    setUploadingPhoto(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.auth.updateMe({ profile_photo: file_url });
+      await refreshUser();
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const me = authUser;
@@ -174,7 +181,7 @@ export default function Profile() {
     <div style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ── SECTION 1 — IDENTITY (compact hero) ── */}
       <div style={{
-        background: 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, var(--brand-hero-bg, #2563eb) 100%)',
+        background: profileHeroBackground(me, 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, var(--brand-hero-bg, #2563eb) 100%)'),
         paddingBottom: 16, position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
@@ -193,24 +200,18 @@ export default function Profile() {
 
         {/* Avatar + Name + badges — tighter, identity-first */}
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 20px 0' }}>
-          <div style={{ position: 'relative', marginBottom: 8 }}>
-            <div
-              onClick={() => photoInputRef.current?.click()}
-              style={{
-                width: 76, height: 76, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.15)',
-                border: '3px solid rgba(255,255,255,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, fontWeight: 900, color: 'var(--brand-hero-text, white)',
-                overflow: 'hidden', cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-              }}
-            >
-              {me?.profile_photo
-                ? <img src={me.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : initials}
-            </div>
-            <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+          <div style={{ marginBottom: 8 }}>
+            <ProfileAvatar
+              user={me}
+              size={76}
+              textSize={26}
+              editable
+              onUpload={handlePhotoUpload}
+              uploading={uploadingPhoto}
+              background="rgba(255,255,255,0.15)"
+              borderColor="rgba(255,255,255,0.3)"
+              textColor="var(--brand-hero-text, white)"
+            />
           </div>
 
           {/* Read-only here — the name is edited on the profile edit page

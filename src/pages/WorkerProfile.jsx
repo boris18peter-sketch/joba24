@@ -3,10 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play } from 'lucide-react';
+import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, ChevronLeft, Phone, Video, Play } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
+import ProfileAvatar from '@/components/profile/ProfileAvatar';
+import ProfilePhotosEditor from '@/components/profile/ProfilePhotosEditor';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -102,7 +104,6 @@ export default function WorkerProfile() {
   const [showAllCities, setShowAllCities] = useState(false);
   const [nameError, setNameError] = useState(null);
   const certDocRef = useRef(null);
-  const photoInputRef = useRef(null);
   const videoInputRef = useRef(null);
 
   const handlePhotoUpload = async (e) => {
@@ -156,6 +157,7 @@ export default function WorkerProfile() {
       bio: currentUser.bio || '',
       phone: currentUser.phone || '',
       intro_video_url: currentUser.intro_video_url || '',
+      profile_photos: currentUser.profile_photos || [],
       certificate_files: currentUser.certificate_files || [],
       profile_media: [
         ...(currentUser.intro_video_url ? [{ type: 'video', url: currentUser.intro_video_url }] : []),
@@ -262,28 +264,17 @@ export default function WorkerProfile() {
 
       {/* ── Avatar block (both view modes) ── */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 22px', background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1px solid var(--border-1)' }}>
-        <div style={{ position: 'relative', marginBottom: 14 }}>
-          <div
-            onClick={() => !isViewingOther && photoInputRef.current?.click()}
-            style={{
-              width: 88, height: 88, borderRadius: '50%',
-              background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 30, fontWeight: 900, color: 'white',
-              overflow: 'hidden', cursor: isViewingOther ? 'default' : 'pointer',
-              boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
-            }}
-          >
-            {currentUser?.profile_photo
-              ? <img src={currentUser.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initials}
-          </div>
-          {!isViewingOther && (
-            <button onClick={() => photoInputRef.current?.click()} style={{ position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', background: 'white', border: '2px solid var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
-              {uploadingPhoto ? <Loader2 size={12} color="var(--brand-primary)" className="animate-spin" /> : <Camera size={12} color="var(--brand-primary)" />}
-            </button>
-          )}
-          <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+        <div style={{ marginBottom: 14 }}>
+          <ProfileAvatar
+            user={currentUser}
+            size={88}
+            textSize={30}
+            editable={!isViewingOther}
+            onUpload={handlePhotoUpload}
+            uploading={uploadingPhoto}
+            background="linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))"
+            borderColor="transparent"
+          />
         </div>
 
         {isViewingOther ? (
@@ -365,6 +356,16 @@ export default function WorkerProfile() {
               isEditing={!isViewingOther}
               onChange={(newMedia) => setForm(f => ({ ...f, profile_media: newMedia }))}
               subtitle=""
+            />
+          </SectionCard>
+        )}
+
+        {/* ── Profile photos — what the avatar lightbox swipes through ── */}
+        {!isViewingOther && (
+          <SectionCard title={t('pph_title')}>
+            <ProfilePhotosEditor
+              photos={form.profile_photos}
+              onChange={(next) => setForm(f => ({ ...f, profile_photos: next }))}
             />
           </SectionCard>
         )}

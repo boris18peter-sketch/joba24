@@ -4,6 +4,7 @@ import { notificationStore } from '@/lib/notificationStore';
 import { taskAlertStore } from '@/lib/taskAlertStore';
 import { useAuth } from '@/lib/AuthContext';
 import { useVerificationCelebration } from '@/hooks/useVerificationCelebration';
+import { useLoyaltyBonus } from '@/hooks/useLoyaltyBonus';
 import useTaskAlerts from '@/hooks/useTaskAlerts';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import ReturnToTaskPopup from '@/components/ReturnToTaskPopup';
@@ -11,6 +12,7 @@ import VerificationApprovedPopup from '@/components/VerificationApprovedPopup';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
+import LoyaltyBonusPopup from '@/components/LoyaltyBonusPopup';
 
 /**
  * GlobalPopups — renders the live notification banner AND the full-screen task
@@ -27,6 +29,7 @@ export default function GlobalPopups() {
   const [taskAlert, setTaskAlert] = useState(null);
   const { user } = useAuth();
   const { celebration, clearCelebration } = useVerificationCelebration(user);
+  const { bonus, clearBonus } = useLoyaltyBonus(user);
 
   // Detects a publisher cancellation on every route and raises it on the store.
   useTaskAlerts(user?.id);
@@ -42,6 +45,8 @@ export default function GlobalPopups() {
   return (
     <>
       {celebration && <VerificationApprovedPopup variant={celebration} onClose={clearCelebration} />}
+
+      {bonus && <LoyaltyBonusPopup amount={bonus.amount} tasksCompleted={bonus.tasksCompleted} onClose={clearBonus} />}
 
       {taskAlert?.kind === 'cancelled' && createPortal(
         <WorkerCancelledPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />,

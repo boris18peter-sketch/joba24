@@ -12,6 +12,8 @@ import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ReviewsSection from '@/components/profile/ReviewsSection';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
+import ProfileAvatar from '@/components/profile/ProfileAvatar';
+import { profileHeroBackground } from '@/lib/profileTier';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
@@ -100,25 +102,21 @@ export default function PublicProfile() {
 
       {/* ── SECTION 1 — IDENTITY ── */}
       <div style={{
-        background: 'linear-gradient(160deg, var(--brand-primary-dark) 0%, var(--brand-primary) 55%, #2563eb 100%)',
+        background: profileHeroBackground(user, 'linear-gradient(160deg, var(--brand-primary-dark) 0%, var(--brand-primary) 55%, #2563eb 100%)'),
         paddingBottom: 18, position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
         <div style={{ position: 'absolute', bottom: -40, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
 
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 20px 0' }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.15)',
-            border: '3px solid rgba(255,255,255,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, fontWeight: 900, color: 'white',
-            overflow: 'hidden', marginBottom: 8,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-          }}>
-            {user.profile_photo
-              ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initials}
+          <div style={{ marginBottom: 8 }}>
+            <ProfileAvatar
+              user={user}
+              size={80}
+              textSize={28}
+              background="rgba(255,255,255,0.15)"
+              borderColor="rgba(255,255,255,0.3)"
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>

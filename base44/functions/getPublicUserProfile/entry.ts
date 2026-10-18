@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
         // cannot be changed — see src/lib/displayName.js.
         full_name: (targetUser.display_name || '').trim() || targetUser.full_name,
         profile_photo: targetUser.profile_photo,
+        profile_photos: targetUser.profile_photos,
         is_verified: targetUser.is_verified,
         is_phone_verified: targetUser.is_phone_verified,
         kyc_status: targetUser.kyc_status,
