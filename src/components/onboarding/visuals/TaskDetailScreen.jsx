@@ -1,6 +1,7 @@
 import { MapPin, Send, Clock, FileText } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
-import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
+import { useLanguage } from '@/lib/LanguageContext';
+import { useOnboardingTask } from '@/lib/onboardingDemoTask';
 
 /**
  * The task detail screen, mirroring the real task sheet: the gradient banner
@@ -16,10 +17,13 @@ import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
  * Mode alike, so the white-on-banner controls stay legible in both.
  */
 export default function TaskDetailScreen() {
+  const { t } = useLanguage();
+  const task = useOnboardingTask();
+
   return (
     <>
       <div style={{ height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 14px', background: 'var(--surface-2)', boxShadow: '0 1px 0 var(--border-1)' }}>
-        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>פרטי המשימה</span>
+        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>{t('onb_v_details')}</span>
       </div>
 
       <div style={{ background: 'var(--surface-1)', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -31,13 +35,13 @@ export default function TaskDetailScreen() {
           boxShadow: '0 6px 22px rgba(26,111,212,0.28)',
         }}>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#ffffff', lineHeight: 1.3 }}>
-            {ONBOARDING_TASK.title}
+            {task.title}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 24, fontWeight: 900, color: '#ffffff', letterSpacing: -0.5 }}>{ONBOARDING_TASK.priceLabel}</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: '#ffffff', letterSpacing: -0.5 }}>{task.priceLabel}</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
-              <MapPin size={12} /> {ONBOARDING_TASK.location}
+              <MapPin size={12} /> {task.location}
             </span>
           </div>
 
@@ -58,25 +62,25 @@ export default function TaskDetailScreen() {
               animation: 'onbApplySheen 2.4s ease-in-out infinite',
             }} />
             <Send size={15} strokeWidth={1.8} />
-            הגש מועמדות למשימה — 13 <CreditIcon size={14} />
+            {t('onb_v_apply_n', { n: 13 })} <CreditIcon size={14} />
           </div>
 
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 6, fontWeight: 600, lineHeight: 1.4 }}>
-            💡 הג'ובות חוזרות ליתרה אוטומטית אם הבקשה לא תאושר או המשימה תבוטל
+            {t('onb_v_apply_note')}
           </div>
         </div>
 
         {/* ── Detail rows, as the task sheet lists them ── */}
         <div className="j-card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 11 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5 }}>פרטי המשימה</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5 }}>{t('onb_v_details')}</div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
               🔨
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>קטגוריה</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{ONBOARDING_TASK.categoryLabel}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('onb_v_category')}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{task.categoryLabel}</div>
             </div>
           </div>
 
@@ -85,8 +89,8 @@ export default function TaskDetailScreen() {
               <Clock size={13} color="var(--color-warning)" />
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>מועד מדויק</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{ONBOARDING_TASK.time}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('onb_v_exact_time')}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{task.time}</div>
             </div>
           </div>
 
@@ -95,9 +99,9 @@ export default function TaskDetailScreen() {
               <FileText size={13} color="var(--brand-primary)" />
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>תיאור</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('onb_v_description')}</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
-                {ONBOARDING_TASK.description}
+                {task.description}
               </div>
             </div>
           </div>

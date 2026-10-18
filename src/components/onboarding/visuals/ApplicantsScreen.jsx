@@ -1,4 +1,5 @@
 import { Star, CheckCircle2, MessageCircle, X, ShieldCheck, Briefcase, Zap } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * The applicants panel from the publisher's task screen, mirroring
@@ -17,45 +18,46 @@ import { Star, CheckCircle2, MessageCircle, X, ShieldCheck, Briefcase, Zap } fro
 const APPLICANTS = [
   {
     id: 'a1',
-    name: 'דניאל כהן',
+    nameKey: 'onb_a1_name',
     photo: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/164b1dd7e_generated_image.png',
     rating: 4.9,
     tasks: 34,
     verified: true,
-    message: 'אני חשמלאי מוסמך, יכול להגיע מחר בבוקר.',
+    messageKey: 'onb_a1_msg',
   },
   {
     id: 'a2',
-    name: 'יוסי לוי',
+    nameKey: 'onb_a2_name',
     photo: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/4f12cd8d8_generated_image.png',
     rating: 4.8,
     tasks: 21,
     verified: true,
-    message: 'מוכן להגיע במיידי',
+    messageKey: 'onb_a2_msg',
     highlight: true,
     available: true,
   },
   {
     id: 'a3',
-    name: 'מיכל אברהם',
+    nameKey: 'onb_a3_name',
     photo: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/302897af9_generated_image.png',
     rating: 5.0,
     tasks: 47,
     verified: true,
-    message: 'יש לי ניסיון בהתקנת גופי תאורה.',
+    messageKey: 'onb_a3_msg',
   },
   {
     id: 'a4',
-    name: 'אבי מזרחי',
+    nameKey: 'onb_a4_name',
     photo: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/bb3cd8ce0_generated_image.png',
     rating: 4.6,
     tasks: 9,
     verified: false,
-    message: null,
+    messageKey: null,
   },
 ];
 
 function ApplicantCard({ app }) {
+  const { t } = useLanguage();
   const hl = !!app.highlight;
 
   return (
@@ -78,7 +80,7 @@ function ApplicantCard({ app }) {
           borderRadius: '0 0 12px 0',
           boxShadow: '0 2px 8px rgba(217,119,6,0.35)',
         }}>
-          <Star size={10} style={{ fill: '#1a3a6b', color: '#1a3a6b' }} /> מומלץ
+          <Star size={10} style={{ fill: '#1a3a6b', color: '#1a3a6b' }} /> {t('onb_v_recommended')}
         </div>
       )}
 
@@ -94,7 +96,7 @@ function ApplicantCard({ app }) {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>{app.name}</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>{t(app.nameKey)}</span>
             {app.available && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 3,
@@ -103,7 +105,7 @@ function ApplicantCard({ app }) {
                 border: '1px solid var(--color-success-border)',
                 borderRadius: 999, padding: '1px 7px',
               }}>
-                <Zap size={9} /> זמין עכשיו
+                <Zap size={9} /> {t('onb_v_available_now')}
               </span>
             )}
           </div>
@@ -115,11 +117,11 @@ function ApplicantCard({ app }) {
             </span>
             {app.verified && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: 'var(--color-success)' }}>
-                <ShieldCheck size={11} /> מאומת
+                <ShieldCheck size={11} /> {t('onb_v_verified')}
               </span>
             )}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>
-              <Briefcase size={10} /> {app.tasks} משימות
+              <Briefcase size={10} /> {t('onb_v_tasks_n', { n: app.tasks })}
             </span>
           </div>
         </div>
@@ -133,7 +135,7 @@ function ApplicantCard({ app }) {
         </div>
       </div>
 
-      {app.message && (
+      {app.messageKey && (
         <div style={{ padding: '0 14px 10px' }}>
           <div style={{
             background: hl ? 'var(--color-success-bg)' : 'var(--surface-3)',
@@ -143,7 +145,7 @@ function ApplicantCard({ app }) {
             fontWeight: hl ? 800 : 500,
             color: hl ? 'var(--color-success)' : 'var(--text-2)',
           }}>
-            {app.message}
+            {t(app.messageKey)}
           </div>
         </div>
       )}
@@ -156,7 +158,7 @@ function ApplicantCard({ app }) {
           color: 'var(--text-2)', fontWeight: 700, fontSize: 13,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         }}>
-          <X size={15} /> דחה
+          <X size={15} /> {t('onb_v_decline')}
         </div>
         <div style={{
           flex: 1.5, height: 40, borderRadius: 11,
@@ -165,7 +167,7 @@ function ApplicantCard({ app }) {
           boxShadow: hl ? '0 3px 14px rgba(5,150,105,0.45)' : '0 2px 10px rgba(5,150,105,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         }}>
-          <CheckCircle2 size={15} /> אשר עובד
+          <CheckCircle2 size={15} /> {t('onb_v_approve')}
         </div>
       </div>
     </div>
@@ -173,15 +175,17 @@ function ApplicantCard({ app }) {
 }
 
 export default function ApplicantsScreen() {
+  const { t } = useLanguage();
+
   return (
     <>
       <div style={{ height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 14px', background: 'var(--surface-2)', boxShadow: '0 1px 0 var(--border-1)' }}>
-        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>הבקשות שקיבלת</span>
+        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>{t('onb_v_applicants')}</span>
       </div>
 
       <div style={{ background: 'var(--surface-1)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>
-          מועמדים ({APPLICANTS.length})
+          {t('onb_v_applicants_n', { n: APPLICANTS.length })}
         </div>
 
         {APPLICANTS.map(app => <ApplicantCard key={app.id} app={app} />)}

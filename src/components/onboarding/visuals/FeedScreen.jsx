@@ -1,7 +1,8 @@
 import AppTopBar from '@/components/storekit/AppTopBar';
 import TaskCard from '@/components/TaskCard';
 import { DEMO_TASKS } from '@/lib/storekit/demoData';
-import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
+import { useLanguage } from '@/lib/LanguageContext';
+import { useOnboardingTask } from '@/lib/onboardingDemoTask';
 
 /**
  * The real task feed, plus the real task notification the app raises for a
@@ -14,17 +15,23 @@ import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
  * matches the interface in Light and Dark alike. The feed is inert — it is an
  * illustration, which is why it carries no filter bar.
  */
-const TASK = {
-  ...DEMO_TASKS[0],
-  title: ONBOARDING_TASK.title,
-  description: ONBOARDING_TASK.description,
-  price: ONBOARDING_TASK.price,
-  category: ONBOARDING_TASK.category,
-  city: ONBOARDING_TASK.city,
-  location_name: ONBOARDING_TASK.location,
-};
-
 export default function FeedScreen() {
+  const { t } = useLanguage();
+  const demo = useOnboardingTask();
+
+  // Built HERE rather than at module level: the job's wording is translated, so
+  // it can only be resolved once the current language is known.
+  const TASK = {
+    ...DEMO_TASKS[0],
+    title: demo.title,
+    description: demo.description,
+    price: demo.price,
+    category: demo.category,
+    city: demo.city,
+    location_name: demo.location,
+    client_name: t('onb_demo_client'),
+  };
+
   return (
     <>
       <AppTopBar />
@@ -47,10 +54,10 @@ export default function FeedScreen() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 900, fontSize: 15, color: 'var(--text-1)', marginBottom: 3, lineHeight: 1.25 }}>
-                  משימה חדשה באזור שלך
+                  {t('onb_v_new_task_alert')}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {ONBOARDING_TASK.title} · {ONBOARDING_TASK.priceLabel}
+                  {TASK.title} · {TASK.priceLabel}
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
-import { FINAL_CTA } from '@/lib/onboardingTrackContent';
+import { FINAL_CTA_KEY } from '@/lib/onboardingTrackContent';
+import { useLanguage } from '@/lib/LanguageContext';
 import SlideShell from '@/components/onboarding/SlideShell';
 import OnboardingSlideVisual from '@/components/onboarding/OnboardingSlideVisual';
 
@@ -27,22 +28,32 @@ import OnboardingSlideVisual from '@/components/onboarding/OnboardingSlideVisual
  * flow, which unmounts this component — so an index held here would silently
  * reset to the first slide, and pressing Back from the join screen dropped the
  * visitor at the beginning instead of the screen they had just left.
+ *
+ * ── DIRECTION AND LANGUAGE ──────────────────────────────────────────────────
+ * Every label comes from t(), and the layout direction comes from the chosen
+ * language rather than a hardcoded RTL: an English or Spanish visitor reads this
+ * flow left-to-right. The back/next arrows follow the same rule — the arrow that
+ * points "backwards" is the one that points against the reading direction.
  */
 export default function TrackExplainer({ track, slides, index = 0, onIndexChange, onFinish, onSwitchTrack }) {
+  const { t, isRTL } = useLanguage();
   const slide = slides[index];
   const goTo = (i) => onIndexChange?.(i);
   const isLast = index === slides.length - 1;
 
+  const BackArrow = isRTL ? ArrowRight : ArrowLeft;
+  const NextArrow = isRTL ? ArrowLeft : ArrowRight;
+
   return (
-    <div className="j-onb" dir="rtl">
+    <div className="j-onb" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ── Header: back · progress · skip ── */}
       <div className="j-onb-bar">
         <button
           className="j-onb-icon"
           onClick={() => (index > 0 ? goTo(index - 1) : onSwitchTrack())}
-          aria-label="חזרה"
+          aria-label={t('onb_back')}
         >
-          <ArrowRight size={18} />
+          <BackArrow size={18} />
         </button>
 
         <div className="j-onb-progress">
@@ -56,7 +67,7 @@ export default function TrackExplainer({ track, slides, index = 0, onIndexChange
         </div>
 
         <button className="j-onb-skip" onClick={onFinish}>
-          <X size={14} /> דלג
+          <X size={14} /> {t('onb_skip')}
         </button>
       </div>
 
@@ -84,11 +95,11 @@ export default function TrackExplainer({ track, slides, index = 0, onIndexChange
           className="j-onb-cta"
           onClick={isLast ? onFinish : () => goTo(index + 1)}
         >
-          {isLast ? FINAL_CTA[track] : (<>הבא <ArrowLeft size={18} /></>)}
+          {isLast ? t(FINAL_CTA_KEY[track]) : (<>{t('onb_next')} <NextArrow size={18} /></>)}
         </button>
 
         <button className="j-onb-switch" onClick={onSwitchTrack}>
-          החלפת מסלול
+          {t('onb_switch_track')}
         </button>
       </div>
     </div>

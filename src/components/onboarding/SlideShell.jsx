@@ -1,3 +1,4 @@
+import { useLanguage } from '@/lib/LanguageContext';
 import PreviewCard from '@/components/onboarding/PreviewCard';
 
 /**
@@ -11,13 +12,18 @@ import PreviewCard from '@/components/onboarding/PreviewCard';
  *
  * The illustration then takes EVERY remaining pixel of height, which is what
  * keeps it large and clear and leaves no empty gap under the copy.
+ *
+ * The copy arrives as translation keys and is resolved HERE, so the slide data
+ * itself stays language-free.
  */
 export default function SlideShell({ slide, children }) {
+  const { t } = useLanguage();
+
   return (
-    <div className="j-slide" dir="rtl">
+    <div className="j-slide">
       <div className="j-slide-head">
-        <h2 className="j-slide-title">{slide.title}</h2>
-        <p className="j-slide-body">{slide.body}</p>
+        <h2 className="j-slide-title">{t(slide.titleKey)}</h2>
+        <p className="j-slide-body">{t(slide.bodyKey)}</p>
       </div>
 
       <div className="j-slide-art">

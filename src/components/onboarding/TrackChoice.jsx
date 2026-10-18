@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { BrandLogo, BrandName } from '@/components/BrandIdentity';
 import { TRACKS } from '@/lib/onboardingTrack';
+import { useLanguage } from '@/lib/LanguageContext';
 import OnboardingFooter from '@/components/onboarding/OnboardingFooter';
 
 /**
@@ -20,27 +21,34 @@ import OnboardingFooter from '@/components/onboarding/OnboardingFooter';
  * the first carries the brand colour, the second stays clean — so the screen
  * reads as one clear choice followed by its alternative instead of two
  * identical blocks.
+ *
+ * The copy is held as translation keys (see @/lib/i18n-onboarding) and the
+ * direction follows the chosen language, so the screen reads correctly in all
+ * nine languages rather than always right-to-left.
  */
 const BOXES = [
   {
     track: TRACKS.PUBLISH,
-    title: 'צריכים עזרה?',
-    body: 'פרסמו משימה בחינם, קבלו פניות מעובדים ובחרו מי יעזור לכם.',
-    cta: 'פרסמו משימה בחינם',
+    titleKey: 'onb_box_publish_title',
+    bodyKey: 'onb_box_publish_body',
+    ctaKey: 'onb_box_publish_cta',
     plain: false,
   },
   {
     track: TRACKS.WORKER,
-    title: 'רוצים להרוויח?',
-    body: 'מצאו משימות באזור שלכם, הגישו מועמדות והתחילו להרוויח.',
-    cta: 'מצאו משימות והתחילו להרוויח',
+    titleKey: 'onb_box_worker_title',
+    bodyKey: 'onb_box_worker_body',
+    ctaKey: 'onb_box_worker_cta',
     plain: true,
   },
 ];
 
 export default function TrackChoice({ onChoose }) {
+  const { t, isRTL } = useLanguage();
+  const CtaArrow = isRTL ? ArrowLeft : ArrowRight;
+
   return (
-    <div className="j-hero" dir="rtl">
+    <div className="j-hero" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="j-hero-glow j-hero-glow-a" />
       <div className="j-hero-glow j-hero-glow-b" />
 
@@ -55,8 +63,8 @@ export default function TrackChoice({ onChoose }) {
         </div>
 
         <div className="j-hero-main">
-          <h1 className="j-hero-title">מה תרצו לעשות היום?</h1>
-          <p className="j-hero-body">ב-Joba24 מוצאים עזרה או מרוויחים מביצוע משימות.</p>
+          <h1 className="j-hero-title">{t('onb_choice_title')}</h1>
+          <p className="j-hero-body">{t('onb_choice_body')}</p>
 
           <div className="j-hero-boxes">
             {BOXES.map((box, i) => (
@@ -72,13 +80,13 @@ export default function TrackChoice({ onChoose }) {
                 transition={{ delay: 0.06 * i, duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
               >
                 <div>
-                  <div className="j-hero-box-title">{box.title}</div>
-                  <p className="j-hero-box-body">{box.body}</p>
+                  <div className="j-hero-box-title">{t(box.titleKey)}</div>
+                  <p className="j-hero-box-body">{t(box.bodyKey)}</p>
                 </div>
 
                 <span className={`j-hero-box-cta${box.plain ? ' j-hero-box-cta-plain' : ''}`}>
-                  {box.cta}
-                  <ArrowLeft size={18} />
+                  {t(box.ctaKey)}
+                  <CtaArrow size={18} />
                 </span>
               </motion.div>
             ))}

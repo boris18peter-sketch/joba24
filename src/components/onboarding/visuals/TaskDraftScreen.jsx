@@ -1,5 +1,6 @@
 import { MapPin } from 'lucide-react';
-import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
+import { useLanguage } from '@/lib/LanguageContext';
+import { useOnboardingTask } from '@/lib/onboardingDemoTask';
 
 /**
  * The publish form's description + location, FILLED IN.
@@ -16,10 +17,13 @@ import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
  * illustration has no reason to hint at either.
  */
 export default function TaskDraftScreen() {
+  const { t } = useLanguage();
+  const task = useOnboardingTask();
+
   return (
     <>
       <div style={{ height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 14px', background: 'var(--surface-2)', boxShadow: '0 1px 0 var(--border-1)' }}>
-        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>פרסם משימה</span>
+        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>{t('onb_v_publish')}</span>
       </div>
 
       <div style={{ background: 'var(--surface-1)', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -27,11 +31,11 @@ export default function TaskDraftScreen() {
         {/* ── תאור המשימה — the main input ── */}
         <div className="j-card" style={{ padding: '14px 14px 16px' }}>
           <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>
-            📝 תאר את המשימה *
+            {t('onb_v_describe')}
           </div>
 
           <div style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, padding: '11px 14px' }}>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-1)' }}>{ONBOARDING_TASK.description}</p>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-1)' }}>{task.description}</p>
           </div>
         </div>
 
@@ -39,7 +43,7 @@ export default function TaskDraftScreen() {
         <div className="j-card" style={{ padding: '14px 14px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 9 }}>
             <MapPin size={14} strokeWidth={2.2} color="var(--text-2)" />
-            <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)' }}>מיקום *</span>
+            <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)' }}>{t('onb_v_location')}</span>
           </div>
 
           {/* Street and city ONLY. A task preview must never show a specific
@@ -49,7 +53,7 @@ export default function TaskDraftScreen() {
             background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12,
             padding: '11px 14px', fontSize: 13.5, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.5,
           }}>
-            {ONBOARDING_TASK.location}
+            {task.location}
           </div>
         </div>
 

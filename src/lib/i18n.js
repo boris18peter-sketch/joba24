@@ -14,6 +14,7 @@ import { ru } from '@/lib/i18n-ru';
 import { fil } from '@/lib/i18n-fil';
 import { hi } from '@/lib/i18n-hi';
 import { zh } from '@/lib/i18n-zh';
+import { onboardingI18n } from '@/lib/i18n-onboarding';
 
 export const LANGUAGES = [
   { code: 'he', label: 'עברית',   flag: '🇮🇱', rtl: true  },
@@ -30,10 +31,13 @@ export const LANGUAGES = [
 export const RTL_LANGS = new Set(['he', 'ar']);
 
 export const translations = {
-  he,
-  en,
+  // The first-run flow's copy is merged in from its own module (i18n-onboarding),
+  // so its screens are translated in every language without nine more edits here.
+  he: { ...he, ...onboardingI18n.he },
+  en: { ...en, ...onboardingI18n.en },
   ar: {
     ...ar,
+    ...onboardingI18n.ar,
     notif_permission_title: 'تفعيل الإخطارات؟',
     notif_permission_body: 'احصل على تنبيهات فورية عند توافق مهام جديدة، أو رد أحد على دردشتك، أو جهوزية دفعتك.',
     notif_permission_allow: 'نعم، فعّل',
@@ -43,6 +47,7 @@ export const translations = {
   },
   es: {
     ...es,
+    ...onboardingI18n.es,
     notif_permission_title: '¿Habilitar notificaciones?',
     notif_permission_body: 'Recibe alertas instantáneas cuando se asigne una tarea, alguien responda tu chat, o tu pago esté listo.',
     notif_permission_allow: 'Sí, Habilitar',
@@ -52,6 +57,7 @@ export const translations = {
   },
   fr: {
     ...fr,
+    ...onboardingI18n.fr,
     notif_permission_title: 'Activer les notifications ?',
     notif_permission_body: 'Recevez des alertes instantanées quand une tâche vous correspond, quelqu\'un répond à votre chat, ou votre paiement est prêt.',
     notif_permission_allow: 'Oui, Activer',
@@ -61,6 +67,7 @@ export const translations = {
   },
   ru: {
     ...ru,
+    ...onboardingI18n.ru,
     notif_permission_title: 'Включить уведомления?',
     notif_permission_body: 'Получайте мгновенные оповещения, когда вам подходит задача, кто-то отвечает в чате или платеж готов.',
     notif_permission_allow: 'Да, Включить',
@@ -68,9 +75,9 @@ export const translations = {
     location: 'Местоположение',
     notifications: 'Уведомления',
   },
-  fil: { ...fil },
-  hi: { ...hi },
-  zh: { ...zh },
+  fil: { ...fil, ...onboardingI18n.fil },
+  hi: { ...hi, ...onboardingI18n.hi },
+  zh: { ...zh, ...onboardingI18n.zh },
 };
 
 /** Detect language from IP (uses free ipapi.co), fallback to browser/localStorage */

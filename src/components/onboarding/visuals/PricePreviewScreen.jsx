@@ -1,5 +1,6 @@
 import { Sparkles } from 'lucide-react';
-import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
+import { useLanguage } from '@/lib/LanguageContext';
+import { useOnboardingTask } from '@/lib/onboardingDemoTask';
 
 /**
  * The price step, mirroring `/create-task` — and, above all, stating the model.
@@ -17,10 +18,13 @@ import { ONBOARDING_TASK } from '@/lib/onboardingDemoTask';
  * light values, so the whole screen reads correctly in Dark Mode too.
  */
 export default function PricePreviewScreen() {
+  const { t } = useLanguage();
+  const task = useOnboardingTask();
+
   return (
     <>
       <div style={{ height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 14px', background: 'var(--surface-2)', boxShadow: '0 1px 0 var(--border-1)' }}>
-        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>קביעת מחיר</span>
+        <span style={{ fontSize: 16.5, fontWeight: 900, color: 'var(--text-1)' }}>{t('onb_v_price')}</span>
       </div>
 
       <div style={{ background: 'var(--surface-1)', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -42,10 +46,10 @@ export default function PricePreviewScreen() {
           </div>
           <div>
             <div style={{ fontSize: 13.5, fontWeight: 900, color: 'var(--brand-primary)' }}>
-              אתם קובעים את המחיר
+              {t('onb_v_you_set_price')}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.55, marginTop: 3 }}>
-              העובדים רואים בדיוק את המחיר שכתבתם, ורק מי שהמחיר מתאים לו מגיש מועמדות. כך מקבלים פניות אמיתיות — בלי משא ומתן ובלי הפתעות.
+              {t('onb_v_price_model')}
             </div>
           </div>
         </div>
@@ -53,7 +57,7 @@ export default function PricePreviewScreen() {
         {/* The price you set */}
         <div className="j-card" style={{ padding: '14px 14px 16px' }}>
           <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>
-            מחיר (₪) *
+            {t('onb_v_price_field')}
           </div>
           <div style={{
             background: 'var(--input-bg)',
@@ -65,7 +69,7 @@ export default function PricePreviewScreen() {
             fontSize: 18, fontWeight: 800, color: 'var(--text-1)',
             direction: 'ltr',
           }}>
-            {ONBOARDING_TASK.price}
+            {task.price}
           </div>
         </div>
 
@@ -76,14 +80,14 @@ export default function PricePreviewScreen() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
               <span className="j-ai-pill"><Sparkles size={10} /> AI</span>
-              <span className="j-ai-new">חדש ב-Joba24</span>
+              <span className="j-ai-new">{t('onb_v_new')}</span>
             </div>
 
             <div style={{ fontSize: 14.5, fontWeight: 900, color: 'var(--text-1)', marginTop: 9, lineHeight: 1.3, position: 'relative' }}>
-              ה־AI ממליץ על המחיר המתאים
+              {t('onb_v_ai_recommends')}
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.5, position: 'relative' }}>
-              לפי תיאור המשימה ומחירי השוק
+              {t('onb_v_ai_basis')}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 11, position: 'relative' }}>
@@ -96,7 +100,7 @@ export default function PricePreviewScreen() {
                 fontSize: 12.5, fontWeight: 800, whiteSpace: 'nowrap',
                 boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
               }}>
-                השתמש בהמלצה
+                {t('onb_v_use_rec')}
               </div>
             </div>
           </div>

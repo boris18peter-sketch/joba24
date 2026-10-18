@@ -12,6 +12,12 @@ import { TRACKS } from '@/lib/onboardingTrack';
  * no labels above the headline and no tags anywhere — the headline alone says
  * what the screen is.
  *
+ * ── TRANSLATED ──────────────────────────────────────────────────────────────
+ * The copy is held as translation KEYS, never as literal Hebrew, so all six
+ * screens — and their buttons — render in the visitor's own language. The
+ * strings live in @/lib/i18n-onboarding (merged into `translations`), and the
+ * components resolve them with t().
+ *
  * `visual` names the illustration: the app's OWN components, laid out statically
  * at their real logical width, so each screen shows exactly the interface the
  * visitor is about to meet and follows Light/Dark automatically.
@@ -19,44 +25,44 @@ import { TRACKS } from '@/lib/onboardingTrack';
 const SLIDES = {
   [TRACKS.PUBLISH]: [
     {
-      title: 'צריכים עזרה? פשוט מפרסמים!',
-      body: 'תארו מה צריך לעשות, איפה ומתי. הפרסום בחינם.',
+      titleKey: 'onb_pub_s1_title',
+      bodyKey: 'onb_pub_s1_body',
       visual: 'task-draft',
     },
     {
-      title: 'נמאס לכם ממחירים מוגזמים?',
-      body: 'אתם קובעים את המחיר, וה־AI עוזר לכם לבחור מחיר מתאים לפי תיאור המשימה. אנשים רואים את המשימה שלכם, ומי שמעוניין מגיש מועמדות.',
+      titleKey: 'onb_pub_s2_title',
+      bodyKey: 'onb_pub_s2_body',
       visual: 'price',
     },
     {
-      title: 'פרסמו עכשיו, קבלו מועמדויות תוך דקות!',
-      body: 'אלפי אנשים מוכנים למשימות. מי שמעוניין יגיש מועמדות, ואתם בוחרים מי יגיע.',
+      titleKey: 'onb_pub_s3_title',
+      bodyKey: 'onb_pub_s3_body',
       visual: 'applicants',
     },
   ],
   [TRACKS.WORKER]: [
     {
-      title: 'יש לכם כישורים? תהפכו אותם להכנסה!',
-      body: 'בחרו מה אתם יודעים לעשות ובאילו אזורים תרצו לעבוד.',
+      titleKey: 'onb_wrk_s1_title',
+      bodyKey: 'onb_wrk_s1_body',
       visual: 'worker-profile',
     },
     {
-      title: 'המשימות מגיעות גם אליכם!',
-      body: 'קבלו התראות על משימות מתאימות או מצאו אותן בעצמכם בפיד.',
+      titleKey: 'onb_wrk_s2_title',
+      bodyKey: 'onb_wrk_s2_body',
       visual: 'feed',
     },
     {
-      title: 'מצאתם משימה? הגישו מועמדות!',
-      body: 'המפרסם בוחר מי יבצע. נבחרתם? צאו לבצע והרוויחו.',
+      titleKey: 'onb_wrk_s3_title',
+      bodyKey: 'onb_wrk_s3_body',
       visual: 'task-detail',
     },
   ],
 };
 
-/** The closing call to action for each track. */
-export const FINAL_CTA = {
-  [TRACKS.PUBLISH]: 'פרסמו משימה בחינם',
-  [TRACKS.WORKER]: 'בוא נתחיל להרוויח',
+/** The closing call to action for each track — as a translation key. */
+export const FINAL_CTA_KEY = {
+  [TRACKS.PUBLISH]: 'onb_cta_publish',
+  [TRACKS.WORKER]: 'onb_cta_worker',
 };
 
 export function explainerSlides(track) {

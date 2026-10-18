@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { BrandLogo, BrandName, useBrandIdentity, useBrandText } from '@/components/BrandIdentity';
@@ -49,8 +49,8 @@ export default function WorkerJoinStep({ onBack }) {
       {/* Same bar as the explainer screens, with every step filled — this is the
           last screen of the flow, so it reads as arriving, not as starting over. */}
       <div className="j-onb-bar">
-        <button className="j-onb-icon" onClick={onBack} aria-label="חזרה">
-          <ArrowRight size={18} />
+        <button className="j-onb-icon" onClick={onBack} aria-label={t('onb_back')}>
+          {isRTL ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
         </button>
 
         <div className="j-onb-progress">
@@ -78,7 +78,7 @@ export default function WorkerJoinStep({ onBack }) {
 
             <span className="j-hero-count">
               <span className="j-hero-count-n">{regCount.toLocaleString()}</span>
-              <span className="j-hero-count-t">{`כבר הצטרפו ל-${identity.name}`}</span>
+              <span className="j-hero-count-t">{t('onb_joined_count', { name: identity.name })}</span>
             </span>
           </div>
         </div>
