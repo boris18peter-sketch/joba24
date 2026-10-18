@@ -44,9 +44,21 @@ bootMark(
 const STALE_IMPORT_RE = /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i;
 function healStaleImport() {
   const KEY = 'joba24_main_reload_ts';
-  const last = Number(sessionStorage.getItem(KEY) || 0);
-  if (Date.now() - last <= 10000) return; // throttled — don't loop
-  sessionStorage.setItem(KEY, String(Date.now()));
+  // ── THE THROTTLE MUST NEVER BE ABLE TO BLOCK THE HEAL ────────────────────
+  // sessionStorage THROWS in an iOS WKWebView whose storage is blocked (and in
+  // some private-browsing states). Unguarded, that exception escaped this
+  // function, so the reload below never ran: the stale chunk stayed, the app
+  // stayed dead, and "TypeError: Importing a module script failed." repeated on
+  // every single launch — the one outcome this whole file exists to prevent.
+  // The throttle is an optimisation (don't loop); it is not a prerequisite.
+  // index.html's own heal already guards its storage access this way.
+  try {
+    const last = Number(sessionStorage.getItem(KEY) || 0);
+    if (Date.now() - last <= 10000) return; // throttled — don't loop
+    sessionStorage.setItem(KEY, String(Date.now()));
+  } catch {
+    /* storage unavailable — no throttle, but heal anyway */
+  }
   // reloadFresh (not location.reload) — unregisters stale service workers, clears
   // Cache Storage and navigates with a cache-buster so the reload really does
   // fetch fresh assets instead of the same stale index.html.

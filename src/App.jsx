@@ -61,9 +61,20 @@ const lazyRetry = (importFn) => lazy(() =>
     //    pointing at a build that no longer exists), which only a reload onto
     //    the current build fixes.
     const KEY = 'joba24_chunk_reload_ts';
-    const last = Number(sessionStorage.getItem(KEY) || 0);
-    if (Date.now() - last > 10000) {
-      sessionStorage.setItem(KEY, String(Date.now()));
+    // Storage is read defensively for the same reason as main.jsx: an iOS
+    // WKWebView with storage blocked THROWS on sessionStorage, and an exception
+    // here would replace the real error with a SecurityError and skip the
+    // reload — leaving the visitor on a dead screen. A lost throttle costs one
+    // extra reload; a lost heal costs the app.
+    let canHeal = true;
+    try {
+      const last = Number(sessionStorage.getItem(KEY) || 0);
+      canHeal = Date.now() - last > 10000;
+      if (canHeal) sessionStorage.setItem(KEY, String(Date.now()));
+    } catch {
+      /* no throttle available — heal anyway */
+    }
+    if (canHeal) {
       bootMark('chunk', 'fail', 'reloading onto the current build');
       // reloadFresh, not location.reload — a stale service worker / HTTP cache
       // can keep serving the broken chunk URL even after a rebuild, so the
