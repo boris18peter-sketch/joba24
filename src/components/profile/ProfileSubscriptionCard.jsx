@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Settings, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
 import {
   isIosNative,
   getServerSubscriptionState,
@@ -10,27 +11,32 @@ import {
   syncIosSubscriptionEntitlements,
 } from '@/lib/iosIap';
 
-// Normalized Joba24 subscription state → label + colour.
+// Normalized Joba24 subscription state → translation key + colour tone.
 // Apple remains authoritative; this is the server-side projection.
 const STATUS_META = {
-  active: { label: 'פעיל', bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)' },
-  cancelled_active: { label: 'מבוטל — פעיל עד תום התקופה', bg: 'var(--color-warning-bg)', color: 'var(--color-warning)', border: 'var(--color-warning-border)' },
-  billing_issue: { label: 'בעיית חיוב', bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)' },
-  grace_period: { label: 'בתקופת חסד', bg: 'var(--color-warning-bg)', color: 'var(--color-warning)', border: 'var(--color-warning-border)' },
-  expired: { label: 'פג תוקף', bg: 'var(--surface-3)', color: 'var(--text-2)', border: 'var(--border-1)' },
-  refunded: { label: 'הוחזר', bg: 'var(--surface-3)', color: 'var(--text-2)', border: 'var(--border-1)' },
-  revoked: { label: 'בוטל על ידי Apple', bg: 'var(--surface-3)', color: 'var(--text-2)', border: 'var(--border-1)' },
-  unknown: { label: 'לא ידוע', bg: 'var(--surface-3)', color: 'var(--text-2)', border: 'var(--border-1)' },
+  active: { key: 'sub_status_active', tone: 'success' },
+  cancelled_active: { key: 'sub_status_cancelled', tone: 'warning' },
+  billing_issue: { key: 'sub_status_billing', tone: 'danger' },
+  grace_period: { key: 'sub_status_grace', tone: 'warning' },
+  expired: { key: 'sub_status_expired', tone: 'muted' },
+  refunded: { key: 'sub_status_refunded', tone: 'muted' },
+  revoked: { key: 'sub_status_revoked', tone: 'muted' },
+  unknown: { key: 'sub_status_unknown', tone: 'muted' },
 };
 
-function formatDate(value) {
-  if (!value) return null;
-  try {
-    return new Date(value).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
-  } catch {
-    return null;
-  }
-}
+const TONE = {
+  success: { bg: 'var(--color-success-bg)', color: 'var(--color-success)', border: 'var(--color-success-border)' },
+  warning: { bg: 'var(--color-warning-bg)', color: 'var(--color-warning)', border: 'var(--color-warning-border)' },
+  danger: { bg: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'var(--color-danger-border)' },
+  muted: { bg: 'var(--surface-3)', color: 'var(--text-2)', border: 'var(--border-1)' },
+};
+
+// One date format per UI language, so the renewal date is never rendered with a
+// Hebrew locale inside an English, Russian or Chinese screen.
+const LOCALES = {
+  he: 'he-IL', ar: 'ar-IL', en: 'en-GB', es: 'es-ES',
+  fr: 'fr-FR', ru: 'ru-RU', fil: 'en-PH', hi: 'hi-IN', zh: 'zh-CN',
+};
 
 /**
  * ProfileSubscriptionCard — "המנוי שלי".
@@ -41,6 +47,7 @@ function formatDate(value) {
  */
 export default function ProfileSubscriptionCard() {
   const queryClient = useQueryClient();
+  const { t, lang } = useLanguage();
   const ios = isIosNative();
   const [restoring, setRestoring] = useState(false);
 
@@ -78,9 +85,32 @@ export default function ProfileSubscriptionCard() {
   const entitlement = sub || reconciled || null;
   const syncing = ios && !entitlement && (isLoading || reconciling);
 
-  const meta = STATUS_META[entitlement?.status] || STATUS_META.unknown;
-  const periodEnd = formatDate(entitlement?.period_end);
-  const isActive = ['active', 'cancelled_active', 'grace_period'].includes(entitlement?.status);
+  const status = entitlement?.status;
+  const meta = STATUS_META[status] || STATUS_META.unknown;
+
+  // ── Does it actually renew? ────────────────────────────────────────────────
+  // Only when Apple reports auto-renew as ON. A subscription the user has
+  // cancelled is still ENTITLED until the period ends, but it will never renew —
+  // so the card must say it expires, never that it renews. Reading "renews on
+  // <date>" after cancelling is the one thing this card must not do.
+  const willRenew = entitlement?.auto_renew_status === true;
+  const isActive = ['active', 'cancelled_active', 'grace_period'].includes(status);
+
+  // A live subscription that will not renew is shown as such, not as a plain
+  // green "active".
+  const badge = isActive && !willRenew
+    ? { key: 'sub_status_cancelled', tone: 'warning' }
+    : meta;
+  const badgeTone = TONE[badge.tone];
+
+  const periodEnd = (() => {
+    if (!entitlement?.period_end) return null;
+    try {
+      return new Date(entitlement.period_end).toLocaleDateString(LOCALES[lang] || 'he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch {
+      return null;
+    }
+  })();
 
   const handleRestore = async () => {
     if (restoring) return;
@@ -91,13 +121,13 @@ export default function ProfileSubscriptionCard() {
       await queryClient.invalidateQueries({ queryKey: ['me'] });
       toast.success(
         res.subscriptions > 0
-          ? 'המנוי אומת מול Apple'
+          ? t('sub_restored_verified')
           : res.recovered > 0
-            ? 'שוחזרו רכישות שלא הושלמו'
-            : 'לא נמצאו רכישות לשחזור',
+            ? t('sub_restored_recovered')
+            : t('sub_restored_none'),
       );
     } catch {
-      toast.error('השחזור נכשל, נסו שוב');
+      toast.error(t('sub_restore_failed'));
     } finally {
       setRestoring(false);
     }
@@ -105,7 +135,7 @@ export default function ProfileSubscriptionCard() {
 
   const handleManage = async () => {
     const ok = await openIosManageSubscriptions();
-    if (!ok) toast.error('לא ניתן לפתוח את ניהול המנוי');
+    if (!ok) toast.error(t('sub_manage_failed'));
   };
 
   // Nothing to show: not on iOS and no server-side subscription.
@@ -117,7 +147,7 @@ export default function ProfileSubscriptionCard() {
         borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px',
         display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-2)',
       }}>
-        <Loader2 size={15} className="animate-spin" /> מסנכרן מנוי מול Apple…
+        <Loader2 size={15} className="animate-spin" /> {t('sub_syncing')}
       </div>
     );
   }
@@ -131,20 +161,22 @@ export default function ProfileSubscriptionCard() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
         <CheckCircle2 size={13} color="var(--text-3)" />
-        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>המנוי שלי</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('sub_title')}</span>
       </div>
 
       {entitlement ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--text-1)' }}>
-              {entitlement.credits_per_period ? `מנוי ${entitlement.credits_per_period} ג'ובות בחודש` : 'מנוי חודשי'}
+              {entitlement.credits_per_period
+                ? t('sub_monthly_n', { n: entitlement.credits_per_period })
+                : t('sub_monthly')}
             </span>
             <span style={{
               fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 99,
-              background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`, whiteSpace: 'nowrap',
+              background: badgeTone.bg, color: badgeTone.color, border: `1px solid ${badgeTone.border}`, whiteSpace: 'nowrap',
             }}>
-              {meta.label}
+              {t(badge.key)}
             </span>
           </div>
 
@@ -152,14 +184,14 @@ export default function ProfileSubscriptionCard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-2)', marginBottom: 12 }}>
               <Calendar size={12} />
               {isActive
-                ? (entitlement.auto_renew_status === false ? `פעיל עד ${periodEnd}` : `מתחדש ב-${periodEnd}`)
-                : `הסתיים ב-${periodEnd}`}
+                ? (willRenew ? t('sub_renews_on', { date: periodEnd }) : t('sub_active_until', { date: periodEnd }))
+                : t('sub_ended_on', { date: periodEnd })}
             </div>
           )}
         </>
       ) : (
         <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>
-          לא נמצא מנוי פעיל המשויך לחשבון זה.
+          {t('sub_none')}
         </div>
       )}
 
@@ -174,7 +206,7 @@ export default function ProfileSubscriptionCard() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
-            <Settings size={15} /> ניהול המנוי
+            <Settings size={15} /> {t('sub_manage')}
           </button>
         )}
         <button
@@ -189,7 +221,7 @@ export default function ProfileSubscriptionCard() {
           }}
         >
           {restoring ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-          שחזור רכישות
+          {t('sub_restore')}
         </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { getCategoryLabel } from '@/lib/categories';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * The PROFESSIONAL SCOPE of the current Brand.
@@ -19,22 +20,43 @@ import { getCategoryLabel } from '@/lib/categories';
  * same category can never be mis-matched by a translated string.
  */
 
-/** Canonical label for a professional key, from the global catalogue. */
+/**
+ * Canonical label for a professional key.
+ *
+ * The TRANSLATION wins; the stored global label is only the fallback. The
+ * catalogue is authored in Hebrew, so reading the stored label first (as this
+ * did) leaked Hebrew into every other language — a Spanish user saw
+ * "אינסטלציה" in their profile. Keys the catalogue has no translation for still
+ * fall back to the stored label, so nothing is ever shown blank.
+ */
 export function professionalLabel(key, map, t) {
-  return map?.[key]?.label || getCategoryLabel(key, t);
+  if (!key) return '';
+  const fromI18n = t ? t(`cat_${key}`) : null;
+  if (fromI18n && fromI18n !== `cat_${key}`) return fromI18n;
+  return map?.[key]?.label || getCategoryLabel(key);
 }
 
 export function useProfessionalScope() {
-  const { categories, globalMap, isLoading } = useBrandCategories();
+  const { categories, roots, globalMap, isLoading } = useBrandCategories();
   const { isPlatformBrand } = useBrand();
+  const { t } = useLanguage();
 
   const keys = categories.map((c) => c.category_key);
   const keySet = new Set(keys);
+
+  // The PROFESSIONS a user can put on their profile: the Brand's top-level
+  // categories, translated. Deep, form-owning services belong to the task form,
+  // never here — so a plumber picks "אינסטלציה" and not "לתקן נזילה".
+  const professions = (roots || []).map((r) => ({
+    value: r.category_key,
+    label: professionalLabel(r.category_key, globalMap, t),
+  }));
 
   return {
     isPlatformBrand,
     isLoading,
     services: categories,
+    professions,
     globalMap,
     keys,
     /** Is this canonical category part of the current Brand's professional scope? */

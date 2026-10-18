@@ -68,6 +68,32 @@ function collectActionable(node, map, childrenOf, excluded, seen) {
   return isGroupNode(node) ? [] : [node];
 }
 
+/** Is this node a top-level category (a niche a Brand is built around)? */
+const isRootNode = (n) => !!n && (n.node_type === 'root' || !n.parent_key);
+
+/**
+ * The TOP-LEVEL categories a Brand offers.
+ *
+ * A worker profile says what someone DOES (a plumber), not the exact job they
+ * would take (a leaking tap). Those deep, form-owning services belong to the
+ * task form — offering them as a profession would leave the profile with
+ * "לתקן נזילה" where "אינסטלציה" belongs, and would never offer the trade
+ * itself. So a profile picker reads this list, and a task form reads
+ * deriveServices().
+ */
+export function deriveRoots(globals, brand) {
+  const map = Object.fromEntries(globals.map((g) => [g.category_key, g]));
+  if (brand?.category_model_version !== 2) {
+    return globals
+      .filter((n) => isActive(n) && !isGroupNode(n) && isRootNode(n))
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  }
+  return (brand.assigned_parent_keys || [])
+    .map((k) => map[k])
+    .filter((n) => n && isActive(n) && !isGroupNode(n))
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+}
+
 /**
  * The actionable categories a Brand offers.
  * Legacy (non model-2) Brands keep their explicit BrandCategory rows.

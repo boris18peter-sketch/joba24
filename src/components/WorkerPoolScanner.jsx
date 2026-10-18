@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useBrandCategories } from '@/lib/brand/brandCategories';
+import { categoryMatches } from '@/lib/brand/categoryTree';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹',
@@ -20,6 +22,7 @@ const CATEGORY_NAME_PLURAL = {
 const PROFESSIONAL_CATS = new Set(['plumbing', 'electricity', 'carpentry', 'painting', 'ac', 'locksmith', 'it_support', 'babysitting', 'tutoring']);
 
 function useWorkerCount(category, city) {
+  const { globalMap } = useBrandCategories();
   const { data: allUsers = [] } = useQuery({
     queryKey: ['workerPool'],
     queryFn: () => base44.entities.User.list('-last_active_at', 500),
@@ -34,7 +37,10 @@ function useWorkerCount(category, city) {
 
   const count = allUsers.filter(u => {
     if (!u.preferred_categories?.length) return false;
-    if (!u.preferred_categories.includes(category)) return false;
+    // Ancestor-aware, exactly like the feed and instant matching: a worker who
+    // put a whole trade on their profile ("אינסטלציה") counts for every service
+    // beneath it ("סתימה", "נזילה").
+    if (!u.preferred_categories.some((k) => categoryMatches(category, k, globalMap))) return false;
     const activeAt = u.last_active_at ? new Date(u.last_active_at) : null;
     if (!activeAt || activeAt < sevenDaysAgo) return false;
     const uCity = (u.city || '').toLowerCase();
@@ -121,6 +127,7 @@ export function WorkerPoolPill({ category, city }) {
 
 // ── Category-only hint — shown right after category selection ────────────────
 export function CategoryWorkerHint({ category }) {
+  const { globalMap } = useBrandCategories();
   const { data: allUsers = [] } = useQuery({
     queryKey: ['workerPool'],
     queryFn: () => base44.entities.User.list('-last_active_at', 500),
@@ -132,7 +139,7 @@ export function CategoryWorkerHint({ category }) {
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const count = allUsers.filter(u =>
-    u.preferred_categories?.includes(category) &&
+    (u.preferred_categories || []).some((k) => categoryMatches(category, k, globalMap)) &&
     u.last_active_at &&
     new Date(u.last_active_at) >= sevenDaysAgo
   ).length;
