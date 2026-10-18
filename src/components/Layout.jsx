@@ -49,6 +49,7 @@ import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
+import AppLoading from '@/components/AppLoading';
 import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack } from '@/lib/onboardingTrack';
 
 import BoostOverlay from '@/components/BoostOverlay';
@@ -533,11 +534,11 @@ export default function Layout() {
       );
     }
     if (!effectiveGuest) {
-      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="var(--brand-nav-active, var(--brand-primary))" className="animate-spin" /></div>;
+      return <AppLoading />;
     }
     // Guest: only home is allowed. If not on home yet, wait for the redirect to fire.
     if (location.pathname !== '/') {
-      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="var(--brand-nav-active, var(--brand-primary))" className="animate-spin" /></div>;
+      return <AppLoading />;
     }
     // Guest on home: fall through to the full layout (feed browsing only)
   }
@@ -577,11 +578,7 @@ export default function Layout() {
   // unknown the user stays on the splash, never on the app.
   const approvalLoading = isAuthenticated && !!me && !isAdmin && !approvalFailed && approvalStatus === undefined;
   if (approvalLoading) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
-        <Loader2 size={32} color="var(--brand-nav-active, var(--brand-primary))" className="animate-spin" />
-      </div>
-    );
+    return <AppLoading />;
   }
   // Authenticated but not-yet-approved users can still read Terms / Privacy / FAQ
   if (isAuthenticated && me && !isApprovedUser && PUBLIC_PAGES.includes(location.pathname)) {

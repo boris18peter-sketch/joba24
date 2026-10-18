@@ -1,4 +1,5 @@
 import { useBrand } from '@/lib/brand/BrandProvider';
+import AppLoading from '@/components/AppLoading';
 
 const shell = {
   position: 'fixed',
@@ -9,19 +10,6 @@ const shell = {
   background: '#f2f5fb',
   padding: 24,
 };
-
-const Spinner = () => (
-  <div
-    style={{
-      width: 36,
-      height: 36,
-      borderRadius: '50%',
-      border: '3px solid #e8edf5',
-      borderTopColor: '#1a6fd4',
-    }}
-    className="animate-spin"
-  />
-);
 
 /**
  * BrandGate — renders the app only on a surface that resolves to a live Brand.
@@ -34,7 +22,7 @@ export default function BrandGate({ children }) {
   const { isLoading, isUnknown, isUnavailable, brand } = useBrand();
 
   if (isLoading) {
-    return <div style={shell}><Spinner /></div>;
+    return <AppLoading />;
   }
 
   if (isUnknown) {

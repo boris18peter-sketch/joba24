@@ -186,6 +186,9 @@
           var cur = document.querySelector('script[type="module"][src]');
           var curSrc = cur ? cur.getAttribute('src') : '';
           if (curSrc && sessionStorage.getItem('joba24_selfheal') === '1') { sessionStorage.removeItem('joba24_selfheal'); return; }
+          // React's module already executed → the app is BOOTING, not stuck.
+          // Skip this check (and its extra full-document fetch) entirely.
+          if (window.__joba24ReactStarted) return;
           fetch('/index.html?cb=' + Date.now(), { cache: 'no-store' })
             .then(function (r) { return r.text(); })
             .then(function (html) {
@@ -264,6 +267,11 @@
         //    connection is never mistaken for a failure.
         window.addEventListener('load', function () {
           setTimeout(function () {
+            // React's module ran → this launch is merely SLOW, not broken.
+            // Healing here reloaded a launch that was working, forcing a second
+            // full boot on top of the first — which is exactly why the first open
+            // took so long and the next one was fast.
+            if (window.__joba24ReactStarted) return;
             var root = document.getElementById('root');
             if (root && root.querySelector('.preload-spinner')) heal();
           }, 8000);

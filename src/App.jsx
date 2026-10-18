@@ -31,7 +31,7 @@ import PermissionPrompt from '@/components/PermissionPrompt';
 import NativeOAuthBounce from '@/components/NativeOAuthBounce';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
-import BrandSplash from '@/components/BrandSplash';
+import AppLoading from '@/components/AppLoading';
 import ConsentBanner from '@/components/ConsentBanner';
 
 // Add page imports here
@@ -231,7 +231,7 @@ const AuthenticatedApp = () => {
 
 
   if (isLoadingPublicSettings || isLoadingAuth) {
-    return <BrandSplash />;
+    return <AppLoading />;
   }
 
   if (authError?.type === 'user_not_registered') {
@@ -241,7 +241,7 @@ const AuthenticatedApp = () => {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <GlobalPopups />
-      <Suspense fallback={<BrandSplash />}>
+      <Suspense fallback={<AppLoading />}>
       <AnimatePresence custom={slideDir} initial={false}>
         <motion.div
           key={animKey}

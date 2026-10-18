@@ -4,6 +4,21 @@ import App from '@/App.jsx'
 import '@/index.css'
 import { reloadFresh } from '@/lib/reloadFresh'
 
+// ── "React actually started" — the signal the HTML healers were missing ──────
+// The inline guards in index.html used to decide a launch was broken purely by
+// "the skeleton is still in #root". On a cold start that is ALWAYS true for the
+// first seconds: React has not mounted yet because the app is still booting.
+// The guards could not tell "still booting" from "permanently stuck", so a slow
+// first launch was reloaded — a full second boot on top of the first, which is
+// why the very first open took so long and the next one was fast (the reload
+// had warmed the cache).
+//
+// This flag is set the instant this module EXECUTES. If the entry chunk itself
+// failed to fetch (a stale hashed chunk after a deploy), this line never runs
+// and the guards still heal exactly as before. So the heal now fires only for a
+// genuinely dead launch, never for a merely slow one.
+window.__joba24ReactStarted = true
+
 // Protective handler: the vite plugin's unhandled-rejection handler accesses
 // event.reason.stack.match(...), which crashes when a promise rejects with a
 // non-Error value (undefined, string, plain object). This capture-phase
