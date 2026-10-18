@@ -23,10 +23,15 @@ export function useLoyaltyBonus(user) {
 
     const offer = (tx) => {
       if (!tx?.id) return;
+      // The popup announces THIS transaction's bonus and nothing else. A record
+      // that carries no usable amount is not a bonus to celebrate, so it is
+      // skipped rather than shown as a number that is not what the worker earned.
+      const value = Number(tx.amount);
+      if (!Number.isFinite(value) || value <= 0) return;
       const key = `joba24_loyalty_popup_${tx.id}`;
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, '1');
-      setBonus({ amount: tx.amount || 0, tasksCompleted: user.tasks_completed || 0 });
+      setBonus({ amount: Math.round(value), tasksCompleted: user.tasks_completed || 0 });
     };
 
     const unsub = base44.entities.CreditTransaction.subscribe((event) => {
@@ -38,7 +43,13 @@ export function useLoyaltyBonus(user) {
 
     base44.entities.CreditTransaction
       .filter({ user_id: user.id, type: 'Loyalty_Reward' }, '-created_date', 1)
-      .then((rows) => { if (!cancelled) offer(rows?.[0]); })
+      // Newest first. The SDK can hand back either a plain array or a page
+      // object depending on the call form, so both shapes are read — otherwise
+      // the catch-up silently finds nothing and the bonus is never announced.
+      .then((res) => {
+        const rows = Array.isArray(res) ? res : res?.items;
+        if (!cancelled) offer(rows?.[0]);
+      })
       .catch(() => {});
 
     return () => { cancelled = true; unsub(); };

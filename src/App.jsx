@@ -28,6 +28,7 @@ import PermissionPrompt from '@/components/PermissionPrompt';
 import NativeOAuthBounce from '@/components/NativeOAuthBounce';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
+import AppDownloadPopup from '@/components/AppDownloadPopup';
 import AppLoading from '@/components/AppLoading';
 import ConsentBanner from '@/components/ConsentBanner';
 import { bootMark } from '@/lib/bootTrace';
@@ -444,6 +445,9 @@ function App() {
                 <AuthenticatedApp />
                 <TaskDetailSheet />
                 <DemoModeExitBanner />
+                {/* The "get the app" nudge for a web publisher, raised once after
+                    their first published task has been seen on the feed. */}
+                <AppDownloadPopup />
                 {/* Advertising-consent notice — shown until the visitor chooses */}
                 <ConsentBanner />
               </TaskSheetProvider>

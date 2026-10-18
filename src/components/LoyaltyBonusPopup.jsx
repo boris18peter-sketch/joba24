@@ -35,6 +35,10 @@ export default function LoyaltyBonusPopup({ amount = 0, tasksCompleted = 0, onCl
   const queryClient = useQueryClient();
   const [claimed, setClaimed] = useState(false);
 
+  // The ONLY number this popup may show is the bonus of the transaction that
+  // raised it. Never a running total, never a previous bonus, never a settings
+  // value — so the figure here always matches the one the worker was told about.
+  const bonusAmount = Math.max(0, Math.round(Number(amount) || 0));
   const progress = getLoyaltyProgress(tasksCompleted);
 
   const handleCollect = () => {
@@ -97,7 +101,7 @@ export default function LoyaltyBonusPopup({ amount = 0, tasksCompleted = 0, onCl
             style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
           >
             <div style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -0.3, marginBottom: 4 }}>
-              {t('lp_revealed_title', { n: amount })}
+              {t('lp_revealed_title', { n: bonusAmount })}
             </div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.92)', fontWeight: 600, lineHeight: 1.5 }}>
               {t('lp_subtitle')}
@@ -109,7 +113,7 @@ export default function LoyaltyBonusPopup({ amount = 0, tasksCompleted = 0, onCl
         <div style={{ padding: '22px 22px 8px' }}>
           {/* Coin visual */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, background: THEME.soft, border: `1px solid ${THEME.border}`, borderRadius: 16, padding: '18px 28px', marginBottom: 18 }}>
-            <span style={{ fontSize: 44, fontWeight: 900, color: THEME.accent, letterSpacing: -2, lineHeight: 1 }}>{amount}</span>
+            <span style={{ fontSize: 44, fontWeight: 900, color: THEME.accent, letterSpacing: -2, lineHeight: 1 }}>{bonusAmount}</span>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
               <CreditIcon size={28} />
               <span style={{ fontSize: 12, color: THEME.accent, fontWeight: 700 }}>{t('lp_credits')}</span>
@@ -144,11 +148,11 @@ export default function LoyaltyBonusPopup({ amount = 0, tasksCompleted = 0, onCl
             {claimed ? t('lp_cta_done') : t('lp_cta')}
           </button>
 
-          {/* ── Rank meter — the one addition to the shared design: a loyalty
-              bonus is also progress, so the ladder sits at the bottom. ── */}
-          <div style={{ marginTop: 18 }}>
-            <LoyaltyProgressMeter progress={progress} />
-          </div>
+          {/* ── Rank meter — the SHARED component, exactly as it renders
+              anywhere else in the app. No wrapper, no extra decoration: a
+              loyalty bonus is also progress, and the ladder is the same ladder
+              the worker sees everywhere. ── */}
+          <LoyaltyProgressMeter progress={progress} />
 
           <div style={{ textAlign: 'center', marginTop: 2, fontSize: 12, color: 'var(--text-3)', fontWeight: 500 }}>
             {t('lp_footer')}

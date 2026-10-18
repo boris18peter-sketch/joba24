@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { BrandLogo, BrandName } from '@/components/BrandIdentity';
 import { TRACKS } from '@/lib/onboardingTrack';
 import { useLanguage } from '@/lib/LanguageContext';
 import OnboardingFooter from '@/components/onboarding/OnboardingFooter';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 /**
  * The first screen: which journey are you here for?
@@ -46,6 +48,11 @@ const BOXES = [
 export default function TrackChoice({ onChoose }) {
   const { t, isRTL } = useLanguage();
   const CtaArrow = isRTL ? ArrowLeft : ArrowRight;
+  // A returning visitor — someone who published here before and has now opened
+  // the app, or landed on the campaign link again — already HAS an account. They
+  // must not be walked through the whole first-run flow a second time, so the way
+  // back in is offered right here, in one tap.
+  const [showLogin, setShowLogin] = useState(false);
 
   return (
     <div className="j-hero" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -93,8 +100,34 @@ export default function TrackChoice({ onChoose }) {
           </div>
         </div>
 
-        <OnboardingFooter />
+        {/* One line, above the shared footer: the way back in for someone who
+            already has an account. Deliberately quiet — it is a shortcut past the
+            flow, not a third journey competing with the two boxes above it. */}
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setShowLogin(true)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '4px 8px', alignSelf: 'center',
+              color: 'var(--brand-primary)', fontSize: 13.5, fontWeight: 800,
+              minHeight: 'unset', minWidth: 'unset',
+            }}
+          >
+            {t('onb_login_cta')}
+          </button>
+          <OnboardingFooter />
+        </div>
       </div>
+
+      {showLogin && (
+        <LoginPromptModal
+          type="publish"
+          titleKey="onb_login_cta"
+          onLogin={() => setShowLogin(false)}
+          onClose={() => setShowLogin(false)}
+        />
+      )}
     </div>
   );
 }

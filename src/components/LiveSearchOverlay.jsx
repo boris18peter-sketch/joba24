@@ -522,10 +522,29 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
   // category NAME — in the reader's own language. The global catalogue's label is
   // stored in Hebrew, so it is only a last resort: the translated `cat_*` label
   // comes first (with its leading emoji stripped, since it sits inside a sentence).
-  const translatedCategory = String(getCategoryLabel(effectiveCategory, t) || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
-  const workerLabel = translatedCategory || globalCategoryFor(effectiveCategory)?.label || getCategoryPluralLabel(effectiveCategory, t);
+  const translatedCategory = String(getCategoryLabel(effectiveCategory, t) || '').replace(/^[^\p{L}\p{N}]+/u, '').trim()
+    || globalCategoryFor(effectiveCategory)?.label || getCategoryPluralLabel(effectiveCategory, t);
+  // The copy reads "scanning <who>", so the label has to name the PEOPLE, not the
+  // trade. It used to be the bare category ("סורק ניקיון"), which read as if the
+  // app were scanning the cleaning itself. The "workers of" prefix comes from the
+  // dictionary, so the sentence is correct in every language.
+  const workerLabel = t('lso_workers_of', { category: translatedCategory });
 
   const goToTask = () => {
+    // A web visitor who has just published is the one person worth offering the
+    // app to: applicant updates arrive as push notifications, which only the
+    // installed app can deliver. Flagged ONCE, on the first publish only —
+    // AppDownloadPopup picks it up after the visitor has seen their own task
+    // highlighted on the feed.
+    try {
+      if (!localStorage.getItem('joba24_published_once')) {
+        localStorage.setItem('joba24_published_once', '1');
+        localStorage.setItem('joba24_offer_app', '1');
+        // AppDownloadPopup is already mounted for this session, so it cannot see
+        // the flag appear — it is told instead.
+        window.dispatchEvent(new CustomEvent('joba24:offer-app'));
+      }
+    } catch { /* storage blocked */ }
     onNavigate?.();
     navigate(`/?newTaskId=${taskId}`);
   };
