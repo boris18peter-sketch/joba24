@@ -1,4 +1,5 @@
 import { base44 } from '@/api/base44Client';
+import { JOBA24_BRAND_ID } from '@/lib/jobaBrand';
 
 /**
  * Brand runtime — the ONE authoritative source of "which Brand is this surface?".
@@ -219,5 +220,86 @@ export function effectiveBrandConfig(ctx) {
     marketplace: config.marketplace || {},
     /** Brand design tokens. Null when the Brand defines none (platform look). */
     theme: { ...(ctx?.inheritedTheme || {}), ...configTheme(config) },
+  };
+}
+
+/* ── Bounded resolution ──────────────────────────────────────────────────────
+ * The WHOLE app waits behind this resolution (BrandGate), so an unbounded chain
+ * is an unbounded loading screen. A rejection was always handled; a request that
+ * simply never SETTLES was not — and on a cold first launch, with nothing warm
+ * (no HTTP cache, no connection warm-up, no cached Brand), that is exactly what
+ * a stalled request does. The app then sat on the loading screen until the
+ * visitor left the app and came back, which fired visibilitychange and re-ran
+ * the resolution on a now-warm network.
+ *
+ * Every launch AFTER the first reads the cached Brand and paints immediately,
+ * so the first launch was the only one still exposed to the unbounded chain —
+ * which is why this reads as the old startup problem, moved to the one place
+ * the cache cannot cover.
+ *
+ * The bound below makes termination a property of the code rather than of the
+ * network: two bounded attempts, then a fallback that ALWAYS settles.
+ */
+export const BRAND_ATTEMPT_TIMEOUT_MS = 6000;
+const BRAND_MAX_ATTEMPTS = 2;
+
+/** The platform's own hostnames — surfaces the platform can trust as its own. */
+const PLATFORM_OWN_HOSTS = ['joba24.com', 'www.joba24.com', 'joba24.base44.app'];
+
+/** A host the platform may serve its own Brand on even when the database is unreachable. */
+export function isPlatformOwnHost(hostname) {
+  const host = normalizeHostname(hostname);
+  return isPlatformHost(host) || PLATFORM_OWN_HOSTS.includes(host);
+}
+
+/** The platform Brand as a local value — no network. Used only as a bounded fallback. */
+export function platformBrandStub() {
+  return {
+    id: JOBA24_BRAND_ID, slug: 'joba24', name: 'Joba24',
+    is_default: true, status: 'active', origin: 'platform',
+  };
+}
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('brand-resolution-timeout')), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
+/**
+ * Resolve the BrandContext with a guaranteed terminal outcome.
+ *
+ * Never rejects and never hangs: two bounded attempts, then a fallback. The
+ * fallback serves the platform Brand ONLY on a host the platform owns — an
+ * unverified domain still resolves to UNKNOWN and never inherits Joba24.
+ *
+ * A fallback result is marked `degraded` and is deliberately NOT written to the
+ * cache: it is an unblocking answer, not a verified one, and the caller retries
+ * it so the real configuration still arrives.
+ */
+export async function resolveBrandContextSafe(hostname) {
+  const host = normalizeHostname(hostname);
+
+  for (let attempt = 0; attempt < BRAND_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await withTimeout(resolveBrandContext(host), BRAND_ATTEMPT_TIMEOUT_MS);
+    } catch {
+      /* timed out or failed — retry once, then fall back below */
+    }
+  }
+
+  if (isPlatformOwnHost(host)) {
+    return {
+      state: BRAND_STATE.RESOLVED, hostname: host, brand: platformBrandStub(),
+      config: null, inheritedTheme: {}, matchedDomain: null, degraded: true,
+    };
+  }
+  return {
+    state: BRAND_STATE.UNKNOWN, hostname: host, brand: null,
+    config: null, matchedDomain: null, degraded: true,
   };
 }

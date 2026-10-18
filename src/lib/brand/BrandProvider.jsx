@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
-  BRAND_STATE, resolveBrandContext, effectiveBrandConfig,
+  BRAND_STATE, resolveBrandContextSafe, effectiveBrandConfig,
   cachedBrandContext, brandCacheAgeMs, BRAND_CACHE_MAX_AGE_MS,
 } from '@/lib/brand/brandResolver';
 import { setCurrentBrandId } from '@/lib/brand/currentBrand';
@@ -52,14 +52,27 @@ export function BrandProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    let retryTimer = null;
+    let degradedAttempts = 0;
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
     let revision = 0;
     const refresh = () => {
       const request = ++revision;
-      return resolveBrandContext(hostname).then(resolved => {
+      return resolveBrandContextSafe(hostname).then(resolved => {
         if (cancelled || request !== revision) return;
         setCtx({ ...resolved, brandId: resolved.brand?.id || null, isPlatformBrand: resolved.brand?.is_default === true });
+
+        // ── A degraded result is a fallback, not an answer ──────────────────
+        // It exists so the app can never sit on the loading screen, and it is
+        // deliberately not cached. The real configuration has therefore not
+        // been read yet, so retry in the background — bounded — instead of
+        // leaving the Brand unconfigured until the visitor relaunches.
+        if (!resolved.degraded) { degradedAttempts = 0; return; }
+        if (degradedAttempts >= 3) return;
+        degradedAttempts += 1;
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => { if (!cancelled) refresh(); }, 3000 * degradedAttempts);
       });
     };
     refresh().catch(() => { if (!cancelled) setCtx({ ...INITIAL, state: BRAND_STATE.UNKNOWN, hostname }); });
@@ -71,13 +84,14 @@ export function BrandProvider({ children }) {
       // arrives instantly through the BrandConfig subscription and the
       // brand-config-saved event above; this is only a slow safety net.
       if (brandCacheAgeMs(hostname) < BRAND_CACHE_MAX_AGE_MS) return;
+      degradedAttempts = 0;
       refresh();
     };
     const unsubscribe = base44.entities.BrandConfig.subscribe(onSaved);
     window.addEventListener('brand-config-saved', onSaved);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      cancelled = true; unsubscribe();
+      cancelled = true; clearTimeout(retryTimer); unsubscribe();
       window.removeEventListener('brand-config-saved', onSaved);
       document.removeEventListener('visibilitychange', onVisible);
     };
