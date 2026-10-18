@@ -67,22 +67,36 @@ const Profile = lazyRetry(() => import('@/pages/Profile'));
 // Preload remaining tab pages after initial render is complete (idle callback)
 // so they don't compete with the critical path (HomeFeed) on slow connections
 if (typeof window !== 'undefined') {
+  // ── ROOT CAUSE OF "TypeError: Importing a module script failed." ──────────
+  //
+  // A preload is an OPTIMISATION, never a dependency: its only job is to warm
+  // the chunk cache so a later navigation is instant. When one of these
+  // unguarded imports failed — a chunk from a previous deploy that no longer
+  // exists, a dropped connection mid-download — the rejection had no handler,
+  // so the browser reported it as an uncaught module error on a screen that had
+  // otherwise loaded perfectly. The user saw a crash; nothing was actually
+  // broken, and the route's own loader (lazyRetry) would have healed it anyway.
+  //
+  // Wrapping each one makes a failed warm-up exactly what it should be:
+  // silent. The real route import keeps its own recovery, so a genuine stale
+  // chunk is still fixed by reloading onto the current build.
+  const warm = (load) => load().catch(() => {});
   const preloadPages = () => {
     // Root tabs (keep-alive) + most-visited non-root pages — preloading the
     // chunks means navigation never hits the Suspense full-screen spinner.
-    import('@/pages/MapView');
-    import('@/pages/ChatInbox');
-    import('@/pages/Profile');
-    import('@/pages/CreateTask');
-    import('@/pages/Wallet');
-    import('@/pages/MyTasks');
-    import('@/pages/MySchedule');
-    import('@/pages/WorkerProfile');
-    import('@/pages/EarningsDashboard');
-    import('@/pages/Notifications');
-    import('@/pages/Chat');
-    import('@/pages/SupportChat');
-    import('@/pages/AgentDashboard');
+    warm(() => import('@/pages/MapView'));
+    warm(() => import('@/pages/ChatInbox'));
+    warm(() => import('@/pages/Profile'));
+    warm(() => import('@/pages/CreateTask'));
+    warm(() => import('@/pages/Wallet'));
+    warm(() => import('@/pages/MyTasks'));
+    warm(() => import('@/pages/MySchedule'));
+    warm(() => import('@/pages/WorkerProfile'));
+    warm(() => import('@/pages/EarningsDashboard'));
+    warm(() => import('@/pages/Notifications'));
+    warm(() => import('@/pages/Chat'));
+    warm(() => import('@/pages/SupportChat'));
+    warm(() => import('@/pages/AgentDashboard'));
   };
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(preloadPages, { timeout: 4000 });

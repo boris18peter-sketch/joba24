@@ -98,7 +98,11 @@ export default function OnboardingTrackWelcome() {
   // timeout and no second start.
   useEffect(() => {
     if (track !== TRACKS.PUBLISH) return;
-    import('@/pages/CreateTask');
+    // A warm-up only: if the chunk cannot be fetched right now, the rejection is
+    // swallowed here and the form loads normally when it is opened. Uncaught, it
+    // surfaced as "TypeError: Importing a module script failed." on the
+    // explainer screen, which was otherwise working.
+    import('@/pages/CreateTask').catch(() => {});
   }, [track]);
 
   const choose = (next) => {
