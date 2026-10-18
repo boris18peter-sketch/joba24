@@ -11,27 +11,35 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inlin
 
   useEffect(() => {
     if (!expiresAt) return;
-    const interval = setInterval(() => {
-      const now = new Date();
-      const exp = new Date(expiresAt);
-      const diff = exp - now;
+
+    // The text is coarse while the task is more than an hour away ("3h 12m"),
+    // so it only changes once a MINUTE. Ticking every second meant ~60 date
+    // computations and string builds for text that was identical 59 times out
+    // of 60 — for every expiry timer on screen at once. Seconds are shown only
+    // in the final hour, so only then does the clock need to run per second.
+    // The rendered text is unchanged either way.
+    let timer;
+    const tick = () => {
+      const diff = new Date(expiresAt) - new Date();
       if (diff <= 0) {
         setTimeLeft(t('te_expired'));
         setHoursLeft(0);
-        clearInterval(interval);
-      } else {
-        const hours = Math.floor(diff / 3600000);
-        const mins = Math.floor((diff % 3600000) / 60000);
-        setHoursLeft(hours);
-        if (hours > 0) {
-          setTimeLeft(`${hours}${t('hours_short')} ${mins}${t('minutes_short')}`);
-        } else {
-          const secs = Math.floor((diff % 60000) / 1000);
-          setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
-        }
+        return; // settled — stop the clock
       }
-    }, 1000);
-    return () => clearInterval(interval);
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      setHoursLeft(hours);
+      if (hours > 0) {
+        setTimeLeft(`${hours}${t('hours_short')} ${mins}${t('minutes_short')}`);
+        timer = setTimeout(tick, 60000);
+      } else {
+        const secs = Math.floor((diff % 60000) / 1000);
+        setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+        timer = setTimeout(tick, 1000);
+      }
+    };
+    timer = setTimeout(tick, 1000);
+    return () => clearTimeout(timer);
   }, [expiresAt]);
 
   if (!expiresAt || !timeLeft) return null;

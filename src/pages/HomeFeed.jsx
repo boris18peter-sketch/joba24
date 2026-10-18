@@ -285,7 +285,6 @@ export default function HomeFeed() {
     const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
       const appData = event.data || {};
       const isMyApp = appData.worker_id === me.id;
-      const isForMyTask = appData.task_id && myTasks.some(t => t.id === appData.task_id);
 
       if (isMyApp) {
         if (event.type === 'create') {

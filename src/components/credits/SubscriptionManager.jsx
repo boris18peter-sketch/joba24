@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import moment from 'moment';
+import { format, addMonths } from 'date-fns';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -105,10 +105,10 @@ export default function SubscriptionManager() {
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Calendar size={10} /> {t('buy_sub_activated')} {moment(sub.created_date).format('DD/MM/YYYY HH:mm')}
+                    <Calendar size={10} /> {t('buy_sub_activated')} {format(new Date(sub.created_date), 'dd/MM/yyyy HH:mm')}
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <RefreshCw size={10} /> {t('buy_sub_next_renewal')} {moment(sub.created_date).add(1, 'month').format('DD/MM/YYYY')}
+                    <RefreshCw size={10} /> {t('buy_sub_next_renewal')} {format(addMonths(new Date(sub.created_date), 1), 'dd/MM/yyyy')}
                   </span>
                 </div>
               </div>
