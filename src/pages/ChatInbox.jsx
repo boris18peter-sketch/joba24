@@ -9,7 +9,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { chatMessagePreview } from '@/lib/chatPreview';
 import { threadCounterpart } from '@/lib/chatThread';
 import ConversationRow from '@/components/chat/ConversationRow';
-import { myApplicationsQuery } from '@/lib/queries';
+import { workerTasksQuery, myPublishedTasksQuery, myApplicationsQuery } from '@/lib/queries';
 
 const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
 
@@ -73,22 +73,17 @@ export default function ChatInbox() {
   const { t, isRTL } = useLanguage();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  // Reuse Layout's existing queries — avoids duplicate API calls
-  const { data: workerTasks = [] } = useQuery({
-    queryKey: ['workerTasksLayout', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-updated_date', 50),
-    enabled: !!me?.id,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
-
-  const { data: clientTasks = [] } = useQuery({
-    queryKey: ['myPublishedTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-updated_date', 50),
-    enabled: !!me?.id,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
+  // The ONE canonical lists (see @/lib/queries) — not hand-written copies.
+  //
+  // Both of these used to re-declare the SHARED keys with a different sort
+  // ('-updated_date' instead of '-created_date'). A React Query key has exactly
+  // one queryFn, decided by whichever screen mounted first, so the inbox could
+  // silently change the ordering of the data the feed and the active-task banner
+  // share — and the "reuse" this comment promised never actually happened. The
+  // inbox re-sorts by last activity in memory below, so nothing here ever
+  // depended on the server's order.
+  const { data: workerTasks = [] } = useQuery(workerTasksQuery(me?.id));
+  const { data: clientTasks = [] } = useQuery(myPublishedTasksQuery(me?.id));
 
   // Tasks the worker applied to (but isn't approved yet) — so conversations
   // started before approval still appear in the inbox.

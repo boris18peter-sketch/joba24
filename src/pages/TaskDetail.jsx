@@ -507,7 +507,7 @@ export default function TaskDetail(props) {
     mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', expires_at: null, worker_id: null, worker_name: null, worker_status: null, last_boost_at: null, boost_count: 0 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       toast.success(t('task_reopened_toast'));

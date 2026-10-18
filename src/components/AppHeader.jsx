@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { pendingApplicationsQuery } from '@/lib/queries';
 import CreditBalancePill from '@/components/CreditBalancePill';
 import LockedCreditsPopup from '@/components/LockedCreditsPopup';
 import { useState, useEffect, useRef } from 'react';
@@ -52,13 +53,10 @@ export default function AppHeader({ onOpenMenu }) {
     enabled: isAuthenticated,
   });
 
-  // Fetch pending applications to compute locked (committed) jobas
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myLockedJobas', me?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id, status: 'pending' }, '-created_date', 50),
-    enabled: !!me?.id,
-    staleTime: 15000,
-  });
+  // Pending applications → the locked (committed) jobas balance. Shared definition
+  // (see @/lib/queries), so the header can never show a balance computed from a
+  // differently-limited copy of this list.
+  const { data: myApplications = [] } = useQuery(pendingApplicationsQuery(me?.id));
 
   const lockedJobas = computeLockedJobas(myApplications);
 

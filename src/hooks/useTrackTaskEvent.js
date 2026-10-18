@@ -19,7 +19,7 @@ function fireEvent(taskId, eventType, queryClient) {
       if (clicks_count != null) patch.clicks_count = clicks_count;
       if (Object.keys(patch).length) patchTaskCache(queryClient, taskId, patch, { create: false });
       // Also patch the tasks list cache
-      queryClient.setQueriesData({ queryKey: ['tasks'] }, (old) => {
+      queryClient.setQueriesData({ queryKey: ['allTasks'] }, (old) => {
         if (!Array.isArray(old)) return old;
         return old.map((t) =>
           t.id === taskId

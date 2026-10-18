@@ -29,6 +29,7 @@ import SignupGiftModal from '@/components/SignupGiftModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import {
   myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery,
+  openTasksQuery, pendingApplicationsQuery,
   selectActiveWorkerTask, selectActiveClientTask,
 } from '@/lib/queries';
 
@@ -198,24 +199,9 @@ export default function HomeFeed() {
     refetchOnWindowFocus: false,
   });
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['allTasks'],
-    queryFn: () => fetchPublicTasks({ mode: 'open', limit: 100 }),
-    staleTime: 60000,
-    gcTime: 300000,
-    // Returning to the app from the background must re-read the feed: on Android
-    // the interval timer is throttled while backgrounded, so without this a guest
-    // could come back to whatever was on screen (often nothing) until the next tick.
-    refetchOnWindowFocus: true,
-    refetchInterval: 60000,
-    // A failed read is a failure, not an empty marketplace — retry before giving
-    // up, and keep the tasks already loaded meanwhile (React Query only keeps
-    // them because fetchPublicTasks now throws instead of returning []). Two
-    // retries: enough to ride out a blip, short enough that a real failure
-    // settles in ~3s instead of leaving the feed on a spinner.
-    retry: 2,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
-  });
+  // The marketplace feed — ONE shared definition for the feed, the map and the
+  // daily goal (see @/lib/queries). It used to live under three different keys.
+  const { data: tasks = [], isLoading } = useQuery(openTasksQuery());
 
   // Force refetch when auth state changes (e.g. user logs in) — only on actual login transition
   const prevAuthRef = useRef(null);

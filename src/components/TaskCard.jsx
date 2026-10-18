@@ -195,7 +195,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
     queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['allTasks'] });
   };
 
   // Submission for the shared ApplySheet popup (same component the task-detail
@@ -580,7 +580,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               // Owner management controls — boost pill inline with button
               task.status === 'OPEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }} />}
+                  {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />}
                   <button
                    onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
                    style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 'var(--r-sm)', background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,var(--color-warning))' : 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: 'var(--shadow-sm)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}

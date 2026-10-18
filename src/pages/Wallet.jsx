@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { workerTasksQuery, myApplicationsQuery } from '@/lib/queries';
 import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, XCircle, Ban, Lock } from 'lucide-react';
@@ -52,24 +53,18 @@ export default function Wallet() {
   ];
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-  const { data: workerTasks = [] } = useQuery({
-    queryKey: ['walletWorkerTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
-    enabled: !!me?.id,
-    staleTime: 30000,
-  });
+  // The ONE shared worker-task list (see @/lib/queries). This screen used to hold
+  // a second copy of the identical query under its own key.
+  const { data: workerTasks = [] } = useQuery(workerTasksQuery(me?.id));
   const { data: creditTxns = [] } = useQuery({
     queryKey: ['creditTxns', me?.id],
     queryFn: () => base44.entities.CreditTransaction.filter({ user_id: me.id }, '-created_date', 30),
     enabled: !!me?.id,
   });
 
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myApplications', me?.id],
-    // task_title is already denormalized on TaskApplication at creation time — no N+1 needed
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
-    enabled: !!me?.id,
-  });
+  // The ONE shared applications list (see @/lib/queries). task_title is already
+  // denormalized on TaskApplication at creation time — no N+1 needed.
+  const { data: myApplications = [] } = useQuery(myApplicationsQuery(me?.id));
 
   const lockedJobas = computeLockedJobas(myApplications);
   const availableJobas = me?.worker_credits ?? 0;

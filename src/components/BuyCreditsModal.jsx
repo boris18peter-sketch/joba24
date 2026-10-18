@@ -15,6 +15,7 @@ import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import IosPurchaseConfirm from '@/components/credits/IosPurchaseConfirm';
 import { isIosNative, getIosProducts, IOS_IAP_ALL, recoverUnfinishedIosPurchases, recoverIosSubscriptionCredits } from '@/lib/iosIap';
 import { base44 } from '@/api/base44Client';
+import { pendingApplicationsQuery } from '@/lib/queries';
 import { useLanguage } from '@/lib/LanguageContext';
 import { saveBuyFlow } from '@/lib/buyFlowState';
 
@@ -71,13 +72,9 @@ export default function BuyCreditsModal({ onClose, creditsNeeded, initialState }
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
   const TRUST_FEATURES = useTrustFeatures(t);
 
-  // Pending applications — for locked (committed) balance display next to available
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myLockedJobas', me?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id, status: 'pending' }, '-created_date', 50),
-    enabled: !!me?.id,
-    staleTime: 15000,
-  });
+  // Pending applications — for locked (committed) balance display next to available.
+  // Shared definition (see @/lib/queries).
+  const { data: myApplications = [] } = useQuery(pendingApplicationsQuery(me?.id));
   const lockedJobas = computeLockedJobas(myApplications);
 
   const [tab, setTab] = useState(initialState?.tab || 'oneTime');

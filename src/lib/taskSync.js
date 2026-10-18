@@ -37,7 +37,9 @@ export function invalidateTaskCaches(queryClient, { taskId, meId, includeCredits
   // alongside ['myApplicationsFeed']) turned one action into two identical
   // refetches of the same records. There is now one key per list
   // (see @/lib/queries), so one action means one refetch per list.
-  queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  // One line per list. The feed used to appear here TWICE — once as ['tasks'] and
+  // once as ['allTasks'] — because those were two caches of the same marketplace
+  // feed. They are one key now, so this is one refetch.
   queryClient.invalidateQueries({ queryKey: ['allTasks'] });
   queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
 
@@ -45,6 +47,7 @@ export function invalidateTaskCaches(queryClient, { taskId, meId, includeCredits
     queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', meId] });
     queryClient.invalidateQueries({ queryKey: ['myPublishedTasks', meId] });
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', meId] });
+    queryClient.invalidateQueries({ queryKey: ['myCompletedWorkerTasks', meId] });
     queryClient.invalidateQueries({ queryKey: ['appliedTasksData', meId] });
     // Active-task banners (feed + inside the task sheet) — read the same caches
     queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', meId] });
@@ -54,6 +57,7 @@ export function invalidateTaskCaches(queryClient, { taskId, meId, includeCredits
     queryClient.invalidateQueries({ queryKey: ['workerTasksLayout'] });
     queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
+    queryClient.invalidateQueries({ queryKey: ['myCompletedWorkerTasks'] });
     queryClient.invalidateQueries({ queryKey: ['activeWorkerTask'] });
     queryClient.invalidateQueries({ queryKey: ['activeClientTask'] });
   }

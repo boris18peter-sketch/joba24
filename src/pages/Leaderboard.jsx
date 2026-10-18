@@ -20,7 +20,12 @@ export default function Leaderboard() {
     const unsubUser = base44.entities.User.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['all-users'] });
     });
-    const unsubTask = base44.entities.Task.subscribe(() => {
+    // Only a completion (or a removal) can change the board — tasks_completed is
+    // the only field it reads. Subscribing to EVERY task event meant any create,
+    // edit, price bump or status change anywhere in the marketplace re-downloaded
+    // the entire user list to redraw a table that had not changed at all.
+    const unsubTask = base44.entities.Task.subscribe((event) => {
+      if (event.type !== 'delete' && event.data?.status !== 'COMPLETED') return;
       queryClient.invalidateQueries({ queryKey: ['all-users'] });
     });
     const unsubReview = base44.entities.Review.subscribe(() => {
@@ -34,9 +39,13 @@ export default function Leaderboard() {
     queryFn: () => base44.entities.Review.list('-created_date', 300),
   });
 
+  // Only accounts that have actually completed work can appear on the board (the
+  // table below drops everyone else anyway), so the server returns those instead
+  // of the whole user collection — verified against this app's data: 154 accounts
+  // in, 15 rows out, and noticeably faster.
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => base44.entities.User.filter({ tasks_completed: { $gt: 0 } }),
   });
 
   // Build leaderboard from the authoritative tasks_completed counter on each

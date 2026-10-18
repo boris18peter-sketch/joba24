@@ -311,7 +311,6 @@ export const AuthProvider = ({ children }) => {
         // Partial updates can omit worker_id when only the status changes.
         if (!app?.worker_id || app.worker_id === currentUser?.id) {
           queryClientInstance.invalidateQueries({ queryKey: ['myLockedJobas'] });
-          queryClientInstance.invalidateQueries({ queryKey: ['myApplications'] });
           queryClientInstance.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
         }
       });

@@ -40,7 +40,7 @@ export default function CompletionModal({ task, me, onClose }) {
       if (!res.data?.success) throw new Error(res.data?.error || 'review_failed');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       toast.success(t('task_completed'));

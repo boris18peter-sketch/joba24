@@ -80,7 +80,10 @@ export default function WorkerProfile() {
   const currentUser = isViewingOther ? viewUser : me;
 
   const { data: workerTasks = [] } = useQuery({
-    queryKey: ['workerTasks', currentUser?.id],
+    // Deliberately NOT ['workerTasks', id]: the private profile page uses that
+    // key for its own completed-only list, and two different queryFns under one
+    // key means one screen silently overwrites the other's data.
+    queryKey: ['userWorkerTasks', currentUser?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: currentUser.id }, '-created_date', 20),
     enabled: !!currentUser?.id,
   });

@@ -98,7 +98,6 @@ export default function useRealtimeSync({
       // header/wallet indicator never keeps a stale "בהתחייבות" number.
       if (event.type === 'delete' || (event.type === 'update' && TERMINAL_STATUSES.includes(t_data.status))) {
         queryClient.invalidateQueries({ queryKey: ['myLockedJobas'] });
-        queryClient.invalidateQueries({ queryKey: ['myApplications'] });
         queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
         queryClient.invalidateQueries({ queryKey: ['applications'] });
         queryClient.invalidateQueries({ queryKey: ['applications-pulse'] });
@@ -290,7 +289,9 @@ export default function useRealtimeSync({
       // Refresh after application settlement too, not only the earlier task event.
       if (!appData.worker_id || appData.worker_id === me.id) {
         queryClient.invalidateQueries({ queryKey: ['myLockedJobas', me.id] });
-        queryClient.invalidateQueries({ queryKey: ['myApplications', me.id] });
+        // The canonical applications list — ['myApplications', me.id] was a second
+        // cache of this same list and no longer exists.
+        queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
       }
 
       // Sync applications-pulse cache
@@ -337,7 +338,7 @@ export default function useRealtimeSync({
 
         // Task-bearing caches the applicant count is derived from.
         const CACHE_KEYS = [
-          ['allTasks'], ['tasks'], ['myTasksPage', me.id],
+          ['allTasks'], ['myTasksPage', me.id],
           ['workerTasksLayout', me.id], ['myPublishedTasks', me.id],
           ['appliedTasksData', me.id], ['lockedPopupTasks'],
         ];

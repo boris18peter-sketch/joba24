@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { myPublishedTasksQuery, pendingApplicationsQuery } from '@/lib/queries';
 import {
   LogOut, Briefcase, CreditCard, ChevronLeft, Loader2,
   X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, ShieldCheck, Link2,
@@ -115,8 +116,15 @@ export default function Profile() {
     return unsub;
   }, [me?.id]);
 
+  // My COMPLETED worker tasks — the worker side of the review history.
+  //
+  // Renamed from ['workerTasks', me.id], a key the PUBLIC worker profile also
+  // used for a different list (that user's tasks, any status). Two different
+  // queryFns under one key means whichever screen mounted first silently decides
+  // what the other sees — this page could have been handed all-status tasks
+  // where it needed completed ones, or the reverse.
   const { data: workerTasks = [] } = useQuery({
-    queryKey: ['workerTasks', me?.id],
+    queryKey: ['myCompletedWorkerTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'COMPLETED', ...completedScope }, '-created_date', 50),
     enabled: !!me?.id && !!currentBrandId,
     staleTime: 30000,
@@ -124,19 +132,20 @@ export default function Profile() {
 
   // Every task this account PUBLISHED — not only the completed ones. Filtering
   // by status hid a freshly posted task from its own publisher's profile.
-  const { data: postedTasks = [] } = useQuery({
-    queryKey: ['postedTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, ...completedScope }, '-created_date', 50),
-    enabled: !!me?.id && !!currentBrandId,
-    staleTime: 30000,
-  });
+  //
+  // Reads the ONE shared published list (see @/lib/queries) and applies this
+  // screen's Brand scope in memory, rather than downloading a private second copy
+  // under its own key. That copy was also invalidated nowhere, so it could sit
+  // stale until the next window focus; the shared list is kept live by the
+  // realtime layer.
+  const { data: allPostedTasks = [] } = useQuery(myPublishedTasksQuery(me?.id));
+  const postedTasks = useMemo(
+    () => (isPlatformBrand ? allPostedTasks : allPostedTasks.filter((t) => t.origin_brand_id === currentBrandId)),
+    [allPostedTasks, isPlatformBrand, currentBrandId],
+  );
 
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['myLockedJobas', me?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id, status: 'pending' }, '-created_date', 50),
-    enabled: !!me?.id,
-    staleTime: 15000,
-  });
+  // Locked Jobas — the shared pending-applications query.
+  const { data: myApplications = [] } = useQuery(pendingApplicationsQuery(me?.id));
   const lockedJobas = computeLockedJobas(myApplications);
 
   if (isLoading) {

@@ -4,7 +4,7 @@ import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { fetchPublicTasks } from '@/lib/publicTasks';
+import { openTasksQuery } from '@/lib/queries';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
@@ -161,12 +161,9 @@ export default function MapView() {
   const { data: me } = useQuery({
     queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated
   });
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => fetchPublicTasks({ mode: 'open', limit: 100 }),
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
+  // The SAME marketplace feed the home screen reads (see @/lib/queries) — the map
+  // used to download its own full copy under a second key.
+  const { data: tasks = [] } = useQuery(openTasksQuery());
 
   const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag);
 

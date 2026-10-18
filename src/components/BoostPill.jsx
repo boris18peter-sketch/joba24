@@ -89,7 +89,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
         toast.error(res.data.message || t('boost_cooldown_msg').replace('{n}', res.data.minutes_left));
         // Force re-sync the pill state from server data
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['allTasks'] });
         setPct(0);
         setCharged(false);
         return;
@@ -108,7 +108,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
       setBoostedAt(Date.now());
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       window.dispatchEvent(new CustomEvent('hide_task_sheet'));
       window.dispatchEvent(new CustomEvent('show_boost_overlay', {
         detail: { taskId: task.id, taskTitle: task.title, taskPrice: task.price, taskCategory: task.category }

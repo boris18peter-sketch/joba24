@@ -179,7 +179,7 @@ export default function DemoTasksManager() {
     setEditingTask(null);
     queryClient.invalidateQueries({ queryKey: ['sim_demo_tasks'] });
     queryClient.invalidateQueries({ queryKey: ['sim_tasks'] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['allTasks'] });
   };
 
   const handleDelete = async (task) => {
@@ -187,7 +187,7 @@ export default function DemoTasksManager() {
     toast.success('המשימה נמחקה');
     queryClient.invalidateQueries({ queryKey: ['sim_demo_tasks'] });
     queryClient.invalidateQueries({ queryKey: ['sim_tasks'] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['allTasks'] });
   };
 
   return (

@@ -65,7 +65,7 @@ export default function ApprovedPopup({ task, onClose }) {
     await base44.entities.Task.update(task.id, update);
     await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
     await queryClient.refetchQueries({ queryKey: ['task', task.id] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['allTasks'] });
     setLoading(false);
     onClose();
     openTaskSheet(task.id);
