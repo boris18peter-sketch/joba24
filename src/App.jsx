@@ -118,13 +118,6 @@ if (typeof window !== 'undefined') {
     warm(() => import('@/pages/ChatInbox'));
     warm(() => import('@/pages/Profile'));
     warm(() => import('@/pages/CreateTask'));
-    // The task-flow dictionaries (~256 KB of translated category-form strings)
-    // are read only by a non-Hebrew visitor, and only while a category form is
-    // on screen. Warming that chunk here — in idle time, after first paint —
-    // means it is already cached by the time such a form opens, so the field
-    // labels never flash Hebrew first. A Hebrew launch never requests it at all.
-    const savedLang = localStorage.getItem('joba24_lang');
-    if (savedLang && savedLang !== 'he') warm(() => import('@/lib/taskFlowI18n'));
   };
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(preloadPages, { timeout: 4000 });

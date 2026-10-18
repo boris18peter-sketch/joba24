@@ -23,6 +23,7 @@ import { he } from '@/lib/i18n-he';
 // share of both on demand — see loadLanguage() below.
 import onboardingHe from '@/lib/i18n-onboarding-he';
 import extraHe from '@/lib/i18n-extra-he.json';
+import { loadTaskFlowI18n } from '@/lib/taskFlowI18nLoader';
 
 export const LANGUAGES = [
   { code: 'he', label: 'עברית',   flag: '🇮🇱', rtl: true  },
@@ -160,6 +161,15 @@ export async function loadLanguage(code) {
       const [onb, extra] = await Promise.all([
         loadOnboardingDictionaries(),
         loadExtraDictionaries(),
+        // The task-flow dictionaries (~256 KB of translated category-form
+        // strings) are read by the category forms the instant they render, so a
+        // visitor whose language is not Hebrew fetches them HERE — as part of the
+        // language load, which already holds the first paint until it resolves.
+        // That is what guarantees a field label is never painted in Hebrew first.
+        // Hebrew, the language those strings are written in, fetches nothing, so
+        // its cold start is untouched. The loader is shared with the components,
+        // so this stays ONE request, never two.
+        loadTaskFlowI18n(),
       ]);
       const extraDict = extra?.default || extra || {};
       translations[code] = {

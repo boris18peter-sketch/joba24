@@ -1,39 +1,45 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { loadTaskFlowI18n, getLoadedTaskFlowI18n } from '@/lib/taskFlowI18nLoader';
 
 /**
- * useTaskFlowI18n — the task-flow dictionaries, loaded only when they are needed.
+ * useTaskFlowI18n — the task-flow dictionaries, read without ever painting the
+ * Hebrew source text at a visitor who chose another language.
  *
  * `taskFlowI18n` and its six dictionaries are ~256 KB of translated field labels,
- * options and placeholders for the category forms. Two components imported them
- * statically, which put the whole 256 KB into the ENTRY bundle: every launch
- * parsed and executed it, for every visitor, before first paint — even though the
- * strings are only ever read while a category form is on screen, and Hebrew (the
- * language those strings are written in) needs none of it at all.
+ * options and placeholders for the category forms. They are a dynamic chunk, not
+ * part of the entry bundle, and for a non-Hebrew visitor they are fetched by the
+ * LANGUAGE load — the same load that already holds the first paint. By the time
+ * any of these components renders, the module is therefore already in memory and
+ * the first render is in the right language. There is no flash to correct.
  *
- * They are now fetched as their own chunk, the first time a component asks for
- * them. Hebrew returns immediately and never triggers the download.
+ * `getLoadedTaskFlowI18n()` is read during render rather than copied into state
+ * on mount. That is what makes a language SWITCH correct on its first pass as
+ * well: setLang awaits the language load before switching, so the module is
+ * present the moment the new language reaches the UI.
  *
  * The returned `tTaskFlow` keeps the exact signature of the module it wraps, so
- * every existing call site is unchanged — it simply returns the Hebrew source
- * string until the dictionary has arrived.
+ * every existing call site is unchanged.
+ *
+ * Hebrew is the language these strings are written in: nothing is fetched, the
+ * component renders on its first pass, and the Hebrew cold start is untouched.
  */
-let modulePromise = null;
-const loadTaskFlowI18n = () => {
-  if (!modulePromise) modulePromise = import('@/lib/taskFlowI18n').catch(() => null);
-  return modulePromise;
-};
-
 export default function useTaskFlowI18n() {
   const { lang } = useLanguage();
-  const [mod, setMod] = useState(null);
+  const [, forceRender] = useState(0);
+
+  // Synchronous read — see above.
+  const mod = getLoadedTaskFlowI18n();
 
   useEffect(() => {
-    // Hebrew is the language these strings are written in: there is nothing to
-    // translate, so nothing is ever downloaded for a Hebrew launch.
-    if (lang === 'he' || mod) return;
+    // Nothing to fetch for Hebrew, and nothing to fetch once it is in memory.
+    if (mod || lang === 'he') return;
     let alive = true;
-    loadTaskFlowI18n().then((m) => { if (alive && m) setMod(m); });
+    // Reached only when the language load could not deliver the chunk (a stalled
+    // or failed network). The retry is bounded inside the loader; when it also
+    // fails, the labels stay in the Hebrew fallback rather than the screen
+    // breaking or the component loading forever.
+    loadTaskFlowI18n().then((m) => { if (alive && m) forceRender((n) => n + 1); });
     return () => { alive = false; };
   }, [lang, mod]);
 
