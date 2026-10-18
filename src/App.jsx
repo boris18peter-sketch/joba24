@@ -249,19 +249,37 @@ const AuthenticatedApp = () => {
           variants={isStandalone ? PUSH_VARIANTS : undefined}
           initial={isStandalone ? 'enter' : false}
           animate={isStandalone ? 'center' : { opacity: 1 }}
-          // The exiting layer is absolutely positioned over the whole screen. It
-          // must never be able to receive input: if the exit animation is
-          // interrupted (an iOS back-gesture, or the app being backgrounded
-          // mid-transition) the node can stay mounted at opacity 0 and swallow
-          // every tap, which is exactly the "screen freezes, buttons stop
-          // responding" symptom when returning from Terms / Privacy / FAQ.
-          exit={isStandalone ? 'exit' : { opacity: 0, pointerEvents: 'none' }}
+          // ── THE EXIT MUST ALWAYS RESOLVE ──────────────────────────────────
+          // This used to be `isStandalone ? 'exit' : {…}` — a VARIANT NAME in
+          // one branch and an object in the other. A variant name is only
+          // resolvable while `variants` is defined, and `variants` above is
+          // itself conditional on `isStandalone`. When a standalone screen left
+          // for an in-Layout route, the two conditions could disagree and the
+          // exit became a name with no variants to resolve it: framer-motion
+          // then never finished the exit, so the leaving layer stayed mounted at
+          // FULL opacity, painted over the app.
+          //
+          // That is the join screen ("רוצה יותר עבודות? הרשם עכשיו") sitting on
+          // top of the feed after "continue as guest": its own header and the
+          // bottom nav are z-index 40 / 30, so they still showed, while the feed
+          // body was hidden behind the stuck layer. Only a fresh launch cleared
+          // it, because then no such layer exists.
+          //
+          // An OBJECT always resolves, so the layer is guaranteed to leave.
+          exit={{ opacity: 0, pointerEvents: 'none' }}
           transition={
             isStandalone
               ? { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.22 }
               : { duration: 0.14, ease: 'easeOut' }
           }
-          style={{ position: 'absolute', inset: 0 }}
+          // ── AND THE APP ALWAYS WINS THE STACK ─────────────────────────────
+          // Belt and braces for the same class of bug: the in-Layout layer
+          // paints ABOVE any standalone layer. The app layer is the base screen
+          // and is opaque, so even if a leaving layer were ever to linger, the
+          // visitor sees the app — never a stale screen on top of it. Without a
+          // z-index both layers sat at auto, and DOM order alone decided which
+          // one covered the other.
+          style={{ position: 'absolute', inset: 0, zIndex: isStandalone ? 1 : 2 }}
         >
           <Routes location={location}>
             <Route path="/r/:code" element={<ReferralRedirect />} />
