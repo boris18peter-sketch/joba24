@@ -503,18 +503,12 @@ Deno.serve(async (req) => {
           try {
             await base44.integrations.Core.SendEmail({
               to: user.email,
-              subject: emailSubject,
-              body: `<div dir="rtl" style="font-family:Inter,Arial,sans-serif;padding:24px;background:#f2f5fb;">
-                <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(15,40,107,0.08);">
-                  <div style="background:linear-gradient(135deg,#1a6fd4,#0a52b0);padding:24px;text-align:center;">
-                    <h1 style="color:#fff;font-size:18px;font-weight:900;margin:0;">${title}</h1>
-                  </div>
-                  <div style="padding:24px;">
-                    <p style="font-size:14px;color:#4b6083;line-height:1.7;margin:0 0 16px;">${body}</p>
-                    <a href="https://joba24.com${deepLink}" style="display:block;text-align:center;background:linear-gradient(135deg,#1a6fd4,#0a52b0);color:#fff;font-size:15px;font-weight:800;padding:14px;border-radius:12px;text-decoration:none;">פתח ב-Joba24</a>
-                  </div>
-                </div>
-              </div>`,
+              template_name: 'Notification',
+              variables: {
+                title,
+                body,
+                action_url: `https://joba24.com${deepLink}`,
+              },
             });
           } catch (emailErr) {
             console.log('[NotificationManager] Email failed:', emailErr.message);

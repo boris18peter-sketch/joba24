@@ -1,0 +1,51 @@
+<mjml>
+  <mj-head>
+    <mj-title>המשימה "{{task_title}}" הושלמה, כל הכבוד!</mj-title>
+    <mj-preview>המפרסם אישר את סיום העבודה</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Inter, Arial, Helvetica, sans-serif" />
+      <mj-section background-color="#ffffff" padding="0 32px" />
+      <mj-text color="#0d1e40" font-size="15px" line-height="1.7" padding="0" />
+      <mj-button background-color="#1e6fd2" color="#ffffff" border-radius="22px" font-weight="800" inner-padding="15px 32px" align="center" />
+      <mj-class name="muted" color="#4b6083" font-size="14px" line-height="1.7" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#ffffff">
+
+    <mj-section background-color="#1e6fd2" padding="22px 32px">
+      <mj-column>
+        <mj-image src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/ae3541b67_Joba24_120x120.png" width="46px" alt="Joba24" align="center" border-radius="12px" padding="0 0 8px" />
+        <mj-text align="center" color="#ffffff" font-size="20px" font-weight="900" padding="0">Joba24</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="38px 32px 10px">
+      <mj-column>
+        <mj-text align="center" font-size="26px" font-weight="900" line-height="1.25" padding="0 0 10px">{{first_name}}, כל הכבוד!</mj-text>
+        <mj-text mj-class="muted" align="center" padding="0">המפרסם אישר שהשלמת את המשימה. תודה על העבודה המקצועית.</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#f2f5fb" padding="24px 32px">
+      <mj-column>
+        <mj-text align="center" color="#4b6083" font-size="11px" font-weight="800" padding="0 0 6px">פרטי המשימה</mj-text>
+        <mj-text align="center" font-size="17px" font-weight="900" padding="0 0 8px">{{task_title}}</mj-text>
+        <mj-text align="center" font-size="15px" color="#4b6083" padding="0">סכום: &#8362;{{price}}</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="28px 32px 38px">
+      <mj-column>
+        <mj-text mj-class="muted" align="center" padding="0 0 20px">כדאי לבקש מהמפרסם דירוג. דירוגים גבוהים עוזרים לך לקבל עוד עבודות.</mj-text>
+        <mj-button href="{{task_url}}">צפה במשימה</mj-button>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#f2f5fb" padding="18px 32px">
+      <mj-column>
+        <mj-text align="center" font-size="11px" color="#4b6083" padding="0">Joba24, כל הזכויות שמורות</mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>
