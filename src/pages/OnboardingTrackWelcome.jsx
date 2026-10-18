@@ -43,7 +43,7 @@ import WorkerJoinStep from '@/components/onboarding/WorkerJoinStep';
  */
 export default function OnboardingTrackWelcome() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, enterGuestMode } = useAuth();
 
   // The route is rendered only after auth has resolved (the app shows its splash
   // until then), so `isAuthenticated` is already accurate here.
@@ -81,6 +81,26 @@ export default function OnboardingTrackWelcome() {
     navigate(workerTrack ? '/join' : '/', { replace: true });
   }, [skipFirstRun, savedTrack, navigate]);
 
+  // ── ROOT CAUSE OF "the form only opens on the SECOND launch" ─────────────
+  //
+  // The publish form is a lazily-loaded route: its code is fetched the first
+  // time the route is opened. That fetch happened at the exact moment the
+  // visitor finished the last explainer screen — the one moment where a delay
+  // is fatal, because the app had nothing to show yet and the route swap, the
+  // bundle download and the brand/auth bootstrap all had to land together.
+  // On a cold start the visitor was left without the form; on the next launch
+  // the bundle was already on the device, so the form appeared.
+  //
+  // The fix is to stop fetching at that moment at all: the form's code is
+  // warmed while the visitor is still READING the explainer screens, which
+  // takes several seconds. By the time they tap through, the form is already
+  // in memory and opens instantly — on the FIRST launch, with no reload, no
+  // timeout and no second start.
+  useEffect(() => {
+    if (track !== TRACKS.PUBLISH) return;
+    import('@/pages/CreateTask');
+  }, [track]);
+
   const choose = (next) => {
     setOnboardingTrack(next);
     setTrack(next);
@@ -107,6 +127,13 @@ export default function OnboardingTrackWelcome() {
       setShowJoin(true);
       return;
     }
+
+    // The publish journey IS a guest journey — "fill the task, sign in only when
+    // you actually publish". Entering guest mode HERE, before the form opens,
+    // is what makes that true from the very first launch: the visitor arrives
+    // at the form already identified as a guest, so the feed renders for them
+    // the moment they close the form, and the guest gate has nothing to bounce.
+    enterGuestMode();
 
     // PUSH, never replace: leaving the first-run flow has to keep the flow in the
     // history stack, so pressing Back on the destination returns to these screens

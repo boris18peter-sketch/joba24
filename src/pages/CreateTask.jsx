@@ -210,7 +210,7 @@ export default function CreateTask() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t, isRTL } = useLanguage();
-  const { isAuthenticated, isGuest, login } = useAuth();
+  const { isAuthenticated, isGuest, login, enterGuestMode } = useAuth();
   const editId = searchParams.get('editId');
   const isEditMode = !!editId;
   const isRepostMode = isEditMode && searchParams.get('repost') === '1';
@@ -1205,15 +1205,28 @@ export default function CreateTask() {
                   must land in the app's own feed, never back in the first-run
                   flow they just walked through.
 
-                  A visitor with NO account cannot reach the feed directly: the
-                  feed is the signed-in experience, and sending them to '/' would
-                  leave them on a spinner. So closing the form opens the app's
-                  own sign-in gate instead, which is the real way in — and the
-                  very next thing it offers is "continue as guest", which lands
-                  them on the feed. Either way the form is left behind. */}
+                  ── ROOT CAUSE OF "X opens a login popup" ────────────────────
+                  This button used to call login('/') whenever the visitor had
+                  no account and was not already in guest mode. That treated
+                  CLOSING A FORM as a protected action, which it is not — so a
+                  brand-new visitor could not leave the form without being asked
+                  to sign in, and could not reach the feed at all.
+
+                  Closing the form is not a request to publish and not a request
+                  to authenticate. It now simply ends the visit: the visitor
+                  becomes a guest — which is exactly what browsing the feed
+                  requires — and lands on the feed. No popup, ever.
+
+                  The guest flag is set FIRST and the navigation second, because
+                  the feed refuses to render for a visitor with no guest flag:
+                  without it, '/' shows a spinner and the guest gate bounces them
+                  straight back to this form. */}
               <button
                 type="button"
-                onClick={() => (isAuthenticated || isGuest ? navigate('/') : login('/'))}
+                onClick={() => {
+                  if (!isAuthenticated && !isGuest) enterGuestMode();
+                  navigate('/');
+                }}
                 aria-label="סגירה"
                 style={{
                   width: 34, height: 34, borderRadius: 11, flexShrink: 0, cursor: 'pointer',

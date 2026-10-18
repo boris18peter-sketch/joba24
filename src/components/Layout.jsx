@@ -484,8 +484,13 @@ export default function Layout() {
       // A guest IS a visitor with no account, and PUBLIC_PATHS_NO_AUTH is
       // precisely the set a visitor with no account may open — the publish
       // form included, which asks for a sign-in only at the PUBLISH step.
+      //
+      // A guest is sent home from a route they may not open, and NOTHING MORE.
+      // This branch used to also call login(), which turned every navigation a
+      // guest made into a sign-in prompt — including leaving the publish form.
+      // Sign-in belongs to the protected ACTION (publishing, applying), never
+      // to a navigation or a close button.
       if (location.pathname !== '/' && !isPublicPage) {
-        login();
         navigate('/', { replace: true });
       }
       return;
