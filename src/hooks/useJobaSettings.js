@@ -31,6 +31,9 @@ export const DEFAULT_JOBA_SETTINGS = {
   // Admin control over the publish form. An empty map means every field is ON,
   // so the full form is the default until the admin turns something off.
   task_form_fields: {},
+  // The order the form's sections render in. Empty = the form's own default
+  // order, so a settings record written before this existed is unchanged.
+  task_form_order: [],
 };
 
 /** Pricing keys a Brand is allowed to override (mirrors base44/shared/brandSettings.ts). */

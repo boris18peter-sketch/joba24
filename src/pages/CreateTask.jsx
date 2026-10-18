@@ -36,7 +36,7 @@ import { trackEvent } from '@/lib/analytics';
 import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
-import { isTaskFormFieldOn } from '@/lib/taskFormFields';
+import { isTaskFormFieldOn, taskFormSectionOrder } from '@/lib/taskFormFields';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // The COMPLETE form, stashed the moment a visitor is asked to sign in before
@@ -473,6 +473,14 @@ export default function CreateTask() {
   // publish button still refuses, with nothing left on screen to fill in.
   const { settings: jobaSettings } = useJobaSettings();
   const fieldOn = (key) => isTaskFormFieldOn(jobaSettings, key);
+
+  // ── The order the admin set for the form's sections ──────────────────────
+  // Each section registers itself into `sections` exactly where it is written
+  // below, and the form then renders them in `sectionOrder`. The blocks stay in
+  // source order on purpose: registration and rendering are two halves of one
+  // list, so a section can never be rendered twice or silently forgotten.
+  const sections = {};
+  const sectionOrder = taskFormSectionOrder(jobaSettings);
 
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
@@ -1348,6 +1356,7 @@ export default function CreateTask() {
         {/* Worker count hint — removed per design decision */}
 
         {/* One selected actionable service, one global form; no parent form alongside it. */}
+        {void (sections.category_form = (<>
         {fieldOn('category_form') && (
         <div ref={fieldRefs.categoryForm} style={errors.categoryForm ? { borderRadius: 18, outline: '2px solid #ef4444', outlineOffset: 4 } : undefined}>
           <SelectedCategoryForm
@@ -1364,7 +1373,10 @@ export default function CreateTask() {
         </div>
         )}
 
+        </>))}
+
         {/* Description — the main input. Title and category are auto-generated from this. */}
+        {void (sections.description = (<>
         {fieldOn('description') && (
         <div ref={fieldRefs.description}>
         <SectionCard>
@@ -1423,7 +1435,10 @@ export default function CreateTask() {
         </div>
         )}
 
+        </>))}
+
         {/* Images + Video */}
+        {void (sections.media = (<>
         {fieldOn('media') && (
         <SectionCard>
           <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
@@ -1431,8 +1446,11 @@ export default function CreateTask() {
         </SectionCard>
         )}
 
+        </>))}
+
         {/* Expiry + Urgency — each part can be switched off on its own from the
             dashboard, and the whole card disappears when all three are off. */}
+        {void (sections.schedule = (<>
         {(fieldOn('expiry') || fieldOn('urgency') || fieldOn('exact_datetime')) && (
         <SectionCard>
           {fieldOn('expiry') && (<>
@@ -1536,7 +1554,10 @@ export default function CreateTask() {
         </SectionCard>
         )}
 
+        </>))}
+
         {/* Story — only when creating new task */}
+        {void (sections.story = (<>
         {!isEditMode && fieldOn('story') && <div
           onClick={() => {
             if (!form.is_story) {
@@ -1577,7 +1598,10 @@ export default function CreateTask() {
           </div>
         </div>}
 
+        </>))}
+
         {/* Location */}
+        {void (sections.location_name = (<>
         {fieldOn('location_name') && (
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
@@ -1648,9 +1672,12 @@ export default function CreateTask() {
         </SectionCard>
         )}
 
+        </>))}
+
         {/* Worker Pool Scanner banners removed */}
 
         {/* Requirements */}
+        {void (sections.requirements = (<>
         {fieldOn('requirements') && (
         <SectionCard>
           <button type="button" onClick={() => setShowRequirements(v => !v)}
@@ -1724,7 +1751,10 @@ export default function CreateTask() {
         </SectionCard>
         )}
 
+        </>))}
+
         {/* Verification Requirement */}
+        {void (sections.verification = (<>
         {fieldOn('verification') && (
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
@@ -1771,7 +1801,10 @@ export default function CreateTask() {
         </SectionCard>
         )}
 
+        </>))}
+
         {/* Price — moved here from above, just before payment */}
+        {void (sections.price = (<>
         {fieldOn('price') && (
         <div ref={fieldRefs.price}>
         <SectionCard>
@@ -1890,7 +1923,10 @@ export default function CreateTask() {
         </div>
         )}
 
+        </>))}
+
         {/* Payment Method */}
+        {void (sections.payment_method = (<>
         {fieldOn('payment_method') && (
         <div ref={fieldRefs.payment_method}>
         <SectionCard>
@@ -1916,7 +1952,10 @@ export default function CreateTask() {
         </div>
         )}
 
+        </>))}
+
         {/* Contact Phone */}
+        {void (sections.contactPhone = (<>
         {fieldOn('contactPhone') && (
         <div ref={fieldRefs.contactPhone}>
         <SectionCard>
@@ -1940,6 +1979,13 @@ export default function CreateTask() {
         </SectionCard>
         </div>
         )}
+
+        </>))}
+
+        {/* The form, in the order the admin set it (Dashboard → Task Form).
+            Every section registered itself above; this is what actually renders
+            them, so moving a section in the dashboard moves it here. */}
+        {sectionOrder.map(key => (sections[key] ? <React.Fragment key={key}>{sections[key]}</React.Fragment> : null))}
 
         {/* Submit */}
         {(() => {

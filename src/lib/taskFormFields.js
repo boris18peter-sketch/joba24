@@ -106,26 +106,66 @@ export const TASK_FORM_FIELDS = [
 
 export const TASK_FORM_FIELD_KEYS = TASK_FORM_FIELDS.map(f => f.key);
 
-/** The sections the dashboard groups the switches into, in order. */
-export const TASK_FORM_GROUPS = [
-  { key: 'core', label: 'שדות חובה', note: 'כיבוי שדה כאן משנה מה נדרש כדי לפרסם משימה.' },
-  { key: 'content', label: 'תוכן' },
-  { key: 'schedule', label: 'מועד' },
-  { key: 'extras', label: 'תוספות' },
+const FIELD = Object.fromEntries(TASK_FORM_FIELDS.map(f => [f.key, f]));
+
+/**
+ * The blocks the form renders as SEPARATE sections, in their default order —
+ * which is the order the form has always had, so a task form nobody reordered
+ * looks exactly as it did before.
+ *
+ * Only a block that is its own section can be moved. A question that lives
+ * INSIDE another one — the building/floor details inside the address, the
+ * auto-bump inside the price — is listed as that section's `child`: it moves
+ * with its parent and stays switchable in the dashboard, but it is not a
+ * section of its own.
+ *
+ * `schedule` is the one section with no switch of its own: it is the card that
+ * holds the three timing questions, and it disappears when all three are off.
+ */
+const SECTIONS = [
+  { key: 'category_form' },
+  { key: 'description' },
+  { key: 'media' },
+  {
+    key: 'schedule',
+    label: 'מועד',
+    desc: 'התוקף, הדחיפות והתאריך המדויק — כל אחד מהם נשלט בנפרד בתוך הסעיף.',
+    containerOnly: true,
+    children: ['expiry', 'urgency', 'exact_datetime'],
+  },
+  { key: 'story' },
+  { key: 'location_name', children: ['address_details'] },
+  { key: 'requirements' },
+  { key: 'verification' },
+  { key: 'price', children: ['auto_bump'] },
+  { key: 'payment_method' },
+  { key: 'contactPhone' },
 ];
 
-const GROUP_OF = {
-  description: 'core', category_form: 'core', price: 'core',
-  location_name: 'core', payment_method: 'core', contactPhone: 'core',
-  media: 'content',
-  expiry: 'schedule', urgency: 'schedule', exact_datetime: 'schedule',
-  story: 'extras', requirements: 'extras', verification: 'extras',
-  auto_bump: 'extras', address_details: 'extras',
-};
+export const TASK_FORM_SECTIONS = SECTIONS.map(s => ({
+  ...s,
+  label: s.label || FIELD[s.key]?.label || s.key,
+  desc: s.desc || FIELD[s.key]?.desc || '',
+  core: !!FIELD[s.key]?.core,
+  children: (s.children || []).map(k => FIELD[k]).filter(Boolean),
+}));
 
-/** The fields belonging to a group, in the order they are declared above. */
-export const taskFormFieldsInGroup = (groupKey) =>
-  TASK_FORM_FIELDS.filter(f => GROUP_OF[f.key] === groupKey);
+export const TASK_FORM_SECTION_KEYS = TASK_FORM_SECTIONS.map(s => s.key);
+
+/**
+ * The order the form's sections render in.
+ *
+ * The admin's saved order wins. A section that was added to the form AFTER the
+ * order was saved still has to appear — so it is appended in its default place
+ * rather than silently dropped from the form.
+ */
+export function taskFormSectionOrder(settings) {
+  const stored = settings?.task_form_order;
+  if (!Array.isArray(stored) || stored.length === 0) return TASK_FORM_SECTION_KEYS;
+  const known = stored.filter(k => TASK_FORM_SECTION_KEYS.includes(k));
+  const missing = TASK_FORM_SECTION_KEYS.filter(k => !known.includes(k));
+  return [...known, ...missing];
+}
 
 /**
  * Is a field currently ON? A field the admin never touched is ON — so a settings

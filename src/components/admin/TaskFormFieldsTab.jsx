@@ -2,21 +2,29 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { ClipboardList, Save, RotateCcw, Loader2, AlertTriangle } from 'lucide-react';
+import { ClipboardList, Save, RotateCcw, Loader2, AlertTriangle, ChevronUp, ChevronDown, MoveVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import {
-  TASK_FORM_GROUPS,
-  taskFormFieldsInGroup,
+  TASK_FORM_SECTIONS,
   DEFAULT_TASK_FORM_FIELDS,
+  taskFormSectionOrder,
 } from '@/lib/taskFormFields';
+
+const SECTION_BY_KEY = Object.fromEntries(TASK_FORM_SECTIONS.map(s => [s.key, s]));
 
 /**
  * TaskFormFieldsTab — the admin's control panel over the publish form.
  *
- * One switch per question the form asks. Turning a field off removes it from the
- * form AND from what the form requires, so a shorter form for a launch can never
- * leave a hidden field blocking the publish button.
+ * Two controls per section, and they are independent:
+ *   • the switch turns the question ON/OFF (and with it, whether the form
+ *     requires an answer before publishing);
+ *   • the arrows move the section UP/DOWN, which is the order the publisher
+ *     actually sees it in.
+ *
+ * A question that lives inside another one (the address details inside the
+ * address, the auto-bump inside the price) is listed under its section: it is
+ * still switchable, but it moves together with the section that holds it.
  */
 export default function TaskFormFieldsTab() {
   const { user: me } = useAuth();
@@ -24,6 +32,7 @@ export default function TaskFormFieldsTab() {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [draft, setDraft] = useState({ ...DEFAULT_TASK_FORM_FIELDS });
+  const [order, setOrder] = useState(taskFormSectionOrder(null));
 
   const { data: settingsRecord, isLoading } = useQuery({
     queryKey: ['jobaSettings'],
@@ -45,6 +54,7 @@ export default function TaskFormFieldsTab() {
       });
     }
     setDraft(merged);
+    setOrder(taskFormSectionOrder(settingsRecord));
     setHasChanges(false);
   }, [settingsRecord]);
 
@@ -53,13 +63,27 @@ export default function TaskFormFieldsTab() {
     setHasChanges(true);
   };
 
-  const hiddenCore = Object.entries(draft).filter(([k, v]) => v === false).length;
+  const move = (key, dir) => {
+    setOrder(prev => {
+      const from = prev.indexOf(key);
+      const to = from + dir;
+      if (from < 0 || to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      next[from] = next[to];
+      next[to] = key;
+      return next;
+    });
+    setHasChanges(true);
+  };
+
+  const offCount = Object.values(draft).filter(v => v === false).length;
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const payload = {
         task_form_fields: draft,
+        task_form_order: order,
         updated_by: me?.full_name || 'admin',
       };
       if (settingsRecord?.id) {
@@ -78,9 +102,19 @@ export default function TaskFormFieldsTab() {
 
   const handleReset = () => {
     setDraft({ ...DEFAULT_TASK_FORM_FIELDS });
+    setOrder(taskFormSectionOrder(null));
     setHasChanges(true);
-    toast('כל השדות הוחזרו לפעיל — לחץ שמור כדי להחיל');
+    toast('כל השדות הוחזרו לפעיל והסדר חזר למקור — לחץ שמור כדי להחיל');
   };
+
+  const arrowStyle = (disabled) => ({
+    width: 26, height: 24, minWidth: 26, minHeight: 24, padding: 0,
+    borderRadius: 8, border: '1px solid var(--border-1)',
+    background: disabled ? 'var(--surface-3)' : 'var(--surface-2)',
+    color: disabled ? 'var(--text-3)' : 'var(--brand-primary)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1,
+  });
 
   return (
     <div>
@@ -88,16 +122,18 @@ export default function TaskFormFieldsTab() {
       <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1.5px solid #bfdbfe', borderRadius: 14, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
         <ClipboardList size={18} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontSize: 12, color: '#1e40af', lineHeight: 1.6 }}>
-          כאן שולטים ב<strong>טופס פרסום המשימה</strong>. כיבוי שדה מסתיר אותו מהמשתמשים, מסיר אותו
-          מהדרישות לפרסום — וגם מקצר את הטופס בהתאם. הכל בתוקף <strong>מיידי</strong> וללא צורך בפרסום מחדש.
+          כאן שולטים ב<strong>טופס פרסום המשימה</strong>. כיבוי שדה מסתיר אותו מהמשתמשים ומסיר אותו
+          מהדרישות לפרסום, והחצים <MoveVertical size={12} style={{ display: 'inline', verticalAlign: -2 }} /> מזיזים
+          סעיף <strong>למעלה או למטה</strong> — כך קובעים באיזה סדר המשתמש ממלא את הטופס. הכל בתוקף
+          <strong> מיידי</strong> וללא צורך בפרסום מחדש.
         </div>
       </div>
 
-      {hiddenCore > 0 && (
+      {offCount > 0 && (
         <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 14, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 12, color: '#92400e', lineHeight: 1.6 }}>
-            <strong>{hiddenCore} שדות כבויים.</strong> שדה כבוי לא יוצג למשתמש וגם לא ייחשב חסר —
+            <strong>{offCount} שדות כבויים.</strong> שדה כבוי לא יוצג למשתמש וגם לא ייחשב חסר —
             כך שמי שמפרסם משימה תמיד יוכל לסיים ולפרסם.
           </div>
         </div>
@@ -108,36 +144,74 @@ export default function TaskFormFieldsTab() {
           <Loader2 size={24} className="animate-spin" color="#1a6fd4" />
         </div>
       ) : (
-        TASK_FORM_GROUPS.map(group => (
-          <div key={group.key} style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-1)', marginBottom: 2 }}>{group.label}</div>
-            {group.note && (
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 8, lineHeight: 1.45 }}>{group.note}</div>
-            )}
-            {!group.note && <div style={{ marginBottom: 8 }} />}
-            {taskFormFieldsInGroup(group.key).map(field => {
-              const on = draft[field.key] !== false;
-              return (
-                <div
-                  key={field.key}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    background: 'var(--surface-2)', borderRadius: 14,
-                    border: `1px solid ${on ? 'var(--border-1)' : '#e5e7eb'}`,
-                    padding: '12px 14px', marginBottom: 8,
-                    opacity: on ? 1 : 0.62,
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>{field.label}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.45 }}>{field.desc}</div>
-                  </div>
-                  <Switch checked={on} onCheckedChange={() => toggle(field.key)} />
+        order.map((key, idx) => {
+          const section = SECTION_BY_KEY[key];
+          if (!section) return null;
+          const on = section.containerOnly ? true : draft[key] !== false;
+          return (
+            <div key={key}>
+              <div
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  background: 'var(--surface-2)', borderRadius: 14,
+                  border: `1px solid ${on ? 'var(--border-1)' : '#e5e7eb'}`,
+                  padding: '10px 12px', marginBottom: 8,
+                  opacity: on ? 1 : 0.62,
+                }}
+              >
+                {/* Move up / down — the publisher sees the form in this order */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0, paddingTop: 2 }}>
+                  <button type="button" onClick={() => move(key, -1)} disabled={idx === 0} style={arrowStyle(idx === 0)} aria-label="הזז סעיף למעלה">
+                    <ChevronUp size={14} />
+                  </button>
+                  <button type="button" onClick={() => move(key, 1)} disabled={idx === order.length - 1} style={arrowStyle(idx === order.length - 1)} aria-label="הזז סעיף למטה">
+                    <ChevronDown size={14} />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        ))
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>{section.label}</span>
+                    {section.core && (
+                      <span style={{ fontSize: 9.5, fontWeight: 800, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '1px 7px' }}>נדרש לפרסום</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.45 }}>{section.desc}</div>
+                  {section.containerOnly && (
+                    <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 4, fontWeight: 700 }}>
+                      הסעיף מוצג כל עוד אחד מהשדות שבתוכו פעיל
+                    </div>
+                  )}
+                </div>
+
+                {!section.containerOnly && <Switch checked={on} onCheckedChange={() => toggle(key)} />}
+              </div>
+
+              {/* Questions that live INSIDE this section — they move with it */}
+              {section.children.map(child => {
+                const childOn = draft[child.key] !== false;
+                return (
+                  <div
+                    key={child.key}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      background: 'var(--surface-2)', borderRadius: 12,
+                      border: `1px solid ${childOn ? 'var(--border-1)' : '#e5e7eb'}`,
+                      padding: '10px 12px', marginBottom: 8, marginInlineStart: 26,
+                      opacity: childOn ? 1 : 0.62,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-1)' }}>{child.label}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.45 }}>{child.desc}</div>
+                    </div>
+                    <Switch checked={childOn} onCheckedChange={() => toggle(child.key)} />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })
       )}
 
       {/* Save / Reset */}
