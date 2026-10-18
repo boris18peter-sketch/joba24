@@ -64,6 +64,12 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 }, true); // capture phase — runs before the vite plugin's bubble-phase handler
 
+// Vite's own signal for a chunk that failed to load — the canonical hook for
+// this failure. It fires for preloads and dynamic imports alike, including the
+// cases whose message the regex above does not match, so the same one-shot heal
+// covers them too.
+window.addEventListener('vite:preloadError', () => healStaleImport());
+
 // Catch static module script load failures (these fire as 'error' events on
 // window, NOT as promise rejections — the unhandledrejection handler above
 // can't see them).
