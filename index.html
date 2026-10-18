@@ -211,6 +211,49 @@
         } catch (e) {}
       })();
     </script>
+    <!-- ENTRY WATCHDOG — the one failure nothing inside the app can catch.
+         "TypeError: Importing a module script failed." (WebKit) means the
+         browser could not fetch/parse the app's entry chunk, which happens when
+         a cached index.html still points at a hashed chunk that no longer
+         exists after a deploy. main.jsx already self-heals this — but only once
+         IT has loaded: if the entry chunk is the thing that failed, no handler
+         inside the app ever runs and the user is left on the skeleton forever.
+         This inline guard runs before the module script and covers both cases:
+         the script failing to load, and it loading without React ever mounting.
+         Throttled through the same key main.jsx uses, so the two can never
+         fight each other into a reload loop. -->
+    <script>
+      (function () {
+        var KEY = 'joba24_main_reload_ts';
+        function heal() {
+          try {
+            var last = Number(sessionStorage.getItem(KEY) || 0);
+            if (Date.now() - last <= 15000) return; // already healed recently
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (e) {}
+          var sep = window.location.search ? '&' : '?';
+          window.location.replace(
+            window.location.pathname + window.location.search +
+            sep + 'cb=' + Date.now() + window.location.hash
+          );
+        }
+        // 1. The entry module fails to fetch or parse. That fires a plain error
+        //    event on the <script> element itself — there is no message to read.
+        window.addEventListener('error', function (ev) {
+          var el = ev.target;
+          if (el && el !== window && el.tagName === 'SCRIPT' && el.type === 'module') heal();
+        }, true);
+        // 2. The entry loaded but React never replaced the skeleton — a chunk it
+        //    needed failed on the way. Only after a generous wait, so a slow
+        //    connection is never mistaken for a failure.
+        window.addEventListener('load', function () {
+          setTimeout(function () {
+            var root = document.getElementById('root');
+            if (root && root.querySelector('.preload-spinner')) heal();
+          }, 8000);
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
