@@ -12,6 +12,7 @@
 import { getCategoryConfig, getCategoryExtraFields } from '@/lib/taskFlowConfig';
 import { useLanguage } from '@/lib/LanguageContext';
 import useTaskFlowI18n from '@/hooks/useTaskFlowI18n';
+import TaskDetailRow from '@/components/TaskDetailRow';
 
 export default function CategoryDetailsView({ task, compact = false }) {
   const { lang } = useLanguage();
@@ -77,45 +78,19 @@ export default function CategoryDetailsView({ task, compact = false }) {
 
   if (rows.length === 0) return null;
 
-  const labelStyle = {
-    fontSize: compact ? 10 : 11,
-    color: '#94a3b8',
-    fontWeight: 600,
-    marginBottom: 2,
-  };
-
-  const valueStyle = {
-    fontSize: compact ? 12 : 13,
-    fontWeight: 700,
-    color: 'var(--text-1)',
-    lineHeight: 1.5,
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-word',
-  };
-
+  // The category's own fields are the SAME rows as the standard task details —
+  // the shared primitive, so the two groups line up as one list. A toggle has no
+  // value to show, so its check sits at the far edge, exactly where a value would.
   return (
     <>
       {rows.map((row, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 10,
-            background: row.isToggle ? '#f0fdf4' : '#f8f9fb',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, fontSize: 13,
-          }}>
-            {row.isToggle ? '✓' : '•'}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {row.isToggle ? (
-              <div style={{ fontSize: compact ? 12 : 13, fontWeight: 600, color: 'var(--text-1)' }}>{row.label}</div>
-            ) : (
-              <>
-                <div style={labelStyle}>{row.label}</div>
-                <div style={valueStyle}>{row.value}</div>
-              </>
-            )}
-          </div>
-        </div>
+        <TaskDetailRow
+          key={i}
+          compact={compact}
+          label={row.label}
+          value={row.isToggle ? '✓' : row.value}
+          valueColor={row.isToggle ? 'var(--brand-primary)' : undefined}
+        />
       ))}
     </>
   );

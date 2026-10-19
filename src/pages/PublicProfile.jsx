@@ -122,8 +122,8 @@ export default function PublicProfile() {
           <div style={{ marginBottom: 8 }}>
             <ProfileAvatar
               user={user}
-              size={64}
-              textSize={22}
+              size={104}
+              textSize={34}
               background="rgba(255,255,255,0.15)"
               borderColor="rgba(255,255,255,0.3)"
             />

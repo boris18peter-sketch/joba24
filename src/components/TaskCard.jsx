@@ -703,7 +703,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           </button>
         </div>
         {showDetails && (
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
+          <div style={{ borderTop: '1px solid var(--border-1)', paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
             <TaskDetailsRows task={displayTask} compact={true} />
 
 

@@ -1250,7 +1250,7 @@ export default function TaskDetail(props) {
           task.requirements ||
           task.category_details ||
           (isOwner && task.auto_bump_enabled && task.base_price && task.max_price)) && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 11 }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* Auto-bump — owner only, at top */}
             {isOwner && task.auto_bump_enabled && task.base_price && task.max_price && (

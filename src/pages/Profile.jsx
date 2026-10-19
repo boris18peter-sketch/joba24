@@ -209,8 +209,8 @@ export default function Profile() {
           <div style={{ marginBottom: 8 }}>
             <ProfileAvatar
               user={me}
-              size={64}
-              textSize={22}
+              size={104}
+              textSize={34}
               editable
               onUpload={handlePhotoUpload}
               uploading={uploadingPhoto}

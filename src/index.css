@@ -561,6 +561,28 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 .j-list-row:hover { background: var(--surface-3); }
 
 /* ════════════════════════════════════════════════════════════════════
+   TASK DETAIL ROWS — one list, one hairline, one rhythm
+   Used by the task card's expanded details, the task detail sheet and the
+   category's own dynamic fields (TaskDetailRow.jsx / CategoryDetailsView.jsx).
+   ════════════════════════════════════════════════════════════════════ */
+
+/* The divider is drawn BETWEEN two neighbouring rows, never on a row itself:
+   a section heading sitting between two groups is not a row, so the line stops
+   there on its own — no component has to know whether it is the last one. */
+.j-detail-row + .j-detail-row { border-top: 1px solid var(--border-1); }
+
+/* A group's first row sits flush under its heading… */
+.j-detail-list > .j-detail-heading + .j-detail-row { padding-top: 0; }
+.j-detail-list > .j-detail-row:first-child { padding-top: 0; }
+
+/* …and the list's last row is flush with the card's own bottom padding, so the
+   card keeps ONE even inset on every side. */
+.j-detail-list > .j-detail-row:last-child { padding-bottom: 0; }
+
+/* Section heading — small, muted, tight. The card's gap does the spacing. */
+.j-detail-heading { padding-bottom: 8px; }
+
+/* ════════════════════════════════════════════════════════════════════
    ANIMATIONS
    ════════════════════════════════════════════════════════════════════ */
 @keyframes sheetSlideUp   { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
