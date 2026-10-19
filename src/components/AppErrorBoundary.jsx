@@ -13,13 +13,36 @@ import { bootMark } from '@/lib/bootTrace';
  * to reload onto a single fresh module graph. Throttled so a genuine bug can
  * never turn into a reload loop.
  */
-const STALE_MODULE_RE = /must be used inside \w+Provider|Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i;
+// ── WHY THIS PATTERN IS SO LOOSE ────────────────────────────────────────────
+// The four providers do NOT phrase their guard the same way:
+//   AuthContext      → "useAuth must be used within an AuthProvider"
+//   LanguageContext  → "useLanguage must be used inside LanguageProvider"
+//   BrandProvider    → "useBrand must be used inside <BrandProvider>"
+// The old pattern only matched "inside \w+Provider", so it caught LanguageContext
+// alone: "within an AuthProvider" has a different word, and "<BrandProvider>" has
+// a `<` where `\w+` was expected. When the FIRST error to reach this boundary
+// happened to be one of the two it could not recognise, `recovering` stayed
+// false, the reload never fired, and the visitor got the dead-end crash screen
+// for a problem the app can heal itself. Matching the shared half of the
+// sentence — the half every provider actually agrees on — catches all four.
+const STALE_MODULE_RE = /must be used (?:inside|within)|Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i;
 
 function healStaleModule() {
   const KEY = 'joba24_boundary_reload_ts';
-  const last = Number(sessionStorage.getItem(KEY) || 0);
-  if (Date.now() - last <= 10000) return false;
-  sessionStorage.setItem(KEY, String(Date.now()));
+  // Storage is read defensively: an iOS WKWebView with storage blocked THROWS on
+  // sessionStorage, and an exception raised here — inside componentDidCatch —
+  // would escape the boundary entirely and replace the crash screen with a bare
+  // SecurityError. A lost throttle costs one extra reload; an unguarded read
+  // costs the screen that offers the retry.
+  let canHeal = true;
+  try {
+    const last = Number(sessionStorage.getItem(KEY) || 0);
+    canHeal = Date.now() - last > 10000;
+    if (canHeal) sessionStorage.setItem(KEY, String(Date.now()));
+  } catch {
+    /* no throttle available — heal anyway */
+  }
+  if (!canHeal) return false;
   // reloadFresh, not location.reload — a plain reload can be served from the HTTP
   // cache and hand back the very same stale module graph, so the heal would fail
   // and the crash screen would come straight back.
