@@ -13,6 +13,7 @@ import { getCategoryConfig, getCategoryExtraFields } from '@/lib/taskFlowConfig'
 import { useLanguage } from '@/lib/LanguageContext';
 import useTaskFlowI18n from '@/hooks/useTaskFlowI18n';
 import TaskDetailRow from '@/components/TaskDetailRow';
+import { cleanDetailLabel } from '@/lib/fieldLabels';
 
 export default function CategoryDetailsView({ task, compact = false }) {
   const { lang } = useLanguage();
@@ -35,23 +36,28 @@ export default function CategoryDetailsView({ task, compact = false }) {
     const v = details[f.key];
     if (v === undefined || v === '' || v === null) return;
 
+    // The stored label carries the form's filling instruction ("ניתן לבחור יותר
+    // מאחד"); the detail view shows the clean title only. Display-only — the
+    // field key, the stored label and the saved value are never touched.
+    const label = cleanDetailLabel(tTaskFlow(f.label, lang));
+
     if (f.type === 'toggle') {
       if (v) {
-        rows.push({ label: tTaskFlow(f.label, lang), value: null, isToggle: true });
+        rows.push({ label, value: null, isToggle: true });
       }
     } else if (f.type === 'schedule') {
       if (Array.isArray(v) && v.length > 0) {
         const slotsText = v.map(s => `${s.date} ${s.start}–${s.end}`).join('; ');
-        rows.push({ label: tTaskFlow(f.label, lang), value: slotsText, isToggle: false });
+        rows.push({ label, value: slotsText, isToggle: false });
       }
     } else if (Array.isArray(v)) {
       if (v.length > 0) {
-        rows.push({ label: tTaskFlow(f.label, lang), value: v.map(opt => tTaskFlow(opt, lang)).join(', '), isToggle: false });
+        rows.push({ label, value: v.map(opt => tTaskFlow(opt, lang)).join(', '), isToggle: false });
       }
     } else if (typeof v === 'object') {
-      rows.push({ label: tTaskFlow(f.label, lang), value: JSON.stringify(v), isToggle: false });
+      rows.push({ label, value: JSON.stringify(v), isToggle: false });
     } else {
-      rows.push({ label: tTaskFlow(f.label, lang), value: tTaskFlow(String(v), lang), isToggle: false });
+      rows.push({ label, value: tTaskFlow(String(v), lang), isToggle: false });
     }
   });
 

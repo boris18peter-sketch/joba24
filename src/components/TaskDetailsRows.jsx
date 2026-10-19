@@ -74,8 +74,7 @@ export default function TaskDetailsRows({ task, compact = false, showTaskDetails
   if (scheduleSlots.length > 0) {
     detailRows.push({
       label: t('tdr_service_slots'),
-      value: scheduleSlots.map(s => `${s.dayLabel} · ${s.time}`).join('  ·  '),
-      multiline: true,
+      value: scheduleSlots.map(s => `${s.dayLabel} · ${s.time}`).join(' · '),
     });
   }
 
@@ -127,24 +126,19 @@ export default function TaskDetailsRows({ task, compact = false, showTaskDetails
 
   const sectionLabelStyle = { fontSize: 11.5, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4 };
 
+  // ONE list under ONE heading. The category's own dynamic fields are simply the
+  // next rows in it — they used to sit under a second heading ("פרטים נוספים"),
+  // which split one card into two and made the same information read as two
+  // different things.
   return (
     <div className="j-detail-list" style={{ display: 'flex', flexDirection: 'column' }}>
-      {hasDetails && (
-        <>
-          {/* The host may already print this heading — the task detail sheet has
-              its own "פרטי המשימה" row with the copyable id beside it, and two
-              identical headings one above the other reads as a bug. */}
-          {showTaskDetailsLabel && <div className="j-detail-heading" style={sectionLabelStyle}>{t('tdr_task_details')}</div>}
-          {detailRows.map((row, i) => <TaskDetailRow key={`d_${i}`} compact={compact} {...row} />)}
-        </>
-      )}
-      {hasExtras && (
-        <>
-          <div className="j-detail-heading" style={{ ...sectionLabelStyle, marginTop: hasDetails ? 4 : 0 }}>{t('tdr_extra_details')}</div>
-          {extraRows.map((row, i) => <TaskDetailRow key={`e_${i}`} compact={compact} {...row} />)}
-          {reqs.length > 0 && <TaskDetailRow compact={compact} label={t('tdr_requirements')} value={reqs.join(' · ')} />}
-        </>
-      )}
+      {/* The host may already print this heading — the task detail sheet has its
+          own "פרטי המשימה" row with the copyable id beside it, and two identical
+          headings one above the other reads as a bug. */}
+      {showTaskDetailsLabel && <div className="j-detail-heading" style={sectionLabelStyle}>{t('tdr_task_details')}</div>}
+      {detailRows.map((row, i) => <TaskDetailRow key={`d_${i}`} compact={compact} {...row} />)}
+      {extraRows.map((row, i) => <TaskDetailRow key={`e_${i}`} compact={compact} {...row} />)}
+      {reqs.length > 0 && <TaskDetailRow compact={compact} label={t('tdr_requirements')} value={reqs.join(' · ')} />}
       <CategoryDetailsView task={task} compact={compact} />
     </div>
   );
