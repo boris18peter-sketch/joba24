@@ -19,6 +19,17 @@ Deno.serve(async (req) => {
 
     // Load configurable bonuses
     const settings = await getJobaSettings(base44);
+
+    // NEVER INVENT A BONUS. When the settings read fails, the numbers in
+    // `settings` are the hardcoded fallbacks (60/40), not what the admin
+    // configured — and granting those is exactly how a new account once received
+    // 60 Jobas while the live setting said 25. Refusing is safe: the grant is
+    // idempotent and the client re-attempts on the next login, because
+    // worker_credits is still null.
+    if (settings.settings_source === 'error') {
+      return Response.json({ error: 'Settings unavailable — bonus not granted' }, { status: 503 });
+    }
+
     const isReferred = !!(freshUser.referred_by_agent_code);
     const baseBonus = settings.signup_bonus;
     const referralBonus = isReferred ? settings.referral_signup_bonus : 0;

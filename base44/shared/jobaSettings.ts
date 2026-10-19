@@ -34,42 +34,66 @@ export const DEFAULT_SETTINGS = {
 
 /**
  * Fetch the active JobaSettings record, merged over defaults.
- * Falls back to DEFAULT_SETTINGS if no record exists or on error,
- * so functions never break even before the admin creates a record.
+ * Falls back to DEFAULT_SETTINGS if no record exists, so functions never break
+ * even before the admin creates a record.
+ *
+ * The returned object carries `settings_source`:
+ *   'record' — the admin's real values (the normal case)
+ *   'empty'  — no record exists yet; the defaults are the documented behaviour
+ *   'error'  — the read failed; the values are hardcoded fallbacks and a caller
+ *              that moves credits must refuse to act on them
  */
 export async function getJobaSettings(base44) {
-  try {
-    const records = await base44.asServiceRole.entities.JobaSettings.list('-updated_date', 1);
-    if (records && records.length > 0) {
-      const rec = records[0];
-      return {
-        ...DEFAULT_SETTINGS,
-        signup_bonus: num(rec.signup_bonus, DEFAULT_SETTINGS.signup_bonus),
-        referral_signup_bonus: num(rec.referral_signup_bonus, DEFAULT_SETTINGS.referral_signup_bonus),
-        profile_completion_bonus: num(rec.profile_completion_bonus, DEFAULT_SETTINGS.profile_completion_bonus),
-        application_fee_percent: num(rec.application_fee_percent, DEFAULT_SETTINGS.application_fee_percent),
-        application_fee_min: num(rec.application_fee_min, DEFAULT_SETTINGS.application_fee_min),
-        application_fee_max: num(rec.application_fee_max, DEFAULT_SETTINGS.application_fee_max),
-        story_cost: num(rec.story_cost, DEFAULT_SETTINGS.story_cost),
-        boost_cost: num(rec.boost_cost, DEFAULT_SETTINGS.boost_cost),
-        loyalty_reward_percent: num(rec.loyalty_reward_percent, DEFAULT_SETTINGS.loyalty_reward_percent),
-        loyalty_reward_min: num(rec.loyalty_reward_min, DEFAULT_SETTINGS.loyalty_reward_min),
-        upcoming_visibility_hours: num(rec.upcoming_visibility_hours, DEFAULT_SETTINGS.upcoming_visibility_hours),
-        execution_activation_hours: num(rec.execution_activation_hours, DEFAULT_SETTINGS.execution_activation_hours),
-        starting_soon_reminder_hours: num(rec.starting_soon_reminder_hours, DEFAULT_SETTINGS.starting_soon_reminder_hours),
-        default_occurrence_minutes: num(rec.default_occurrence_minutes, DEFAULT_SETTINGS.default_occurrence_minutes),
-        pre_launch_gate_active: rec.pre_launch_gate_active !== false,
-        pre_launch_release_mode: rec.pre_launch_release_mode === 'new_only' ? 'new_only' : 'all',
-        pre_launch_release_at: rec.pre_launch_release_at || '',
-        facebook_page_id: rec.facebook_page_id || null,
-        facebook_page_name: rec.facebook_page_name || null,
-        facebook_auto_post_enabled: rec.facebook_auto_post_enabled === true,
-      };
+  // TWO ATTEMPTS, AND A FLAG SAYING WHERE THE NUMBERS CAME FROM.
+  //
+  // A single transient read failure used to fall straight through to
+  // DEFAULT_SETTINGS — the hardcoded 60/40 — so the app quietly used values the
+  // admin never configured, and nothing anywhere reported a problem. That is how
+  // a new account was granted the built-in 60 Jobas while the live setting
+  // said 25. Retrying absorbs the blip; `settings_source` lets a money-critical
+  // caller tell "the admin's real values" apart from "we could not read them".
+  let readFailed = false;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const records = await base44.asServiceRole.entities.JobaSettings.list('-updated_date', 1);
+      if (records && records.length > 0) {
+        const rec = records[0];
+        return {
+          ...DEFAULT_SETTINGS,
+          settings_source: 'record',
+          signup_bonus: num(rec.signup_bonus, DEFAULT_SETTINGS.signup_bonus),
+          referral_signup_bonus: num(rec.referral_signup_bonus, DEFAULT_SETTINGS.referral_signup_bonus),
+          profile_completion_bonus: num(rec.profile_completion_bonus, DEFAULT_SETTINGS.profile_completion_bonus),
+          application_fee_percent: num(rec.application_fee_percent, DEFAULT_SETTINGS.application_fee_percent),
+          application_fee_min: num(rec.application_fee_min, DEFAULT_SETTINGS.application_fee_min),
+          application_fee_max: num(rec.application_fee_max, DEFAULT_SETTINGS.application_fee_max),
+          story_cost: num(rec.story_cost, DEFAULT_SETTINGS.story_cost),
+          boost_cost: num(rec.boost_cost, DEFAULT_SETTINGS.boost_cost),
+          loyalty_reward_percent: num(rec.loyalty_reward_percent, DEFAULT_SETTINGS.loyalty_reward_percent),
+          loyalty_reward_min: num(rec.loyalty_reward_min, DEFAULT_SETTINGS.loyalty_reward_min),
+          upcoming_visibility_hours: num(rec.upcoming_visibility_hours, DEFAULT_SETTINGS.upcoming_visibility_hours),
+          execution_activation_hours: num(rec.execution_activation_hours, DEFAULT_SETTINGS.execution_activation_hours),
+          starting_soon_reminder_hours: num(rec.starting_soon_reminder_hours, DEFAULT_SETTINGS.starting_soon_reminder_hours),
+          default_occurrence_minutes: num(rec.default_occurrence_minutes, DEFAULT_SETTINGS.default_occurrence_minutes),
+          pre_launch_gate_active: rec.pre_launch_gate_active !== false,
+          pre_launch_release_mode: rec.pre_launch_release_mode === 'new_only' ? 'new_only' : 'all',
+          pre_launch_release_at: rec.pre_launch_release_at || '',
+          facebook_page_id: rec.facebook_page_id || null,
+          facebook_page_name: rec.facebook_page_name || null,
+          facebook_auto_post_enabled: rec.facebook_auto_post_enabled === true,
+        };
+      }
+      // No record exists at all — the defaults ARE the documented behaviour here.
+      return { ...DEFAULT_SETTINGS, settings_source: 'empty' };
+    } catch (e) {
+      readFailed = true;
+      console.error(`getJobaSettings error (attempt ${attempt + 1}):`, e);
     }
-  } catch (e) {
-    console.error('getJobaSettings error:', e);
   }
-  return { ...DEFAULT_SETTINGS };
+  // The read genuinely failed. Every number below is a hardcoded fallback, NOT
+  // the admin's configuration, and callers that move credits must not trust it.
+  console.error('getJobaSettings: falling back to defaults after', readFailed ? 'a failed read' : 'no record');
+  return { ...DEFAULT_SETTINGS, settings_source: 'error' };
 }
 
 function num(v, fallback) {
