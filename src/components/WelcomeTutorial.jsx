@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
+import { setConsentBannerSuppressed } from '@/lib/consentBannerGate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowLeft, X, Shield, UserCircle2, Plus, Coins, Send } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
@@ -112,6 +113,15 @@ export default function WelcomeTutorial() {
   // portaled to <body>. Without this it stayed on screen — dimming and blocking
   // the whole app — after the user navigated away from the feed.
   const { pathname } = useLocation();
+
+  // Hold the cookie notice back for as long as this is on screen. Both live in
+  // the bottom band — this tutorial's tooltip is anchored to the publish button
+  // in the bottom bar — so on screen together the notice sat across the tooltip
+  // and its arrow. The notice returns as soon as the tutorial ends.
+  useEffect(() => {
+    setConsentBannerSuppressed(visible);
+    return () => setConsentBannerSuppressed(false);
+  }, [visible]);
 
   // Detect available steps once (after a short delay for layout to settle)
   useEffect(() => {

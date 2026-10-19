@@ -627,6 +627,22 @@ export default function Layout() {
     return label && label.length > MAX_NAV_LABEL_LEN ? (NAV_FALLBACK_EN[key] || label) : label;
   };
 
+  // ── A GUEST'S LOGIN PROMPT MUST NAME WHAT THEY JUST ASKED FOR ────────────
+  // login() opens the shared modal with no `type`, so the modal fell back to
+  // its 'apply' default and EVERY guest-gated destination announced "כדי להגיש
+  // בקשה נשאר רק להתחבר". A visitor who tapped מפה was told they were applying
+  // for a task — a sentence about something they had not asked to do. Each
+  // destination now names itself.
+  //
+  // Publishing and applying were already right and are untouched: the publish
+  // form renders its own modal with type="publish", and the task page passes
+  // the apply key explicitly. Only the destinations below were wrong.
+  const GUEST_LOGIN_TITLE_KEY = {
+    '/map': 'login_title_map',
+    '/chats': 'login_title_chats',
+    '/profile': 'login_title_profile',
+  };
+
   const navItems = [
     { to: '/', icon: Home, label: navLabel('nav_feed_short') },
     { to: '/map', icon: Map, label: navLabel('nav_map_short') },
@@ -798,7 +814,7 @@ export default function Layout() {
                 );
               }
               return (
-                <Link key={to} to={to} onClick={(e) => { if (effectiveGuest && to !== '/') { e.preventDefault(); login(); return; } if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
+                <Link key={to} to={to} onClick={(e) => { if (effectiveGuest && to !== '/') { e.preventDefault(); login(GUEST_LOGIN_TITLE_KEY[to]); return; } if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Icon size={21} color={active ? 'var(--brand-nav-active, var(--brand-primary))' : 'var(--brand-nav-text, #9bb3d4)'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
                     {badge > 0 && (

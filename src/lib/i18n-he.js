@@ -1511,6 +1511,9 @@ export const he = {
   // doing, so it reads as the next step rather than a generic invitation.
   login_title_publish_task: 'כדי לפרסם נשאר רק להתחבר',
   login_title_apply_task: 'כדי להגיש בקשה נשאר רק להתחבר',
+  login_title_map: 'כדי לראות את המפה נשאר רק להתחבר',
+  login_title_chats: 'כדי לראות את ההודעות נשאר רק להתחבר',
+  login_title_profile: 'כדי לראות את הפרופיל נשאר רק להתחבר',
   continue_with_google: 'המשך עם Google',
   continue_with_email: 'המשך עם אימייל',
   or_separator: 'או',

@@ -5,6 +5,7 @@ import { Cookie } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { applyConsent, hasConsentChoice, CONSENT_GRANTED, CONSENT_DENIED } from '@/lib/consent';
 import { isNativeLike } from '@/lib/nativeEnv';
+import { isConsentBannerSuppressed, subscribeConsentBannerGate } from '@/lib/consentBannerGate';
 
 /**
  * Minimal advertising-consent notice.
@@ -33,10 +34,20 @@ export default function ConsentBanner() {
   // before any advertising measurement runs.
   const onFirstRun = pathname === '/welcome';
 
+  // ── AND NEVER UNDER A RUNNING TUTORIAL ───────────────────────────────────
+  // The first-run tutorial points its tooltip at the publish button in the
+  // bottom bar — the exact band this notice occupies — so the notice sat across
+  // the tooltip and its arrow, and the arrow pointed at the notice instead of
+  // at the button. The notice is passive housekeeping; the tutorial is what the
+  // visitor is actually doing, so the notice steps aside for it and returns the
+  // moment the tutorial is finished or skipped.
+  const [suppressed, setSuppressed] = useState(() => isConsentBannerSuppressed());
+  useEffect(() => subscribeConsentBannerGate(() => setSuppressed(isConsentBannerSuppressed())), []);
+
   // Inside the native app there is no web advertising cookie to consent to —
   // the notice belongs to the browser experience only and must never appear
   // over the app's own screens.
-  const visible = !isNativeLike() && !decided && !onFirstRun;
+  const visible = !isNativeLike() && !decided && !onFirstRun && !suppressed;
 
   // Publish the banner's REAL height while it is on screen, so a full-screen
   // page can reserve room for it. The banner is pinned to the bottom of the
