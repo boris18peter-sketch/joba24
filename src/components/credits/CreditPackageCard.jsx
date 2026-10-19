@@ -1,4 +1,4 @@
-import CreditIcon from '@/components/CreditIcon';
+import CoinStack from '@/components/credits/CoinStack';
 import { packageValueLabel } from '@/lib/jobaBalance';
 import { Star, Crown, Check } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -35,7 +35,10 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
               ? '1.5px solid #c4b5fd'
               : '1px solid var(--border-1)',
         borderRadius: 'var(--r-xl)',
-        padding: '18px 12px 14px',
+        // The top padding is the badge's own zone: every card reserves it, so
+        // the credits, the label, the value line and the price all start at the
+        // same height on all six cards whether they carry a badge or not.
+        padding: '24px 10px 11px',
         cursor: 'pointer',
         overflow: 'hidden',
         boxShadow: selected
@@ -47,9 +50,9 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 4,
+        gap: 3,
         textAlign: 'center',
-        minHeight: 188,
+        minHeight: 168,
         width: '100%',
       }}
     >
@@ -59,11 +62,17 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           shouting over the two things that actually matter: credits and price. */}
       {(isPopular || isBest) && (
         <div style={{
-          position: 'absolute', top: 7, right: 7,
+          position: 'absolute', top: 6, right: 6,
           // A filled chip, still a chip: it reads at a glance and carries real
           // weight, without becoming the full-width colour band that used to
           // shout louder than the credits and the price.
-          background: isBest ? '#7c3aed' : 'var(--brand-primary)',
+          //
+          // On a SELECTED card the chip turns translucent white, because the
+          // card is already solid brand blue — a blue chip on blue would vanish,
+          // and the visitor could no longer tell "this is the one you picked"
+          // apart from "this is the one we recommend".
+          background: selected ? 'rgba(255,255,255,0.22)' : isBest ? '#7c3aed' : 'var(--brand-primary)',
+          border: selected ? '1px solid rgba(255,255,255,0.5)' : 'none',
           color: 'white',
           fontWeight: 900, fontSize: 10.5,
           padding: '3px 9px', borderRadius: 99,
@@ -71,43 +80,50 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           display: 'inline-flex', alignItems: 'center', gap: 3,
           zIndex: 10,
           letterSpacing: 0.2,
-          boxShadow: isBest ? '0 3px 10px rgba(124,58,237,0.35)' : '0 3px 10px rgba(26,111,212,0.35)',
+          boxShadow: selected ? 'none' : isBest ? '0 3px 10px rgba(124,58,237,0.35)' : '0 3px 10px rgba(26,111,212,0.35)',
         }}>
           {isBest ? <Crown size={11} /> : <Star size={11} />}
           {isBest ? t('buy_best_value') : t('buy_popular_badge')}
         </div>
       )}
 
-      {/* Selected checkmark */}
+      {/* Selected checkmark — a solid white tick, so "the one I picked" is
+          unmistakable against the recommended card's coloured frame and chip. */}
       {selected && (
         <div style={{
-          position: 'absolute', top: 8, left: 8,
-          width: 24, height: 24, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.25)',
+          position: 'absolute', top: 6, left: 6,
+          width: 26, height: 26, borderRadius: '50%',
+          background: '#ffffff',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 5,
+          zIndex: 11,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.22)',
         }}>
-          <Check size={14} color="white" strokeWidth={3} />
+          <Check size={15} color="var(--brand-primary)" strokeWidth={3.5} />
         </div>
       )}
 
-      {/* Credits count */}
+      {/* Credits — the number stays the loudest thing on the card, with the
+          package's coin stack beside it. The row has a FIXED height, so the
+          number, the label, the value line and the price line up on all six
+          cards even though the stacks are different sizes. */}
       <div style={{
-        fontSize: 34, fontWeight: 900,
-        color: selected ? 'white' : 'var(--text-1)',
-        letterSpacing: -0.5, lineHeight: 1,
-        display: 'flex', alignItems: 'center', gap: 6,
-        marginTop: isPopular || isBest ? 22 : 4,
+        height: 55, width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
       }}>
-        {pkg.credits}
-        <CreditIcon size={22} />
+        <span style={{
+          fontSize: 34, fontWeight: 900,
+          color: selected ? 'white' : 'var(--text-1)',
+          letterSpacing: -0.5, lineHeight: 1,
+        }}>
+          {pkg.credits}
+        </span>
+        <CoinStack coins={pkg.coins} />
       </div>
 
       {/* Label */}
       <div style={{
-        fontSize: 12, fontWeight: 700,
+        fontSize: 11.5, fontWeight: 700,
         color: selected ? 'rgba(255,255,255,0.75)' : 'var(--text-3)',
-        marginTop: 2,
       }}>
         {isSubscription ? t('buy_jobs_month') : t('buy_jobs_label')}
       </div>
@@ -116,9 +132,9 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           information: secondary text, not a green headline repeated four times
           that pulled the eye away from the credits and the price. */}
       <div style={{
-        fontSize: 12, fontWeight: 700,
+        fontSize: 11.5, fontWeight: 700,
         color: selected ? 'rgba(255,255,255,0.85)' : 'var(--text-2)',
-        marginTop: 5, lineHeight: 1.25, textAlign: 'center',
+        marginTop: 2, lineHeight: 1.25, textAlign: 'center',
         padding: '0 2px',
       }}>
         {packageValueLabel(pkg.credits, t)}
@@ -128,11 +144,11 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           stays large and bold. A hairline rule gives it an area of its own
           instead of the tinted plate that used to look like a second button. */}
       <div style={{
-        marginTop: 'auto', width: '100%', paddingTop: 11,
+        marginTop: 'auto', width: '100%', paddingTop: 8,
         borderTop: `1px solid ${selected ? 'rgba(255,255,255,0.28)' : 'var(--border-1)'}`,
       }}>
         <div style={{
-          fontSize: 20, fontWeight: 900,
+          fontSize: 19, fontWeight: 900,
           color: selected ? 'white' : 'var(--text-1)',
           letterSpacing: -0.3, lineHeight: 1.1,
         }}>

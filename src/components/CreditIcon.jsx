@@ -4,7 +4,7 @@ import { useId } from 'react';
 // Gradient IDs are unique per instance (useId) so multiple coins on the same
 // page (header + wallet + packages) never collide and reference the wrong def —
 // this keeps the coin face yellow and the J blue in every context.
-export default function CreditIcon({ size = 36, style = {} }) {
+export default function CreditIcon({ size = 36, style = {}, shadow = true }) {
   const s = Math.round(size * 1.3);
   const raw = useId();
   const uid = raw.replace(/:/g, '');
@@ -32,8 +32,10 @@ export default function CreditIcon({ size = 36, style = {} }) {
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: 'block' }}
       >
-        {/* Drop shadow */}
-        <ellipse cx="16" cy="29" rx="10" ry="2.5" fill="rgba(26,111,212,0.3)" />
+        {/* Drop shadow — the coin's own ground shadow. A coin that is not resting
+            on the ground (one stacked inside CoinStack) omits it, so no stray
+            smudge appears between two coins. */}
+        {shadow && <ellipse cx="16" cy="29" rx="10" ry="2.5" fill="rgba(26,111,212,0.3)" />}
 
         {/* Coin bottom face (3D depth) - כחול כהה */}
         <ellipse cx="16" cy="19" rx="13" ry="4" fill="#0a52b0" />

@@ -39,20 +39,23 @@ const SHIMMER_STYLE = `
   }
 `;
 
+// `coins` is the height of the card's coin stack — a visual illustration of the
+// package's size, growing one coin per step so the difference between the six
+// packages is felt at a glance. It is not the number of jobas in the package.
 const ONE_TIME_PACKAGES = [
   { id: 'ot1', credits: 5,   price: 9.9,   badge: null,      coins: 1 },
-  { id: 'ot2', credits: 14,  price: 24.9,  badge: null,      coins: 1 },
-  { id: 'ot3', credits: 29,  price: 49.9,  badge: 'popular', coins: 2 },
-  { id: 'ot4', credits: 60,  price: 99.9,  badge: null,      coins: 3 },
-  { id: 'ot5', credits: 100, price: 149.9, badge: null,      coins: 4 },
-  { id: 'ot6', credits: 135, price: 199.9, badge: 'best',    coins: 5 },
+  { id: 'ot2', credits: 14,  price: 24.9,  badge: null,      coins: 2 },
+  { id: 'ot3', credits: 29,  price: 49.9,  badge: 'popular', coins: 3 },
+  { id: 'ot4', credits: 60,  price: 99.9,  badge: null,      coins: 4 },
+  { id: 'ot5', credits: 100, price: 149.9, badge: null,      coins: 5 },
+  { id: 'ot6', credits: 135, price: 199.9, badge: 'best',    coins: 6 },
 ];
 
 const SUBSCRIPTION_PACKAGES = [
   { id: 'sub1', credits: 20,  price: 24.9,  badge: null,      coins: 1 },
   { id: 'sub2', credits: 45,  price: 49.9,  badge: 'popular', coins: 2 },
   { id: 'sub3', credits: 95,  price: 99.9,  badge: null,      coins: 3 },
-  { id: 'sub4', credits: 145, price: 149.9, badge: null,     coins: 4 },
+  { id: 'sub4', credits: 145, price: 149.9, badge: null,      coins: 4 },
   { id: 'sub5', credits: 190, price: 199.9, badge: 'best',    coins: 5 },
 ];
 
@@ -346,7 +349,10 @@ export default function BuyCreditsModal({ onClose, creditsNeeded, initialState }
                 <CreditPackageCard
                   key={pkg.id}
                   pkg={pkg}
-                  selected={false}
+                  // Marks the card the visitor actually picked, so it stays
+                  // visibly distinct from the recommended one behind the
+                  // purchase sheet.
+                  selected={selectedPkg?.id === pkg.id}
                   onSelect={handleSelectPkg}
                   isSubscription={isSubscription}
                   priceLabel={iosIap ? (iosProducts ? (iosProducts[IOS_IAP_ALL[pkg.id]]?.displayPrice || '—') : null) : undefined}

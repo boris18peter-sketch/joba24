@@ -1282,7 +1282,7 @@ export const en = {
     buy_secure_payment: 'Secure payment · Tranzila',
     buy_loading_form: 'Loading payment form...',
     buy_pdesc: 'Joba24 Jobas — {n} Jobas',
-    buy_value_label: 'Lets you apply to tasks worth a total of up to ₪{nis}',
+    buy_value_label: 'Apply to tasks worth up to ₪{nis}',
     balance_value_caption: 'Enough for work worth ₪{nis}',
     translated_badge: 'Auto-translated',
   tb_phone_verified: 'Phone verified',
