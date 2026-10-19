@@ -116,4 +116,9 @@ export function installDesktopScale() {
   };
   window.addEventListener('resize', schedule);
   window.addEventListener('orientationchange', schedule);
+
+  // …and once more on the next frame: the measurement above runs the instant
+  // this module does, and re-reading it after the first layout costs nothing
+  // while covering a stylesheet that had not been applied yet.
+  schedule();
 }
