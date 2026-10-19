@@ -101,14 +101,14 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     refetchOnWindowFocus: false,
   });
 
-  // The subscription is created ONCE per user and never torn down while the
-  // feed is mounted. Re-subscribing whenever a profile / application / completed
-  // task refetch produced a new array opened a gap in which a brand-new task
-  // event was simply lost — which is why a matching task sometimes produced no
-  // popup at all, and other times popped long after it was posted.
-  const matchInputsRef = useRef({ currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap });
+  // Is the taxonomy actually loaded? A root preference ("חשמל") can only be
+  // resolved to the exact service a task asks for ("תיקון קצר") through this map,
+  // so while it is empty every signed-in match evaluates to "not relevant".
+  const catalogueReady = Object.keys(categoryMap || {}).length > 0;
+
+  const matchInputsRef = useRef(null);
   useEffect(() => {
-    matchInputsRef.current = { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap };
+    matchInputsRef.current = { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap, catalogueReady };
   });
 
   // Already-shown keys live in a ref, not inside the effect: the effect is torn
@@ -116,9 +116,75 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   // time let the same task pop a second time.
   const shownRef = useRef(new Set());
 
+  // Tasks that arrived BEFORE the catalogue did. Parked here and decided the
+  // moment it lands, never dropped — see the subscription below.
+  const pendingRef = useRef([]);
+
+  // The decision for one task. Held in a ref so the subscription can stay mounted
+  // across profile / catalogue changes (see the note on the effect below).
+  const handleTaskRef = useRef(null);
+  handleTaskRef.current = ({ task, isNewTask, isBoosted }) => {
+    const { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap } = matchInputsRef.current;
+
+    // Deduplicate — don't show same task twice quickly
+    const dedupKey = `${task.id}_${isNewTask ? 'new' : task.last_boost_at}`;
+    if (shownRef.current.has(dedupKey)) return;
+    shownRef.current.add(dedupKey);
+
+    // A task the worker has already applied to is never news to them.
+    if (myApplications.some(a => a.task_id === task.id)) return;
+
+    if (!currentUserId) {
+      // A guest has no profile to match against, so only proximity counts.
+      // An unknown location used to mean "show everything", which is the
+      // opposite of precise.
+      const guestDist = userLocation && task.lat && task.lng
+        ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
+        : null;
+      if (guestDist === null || guestDist > GUEST_NEARBY_KM) return;
+      setPopup({ task, dist: guestDist, isBoosted });
+      setCountdown(DURATION);
+      return;
+    }
+
+    const { relevant, dist } = evaluateMatch({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap });
+
+    // A boost is the publisher paying for reach, so it clears the category bar
+    // — but it still never travels beyond MAX_DISTANCE_KM.
+    if (!isBoosted && !relevant) return;
+
+    // For boosted tasks — also persist to localStorage notifications
+    if (isBoosted) {
+      const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
+      const alreadyStored = stored.some(n => n.taskId === task.id && n.type === 'boost_signal' &&
+        Math.abs(Date.now() - new Date(n.timestamp).getTime()) < 60000);
+      if (!alreadyStored) {
+        const notif = {
+          type: 'boost_signal',
+          taskId: task.id,
+          taskTitle: task.title,
+          preview: `${task.location_name ? task.location_name.split(',')[0] + ' · ' : ''}₪${Math.round(task.price || 0)}`,
+          timestamp: new Date().toISOString(),
+          read: false,
+        };
+        localStorage.setItem('joba24_notifications', JSON.stringify([notif, ...stored].slice(0, 50)));
+        window.dispatchEvent(new Event('joba24_notif_update'));
+      }
+    }
+
+    setPopup({ task, dist, isBoosted });
+    setCountdown(DURATION);
+  };
+
+  // The subscription is created ONCE per user and never torn down while the
+  // feed is mounted. Re-subscribing whenever a profile / application / completed
+  // task refetch produced a new array opened a gap in which a brand-new task
+  // event was simply lost — which is why a matching task sometimes produced no
+  // popup at all, and other times popped long after it was posted. That is also
+  // why the decision itself lives in handleTaskRef above: this effect must keep
+  // its identity, so it reads the latest inputs and logic through refs instead.
   useEffect(() => {
     const unsub = base44.entities.Task.subscribe(event => {
-      const { currentUser, myApplications, myCompletedTasks, activeCategory, userLocation, categoryMap } = matchInputsRef.current;
       const task = event.data;
       if (!task || task.status !== 'OPEN') return;
       // The realtime stream is global — on the platform Brand (Joba24) every
@@ -132,57 +198,30 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
 
       if (!isNewTask && !isBoosted) return;
 
-      // Deduplicate — don't show same task twice quickly
-      const dedupKey = `${task.id}_${isNewTask ? 'new' : task.last_boost_at}`;
-      if (shownRef.current.has(dedupKey)) return;
-      shownRef.current.add(dedupKey);
-
-      // A task the worker has already applied to is never news to them.
-      if (myApplications.some(a => a.task_id === task.id)) return;
-
-      if (!currentUserId) {
-        // A guest has no profile to match against, so only proximity counts.
-        // An unknown location used to mean "show everything", which is the
-        // opposite of precise.
-        const guestDist = userLocation && task.lat && task.lng
-          ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
-          : null;
-        if (guestDist === null || guestDist > GUEST_NEARBY_KM) return;
-        setPopup({ task, dist: guestDist, isBoosted });
-        setCountdown(DURATION);
+      // ── NEVER DECIDE BEFORE THE TAXONOMY IS THERE ──────────────────────────
+      // A root preference ("חשמל") resolves to the exact service a task asks for
+      // ("תיקון קצר") only through the catalogue map. While that map is still
+      // loading it is empty, categoryMatches can only answer "no", and a genuinely
+      // matching task was discarded for good — which is why the popup silently
+      // never appeared for exactly the people it exists to serve. Park the event
+      // instead: the effect below decides it the moment the catalogue lands.
+      if (currentUserId && !matchInputsRef.current.catalogueReady) {
+        pendingRef.current.push({ task, isNewTask, isBoosted });
         return;
       }
 
-      const { relevant, dist } = evaluateMatch({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory, categoryMap });
-
-      // A boost is the publisher paying for reach, so it clears the category bar
-      // — but it still never travels beyond MAX_DISTANCE_KM.
-      if (!isBoosted && !relevant) return;
-
-      // For boosted tasks — also persist to localStorage notifications
-      if (isBoosted) {
-        const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
-        const alreadyStored = stored.some(n => n.taskId === task.id && n.type === 'boost_signal' &&
-          Math.abs(Date.now() - new Date(n.timestamp).getTime()) < 60000);
-        if (!alreadyStored) {
-          const notif = {
-            type: 'boost_signal',
-            taskId: task.id,
-            taskTitle: task.title,
-            preview: `${task.location_name ? task.location_name.split(',')[0] + ' · ' : ''}₪${Math.round(task.price || 0)}`,
-            timestamp: new Date().toISOString(),
-            read: false,
-          };
-          localStorage.setItem('joba24_notifications', JSON.stringify([notif, ...stored].slice(0, 50)));
-          window.dispatchEvent(new Event('joba24_notif_update'));
-        }
-      }
-
-      setPopup({ task, dist, isBoosted });
-      setCountdown(DURATION);
+      handleTaskRef.current({ task, isNewTask, isBoosted });
     });
     return unsub;
   }, [currentUserId, brandId, isPlatformBrand]);
+
+  // The catalogue arrived — decide everything that was parked.
+  useEffect(() => {
+    if (!catalogueReady || !pendingRef.current.length) return;
+    const parked = pendingRef.current;
+    pendingRef.current = [];
+    parked.forEach((e) => handleTaskRef.current(e));
+  }, [catalogueReady]);
 
   useEffect(() => {
     if (!popup) return;

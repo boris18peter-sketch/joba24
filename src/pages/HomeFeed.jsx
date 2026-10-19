@@ -387,9 +387,16 @@ export default function HomeFeed() {
 
   // ── Smart Ranking Engine ──────────────────────────────────────────────────
   // Build worker profile for category matching
+  // ── WHAT THIS USER ACTUALLY DOES ─────────────────────────────────────────
+  // The history below is the WORKER's, so it must come from workerTasks — the
+  // tasks this user was hired for. It used to read myTasks, which is the list of
+  // tasks the user PUBLISHED as a client: a person who posts jobs would have
+  // their own postings counted as their trade, and a person who only ever works
+  // (never posts) contributed no history at all. The strongest personalisation
+  // signal in the feed was therefore reading the wrong list.
   const workerProfile = useMemo(() => {
     const categoryHistory = {};
-    (myTasks || []).filter(t => t.status === 'COMPLETED').forEach(t => {
+    (workerTasks || []).filter(t => t.status === 'COMPLETED').forEach(t => {
       if (t.category) categoryHistory[t.category] = (categoryHistory[t.category] || 0) + 1;
     });
     return {
@@ -400,13 +407,17 @@ export default function HomeFeed() {
       // asks for ("אינסטלציה" → "לתקן נזילה").
       globalMap: categoryMap,
     };
-  }, [myTasks, me?.preferred_categories, me?.preferred_cities, categoryMap]);
+  }, [workerTasks, me?.preferred_categories, me?.preferred_cities, categoryMap]);
 
   // Build behavioral profile from applications + completed tasks
   // Uses fetched task data (appliedTasksData) instead of feed cache,
   // so completed/taken tasks still contribute to the learned profile.
   const behavioralProfile = useMemo(() => {
-    const completedTasks = (myTasks || []).filter(t => t.status === 'COMPLETED' && t.worker_id === me?.id);
+    // Same correction as workerProfile above: a COMPLETED task the user worked on
+    // lives in workerTasks. Reading myTasks and requiring `worker_id === me.id`
+    // inside the user's own PUBLISHED list could never match, so this list was
+    // always empty and the learned profile was built from applications alone.
+    const completedTasks = (workerTasks || []).filter(t => t.status === 'COMPLETED');
     const appliedTaskDetails = myApplications.map(a => {
       const task = appliedTasksData.find(t => t.id === a.task_id);
       return task || { category: null, price: null };
@@ -423,7 +434,7 @@ export default function HomeFeed() {
     }
     profile.globalMap = categoryMap;
     return profile;
-  }, [myApplications, myTasks, appliedTasksData, me?.id, me?.preferred_categories, categoryMap]);
+  }, [myApplications, workerTasks, appliedTasksData, me?.id, me?.preferred_categories, categoryMap]);
 
   // Categorize my applications — memoized to avoid recomputing every render
   const { approvedTaskIds, pendingTaskIds } = useMemo(() => {
@@ -461,7 +472,13 @@ export default function HomeFeed() {
       if (filters.requires_invoice && !t.requires_invoice) return false;
       return true;
     });
-  }, [tasks, search, filters, dismissedTasks]);
+    // categoryMap belongs here: the category filter below resolves a chosen TRADE
+    // against the task's exact service THROUGH this map. It arrives from an async
+    // catalogue fetch, so without it the filter was computed once against an
+    // empty map — where categoryMatches can only answer "no" — and never
+    // recomputed. Picking a category could therefore show an empty feed that
+    // stayed empty until something else happened to change.
+  }, [tasks, search, filters, dismissedTasks, categoryMap]);
 
   // Run smart ranking — pass isLoggedIn + behavioralProfile + userPreferredCities
   // userPreferredCities enables location fallback when GPS is unavailable

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, ChevronLeft, Phone, Video, Play } from 'lucide-react';
+import { X, Save, Loader2, Star, Upload, FileText, Trash2, ChevronLeft, Phone, Video, Play } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
@@ -23,7 +23,6 @@ import InlineNameField from '@/components/profile/InlineNameField';
 import { getDisplayName, validateDisplayName } from '@/lib/displayName';
 
 const INITIAL_CITIES_COUNT = 12;
-const MAX_PROFILE_PHOTOS = 6;
 
 function SectionCard({ title, children, style }) {
   return (
@@ -108,10 +107,8 @@ export default function WorkerProfile() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [showAllCities, setShowAllCities] = useState(false);
   const [nameError, setNameError] = useState(null);
-  const [addingPhoto, setAddingPhoto] = useState(false);
   const certDocRef = useRef(null);
   const videoInputRef = useRef(null);
-  const addPhotoRef = useRef(null);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -121,28 +118,6 @@ export default function WorkerProfile() {
     await base44.auth.updateMe({ profile_photo: file_url });
     queryClient.invalidateQueries({ queryKey: ['me'] });
     setUploadingPhoto(false);
-  };
-
-  // The small "+" beside the profile picture — the quick way to add a photo to
-  // the profile gallery without scrolling down to its own section.
-  const handleAddProfilePhoto = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (addPhotoRef.current) addPhotoRef.current.value = '';
-    if (!files.length) return;
-    const room = MAX_PROFILE_PHOTOS - (form?.profile_photos?.length || 0);
-    if (room <= 0) { toast.error(t('pph_too_many', { n: MAX_PROFILE_PHOTOS })); return; }
-    setAddingPhoto(true);
-    try {
-      const added = [];
-      for (const file of files.slice(0, room)) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        added.push(file_url);
-      }
-      if (added.length) setForm(f => ({ ...f, profile_photos: [...(f.profile_photos || []), ...added] }));
-    } catch {
-      toast.error(t('pph_upload_error'));
-    }
-    setAddingPhoto(false);
   };
 
   const handleVideoUpload = async (e) => {
@@ -305,30 +280,6 @@ export default function WorkerProfile() {
             borderColor="transparent"
           />
 
-          {/* One small "+" on the other side of the picture: the shortcut for
-              adding a photo, right where the picture is. */}
-          {!isViewingOther && (
-            <>
-              <button
-                className="j-icon-btn"
-                onClick={() => addPhotoRef.current?.click()}
-                disabled={addingPhoto}
-                aria-label={t('pph_add')}
-                style={{
-                  position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                  ...(isRTL ? { right: 'calc(100% + 8px)' } : { left: 'calc(100% + 8px)' }),
-                  width: 30, height: 30, borderRadius: '50%',
-                  background: 'var(--surface-3)', border: '1px solid var(--border-2)',
-                  color: 'var(--brand-primary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: addingPhoto ? 'not-allowed' : 'pointer', padding: 0,
-                }}
-              >
-                {addingPhoto ? <Loader2 size={15} className="animate-spin" /> : <Plus size={17} />}
-              </button>
-              <input ref={addPhotoRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleAddProfilePhoto} />
-            </>
-          )}
         </div>
 
         {isViewingOther ? (
