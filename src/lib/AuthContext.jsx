@@ -218,7 +218,31 @@ export const AuthProvider = ({ children }) => {
       // logins and balance changes. It now lives in the registration block below,
       // which is keyed on the account's own creation state instead.
       if (currentUser && (currentUser.worker_credits === undefined || currentUser.worker_credits === null)) {
-        base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
+        // ── REFRESH THE USER THE MOMENT THE BONUS LANDS ──────────────────────
+        // The bonus is granted here in the background, but `currentUser` was
+        // fetched a moment EARLIER — before the server wrote the balance — so it
+        // still carries worker_credits: null. Nothing then updated it: the
+        // realtime User subscription is only established further down (the write
+        // usually wins that race), and the 120s fallback poll is two minutes too
+        // late. A brand-new account therefore sat on a stale user object for its
+        // entire first session — which is why the signup gift popup never
+        // appeared (it is gated on a real balance), the header showed 0 instead
+        // of the 60 ג'ובות, and the welcome tour announced "0 ג'ובות במתנה".
+        // Re-reading the user right after the grant makes the first session show
+        // the truth immediately.
+        base44.functions.invoke('grantSignupBonus', {})
+          .catch(() => {})
+          .finally(async () => {
+            try {
+              const fresh = await base44.auth.me();
+              // Only apply it if this is still the same signed-in user — a
+              // logout/login that happened meanwhile must not be overwritten.
+              setUser(prev => (prev && prev.id === fresh.id ? { ...prev, ...fresh } : prev));
+              queryClientInstance.setQueryData(['me'], fresh);
+            } catch {
+              /* the 120s fallback poll still catches up */
+            }
+          });
       }
 
       // Set the stable internal user id for attribution on every provider

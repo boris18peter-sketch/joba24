@@ -128,24 +128,38 @@ export default function WelcomeTutorial() {
       .filter(s => !track || !s.tracks || s.tracks.includes(track));
 
     const startedAt = Date.now();
-    const MAX_WAIT = 60000; // keep waiting while a popup/sheet covers the screen
+    // Generous on purpose. This timer is what keeps the tour waiting while a
+    // popup covers the screen — and the first popup a new user meets IS the
+    // signup gift, which they are meant to read. At 60s a slow reader outlived
+    // the tour and it silently never appeared at all.
+    const MAX_WAIT = 300000; // keep waiting while a popup/sheet covers the screen
+    // Every retry goes through ONE tracked handle. The old code chained bare
+    // setTimeouts and cleared only the first, so a re-run of this effect (which
+    // happens as soon as the balance arrives) left the previous chain polling —
+    // two loops racing to decide whether to open the same tour.
+    let timer = null;
     const detect = () => {
       // Wait while any overlay (popup/sheet/modal) is open — the tutorial must
       // never appear over a popup. Re-check until the screen is clear, then start.
       if (Date.now() - startedAt > MAX_WAIT) return;
-      if (isOverlayOpen()) { setTimeout(detect, 350); return; }
+      if (isOverlayOpen()) { timer = setTimeout(detect, 350); return; }
       const found = candidates.filter(s => elementVisible(document.getElementById(s.id)));
-      if (found.length >= 2 || found.length === candidates.length) {
-        if (found.length > 0) {
-          setSteps(found);
-          setVisible(true);
-        }
+      // ONE anchor is enough. Requiring two meant the tour silently never
+      // appeared in exactly the case that matters most: a worker who had just
+      // FINISHED their profile — so the profile banner was gone — landing on a
+      // feed whose banner carousel was showing a single banner. The count never
+      // reached the threshold, the loop ran out its 60s and gave up, and the
+      // user got no tour at all. Pointing at the one thing that IS on screen is
+      // the whole job; waiting for a second one was never the point.
+      if (found.length > 0) {
+        setSteps(found);
+        setVisible(true);
         return;
       }
-      setTimeout(detect, 300);
+      timer = setTimeout(detect, 300);
     };
-    const t = setTimeout(detect, 600);
-    return () => clearTimeout(t);
+    timer = setTimeout(detect, 600);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, balance, pathname]);
 

@@ -33,8 +33,8 @@ export default function ProfileAvatar({
   // smaller, until the icon was too small to read. The circle is now the part
   // that shrinks, while the glyph keeps a floor of its own so it stays legible
   // at every avatar size.
-  const badgeSize = Math.max(14, Math.round(size * 0.19));
-  const badgeIcon = Math.max(12, Math.round(size * 0.17));
+  const badgeSize = Math.max(13, Math.round(size * 0.15));
+  const badgeIcon = Math.max(9, Math.round(size * 0.115));
 
   return (
     <>

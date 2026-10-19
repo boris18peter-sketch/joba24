@@ -1285,127 +1285,15 @@ export default function TaskDetail(props) {
               </button>
             </div>
 
-            {/* Expiry — moved from banner */}
-            {task.expires_at && task.status === 'OPEN' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Clock size={13} color="#ea580c" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('task_validity_label')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
-                    <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Schedule slots — prominent service times */}
-            {formatScheduleSlots(task.category_details?.schedule).length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Clock size={13} color="var(--brand-primary)" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginBottom: 3 }}>{t('td_service_slots')}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    {formatScheduleSlots(task.category_details.schedule).map((slot, i) => (
-                      <div key={i} style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-primary)' }}>{slot.dayLabel} · {slot.time}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Scheduled time — single datetime (when no schedule slots) */}
-            {task.scheduled_time && !Array.isArray(task.category_details?.schedule) && (() => {
-              const raw = String(task.scheduled_time);
-              const sDate = new Date(raw.includes('T') && !raw.endsWith('Z') && !raw.includes('+') ? raw + 'Z' : raw);
-              if (isNaN(sDate.getTime())) return null;
-              const now = new Date();
-              const isToday = sDate.toDateString() === now.toDateString();
-              const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
-              const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
-              const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-              let label;
-              if (isToday) label = `${t('today')}, ${timeStr}`;
-              else if (isTomorrow) label = `${t('tomorrow')}, ${timeStr}`;
-              else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Clock size={13} color="var(--brand-primary)" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('td_exact_time')}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-primary)' }}>{label}</div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Category — the task's actionable global service (e.g. DJs) */}
-            {task.category && (() => {
-              const serviceKey = actionableCategoryKey(task);
-              const service = categoryMap[serviceKey];
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
-                    {service?.icon || CATEGORY_EMOJI[serviceKey] || '🔨'}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('category_label')}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{localizedCategoryLabel(serviceKey, service, lang, t)}</div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Full address */}
-            {(task.address_building || task.address_floor || task.address_apartment || task.address_notes) && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <MapPin size={13} color="#ea580c" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginBottom: 2 }}>{t('address_details_label')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
-                    {[
-                      task.address_building && `${t('building_label')} ${task.address_building}`,
-                      task.address_floor && `${t('floor_label')} ${task.address_floor}`,
-                      task.address_apartment && `${t('apartment_label')} ${task.address_apartment}`,
-                      task.address_notes,
-                    ].filter(Boolean).join(' · ')}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Requirements — dynamically extracted from all possible requirement keys */}
-            {(() => {
-              const reqs = getActiveRequirements(task.requirements, task.category, t).map(r =>
-                r.value ? `${r.label}: ${r.value}` : r.label
-              );
-              if (task.requires_invoice) reqs.push(t('as_requires_invoice'));
-              if (task.verification_required) reqs.push(t('as_requires_green'));
-              if (reqs.length === 0) return null;
-              return (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <CheckCircle2 size={13} color="var(--color-success)" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginBottom: 2 }}>{t('requirements_label')}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
-                      {reqs.join(' · ')}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Category-specific extra fields (from structured category_details) */}
-            <CategoryDetailsView task={task} />
+            {/* ── The SAME rows the task card shows ───────────────────────────
+                This card used to hand-roll its own list, which had quietly
+                drifted from the card's: urgency, the full description and the
+                task's own location were simply never rendered here, so the
+                sheet was missing details the card already showed. It now uses
+                the shared component the card dropdown uses, so the two can
+                never disagree again. The heading above stays (it carries the
+                copyable id), so the component's own heading is suppressed. */}
+            <TaskDetailsRows task={task} showTaskDetailsLabel={false} />
           </div>
         )}
 

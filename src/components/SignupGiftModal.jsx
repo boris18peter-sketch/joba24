@@ -37,7 +37,6 @@ export default function SignupGiftModal({ onClose }) {
   const handleClaim = () => {
     if (claimed) return;
     setClaimed(true);
-    localStorage.setItem('joba24_gift_claimed', '1');
     base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
     spawnCoinBurst({ onSettled: () => queryClient.invalidateQueries({ queryKey: ['me'] }) });
     setTimeout(() => onClose(), COIN_COUNT * 32 + 1600);

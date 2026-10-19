@@ -106,7 +106,13 @@ export default function HomeFeed() {
   useEffect(() => {
     if (giftScheduledRef.current) return;
     if (!me?.id || !giftKey) return;
-    if (localStorage.getItem('joba24_gift_claimed')) return;
+    // PER-USER ONLY. There used to be a second, GLOBAL 'joba24_gift_claimed'
+    // flag here as well, and it was written by the first account that ever
+    // opened the app on this device — so every account created afterwards on
+    // the same browser (a second user on a shared phone, a tester creating a
+    // fresh account) was silently refused the signup gift forever. The
+    // per-user key already gives the "once per account" guarantee the popup
+    // needs; the global one only ever broke the next person.
     if (localStorage.getItem(giftKey)) return;
     if (me?.worker_credits == null) return;
     if (giftAmount <= 0) return;
@@ -903,12 +909,7 @@ export default function HomeFeed() {
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} activeCategory={filters.categories?.[0] || null} />
 
       {/* Signup gift celebration — shows once on first app entry (before tutorial) */}
-      {showGiftModal && (
-        <SignupGiftModal onClose={() => {
-          localStorage.setItem('joba24_gift_claimed', '1');
-          setShowGiftModal(false);
-        }} />
-      )}
+      {showGiftModal && <SignupGiftModal onClose={() => setShowGiftModal(false)} />}
 
       {/* First-visit welcome tutorial — self-gated by localStorage, no impact on existing flows */}
       <WelcomeTutorial />

@@ -1057,11 +1057,11 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
    The layout itself is untouched: same order, same structure, same behaviour —
    simply rendered larger. */
 @media (min-width: 900px) {
-  html { zoom: 1.3; }
+  html { zoom: 1.15; }
 }
 
 /* A large monitor gets proportionally more, so the app never looks like a phone
    stretched across it. */
 @media (min-width: 1600px) {
-  html { zoom: 1.55; }
+  html { zoom: 1.32; }
 }

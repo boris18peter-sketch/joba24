@@ -27,7 +27,7 @@ function getUrgencyConfig(urgency_tag, t) {
   return configs[urgency_tag];
 }
 
-export default function TaskDetailsRows({ task, compact = false }) {
+export default function TaskDetailsRows({ task, compact = false, showTaskDetailsLabel = true }) {
   const { t, lang } = useLanguage();
   const { map: categoryMap } = useGlobalCategories();
   if (!task) return null;
@@ -158,7 +158,10 @@ export default function TaskDetailsRows({ task, compact = false }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
       {hasDetails && (
         <>
-          <div style={sectionLabelStyle}>{t('tdr_task_details')}</div>
+          {/* The host may already print this heading — the task detail sheet has
+              its own "פרטי המשימה" row with the copyable id beside it, and two
+              identical headings one above the other reads as a bug. */}
+          {showTaskDetailsLabel && <div style={sectionLabelStyle}>{t('tdr_task_details')}</div>}
           {detailRows.map((row, i) => <Row key={`d_${i}`} {...row} multiline={row.multiline} />)}
         </>
       )}
