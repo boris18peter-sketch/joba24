@@ -11,6 +11,13 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <!-- The Brand mark, fetched during the HTML parse instead of after React
+         mounts. Without it the splash and the Welcome screen showed an empty box
+         for as long as the download took. Both candidates are preloaded because
+         the resolved Brand decides which one is used. -->
+    <link rel="preload" as="image" href="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/ae3541b67_Joba24_120x120.png" />
+    <link rel="preload" as="image" href="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" />
+    <link rel="preconnect" href="https://media.base44.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />

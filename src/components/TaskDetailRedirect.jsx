@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { setPendingTask } from '@/lib/pendingTask';
 
 /**
  * TaskDetailRedirect — the handler for the /task/:id deep-link URL.
@@ -21,10 +22,8 @@ export default function TaskDetailRedirect() {
 
   useEffect(() => {
     if (!id) return;
-    // Both stores: the sign-in round-trip can land the visitor in a fresh
-    // WebView where sessionStorage no longer exists (see DeepLinkHandler).
-    try { sessionStorage.setItem('joba24_pending_task', id); } catch { /* storage blocked */ }
-    try { localStorage.setItem('joba24_pending_task', id); } catch { /* storage blocked */ }
+    // Both stores — see @/lib/pendingTask for why.
+    setPendingTask(id);
     // Replace, so the back button never lands on this no-op redirect.
     navigate('/', { replace: true });
   }, [id, navigate]);

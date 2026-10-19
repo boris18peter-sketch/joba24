@@ -6,9 +6,6 @@ import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { X, Gift, CheckCircle2 } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { motion } from 'framer-motion';
-import { spawnCoinBurst } from '@/lib/coinBurst';
-
-const COIN_COUNT = 26;
 
 // ── Theme: matches the gold/amber verification popup style ──
 const THEME = {
@@ -20,26 +17,42 @@ const THEME = {
   badgeBg: 'linear-gradient(135deg, #fbbf24, #d97706)',
 };
 
-const PERKS = [
-  'הגשת מועמדות למשימה עולה מספר ג׳ובות.',
-  'אם לא נבחרת למשימה - הג׳ובות חוזרות אליך אוטומטית.',
-];
-
 export default function SignupGiftModal({ onClose }) {
   const [claimed, setClaimed] = useState(false);
   const queryClient = useQueryClient();
   const { settings } = useJobaSettings();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), staleTime: 30000 });
   const isReferred = !!(me?.referred_by_agent_code);
-  // Mirrors grantSignupBonus backend: base signup bonus + referral bonus when referred.
-  const giftAmount = (settings.signup_bonus ?? 0) + (isReferred ? (settings.referral_signup_bonus ?? 0) : 0);
 
+  // ── THE ONE WELCOME CELEBRATION ─────────────────────────────────────────
+  // This popup announces the WHOLE welcome in a single total: the signup bonus,
+  // the referral bonus when the visitor arrived through an agent, and the
+  // profile-completion bonus the worker flow grants on its last step. Mirrors
+  // grantSignupBonus + grantProfileCompletionBonus on the backend.
+  //
+  // They used to arrive as TWO popups, one after the other, at the exact moment
+  // a brand-new worker is deciding whether to trust the app.
+  const profileBonus = settings.profile_completion_bonus ?? 0;
+  const giftAmount =
+    (settings.signup_bonus ?? 0) +
+    (isReferred ? (settings.referral_signup_bonus ?? 0) : 0) +
+    profileBonus;
+
+  const PERKS = [
+    ...(profileBonus > 0 ? [`בונוס של ${profileBonus} ג׳ובות על השלמת הפרופיל שלך.`] : []),
+    'הגשת מועמדות למשימה עולה מספר ג׳ובות.',
+    'אם לא נבחרת למשימה - הג׳ובות חוזרות אליך אוטומטית.',
+  ];
+
+  // Closes on the spot — no confetti, no burst of coins flying to the header,
+  // no two-second wait. The balance is refreshed in the background, after the
+  // popup is already gone.
   const handleClaim = () => {
     if (claimed) return;
     setClaimed(true);
+    onClose();
     base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
-    spawnCoinBurst({ onSettled: () => queryClient.invalidateQueries({ queryKey: ['me'] }) });
-    setTimeout(() => onClose(), COIN_COUNT * 32 + 1600);
+    queryClient.invalidateQueries({ queryKey: ['me'] });
   };
 
   return createPortal(

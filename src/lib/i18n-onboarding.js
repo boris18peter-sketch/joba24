@@ -48,7 +48,7 @@ const en = {
   onb_pub_s2_title: 'Tired of overpriced quotes?',
   onb_pub_s2_body: 'You set the price, and the AI helps you pick a fair one from your task description. People see your task, and whoever is interested applies.',
   onb_pub_s3_title: 'Post now, get applicants within minutes!',
-  onb_pub_s3_body: 'Thousands of people are ready for tasks. Whoever is interested applies, and you choose who shows up.',
+  onb_pub_s3_body: 'Thousands of people are ready for tasks. Whoever is interested applies, and YOU decide who shows up. Posting a task commits you to nothing: you can approve a worker, edit it or delete it at any moment.',
 
   onb_wrk_s1_title: 'Got skills? Turn them into income!',
   onb_wrk_s1_body: 'Choose what you know how to do and the areas you want to work in.',
@@ -101,8 +101,7 @@ const en = {
   onb_v_new_task_alert: 'New task in your area',
 
   onb_v_details: 'Task details',
-  onb_v_apply_n: 'Apply for the task — {n}',
-  onb_v_apply_note: '💡 Jobas return to your balance automatically if the request is not approved or the task is cancelled',
+  onb_v_apply: 'Apply for the task',
   onb_v_category: 'Category',
   onb_v_exact_time: 'Exact time',
   onb_v_description: 'Description',
@@ -135,7 +134,7 @@ const ar = {
   onb_pub_s2_title: 'تعبت من الأسعار المبالغ فيها؟',
   onb_pub_s2_body: 'أنت تحدد السعر، والذكاء الاصطناعي يساعدك على اختيار سعر مناسب حسب وصف المهمة. الناس يرون مهمتك، ومن يهتم يتقدم بطلب.',
   onb_pub_s3_title: 'انشر الآن، واحصل على متقدمين خلال دقائق!',
-  onb_pub_s3_body: 'آلاف الأشخاص مستعدون للمهام. من يهتم يتقدم بطلب، وأنت تختار من سيأتي.',
+  onb_pub_s3_body: 'آلاف الأشخاص مستعدون للمهام. من يهتم يتقدم بطلب، وأنت تقرر من سيأتي. نشر المهمة لا يُلزمك بشيء: يمكنك اعتماد عامل أو تعديلها أو حذفها في أي لحظة.',
 
   onb_wrk_s1_title: 'لديك مهارات؟ حوّلها إلى دخل!',
   onb_wrk_s1_body: 'اختر ما تجيده والمناطق التي تريد العمل فيها.',
@@ -188,8 +187,7 @@ const ar = {
   onb_v_new_task_alert: 'مهمة جديدة في منطقتك',
 
   onb_v_details: 'تفاصيل المهمة',
-  onb_v_apply_n: 'تقدّم بطلب للمهمة — {n}',
-  onb_v_apply_note: '💡 تعود الجوبات إلى رصيدك تلقائيًا إذا لم يُعتمد الطلب أو أُلغيت المهمة',
+  onb_v_apply: 'تقدّم بطلب للمهمة',
   onb_v_category: 'الفئة',
   onb_v_exact_time: 'الموعد المحدد',
   onb_v_description: 'الوصف',
@@ -222,7 +220,7 @@ const es = {
   onb_pub_s2_title: '¿Cansado de precios exagerados?',
   onb_pub_s2_body: 'Tú pones el precio y la IA te ayuda a elegir uno justo según la descripción de la tarea. La gente ve tu tarea y quien está interesado se postula.',
   onb_pub_s3_title: '¡Publica ahora y recibe candidatos en minutos!',
-  onb_pub_s3_body: 'Miles de personas están listas para las tareas. Quien esté interesado se postula y tú eliges quién viene.',
+  onb_pub_s3_body: 'Miles de personas están listas para las tareas. Quien esté interesado se postula y tú decides quién viene. Publicar una tarea no te compromete a nada: puedes aprobar a un trabajador, editarla o eliminarla en cualquier momento.',
 
   onb_wrk_s1_title: '¿Tienes habilidades? ¡Conviértelas en ingresos!',
   onb_wrk_s1_body: 'Elige lo que sabes hacer y las zonas donde quieres trabajar.',
@@ -275,8 +273,7 @@ const es = {
   onb_v_new_task_alert: 'Nueva tarea en tu zona',
 
   onb_v_details: 'Detalles de la tarea',
-  onb_v_apply_n: 'Postúlate a la tarea — {n}',
-  onb_v_apply_note: '💡 Las Jobas vuelven a tu saldo automáticamente si la solicitud no se aprueba o la tarea se cancela',
+  onb_v_apply: 'Postúlate a la tarea',
   onb_v_category: 'Categoría',
   onb_v_exact_time: 'Hora exacta',
   onb_v_description: 'Descripción',
@@ -309,7 +306,7 @@ const fr = {
   onb_pub_s2_title: 'Marre des prix exagérés ?',
   onb_pub_s2_body: "C'est vous qui fixez le prix, et l'IA vous aide à en choisir un juste d'après la description. Les gens voient votre tâche, et les intéressés postulent.",
   onb_pub_s3_title: 'Publiez maintenant, recevez des candidatures en quelques minutes !',
-  onb_pub_s3_body: "Des milliers de personnes sont prêtes. Les intéressés postulent, et c'est vous qui choisissez qui viendra.",
+  onb_pub_s3_body: "Des milliers de personnes sont prêtes. Les intéressés postulent, et c'est vous qui décidez qui viendra. Publier une tâche ne vous engage à rien : vous pouvez approuver un travailleur, la modifier ou la supprimer à tout moment.",
 
   onb_wrk_s1_title: 'Des compétences ? Transformez-les en revenus !',
   onb_wrk_s1_body: 'Choisissez ce que vous savez faire et les zones où vous voulez travailler.',
@@ -362,8 +359,7 @@ const fr = {
   onb_v_new_task_alert: 'Nouvelle tâche dans votre secteur',
 
   onb_v_details: 'Détails de la tâche',
-  onb_v_apply_n: 'Postulez à la tâche — {n}',
-  onb_v_apply_note: "💡 Les Jobas reviennent automatiquement sur votre solde si la demande n'est pas approuvée ou si la tâche est annulée",
+  onb_v_apply: 'Postulez à la tâche',
   onb_v_category: 'Catégorie',
   onb_v_exact_time: 'Heure exacte',
   onb_v_description: 'Description',
@@ -396,7 +392,7 @@ const ru = {
   onb_pub_s2_title: 'Надоели завышенные цены?',
   onb_pub_s2_body: 'Цену назначаете вы, а ИИ помогает выбрать подходящую по описанию задачи. Люди видят вашу задачу, и заинтересованные откликаются.',
   onb_pub_s3_title: 'Публикуйте сейчас — отклики придут за минуты!',
-  onb_pub_s3_body: 'Тысячи людей готовы к задачам. Заинтересованные откликаются, а вы выбираете, кто придёт.',
+  onb_pub_s3_body: 'Тысячи людей готовы к задачам. Заинтересованные откликаются, а вы решаете, кто придёт. Публикация задачи ни к чему вас не обязывает: вы можете одобрить исполнителя, изменить или удалить задачу в любой момент.',
 
   onb_wrk_s1_title: 'Есть навыки? Превратите их в доход!',
   onb_wrk_s1_body: 'Выберите, что вы умеете делать, и районы, где хотите работать.',
@@ -449,8 +445,7 @@ const ru = {
   onb_v_new_task_alert: 'Новая задача в вашем районе',
 
   onb_v_details: 'Детали задачи',
-  onb_v_apply_n: 'Откликнуться на задачу — {n}',
-  onb_v_apply_note: '💡 Джобы возвращаются на баланс автоматически, если заявку не одобрят или задачу отменят',
+  onb_v_apply: 'Откликнуться на задачу',
   onb_v_category: 'Категория',
   onb_v_exact_time: 'Точное время',
   onb_v_description: 'Описание',
@@ -483,7 +478,7 @@ const fil = {
   onb_pub_s2_title: 'Sawa na sa sobrang mahal na presyo?',
   onb_pub_s2_body: 'Ikaw ang nagtatakda ng presyo, at tinutulungan ka ng AI na pumili ng angkop na presyo mula sa paglalarawan ng gawain. Nakikita ng mga tao ang gawain mo, at ang interesado ay nag-aaplay.',
   onb_pub_s3_title: 'I-post ngayon, makakuha ng aplikante sa ilang minuto!',
-  onb_pub_s3_body: 'Libu-libong tao ang handa sa mga gawain. Ang interesado ay nag-aaplay, at ikaw ang pumipili kung sino ang darating.',
+  onb_pub_s3_body: 'Libu-libong tao ang handa sa mga gawain. Ang interesado ay nag-aaplay, at ikaw ang magpapasya kung sino ang darating. Ang pag-post ng gawain ay walang obligasyon: puwede mong aprubahan ang isang manggagawa, i-edit o tanggalin ito anumang oras.',
 
   onb_wrk_s1_title: 'May kasanayan ka? Gawin itong kita!',
   onb_wrk_s1_body: 'Piliin ang alam mong gawin at ang mga lugar na gusto mong pagtrabahuhan.',
@@ -536,8 +531,7 @@ const fil = {
   onb_v_new_task_alert: 'Bagong gawain sa lugar mo',
 
   onb_v_details: 'Detalye ng gawain',
-  onb_v_apply_n: 'Mag-apply sa gawain — {n}',
-  onb_v_apply_note: '💡 Awtomatikong bumabalik ang mga Joba sa balanse mo kung hindi maaprubahan ang kahilingan o makansela ang gawain',
+  onb_v_apply: 'Mag-apply sa gawain',
   onb_v_category: 'Kategorya',
   onb_v_exact_time: 'Eksaktong oras',
   onb_v_description: 'Paglalarawan',
@@ -570,7 +564,7 @@ const hi = {
   onb_pub_s2_title: 'बढ़ी हुई कीमतों से थक गए?',
   onb_pub_s2_body: 'कीमत आप तय करते हैं, और AI काम के विवरण के अनुसार उचित कीमत चुनने में मदद करता है। लोग आपका काम देखते हैं, और जिसे दिलचस्पी होती है वह आवेदन करता है।',
   onb_pub_s3_title: 'अभी पोस्ट करें, मिनटों में आवेदन पाएं!',
-  onb_pub_s3_body: 'हज़ारों लोग काम के लिए तैयार हैं। जिसे दिलचस्पी होती है वह आवेदन करता है, और आप चुनते हैं कि कौन आएगा।',
+  onb_pub_s3_body: 'हज़ारों लोग काम के लिए तैयार हैं। जिसे दिलचस्पी होती है वह आवेदन करता है, और आप तय करते हैं कि कौन आएगा। काम पोस्ट करने से आप किसी चीज़ के लिए बाध्य नहीं होते: आप किसी भी समय किसी कर्मचारी को स्वीकृत कर सकते हैं, काम बदल सकते हैं या हटा सकते हैं।',
 
   onb_wrk_s1_title: 'कौशल है? उसे आमदनी बनाएं!',
   onb_wrk_s1_body: 'चुनें कि आप क्या कर सकते हैं और किन इलाकों में काम करना चाहते हैं।',
@@ -623,8 +617,7 @@ const hi = {
   onb_v_new_task_alert: 'आपके इलाके में नया काम',
 
   onb_v_details: 'काम का विवरण',
-  onb_v_apply_n: 'काम के लिए आवेदन करें — {n}',
-  onb_v_apply_note: '💡 अगर अनुरोध स्वीकृत न हो या काम रद्द हो जाए, तो जोबा अपने आप आपके बैलेंस में वापस आ जाते हैं',
+  onb_v_apply: 'काम के लिए आवेदन करें',
   onb_v_category: 'श्रेणी',
   onb_v_exact_time: 'सटीक समय',
   onb_v_description: 'विवरण',
@@ -657,7 +650,7 @@ const zh = {
   onb_pub_s2_title: '受够了漫天要价？',
   onb_pub_s2_body: '价格由你定，AI 会根据任务描述帮你选一个合适的价。大家看到你的任务，有兴趣的人就会申请。',
   onb_pub_s3_title: '现在发布，几分钟内收到申请！',
-  onb_pub_s3_body: '成千上万的人随时可以接单。有兴趣的人会申请，由你来选谁来。',
+  onb_pub_s3_body: '成千上万的人随时可以接单。有兴趣的人会申请，由你来决定谁来。发布任务不产生任何义务：你可以随时批准工作者、修改或删除任务。',
 
   onb_wrk_s1_title: '有技能？把它变成收入！',
   onb_wrk_s1_body: '选择你会做什么，以及想在哪些区域工作。',
@@ -710,8 +703,7 @@ const zh = {
   onb_v_new_task_alert: '你附近有新任务',
 
   onb_v_details: '任务详情',
-  onb_v_apply_n: '申请该任务 — {n}',
-  onb_v_apply_note: '💡 如果申请未被通过或任务被取消，Joba 会自动退回你的余额',
+  onb_v_apply: '申请该任务',
   onb_v_category: '类别',
   onb_v_exact_time: '具体时间',
   onb_v_description: '描述',

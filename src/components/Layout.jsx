@@ -47,6 +47,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { readPendingTask } from '@/lib/pendingTask';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import AppLoading from '@/components/AppLoading';
@@ -94,7 +95,7 @@ export default function Layout() {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, login, isGuest, exitGuestMode } = useAuth();
+  const { isAuthenticated, login, isGuest, enterGuestMode, exitGuestMode } = useAuth();
   const { settings: jobaSettings } = useJobaSettings();
   const guestAccessEnabled = jobaSettings.guest_access_enabled !== false;
   const effectiveGuest = isGuest && guestAccessEnabled;
@@ -460,6 +461,19 @@ export default function Layout() {
     const isPublicPage = PUBLIC_PATHS_NO_AUTH.includes(location.pathname);
     if (isAuthenticated || isPublicPage) return;
 
+    // ── A SHARED LINK IS A TASK TO SEE, NOT AN ONBOARDING TO RUN ─────────────
+    // Someone who opened a task link (a Facebook post, a forward) has already
+    // been told what they came for. Sending them into the first-run flow is why
+    // the link "did nothing": the task sheet was ready to open and this redirect
+    // took the page out from under it. They continue as a GUEST instead — which
+    // is exactly the audience a shared link is written for — and the sheet opens
+    // over the home surface.
+    if (readPendingTask()) {
+      if (!effectiveGuest && guestAccessEnabled) enterGuestMode();
+      if (location.pathname !== '/') navigate('/', { replace: true });
+      return;
+    }
+
     // A guest whose settings have not loaded yet is STILL a guest. Guest access
     // is a real choice and the setting that enables it arrives asynchronously;
     // for the moment before it does, `effectiveGuest` is false — and bouncing
@@ -502,7 +516,7 @@ export default function Layout() {
     if (location.pathname !== destination) {
       navigate(destination, { replace: true });
     }
-  }, [isAuthenticated, effectiveGuest, isGuest, navigate, location.pathname]);
+  }, [isAuthenticated, effectiveGuest, isGuest, enterGuestMode, guestAccessEnabled, navigate, location.pathname]);
 
   // Pre-launch gate: show waiting page for unapproved users (admins and agents always pass)
   // Placed AFTER all hooks to comply with Rules of Hooks

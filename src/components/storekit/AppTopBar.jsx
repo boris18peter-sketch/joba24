@@ -8,7 +8,7 @@ import { useLanguage } from '@/lib/LanguageContext';
  * The real Joba24 app top bar — same lockup, same Joba balance pill treatment
  * and same menu button the live app header renders.
  */
-export default function AppTopBar({ balance = DEMO_BALANCE, locked = DEMO_LOCKED }) {
+export default function AppTopBar({ balance = DEMO_BALANCE, locked = DEMO_LOCKED, showBalance = true }) {
   const { t } = useLanguage();
   return (
     <div
@@ -36,6 +36,7 @@ export default function AppTopBar({ balance = DEMO_BALANCE, locked = DEMO_LOCKED
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {showBalance && (
         <div
           style={{
             display: 'flex',
@@ -69,6 +70,7 @@ export default function AppTopBar({ balance = DEMO_BALANCE, locked = DEMO_LOCKED
             </span>
           )}
         </div>
+        )}
         <button
           style={{
             width: 42,

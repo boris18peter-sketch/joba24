@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useBrand } from '@/lib/brand/BrandProvider';
 
 /**
@@ -44,21 +45,46 @@ export function useBrandText() {
 /** The Brand's logo, from the single central source. */
 export function BrandLogo({ size = 34, radius = 'var(--r-sm)', style, alt }) {
   const { logoUrl, name } = useBrandIdentity();
-  if (!logoUrl) {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: radius, flexShrink: 0,
-        background: 'linear-gradient(135deg, var(--brand-primary, #1a6fd4), var(--brand-primary-dark, #0a52b0))',
-        ...style,
-      }} />
-    );
-  }
+  const imgRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  // The mark sits ON the Brand gradient until its file arrives, then fades in.
+  // Without this the <img> was an EMPTY box for as long as the download took —
+  // which is what the splash and the Welcome screen showed on a cold start, and
+  // it read as a broken icon rather than a loading one.
+  //
+  // `complete` is checked on mount because a CACHED image can fire `load` before
+  // React attaches its handler, and the mark would then stay invisible forever.
+  useEffect(() => {
+    if (imgRef.current?.complete) setLoaded(true);
+  }, [logoUrl]);
+
+  const shell = {
+    width: size, height: size, borderRadius: radius, flexShrink: 0,
+    background: 'linear-gradient(135deg, var(--brand-primary, #1a6fd4), var(--brand-primary-dark, #0a52b0))',
+    overflow: 'hidden',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  };
+
+  if (!logoUrl) return <div style={shell} />;
+
   return (
-    <img
-      src={logoUrl}
-      alt={alt || name}
-      style={{ width: size, height: size, borderRadius: radius, objectFit: 'contain', flexShrink: 0, ...style }}
-    />
+    <div style={shell}>
+      <img
+        ref={imgRef}
+        src={logoUrl}
+        alt={alt || name}
+        loading="eager"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        style={{
+          width: size, height: size, objectFit: 'contain',
+          opacity: loaded ? 1 : 0,
+          transition: 'opacity 0.25s ease',
+          ...style,
+        }}
+      />
+    </div>
   );
 }
 

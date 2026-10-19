@@ -106,7 +106,7 @@ function ScanningLabel({ taskId }) {
 // ── TaskCard ──────────────────────────────────────────────────────────────────
 const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
 
-function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
+function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished, hideApplyCost = false }) {
   const { t, isRTL, lang } = useLanguage();
   const navigate = useNavigate();
   // Global category catalogue — resolves the category-aware status wording.
@@ -665,7 +665,14 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     style={{ height: 36, padding: '0 14px', borderRadius: 'var(--r-sm)', background: 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : 'var(--shadow-sm)' }}
                   >
                     {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
-                      <><span>{t('apply')}</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>
+                      // The Joba cost of applying belongs to the live card only.
+                      // The onboarding illustration passes hideApplyCost so the
+                      // worker's first screen shows the ACTION, not a price list.
+                      hideApplyCost ? (
+                        <span>{t('apply')}</span>
+                      ) : (
+                        <><span>{t('apply')}</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>
+                      )
                     )}
                   </button>
                 )}
@@ -797,6 +804,7 @@ export default memo(TaskCard, (prev, next) => {
     (prev.task.applicants?.length ?? 0) === (next.task.applicants?.length ?? 0) &&
     prev.myApp?.status === next.myApp?.status &&
     prev.currentUserId === next.currentUserId &&
-    prev.isMyPublished === next.isMyPublished
+    prev.isMyPublished === next.isMyPublished &&
+    prev.hideApplyCost === next.hideApplyCost
   );
 });

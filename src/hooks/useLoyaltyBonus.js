@@ -28,14 +28,19 @@ export function useLoyaltyBonus(user) {
       // skipped rather than shown as a number that is not what the worker earned.
       const value = Number(tx.amount);
       if (!Number.isFinite(value) || value <= 0) return;
+      // ── ONLY THE RATING REWARD IS ANNOUNCED HERE ──────────────────────────
+      // A profile-completion bonus is part of the WELCOME, and the welcome is
+      // announced once, by the signup gift popup — which shows the two amounts
+      // as one total. Raising a second popup for it is exactly what gave a new
+      // worker two celebrations back to back for a single signup.
+      //
+      // The two are told apart by `task_id`: a rating reward is always tied to a
+      // task, the profile bonus never is.
+      if (!tx.task_id) return;
       const key = `joba24_loyalty_popup_${tx.id}`;
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, '1');
-      // WHICH bonus this is decides what the popup is allowed to say. A rating
-      // reward is always tied to a task; the profile-completion bonus never is.
-      // Announcing the second one with the first one's copy told a brand-new
-      // worker they had been rated five stars, which was simply untrue.
-      setBonus({ amount: Math.round(value), kind: tx.task_id ? 'rating' : 'profile' });
+      setBonus({ amount: Math.round(value), kind: 'rating' });
     };
 
     const unsub = base44.entities.CreditTransaction.subscribe((event) => {

@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Gift, CheckCircle2, X } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import CreditIcon from '@/components/CreditIcon';
 import { motion } from 'framer-motion';
-import { spawnCoinBurst } from '@/lib/coinBurst';
 import TrustCard from '@/components/TrustCard';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -50,16 +48,16 @@ export default function LoyaltyBonusPopup({ amount = 0, kind = 'rating', user, o
   // value — so the figure here always matches the one the worker was told about.
   const bonusAmount = Math.max(0, Math.round(Number(amount) || 0));
 
+  // Closes on the spot. The celebration used to hold the sheet open for more
+  // than two seconds while confetti fired and a burst of coins flew across the
+  // screen to the header — the worker had already read the number, so all of it
+  // was delay between them and the app. The balance is refreshed in the
+  // background, after the popup is gone.
   const handleCollect = () => {
     if (claimed) return;
     setClaimed(true);
-    confetti({
-      particleCount: 90, spread: 75, origin: { y: 0.25, x: 0.5 },
-      colors: ['#fbbf24', '#f59e0b', '#fde68a', '#fff'],
-      startVelocity: 45, gravity: 0.9, scalar: 0.9,
-    });
-    spawnCoinBurst({ onSettled: () => queryClient.invalidateQueries({ queryKey: ['me'] }) });
-    setTimeout(() => onClose(), 2400);
+    onClose();
+    queryClient.invalidateQueries({ queryKey: ['me'] });
   };
 
   return createPortal(

@@ -1,13 +1,18 @@
 import { MapPin, Send, Clock, FileText } from 'lucide-react';
-import CreditIcon from '@/components/CreditIcon';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useOnboardingTask } from '@/lib/onboardingDemoTask';
 
 /**
  * The task detail screen, mirroring the real task sheet: the gradient banner
  * with the title, the price and the location, then the detail rows and the
- * apply button exactly as they appear — including the credits line that shows
- * what submitting a request costs.
+ * apply button exactly as they appear.
+ *
+ * ── ONE ACTION, NO ARITHMETIC ────────────────────────────────────────────────
+ * The apply button says only what the worker is about to do: apply. It used to
+ * also carry the Joba cost of applying and a line underneath explaining that
+ * those Jobas come back — which put a currency, a number and a refund rule in
+ * front of someone who has not even signed up yet. What they need to understand
+ * at this point is that applying is how work is won.
  *
  * The apply button is the whole point of the screen, so it carries a soft
  * attention pulse and a light sweeping across it. That is what makes the one
@@ -62,11 +67,7 @@ export default function TaskDetailScreen() {
               animation: 'onbApplySheen 2.4s ease-in-out infinite',
             }} />
             <Send size={15} strokeWidth={1.8} />
-            {t('onb_v_apply_n', { n: 13 })} <CreditIcon size={14} />
-          </div>
-
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 6, fontWeight: 600, lineHeight: 1.4 }}>
-            {t('onb_v_apply_note')}
+            {t('onb_v_apply')}
           </div>
         </div>
 

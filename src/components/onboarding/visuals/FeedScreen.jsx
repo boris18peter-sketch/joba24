@@ -34,11 +34,14 @@ export default function FeedScreen() {
 
   return (
     <>
-      <AppTopBar />
+      {/* No balance pill: this screen teaches how work is FOUND. A Joba figure in
+          the top bar of the very first worker screen introduces a currency before
+          the visitor knows what it is for. */}
+      <AppTopBar showBalance={false} />
 
       <div style={{ position: 'relative', background: 'var(--surface-1)' }}>
         <div style={{ padding: '10px 12px 14px', display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
-          <TaskCard task={{ ...TASK, _isFirstCard: true }} currentUserId="onboarding-viewer" />
+          <TaskCard task={{ ...TASK, _isFirstCard: true }} currentUserId="onboarding-viewer" hideApplyCost />
         </div>
 
         {/* The app's own new-task alert, arriving over the feed exactly as it

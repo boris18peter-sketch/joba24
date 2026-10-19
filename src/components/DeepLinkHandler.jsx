@@ -18,12 +18,15 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
+import { setPendingTask, readPendingTask, clearPendingTask } from '@/lib/pendingTask';
 
-const PENDING_KEY = 'joba24_pending_task';
+// The first-run flow owns the screen until the visitor has been through it.
+// A pending task waits for them to come out the other side.
+const FIRST_RUN_PATHS = ['/join', '/welcome'];
 
 export default function DeepLinkHandler() {
   const { openTaskSheet } = useTaskSheet();
-  const { isAuthenticated, isLoadingAuth, user } = useAuth();
+  const { isLoadingAuth, user } = useAuth();
   const { currentBrandId, isPlatformBrand } = useBrand();
   const location = useLocation();
   const openedRef = useRef(false);
@@ -38,14 +41,9 @@ export default function DeepLinkHandler() {
     const params = new URLSearchParams(window.location.search);
     const taskId = params.get('open_task');
     if (taskId) {
-      // Written to BOTH stores on purpose. The URL param is stripped right
-      // below (so a refresh doesn't re-trigger the popup), which means these
-      // two are the only copy left. A Facebook link opens in the in-app
-      // browser, unauthenticated: the sign-in round-trip can hand the visitor
-      // to a fresh WebView where sessionStorage is gone, and localStorage is
-      // what carries the task across that gap.
-      try { sessionStorage.setItem(PENDING_KEY, taskId); } catch { /* storage blocked */ }
-      try { localStorage.setItem(PENDING_KEY, taskId); } catch { /* storage blocked */ }
+      // Parked in both stores — the URL param is stripped right below, so these
+      // two are the only copy left. See @/lib/pendingTask.
+      setPendingTask(taskId);
       // Remove the param so it doesn't re-trigger on refresh / back-nav
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', clean);
@@ -57,23 +55,27 @@ export default function DeepLinkHandler() {
   // sheet via the route-change handler in TaskDetailSheet).
   useEffect(() => {
     if (openedRef.current) return;
-    if (isLoadingAuth || !isAuthenticated) return;
-    if (!isApproved) return; // unapproved — stay on waiting page, don't open task
-    if (location.pathname === '/join') return; // wait for onboarding to finish
-    let pending = null;
-    try { pending = sessionStorage.getItem(PENDING_KEY); } catch { /* storage blocked */ }
-    if (!pending) { try { pending = localStorage.getItem(PENDING_KEY); } catch { /* storage blocked */ } }
+    if (isLoadingAuth) return;
+    // ── A SHARED LINK IS NOT A SIGN-IN WALL ─────────────────────────────────
+    // This used to require `isAuthenticated`, so a visitor arriving from a
+    // Facebook post — the entire audience those posts are written for — had the
+    // task discarded and was sent into the first-run flow instead. A link is
+    // meant to be opened by someone who has never used the app, so a visitor
+    // with no account is allowed through; only a SIGNED-IN user who has not
+    // been approved stays on the waiting page.
+    if (user && !isApproved) return;
+    if (FIRST_RUN_PATHS.includes(location.pathname)) return;
+    const pending = readPendingTask();
     if (!pending) return;
     openedRef.current = true;
-    try { sessionStorage.removeItem(PENDING_KEY); } catch { /* storage blocked */ }
-    try { localStorage.removeItem(PENDING_KEY); } catch { /* storage blocked */ }
+    clearPendingTask();
     // Resolve the Task's own Brand: a link for a Task created on another Brand
     // opens on THAT Brand's domain instead of failing here as "Task not found".
     resolveTaskBrandUrl(pending, currentBrandId, isPlatformBrand).then((brandUrl) => {
       if (brandUrl) { window.location.href = brandUrl; return; }
       openTaskSheet(pending);
     });
-  }, [isAuthenticated, isLoadingAuth, isApproved, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand]);
+  }, [isLoadingAuth, isApproved, user, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand]);
 
   // Foreground notification click → open the sheet immediately
   useEffect(() => {
