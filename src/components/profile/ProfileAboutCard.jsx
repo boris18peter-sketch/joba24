@@ -9,12 +9,10 @@ import { useLanguage } from '@/lib/LanguageContext';
  * so they are one block with three sections rather than three cards with three
  * borders and three sets of padding around very little content.
  *
- * Each section now opens with a small icon tile and its label, and the content
- * sits indented under it, so the three answers are visually separated instead of
- * reading as one dense paragraph. The professions and cities are quiet chips: a
- * run-on line separated by middots gave no sense of how many there were, while
- * bright coloured pills would compete with the content. Neutral surface chips
- * with a border group the items without shouting.
+ * Each section opens with a small icon tile and its label, and the content sits
+ * indented under it, so the three answers are visually separated instead of
+ * reading as one dense paragraph. The professions and cities are quiet, borderless
+ * tags — they are facts, so they must not look like something you can press.
  *
  * Shared by the personal and the public profile, so the two can never drift.
  */
@@ -43,9 +41,11 @@ function Chip({ children }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center',
+      // No border and no strong colour: these are facts, not buttons, so they
+      // must not carry an interaction affordance.
       padding: '5px 11px', borderRadius: 99,
-      background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-      fontSize: 12.5, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.4,
+      background: 'var(--surface-3)',
+      fontSize: 12.5, fontWeight: 600, color: 'var(--text-2)', lineHeight: 1.4,
     }}>
       {children}
     </span>

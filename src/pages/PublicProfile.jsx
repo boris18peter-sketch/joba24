@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { fetchPublicTasks } from '@/lib/publicTasks';
-import { MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, Facebook, Music2, ShieldCheck, Link2 } from 'lucide-react';
+import { MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, Facebook, Music2, ShieldCheck, Link2, SearchX } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
@@ -63,7 +63,7 @@ export default function PublicProfile() {
 
   if (!user) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: 12 }} dir={isRTL ? 'rtl' : 'ltr'}>
-      <div style={{ fontSize: 36 }}>🔍</div>
+      <SearchX size={36} color="var(--text-3)" strokeWidth={1.5} />
       <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-2)' }}>{t('pp_user_not_found')}</p>
       <button onClick={() => navigate(-1)} style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-primary)', background: 'none', border: 'none', cursor: 'pointer' }}>{t('pp_back')}</button>
     </div>
@@ -129,12 +129,12 @@ export default function PublicProfile() {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
             {verified && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(255,255,255,0.22)' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(255,255,255,0.16)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <ShieldCheck size={11} color="#4ade80" /> {t('pr_identity_verified')}
               </span>
             )}
             {social && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(251,191,36,0.22)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(251,191,36,0.4)' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(251,191,36,0.2)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Link2 size={11} color="#fbbf24" /> {t('pr_social_connected')}
               </span>
             )}
@@ -195,10 +195,10 @@ export default function PublicProfile() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(user.certificate_files || []).map(doc => (
-                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
-                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="var(--text-2)" style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-primary)' }}>{t('pr_view')}</span>
                 </a>
               ))}
             </div>
@@ -209,7 +209,7 @@ export default function PublicProfile() {
         {social && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
-              <span style={{ fontSize: 13 }}>🔗</span>
+              <Link2 size={12} color="var(--text-3)" />
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pp_social_networks')}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -260,7 +260,7 @@ export default function PublicProfile() {
         {/* Empty */}
         {!user.bio && !categories.length && completedCount === 0 && reviews.length === 0 && !social && (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-3)' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+            <SearchX size={40} color="var(--text-3)" strokeWidth={1.5} style={{ marginBottom: 12 }} />
             <div style={{ fontSize: 15, fontWeight: 700 }}>{t('pp_user_no_profile')}</div>
           </div>
         )}

@@ -7,7 +7,8 @@ import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, ChevronLeft, Ph
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
-import ProfilePhotoPicker from '@/components/profile/ProfilePhotoPicker';
+import ProfileAvatar from '@/components/profile/ProfileAvatar';
+import ProfilePhotosEditor from '@/components/profile/ProfilePhotosEditor';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -22,6 +23,7 @@ import InlineNameField from '@/components/profile/InlineNameField';
 import { getDisplayName, validateDisplayName } from '@/lib/displayName';
 
 const INITIAL_CITIES_COUNT = 12;
+const MAX_PROFILE_PHOTOS = 6;
 
 function SectionCard({ title, children, style }) {
   return (
@@ -38,18 +40,22 @@ function SectionCard({ title, children, style }) {
 
 function ReviewChips({ review }) {
   const { t } = useLanguage();
+  // One neutral treatment for every attribute. Five different colours turned a
+  // list of facts about the review into a rainbow — the colour carried no
+  // meaning, it only decorated. A single quiet tag keeps the row readable and
+  // leaves the star rating as the one thing on the card that is coloured.
   const chips = [
-    review.arrived_on_time && { label: t('arrived_on_time'), color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-    review.professional && { label: t('professional'), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    review.good_communication && { label: t('rc_communication'), color: 'var(--brand-primary)', bg: 'var(--brand-primary-light)', border: 'var(--border-2)' },
-    review.fair_pricing && { label: t('fair_pricing'), color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-    review.would_hire_again && { label: t('recommended'), color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+    review.arrived_on_time && t('arrived_on_time'),
+    review.professional && t('professional'),
+    review.good_communication && t('rc_communication'),
+    review.fair_pricing && t('fair_pricing'),
+    review.would_hire_again && t('recommended'),
   ].filter(Boolean);
   if (!chips.length) return null;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-      {chips.map(c => (
-        <span key={c.label} style={{ fontSize: 10, fontWeight: 700, color: c.color, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 99, padding: '2px 8px' }}>{c.label}</span>
+      {chips.map(label => (
+        <span key={label} style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 99, padding: '2px 8px' }}>{label}</span>
       ))}
     </div>
   );
@@ -102,8 +108,10 @@ export default function WorkerProfile() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [showAllCities, setShowAllCities] = useState(false);
   const [nameError, setNameError] = useState(null);
+  const [addingPhoto, setAddingPhoto] = useState(false);
   const certDocRef = useRef(null);
   const videoInputRef = useRef(null);
+  const addPhotoRef = useRef(null);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -113,6 +121,28 @@ export default function WorkerProfile() {
     await base44.auth.updateMe({ profile_photo: file_url });
     queryClient.invalidateQueries({ queryKey: ['me'] });
     setUploadingPhoto(false);
+  };
+
+  // The small "+" beside the profile picture — the quick way to add a photo to
+  // the profile gallery without scrolling down to its own section.
+  const handleAddProfilePhoto = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (addPhotoRef.current) addPhotoRef.current.value = '';
+    if (!files.length) return;
+    const room = MAX_PROFILE_PHOTOS - (form?.profile_photos?.length || 0);
+    if (room <= 0) { toast.error(t('pph_too_many', { n: MAX_PROFILE_PHOTOS })); return; }
+    setAddingPhoto(true);
+    try {
+      const added = [];
+      for (const file of files.slice(0, room)) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        added.push(file_url);
+      }
+      if (added.length) setForm(f => ({ ...f, profile_photos: [...(f.profile_photos || []), ...added] }));
+    } catch {
+      toast.error(t('pph_upload_error'));
+    }
+    setAddingPhoto(false);
   };
 
   const handleVideoUpload = async (e) => {
@@ -263,20 +293,41 @@ export default function WorkerProfile() {
 
       {/* ── Avatar block (both view modes) ── */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 22px', background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1px solid var(--border-1)' }}>
-        {/* The picture, its camera badge and the "add photos" button are ONE
-            control at the top of the page, so adding a profile photo is
-            unmistakably about the photo shown here — not about the separate
-            media gallery further down. */}
-        <div style={{ marginBottom: 14, width: '100%', display: 'flex', justifyContent: 'center' }}>
-          <ProfilePhotoPicker
+        <div style={{ position: 'relative', marginBottom: 14 }}>
+          <ProfileAvatar
             user={currentUser}
-            size={60}
+            size={64}
+            textSize={22}
             editable={!isViewingOther}
             onUpload={handlePhotoUpload}
             uploading={uploadingPhoto}
-            photos={form.profile_photos}
-            onChange={(next) => setForm(f => ({ ...f, profile_photos: next }))}
+            background="linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))"
+            borderColor="transparent"
           />
+
+          {/* One small "+" on the other side of the picture: the shortcut for
+              adding a photo, right where the picture is. */}
+          {!isViewingOther && (
+            <>
+              <button
+                onClick={() => addPhotoRef.current?.click()}
+                disabled={addingPhoto}
+                aria-label={t('pph_add')}
+                style={{
+                  position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                  ...(isRTL ? { right: 'calc(100% + 8px)' } : { left: 'calc(100% + 8px)' }),
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: 'var(--surface-3)', border: '1px solid var(--border-2)',
+                  color: 'var(--brand-primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: addingPhoto ? 'not-allowed' : 'pointer', padding: 0,
+                }}
+              >
+                {addingPhoto ? <Loader2 size={15} className="animate-spin" /> : <Plus size={17} />}
+              </button>
+              <input ref={addPhotoRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleAddProfilePhoto} />
+            </>
+          )}
         </div>
 
         {isViewingOther ? (
@@ -320,6 +371,16 @@ export default function WorkerProfile() {
       </div>
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* ── Profile photos — what the avatar lightbox swipes through ── */}
+        {!isViewingOther && (
+          <SectionCard title={t('pph_title')}>
+            <ProfilePhotosEditor
+              photos={form.profile_photos}
+              onChange={(next) => setForm(f => ({ ...f, profile_photos: next }))}
+            />
+          </SectionCard>
+        )}
 
         {/* ── About: bio + intro video + phone (edit mode) ── */}
         {!isViewingOther && (
@@ -366,10 +427,11 @@ export default function WorkerProfile() {
         {isViewingOther && currentUser?.phone && (
           <SectionCard title={t('wp_contact')}>
             <a href={`tel:${currentUser.phone}`} dir="ltr" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-              <div style={{ width: 38, height: 38, borderRadius: 11, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Phone size={18} color="#16a34a" />
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Phone size={18} color="var(--text-2)" />
               </div>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#16a34a' }}>{currentUser.phone}</span>
+              {/* The number is the action here, so it is the only coloured thing. */}
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--brand-primary)' }}>{currentUser.phone}</span>
             </a>
           </SectionCard>
         )}
@@ -407,17 +469,17 @@ export default function WorkerProfile() {
             {(form.certificate_files || []).length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: !isViewingOther ? 10 : 0 }}>
                 {form.certificate_files.map(doc => (
-                  <div key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '8px 10px' }}>
-                    <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                  <div key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 10px' }}>
+                    <FileText size={16} color="var(--text-2)" style={{ flexShrink: 0 }} />
                     {!isViewingOther ? (
                       <input
                         value={doc.name}
                         onChange={e => updateCertDocName(doc.url, e.target.value)}
                         placeholder={t('wp_cert_name_ph')}
-                        style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 700, color: '#166534', outline: 'none', fontFamily: 'inherit' }}
+                        style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 700, color: 'var(--text-1)', outline: 'none', fontFamily: 'inherit' }}
                       />
                     ) : (
-                      <a href={doc.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</a>
+                      <a href={doc.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--text-1)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</a>
                     )}
                     {!isViewingOther && (
                       <button onClick={() => removeCertDoc(doc.url)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}>
@@ -432,8 +494,8 @@ export default function WorkerProfile() {
             {isViewingOther && (currentUser?.certificates || []).length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {currentUser.certificates.map(cert => (
-                  <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
-                    ✅ {cert}
+                  <span key={cert} style={{ fontSize: 13, background: 'var(--surface-3)', color: 'var(--text-1)', border: '1px solid var(--border-1)', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
+                    {cert}
                   </span>
                 ))}
               </div>

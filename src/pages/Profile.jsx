@@ -33,7 +33,10 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 
-function MenuRow({ icon: Icon, iconBg, iconColor, label, sub, onClick, to, danger, last }) {
+// One neutral icon tile for every row; only the destructive rows are coloured,
+// so colour marks meaning — "this signs you out", "this deletes your account" —
+// instead of decorating a list of six different hues.
+function MenuRow({ icon: Icon, label, sub, onClick, to, danger, last }) {
   const inner = (
     <div
       onClick={onClick}
@@ -46,8 +49,8 @@ function MenuRow({ icon: Icon, iconBg, iconColor, label, sub, onClick, to, dange
       onPointerUp={e => { e.currentTarget.style.background = ''; }}
       onPointerLeave={e => { e.currentTarget.style.background = ''; }}
     >
-      <div style={{ width: 38, height: 38, borderRadius: 11, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Icon size={17} color={iconColor} />
+      <div style={{ width: 38, height: 38, borderRadius: 11, background: danger ? 'var(--color-danger-bg)' : 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={17} color={danger ? 'var(--color-danger)' : 'var(--text-2)'} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: danger ? '#dc2626' : 'var(--text-1)' }}>{label}</div>
@@ -275,10 +278,11 @@ export default function Profile() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(me?.certificate_files || []).map(doc => (
-                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
-                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="var(--text-2)" style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                  {/* The one colour on the row, because this row IS a link. */}
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-primary)' }}>{t('pr_view')}</span>
                 </a>
               ))}
             </div>
@@ -299,12 +303,12 @@ export default function Profile() {
           background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14,
           border: '1px solid var(--border-1)', overflow: 'hidden',
         }}>
-          <MenuRow icon={Briefcase} iconBg="var(--brand-primary-light)" iconColor="var(--brand-primary)" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
-          <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
-          <MenuRow icon={BarChart3} iconBg="var(--brand-primary-light)" iconColor="var(--brand-primary)" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
-          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('pr_history_reviews')} sub={t('pr_history_count', { n: completedCount + postedCount, m: reviews.length })} onClick={() => setShowUnifiedHistory(true)} />
-          <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => logout()} chevronColor="#fca5a5" />
-          <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
+          <MenuRow icon={Briefcase} label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
+          <MenuRow icon={CreditCard} label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
+          <MenuRow icon={BarChart3} label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
+          <MenuRow icon={Clock} label={t('pr_history_reviews')} sub={t('pr_history_count', { n: completedCount + postedCount, m: reviews.length })} onClick={() => setShowUnifiedHistory(true)} />
+          <MenuRow icon={LogOut} label={t('logout')} danger onClick={() => logout()} />
+          <MenuRow icon={Trash2} label={t('delete_account')} danger onClick={() => setShowDeleteConfirm(true)} last />
         </div>
       </div>
 
