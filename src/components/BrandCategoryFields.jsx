@@ -1,6 +1,8 @@
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { isFieldVisible } from '@/lib/brand/globalCategories';
 import { Label } from '@/components/ui/label';
+import { useLanguage } from '@/lib/LanguageContext';
+import useTaskFlowI18n from '@/hooks/useTaskFlowI18n';
 
 /**
  * BrandCategoryFields — renders the GLOBAL task form for the selected category.
@@ -14,8 +16,17 @@ import { Label } from '@/components/ui/label';
  * Task exactly like the platform's own category extras.
  */
 export default function BrandCategoryFields({ category, values = {}, onChange }) {
-  const { formFieldsFor } = useBrandCategories();
+  const { formFieldsFor, globalMap } = useBrandCategories();
+  const { lang } = useLanguage();
+  const { tTaskFlow } = useTaskFlowI18n();
   const allFields = formFieldsFor(category);
+  // The form's questions and answer chips are authored in Hebrew on the global
+  // category. Each language's translation is stored beside them on the same row,
+  // with the task-flow dictionary as the fallback — so a Brand that adds a
+  // question in Hebrew still shows a translated form everywhere the app already
+  // had that wording.
+  const fieldTr = globalMap?.[category]?.translations?.[lang]?.fields || {};
+  const tr = (s) => (s ? fieldTr[s] || tTaskFlow(s, lang) || s : s);
   // A conditional question appears only while its condition holds — evaluated by
   // the same helper the legacy renderer uses, so both paths behave identically.
   const fields = allFields.filter((f) => isFieldVisible(f, values));
@@ -37,7 +48,7 @@ export default function BrandCategoryFields({ category, values = {}, onChange })
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {fields.map((f) => {
         const value = values[f.key];
-        const label = f.label || f.key;
+        const label = tr(f.label) || f.key;
         return (
           <div key={f.key}>
             <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>
@@ -45,7 +56,7 @@ export default function BrandCategoryFields({ category, values = {}, onChange })
             </Label>
             {f.description && (
               <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6, lineHeight: 1.5 }}>
-                {f.description}
+                {tr(f.description)}
               </div>
             )}
 
@@ -57,7 +68,7 @@ export default function BrandCategoryFields({ category, values = {}, onChange })
             ) : f.type === 'select' ? (
               <select style={inputStyle} value={value ?? ''} onChange={(e) => set(f.key, e.target.value)}>
                 <option value="">—</option>
-                {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
+                {(f.options || []).map((o) => <option key={o} value={o}>{tr(o)}</option>)}
               </select>
             ) : f.type === 'multiselect' ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -77,7 +88,7 @@ export default function BrandCategoryFields({ category, values = {}, onChange })
                         color: on ? 'var(--brand-primary)' : 'var(--text-2)',
                       }}
                     >
-                      {o}
+                      {tr(o)}
                     </button>
                   );
                 })}

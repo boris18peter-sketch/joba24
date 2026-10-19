@@ -11,6 +11,7 @@ import { useBrand } from '@/lib/brand/BrandProvider';
 import { useQuery } from '@tanstack/react-query';
 import { myApplicationsQuery } from '@/lib/queries';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 
 function getDistanceKm(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
@@ -79,6 +80,11 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   const { openTaskSheet } = useTaskSheet();
   const { brandId, isPlatformBrand } = useBrand();
   const { map: categoryMap } = useGlobalCategories();
+  // The popup shows a task the moment it is posted — i.e. in whatever language
+  // its publisher wrote it in. The same auto-translation every other task
+  // surface uses is applied here too, so the popup never shows a Hebrew title to
+  // someone reading the app in another language.
+  const { translatedTask } = useTaskTranslation(popup?.task);
 
   // Fetch current user profile + past activity for smart matching
   const { data: currentUser } = useQuery({
@@ -291,7 +297,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
               {isBoosted ? t('match_boost_title') : t('match_new_title')} • {countdown}s
             </div>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--brand-modal-title, var(--text-1))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
-              {task.title}
+              {translatedTask?.title || task.title}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)' }}>₪{task.price}</span>
