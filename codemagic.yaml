@@ -1440,6 +1440,27 @@ workflows:
             exit 1
           fi
           echo ""
+          echo "=== Advertising ID permission in final manifest ==="
+          # Play Console rejects a release whose manifest lacks this permission
+          # while the app's advertising-ID declaration says the app uses it:
+          #   "A manifest file in one of your active artifacts doesn't include
+          #    the com.google.android.gms.permission.AD_ID permission."
+          # The permission is added to the SOURCE manifest by the Meta SDK step,
+          # but only the MERGED manifest ends up in the AAB — and until now
+          # nothing checked it there, so the build log could not tell a correct
+          # release from one that would be refused. This is that check.
+          if grep -q "com.google.android.gms.permission.AD_ID" "$MERGED"; then
+            echo "✓ com.google.android.gms.permission.AD_ID — present in final APK manifest"
+          else
+            echo "✗ CRITICAL: com.google.android.gms.permission.AD_ID missing from the FINAL merged manifest!"
+            echo "  Play Console will refuse this build while the advertising-ID declaration is set to 'Yes'."
+            echo "  The permission IS in the source manifest, so the manifest merger dropped it —"
+            echo "  look for a tools:node=\"remove\" on this permission in a library manifest."
+            echo "=== Full merged manifest ==="
+            cat "$MERGED"
+            exit 1
+          fi
+          echo ""
           echo "=== Geolocation plugin in final manifest ==="
           if grep -q "geolocation\|Geolocation" "$MERGED"; then
             echo "✓ Geolocation references found"
