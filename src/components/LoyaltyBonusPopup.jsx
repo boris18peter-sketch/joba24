@@ -10,13 +10,19 @@ import TrustCard from '@/components/TrustCard';
 import { useLanguage } from '@/lib/LanguageContext';
 
 /**
- * LoyaltyBonusPopup — the reward a worker gets for a 5-star rating.
+ * LoyaltyBonusPopup — a Joba bonus, announced.
  *
- * Deliberately the SAME popup as the signup gift: the same gold theme, the same
- * hero, the same coin block, the same perks block and the same CTA. A bonus is a
- * bonus, so it should not arrive in a second, heavier design that reads like a
- * different kind of message. The only thing this one adds is the rank meter at
- * the very bottom, because a loyalty bonus is also progress.
+ * ONE popup for every bonus, because a bonus is a bonus: the same gold theme, the
+ * same hero, the same coin block, the same perks block and the same CTA. A second,
+ * heavier design would read like a different kind of message.
+ *
+ * What changes with `kind` is only what the popup is allowed to SAY:
+ *   'rating'  — the professionalism reward for a 5-star rating. It shows the
+ *               trust meter, because a 5-star rating is exactly what moves it.
+ *   'profile' — the one-time bonus for completing the worker profile. It must
+ *               never borrow the rating's copy: telling a brand-new worker they
+ *               were rated five stars is simply false, and that is what used to
+ *               happen — both bonuses are written as Loyalty_Reward rows.
  */
 const THEME = {
   gradient: 'linear-gradient(160deg, #f59e0b 0%, #d97706 60%, #b45309 100%)',
@@ -27,10 +33,15 @@ const THEME = {
   badgeBg: 'linear-gradient(135deg, #fbbf24, #d97706)',
 };
 
-const PERK_KEYS = ['lp_perk_1', 'lp_perk_2', 'lp_perk_3'];
+const PERK_KEYS = {
+  rating: ['lp_perk_1', 'lp_perk_2', 'lp_perk_3'],
+  profile: ['lp_profile_perk_1', 'lp_profile_perk_2', 'lp_profile_perk_3'],
+};
 
-export default function LoyaltyBonusPopup({ amount = 0, user, onClose }) {
+export default function LoyaltyBonusPopup({ amount = 0, kind = 'rating', user, onClose }) {
   const { t, isRTL } = useLanguage();
+  const isRating = kind !== 'profile';
+  const perks = PERK_KEYS[kind] || PERK_KEYS.rating;
   const queryClient = useQueryClient();
   const [claimed, setClaimed] = useState(false);
 
@@ -102,7 +113,7 @@ export default function LoyaltyBonusPopup({ amount = 0, user, onClose }) {
               {t('lp_revealed_title', { n: bonusAmount })}
             </div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.92)', fontWeight: 600, lineHeight: 1.5 }}>
-              {t('lp_subtitle')}
+              {t(isRating ? 'lp_subtitle' : 'lp_profile_subtitle')}
             </div>
           </motion.div>
         </div>
@@ -120,8 +131,8 @@ export default function LoyaltyBonusPopup({ amount = 0, user, onClose }) {
 
           {/* Perks */}
           <div style={{ background: THEME.soft, border: `1px solid ${THEME.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 22 }}>
-            {PERK_KEYS.map((key, i) => (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < PERK_KEYS.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+            {perks.map((key, i) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < perks.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
                 <div style={{ width: 26, height: 26, borderRadius: 8, background: THEME.badgeBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <CheckCircle2 size={15} color="white" strokeWidth={2.4} />
                 </div>
@@ -146,16 +157,21 @@ export default function LoyaltyBonusPopup({ amount = 0, user, onClose }) {
             {claimed ? t('lp_cta_done') : t('lp_cta')}
           </button>
 
-          {/* ── Trust meter — the SHARED card, in its read-only form. A 5-star
-              rating is exactly what moves this score, so the worker sees the
-              very number that just went up, right where the bonus is announced.
-              Read-only because a nested popup would open behind this one. ── */}
-          <div style={{ marginTop: 14, marginBottom: 18 }}>
-            <TrustCard user={user} interactive={false} />
-          </div>
+          {/* ── Trust meter — the ORIGINAL shared card, in its read-only form,
+              exactly as it renders on the profile. A 5-star rating is what moves
+              this score, so the worker sees the very number that just went up,
+              right where the bonus is announced. Read-only because a nested popup
+              would open behind this one. It belongs to the RATING bonus only: a
+              profile-completion bonus has nothing to do with the rating that
+              feeds this score. ── */}
+          {isRating && (
+            <div style={{ marginTop: 14, marginBottom: 18 }}>
+              <TrustCard user={user} interactive={false} />
+            </div>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: 2, fontSize: 12, color: 'var(--text-3)', fontWeight: 500 }}>
-            {t('lp_footer')}
+            {t(isRating ? 'lp_footer' : 'lp_profile_footer')}
           </div>
         </div>
       </motion.div>

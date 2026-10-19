@@ -31,7 +31,11 @@ export function useLoyaltyBonus(user) {
       const key = `joba24_loyalty_popup_${tx.id}`;
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, '1');
-      setBonus({ amount: Math.round(value), tasksCompleted: user.tasks_completed || 0 });
+      // WHICH bonus this is decides what the popup is allowed to say. A rating
+      // reward is always tied to a task; the profile-completion bonus never is.
+      // Announcing the second one with the first one's copy told a brand-new
+      // worker they had been rated five stars, which was simply untrue.
+      setBonus({ amount: Math.round(value), kind: tx.task_id ? 'rating' : 'profile' });
     };
 
     const unsub = base44.entities.CreditTransaction.subscribe((event) => {
@@ -53,7 +57,7 @@ export function useLoyaltyBonus(user) {
       .catch(() => {});
 
     return () => { cancelled = true; unsub(); };
-  }, [user?.id, user?.tasks_completed]);
+  }, [user?.id]);
 
   return { bonus, clearBonus: () => setBonus(null) };
 }

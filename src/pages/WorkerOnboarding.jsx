@@ -50,7 +50,6 @@ export default function WorkerOnboarding() {
   const [step, setStep] = useState(-1); // -1 = welcome, 0..N-1 = steps, N = done
   const [direction, setDirection] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [grantedBonus, setGrantedBonus] = useState(0);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [data, setData] = useState({
     profession: '',
@@ -147,8 +146,7 @@ export default function WorkerOnboarding() {
           const bonusKey = JOIN_BONUS_GRANTED_KEY + '_' + me.id;
           if (!localStorage.getItem(bonusKey)) {
             try {
-              const res = await base44.functions.invoke('grantProfileCompletionBonus', {});
-              if (res.data?.granted) setGrantedBonus(res.data.amount);
+              await base44.functions.invoke('grantProfileCompletionBonus', {});
             } catch (bonusErr) {
               console.error('Profile completion bonus error:', bonusErr);
             }
@@ -161,6 +159,16 @@ export default function WorkerOnboarding() {
         console.error('Save error:', e);
       }
       setSaving(false);
+    }
+    // The last step ENDS the flow. It used to advance to a "done" screen that
+    // stood between the worker and the app — which read as a waiting page, and
+    // was never the point of finishing a profile. The flow's end is the feed, and
+    // the bonus just granted announces itself there.
+    if (isLastStep) {
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      if (isEdit) navigate(-1);
+      else navigate('/', { replace: true });
+      return;
     }
     setDirection(1);
     setStep(s => s + 1);
@@ -242,49 +250,6 @@ export default function WorkerOnboarding() {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
         <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
-      </div>
-    );
-  }
-
-  // ── Done step — bonus already granted in handleNext ──
-  if (step >= totalSteps) {
-    const handleGoToApp = async () => {
-      await queryClient.invalidateQueries({ queryKey: ['me'] });
-      await queryClient.refetchQueries({ queryKey: ['me'] });
-      // In edit mode, go back to the waiting page; otherwise enter the app
-      if (isEdit) {
-        navigate(-1);
-      } else {
-        navigate('/');
-      }
-    };
-
-    return (
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
-        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          style={{ width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg, #16a34a, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
-          <Check size={44} color="white" strokeWidth={3} />
-        </motion.div>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 12 }}>{t('wo_done_title')}</h1>
-        <div style={{ maxWidth: 340 }}>
-          <p style={{ fontSize: 17, color: 'var(--text-2)', margin: 0, marginBottom: 10, lineHeight: 1.6 }}>
-            {me?.full_name ? `${me.full_name}, ` : ''}{t('wo_done_body')}
-          </p>
-          {grantedBonus > 0 && (
-            <p style={{ fontSize: 16, fontWeight: 800, color: '#92400e', margin: 0, marginBottom: 10, lineHeight: 1.5 }}>
-              🎁 {t('wo_bonus_received').replace('{n}', grantedBonus)}
-            </p>
-          )}
-          <p style={{ fontSize: 15, color: 'var(--text-3)', margin: 0, lineHeight: 1.6 }}>
-            בקרוב תקבל התראות להצעות לעבודות התואמות את התחומים והאזור שלך.
-          </p>
-        </div>
-        <button
-          onClick={handleGoToApp}
-          style={{ width: '100%', maxWidth: 340, padding: '18px 0', borderRadius: 18, background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))', color: 'var(--brand-hero-text, white)', fontSize: 19, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)', marginTop: 28 }}
-        >
-          {t('wo_go_to_app')}
-        </button>
       </div>
     );
   }

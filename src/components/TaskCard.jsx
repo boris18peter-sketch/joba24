@@ -28,6 +28,7 @@ import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
+import { raiseAppOffer } from '@/lib/appOffer';
 import { isUserVerified } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
@@ -228,6 +229,10 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         { dedupeKey: res.data?.application?.id || displayTask?.id }
       );
       handleApplied(res.data?.application, res.data?.credits_charged || 0);
+      // A web visitor who has just applied is worth offering the app to: the
+      // publisher's approval arrives as a push notification, which only the
+      // installed app can deliver. First application only.
+      raiseAppOffer('apply');
       setTimeout(() => setShowApplyModal(false), 120);
     } catch (err) {
       const errData = err?.response?.data;

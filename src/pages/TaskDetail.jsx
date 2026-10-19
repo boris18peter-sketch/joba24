@@ -28,6 +28,7 @@ import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
 import { isUserVerified, hasSocialVerified, copyToClipboard } from '@/lib/utils';
+import { raiseAppOffer } from '@/lib/appOffer';
 import { selectTask, patchTaskCache } from '@/lib/taskCache';
 import { creditsShortfall } from '@/lib/jobaBalance';
 
@@ -594,6 +595,10 @@ export default function TaskDetail(props) {
         { dedupeKey: newApp?.id || id }
       );
       toast.success(t('app_sent_n_credits').replace('{n}', data.credits_charged));
+      // A web visitor who has just applied is worth offering the app to: the
+      // publisher's approval arrives as a push notification, which only the
+      // installed app can deliver. First application only.
+      raiseAppOffer('apply');
     } catch (err) {
       // 403 = insufficient credits
       const status = err?.response?.status || err?.status;

@@ -1,5 +1,12 @@
 {
   "ar": {
+    "lp_profile_subtitle": "أكملت ملفك كعامل",
+    "lp_profile_perk_1": "مكافأة لمرة واحدة على إكمال ملف العامل",
+    "lp_profile_perk_2": "تُضاف مباشرة إلى رصيد الجوبات",
+    "lp_profile_perk_3": "ملف أكمل = مطابقات عمل أفضل",
+    "lp_profile_footer": "مكافأة على إكمال ملف العامل",
+    "app_dl_apply_title": "قدّمت طلبك! ابقَ على اطلاع",
+    "app_dl_apply_body": "عندما يوافق الناشر عليك، سيصلك التنبيه في التطبيق. ثبّته حتى لا تفوتك الموافقة.",
     "delete_task_title": "حذف المهمة",
     "delete_task_sub": "حذف نهائي - لا يمكن التراجع",
     "delete_task_confirm": "سيتم حذف المهمة نهائياً. لا يمكن التراجع عن هذا الإجراء.",
@@ -180,6 +187,13 @@
     "sub_manage_failed": "لا يمكن فتح إدارة الاشتراك"
   },
   "en": {
+    "lp_profile_subtitle": "Your worker profile is complete",
+    "lp_profile_perk_1": "A one-time bonus for completing your worker profile",
+    "lp_profile_perk_2": "Added straight to your Jobas balance",
+    "lp_profile_perk_3": "A fuller profile means better job matches",
+    "lp_profile_footer": "Bonus for completing your worker profile",
+    "app_dl_apply_title": "You applied! Now stay in the loop",
+    "app_dl_apply_body": "When the publisher approves you, the alert arrives in the app. Install it so you never miss your approval.",
     "delete_task_title": "Delete task",
     "delete_task_sub": "Final deletion — cannot be undone",
     "delete_task_confirm": "The task will be permanently deleted. This action cannot be undone.",
@@ -360,6 +374,13 @@
     "sub_manage_failed": "Could not open subscription management"
   },
   "es": {
+    "lp_profile_subtitle": "Tu perfil de trabajador está completo",
+    "lp_profile_perk_1": "Bono único por completar tu perfil de trabajador",
+    "lp_profile_perk_2": "Se añade directo a tu saldo de Jobas",
+    "lp_profile_perk_3": "Un perfil más completo significa mejores ofertas",
+    "lp_profile_footer": "Bono por completar tu perfil de trabajador",
+    "app_dl_apply_title": "¡Te postulaste! Ahora mantente al día",
+    "app_dl_apply_body": "Cuando el anunciante te apruebe, la alerta llega a la app. Instálala para no perderte tu aprobación.",
     "delete_task_title": "Eliminar tarea",
     "delete_task_sub": "Eliminación definitiva: no se puede deshacer",
     "delete_task_confirm": "La tarea se eliminará permanentemente. Esta acción no se puede deshacer.",
@@ -540,6 +561,13 @@
     "sub_manage_failed": "No se puede abrir la gestión de suscripción"
   },
   "fil": {
+    "lp_profile_subtitle": "Kumpleto na ang profile mo bilang manggagawa",
+    "lp_profile_perk_1": "Isahang bonus para sa pagkumpleto ng profile mo",
+    "lp_profile_perk_2": "Direktang nadadagdag sa balanse mo ng Jobas",
+    "lp_profile_perk_3": "Mas kumpletong profile, mas magandang trabaho",
+    "lp_profile_footer": "Bonus para sa pagkumpleto ng profile mo",
+    "app_dl_apply_title": "Nakapag-apply ka na! Manatiling updated",
+    "app_dl_apply_body": "Kapag inaprubahan ka ng nag-post, darating ang alerto sa app. I-install ito para hindi mo mapalampas ang pag-apruba.",
     "delete_task_title": "Burahin ang gawain",
     "delete_task_sub": "Permanenteng mabubura — hindi na mababawi",
     "delete_task_confirm": "Permanenteng mabubura ang gawain. Hindi na mababawi ang aksyong ito.",
@@ -720,6 +748,13 @@
     "sub_manage_failed": "Hindi mabuksan ang pamamahala ng subscription"
   },
   "fr": {
+    "lp_profile_subtitle": "Ton profil de travailleur est complet",
+    "lp_profile_perk_1": "Bonus unique pour avoir complété ton profil de travailleur",
+    "lp_profile_perk_2": "Ajouté directement à ton solde de Jobas",
+    "lp_profile_perk_3": "Un profil plus complet, de meilleures offres",
+    "lp_profile_footer": "Bonus pour avoir complété ton profil de travailleur",
+    "app_dl_apply_title": "Candidature envoyée ! Reste informé",
+    "app_dl_apply_body": "Quand l'annonceur t'approuve, l'alerte arrive dans l'app. Installe-la pour ne pas manquer ton approbation.",
     "delete_task_title": "Supprimer la tâche",
     "delete_task_sub": "Suppression définitive — impossible d'annuler",
     "delete_task_confirm": "La tâche sera supprimée définitivement. Cette action est irréversible.",
@@ -900,6 +935,13 @@
     "sub_manage_failed": "Impossible d'ouvrir la gestion de l'abonnement"
   },
   "ru": {
+    "lp_profile_subtitle": "Твой профиль исполнителя заполнен",
+    "lp_profile_perk_1": "Разовый бонус за заполнение профиля исполнителя",
+    "lp_profile_perk_2": "Сразу зачисляется на твой баланс Джоб",
+    "lp_profile_perk_3": "Чем полнее профиль, тем лучше подбор работы",
+    "lp_profile_footer": "Бонус за заполнение профиля исполнителя",
+    "app_dl_apply_title": "Заявка отправлена! Оставайся на связи",
+    "app_dl_apply_body": "Когда заказчик одобрит тебя, уведомление придёт в приложение. Установи его, чтобы не пропустить одобрение.",
     "delete_task_title": "Удаление задачи",
     "delete_task_sub": "Безвозвратное удаление — восстановить будет нельзя",
     "delete_task_confirm": "Задача будет удалена навсегда. Это действие невозможно отменить.",
@@ -1080,6 +1122,13 @@
     "sub_manage_failed": "Не удалось открыть управление подпиской"
   },
   "hi": {
+    "lp_profile_subtitle": "आपका वर्कर प्रोफ़ाइल पूरा हो गया",
+    "lp_profile_perk_1": "वर्कर प्रोफ़ाइल पूरा करने पर एकमुश्त बोनस",
+    "lp_profile_perk_2": "सीधे आपके जोबा बैलेंस में जुड़ता है",
+    "lp_profile_perk_3": "पूरा प्रोफ़ाइल = बेहतर काम की सिफ़ारिशें",
+    "lp_profile_footer": "वर्कर प्रोफ़ाइल पूरा करने पर बोनस",
+    "app_dl_apply_title": "आवेदन भेज दिया! अब अपडेट रहें",
+    "app_dl_apply_body": "जब पोस्ट करने वाला आपको स्वीकृत करेगा, अलर्ट ऐप में आएगा। स्वीकृति न चूकने के लिए ऐप इंस्टॉल करें।",
     "delete_task_title": "कार्य हटाएं",
     "delete_task_sub": "स्थायी रूप से हटाएं — इसे वापस नहीं लाया जा सकता",
     "delete_task_confirm": "कार्य हमेशा के लिए हटा दिया जाएगा। इस क्रिया को पूर्ववत नहीं किया जा सकता।",
@@ -1260,6 +1309,13 @@
     "sub_manage_failed": "सदस्यता प्रबंधन नहीं खोल सकते"
   },
   "zh": {
+    "lp_profile_subtitle": "你的工作者资料已完成",
+    "lp_profile_perk_1": "完善工作者资料的一次性奖励",
+    "lp_profile_perk_2": "直接存入你的 Joba 余额",
+    "lp_profile_perk_3": "资料越完整，工作匹配越精准",
+    "lp_profile_footer": "完善工作者资料奖励",
+    "app_dl_apply_title": "已提交申请！随时掌握进展",
+    "app_dl_apply_body": "发布者批准你时，提醒会发送到应用。安装应用，别错过录用通知。",
     "delete_task_title": "删除任务",
     "delete_task_sub": "彻底删除 — 无法恢复",
     "delete_task_confirm": "任务将被永久删除，此操作无法撤销。",

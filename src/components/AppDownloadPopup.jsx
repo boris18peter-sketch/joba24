@@ -6,8 +6,7 @@ import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import { isNativeLike } from '@/lib/nativeEnv';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { useLanguage } from '@/lib/LanguageContext';
-
-const OFFER_KEY = 'joba24_offer_app';
+import { clearAppOffer, pendingAppOffer } from '@/lib/appOffer';
 
 // The offer is a FOLLOW-UP, never the moment of success. The publisher's own task
 // is highlighted on the feed first (that glow is the reward for publishing), and
@@ -16,13 +15,18 @@ const OFFER_KEY = 'joba24_offer_app';
 const DELAY_MS = 7000;
 
 /**
- * AppDownloadPopup — the small "get the app" nudge shown to a WEB visitor right
- * after they publish their first task.
+ * AppDownloadPopup — the small "get the app" nudge shown to a WEB visitor at the
+ * one moment the app's value is undeniable, on either side of the marketplace:
  *
- * It exists because publishing from the browser leaves the publisher blind: the
- * moment an applicant wants the task, the only channel that reaches them is a
- * push notification, and push needs the installed app. So the offer is made at
- * the exact point where its value is obvious, and only once.
+ *   'publish' — they just published a task. The applicants who want it reach
+ *               them only by push notification.
+ *   'apply'   — they just applied for one. The publisher's approval reaches them
+ *               only by push notification, and an applicant who is not reachable
+ *               is exactly the person who loses the job.
+ *
+ * Both are the same offer with different copy, raised by `raiseAppOffer` (see
+ * @/lib/appOffer) once per moment, so a visitor who already saw one still gets
+ * the other the first time it applies to them.
  *
  * Store buttons are the shared StoreDownloadButtons component, so the URLs stay
  * server-driven and the badges stay hidden inside the installed app.
@@ -30,47 +34,45 @@ const DELAY_MS = 7000;
 export default function AppDownloadPopup() {
   const { t, isRTL } = useLanguage();
   const { settings } = useJobaSettings();
-  const [open, setOpen] = useState(false);
-
-  const clearOffer = () => {
-    try { localStorage.removeItem(OFFER_KEY); } catch { /* storage blocked */ }
-  };
+  // Which offer is on screen — 'publish' or 'apply'. Null while none is raised.
+  const [offer, setOffer] = useState(null);
 
   const hasStoreLink = !!(settings?.app_store_url || settings?.google_play_url);
 
   useEffect(() => {
-    // Nothing to offer inside the installed app — and no point keeping the flag.
-    if (isNativeLike()) { clearOffer(); return; }
+    // Nothing to offer inside the installed app — and no point keeping the flags.
+    if (isNativeLike()) { clearAppOffer('publish'); clearAppOffer('apply'); return; }
 
     let timer = null;
-    const schedule = () => {
+    const schedule = (kind) => {
       if (timer) return;
-      timer = setTimeout(() => setOpen(true), DELAY_MS);
+      timer = setTimeout(() => setOffer(kind), DELAY_MS);
     };
 
     // TWO entry points, because this component is mounted once for the whole
-    // session while the offer is raised much later, at the end of a publish:
-    //   • the flag is already set — a reload straight after publishing;
-    //   • it is set moments from now — the publish flow announces it by event,
-    //     which is the normal path.
-    // Reading the flag only on mount would miss every normal publish.
-    let pending = null;
-    try { pending = localStorage.getItem(OFFER_KEY); } catch { /* storage blocked */ }
-    if (pending) schedule();
+    // session while the offer is raised much later, at the end of a publish or
+    // an application:
+    //   • a flag is already set — a reload straight after that moment;
+    //   • it is set moments from now — the flow announces it by event, which is
+    //     the normal path.
+    // Reading the flags only on mount would miss every normal case.
+    const pending = pendingAppOffer();
+    if (pending) schedule(pending);
 
-    window.addEventListener('joba24:offer-app', schedule);
+    const onOffer = (e) => schedule(e.detail?.kind || 'publish');
+    window.addEventListener('joba24:offer-app', onOffer);
     return () => {
-      window.removeEventListener('joba24:offer-app', schedule);
+      window.removeEventListener('joba24:offer-app', onOffer);
       if (timer) clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const close = () => { clearOffer(); setOpen(false); };
+  const close = () => { clearAppOffer(offer); setOffer(null); };
 
   // No destination configured means no popup: an offer with nothing to tap would
   // be worse than no offer at all.
-  if (!open || !hasStoreLink) return null;
+  if (!offer || !hasStoreLink) return null;
 
   return createPortal(
     <div
@@ -101,11 +103,11 @@ export default function AppDownloadPopup() {
             else competes for the eye — this is the moment the publisher has the
             most reason to install, so the screen says one thing only. */}
         <div style={{ fontSize: 21, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.3, marginBottom: 10 }}>
-          {t('app_dl_title')}
+          {t(offer === 'apply' ? 'app_dl_apply_title' : 'app_dl_title')}
         </div>
 
         <p style={{ margin: '0 0 20px', fontSize: 14.5, lineHeight: 1.65, color: 'var(--text-2)' }}>
-          {t('app_dl_body')}
+          {t(offer === 'apply' ? 'app_dl_apply_body' : 'app_dl_body')}
         </p>
 
         <StoreDownloadButtons size="md" align="center" />

@@ -6,14 +6,20 @@ import { Star, X, Shield, Briefcase, TrendingUp } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import { useLanguage } from '@/lib/LanguageContext';
 
-// A single clean metric row for the trust breakdown.
+// One clean metric row for the trust breakdown.
+//
+// Every row wears the SAME colour — the colour of the score itself. Each metric
+// used to carry its own accent (green identity, amber rating, purple experience)
+// on top of a separate green "completed" state, so one popup showed four
+// unrelated colours and the eye had no way to tell which of them mattered. One
+// colour for the whole breakdown is what makes it read as ONE score.
 function MetricRow({ icon, label, points, max, color, status, done }) {
   const pct = Math.round((points / max) * 100);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '4px 0' }}>
       <div style={{
         width: 34, height: 34, borderRadius: 10,
-        background: done ? '#f0fdf4' : `${color}14`,
+        background: `${color}14`,
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
         {icon}
@@ -21,10 +27,10 @@ function MetricRow({ icon, label, points, max, color, status, done }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{label}</span>
-          <span style={{ fontSize: 12, fontWeight: 800, color: done ? '#059669' : 'var(--text-2)' }}>{points}/{max}{done ? ' ✓' : ''}</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color }}>{points}/{max}{done ? ' ✓' : ''}</span>
         </div>
         <div style={{ height: 6, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: done ? '#10b981' : color, borderRadius: 99, transition: 'width 0.5s ease' }} />
+          <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 99, transition: 'width 0.5s ease' }} />
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.4 }}>{status}</div>
       </div>
@@ -135,7 +141,10 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
             <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{t('tc_what_builds')}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 24, fontWeight: 900, color: trustLevel.color, lineHeight: 1 }}>{trustScore}%</div>
+            {/* The percentage wears the same colour as every bar below it, so the
+                popup has ONE accent rather than a score in one colour and its
+                own breakdown in three others. */}
+            <div style={{ fontSize: 24, fontWeight: 900, color: mainColor, lineHeight: 1 }}>{trustScore}%</div>
             <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={14} color="var(--text-3)" />
             </button>
@@ -154,29 +163,29 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
         {/* Breakdown */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
           <MetricRow
-            icon={<Shield size={16} color={verified ? '#059669' : '#94a3b8'} />}
+            icon={<Shield size={16} color={mainColor} />}
             label={t('tc_identity_verify')}
             points={verified ? 40 : 0}
             max={40}
-            color="var(--brand-primary)"
+            color={mainColor}
             done={verified}
             status={verified ? t('tc_identity_verified') : t('tc_identity_pending')}
           />
           <MetricRow
-            icon={<Star size={16} color="#d97706" fill="#fbbf24" />}
+            icon={<Star size={16} color={mainColor} />}
             label={`${t('tc_rating_label')}${rating > 0 ? ` · ${rating.toFixed(1)}★` : ''}`}
             points={ratingPoints}
             max={30}
-            color="#d97706"
+            color={mainColor}
             done={ratingPoints >= 30}
             status={ratingCount > 0 ? t('tc_rating_status', { n: ratingCount }) : t(isPublic ? 'tc_rating_empty_public' : 'tc_rating_empty')}
           />
           <MetricRow
-            icon={<Briefcase size={16} color="#7c3aed" />}
+            icon={<Briefcase size={16} color={mainColor} />}
             label={t('tc_exp_label', { n: completedCount })}
             points={taskPoints}
             max={30}
-            color="#7c3aed"
+            color={mainColor}
             done={taskPoints >= 30}
             status={taskPoints >= 30 ? t('tc_exp_max') : t('tc_exp_progress')}
           />

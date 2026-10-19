@@ -16,6 +16,7 @@ import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRe
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import { BrandLogo } from '@/components/BrandIdentity';
+import { raiseAppOffer } from '@/lib/appOffer';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
@@ -536,15 +537,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
     // installed app can deliver. Flagged ONCE, on the first publish only —
     // AppDownloadPopup picks it up after the visitor has seen their own task
     // highlighted on the feed.
-    try {
-      if (!localStorage.getItem('joba24_published_once')) {
-        localStorage.setItem('joba24_published_once', '1');
-        localStorage.setItem('joba24_offer_app', '1');
-        // AppDownloadPopup is already mounted for this session, so it cannot see
-        // the flag appear — it is told instead.
-        window.dispatchEvent(new CustomEvent('joba24:offer-app'));
-      }
-    } catch { /* storage blocked */ }
+    raiseAppOffer('publish');
     onNavigate?.();
     navigate(`/?newTaskId=${taskId}`);
   };

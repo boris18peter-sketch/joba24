@@ -13,6 +13,7 @@ import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ReviewsSection from '@/components/profile/ReviewsSection';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import ProfileAvatar from '@/components/profile/ProfileAvatar';
+import ProfileAboutCard from '@/components/profile/ProfileAboutCard';
 import { profileHeroBackground, profileBarBackground } from '@/lib/profileTier';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
@@ -165,13 +166,9 @@ export default function PublicProfile() {
             same content is one tap away in the history sheet below — which is
             exactly how the personal profile is laid out. */}
 
-        {/* About */}
-        {user.bio && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>{t('pr_about')}</div>
-            <p className="selectable-text" style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{user.bio}</p>
-          </div>
-        )}
+        {/* About + professional areas + service areas — ONE card, not three.
+            The SAME component the personal profile uses, so the two match. */}
+        <ProfileAboutCard bio={user.bio} categories={categories} cities={cities} scope={scope} selectable />
 
         {/* SECTION 6 — ABOUT ME */}
         {(user.profile_media?.length > 0 || user.intro_video_url) && (
@@ -189,23 +186,6 @@ export default function PublicProfile() {
           </div>
         )}
 
-        {/* SECTION 7 — PROFESSIONAL AREAS */}
-        {categories.length > 0 && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-              <span style={{ fontSize: 13 }}>🔧</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_professions')}</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: 'var(--brand-primary-light, #eff6ff)', color: 'var(--brand-primary, var(--brand-primary))', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid var(--brand-primary-light, #bfdbfe)' }}>
-                  {scope.label(c, t)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Certificates */}
         {(user.certificate_files?.length > 0) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
@@ -220,26 +200,6 @@ export default function PublicProfile() {
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
                   <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
                 </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* SECTION 8 — SERVICE AREAS */}
-        {cities.length > 0 && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-              <span style={{ fontSize: 13 }}>📍</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_areas')}</span>
-              <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginRight: 'auto' }}>
-                {t('pr_active_in_areas', { n: cities.length })}
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {cities.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} /> {getCityLabel(c, lang)}
-                </span>
               ))}
             </div>
           </div>

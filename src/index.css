@@ -1039,38 +1039,29 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
    descendant, and the bottom nav, sheets and popups are all portaled to
    <body> precisely so that they are NOT trapped inside a parent.
    ════════════════════════════════════════════════════════════════════ */
+/* ── DESKTOP — the whole screen, scaled up ─────────────────────────────────
+   The app fills the full width AND height of a computer screen: there is no
+   centred column, no frame and no backdrop behind it.
+
+   Because the app is built mobile-first, its type, controls and spacing are all
+   sized for a phone. Stretched unchanged across a desktop width that reads as
+   small and unfinished, so the whole surface is scaled up instead.
+
+   `zoom` on the root is the ONE lever that scales everything at once — every
+   inline px in every component, every shared class, and the sheets and popups
+   too (they are portaled to <body>, so scaling the app column alone would have
+   left them behind at their original size). It behaves as page zoom does, so
+   `100dvh`, `100%` heights and the fixed overlays all keep matching the visible
+   viewport exactly.
+
+   The layout itself is untouched: same order, same structure, same behaviour —
+   simply rendered larger. */
 @media (min-width: 900px) {
-  /* The backdrop the column sits on. Unlayered, so it wins over @layer base. */
-  html, body { background: var(--surface-3); }
+  html { zoom: 1.3; }
+}
 
-  /* The app column itself. Absolutely positioned with left/right: 0, so auto
-     margins centre it without touching a single child. */
-  .j-app-shell {
-    max-width: 780px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    box-shadow: 0 0 0 1px var(--border-1), 0 0 80px rgba(15,40,107,0.10);
-  }
-
-  /* Portaled to <body>, so it must be centred to match the column it belongs
-     to — otherwise the nav runs the full width of the screen while the app
-     sits in the middle. */
-  .j-bottom-nav {
-    left: 0 !important;
-    right: 0 !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    width: 100%;
-    max-width: 780px;
-  }
-
-  /* Bottom sheets are fixed and span left: 0 / right: 0, so they too would run
-     edge to edge. A sheet without its own maxWidth is capped to the column. */
-  .mobile-sheet {
-    left: 0 !important;
-    right: 0 !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    max-width: 780px;
-  }
+/* A large monitor gets proportionally more, so the app never looks like a phone
+   stretched across it. */
+@media (min-width: 1600px) {
+  html { zoom: 1.55; }
 }
