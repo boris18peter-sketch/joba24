@@ -28,7 +28,17 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
 
   if (!isOpen || !items.length) return null;
 
-  const item = items[index];
+  // ── `index` is state, `items` is a prop — and the prop can change size while
+  // the viewer is open. A profile photo deleted mid-view, a task's media list
+  // replaced by a refetch, or a caller handing over a stale initialIndex all
+  // leave the index pointing past the end of the list, so items[index] comes
+  // back undefined and the next property read crashes the whole screen.
+  //
+  // The list on screen is the authority, so the index is clamped to it. This is
+  // the first thing that reads the index, so it also covers the very first
+  // paint — before any effect has had a chance to correct the state.
+  const safeIndex = Math.min(Math.max(index, 0), items.length - 1);
+  const item = items[safeIndex];
   const isVideo = item.type === 'video';
 
   return createPortal(
@@ -136,7 +146,7 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
           <button
             onClick={e => {
               e.stopPropagation();
-              setIndex(i => (i - 1 + items.length) % items.length);
+              setIndex((safeIndex - 1 + items.length) % items.length);
             }}
             style={{
               position: 'absolute',
@@ -160,7 +170,7 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
           <button
             onClick={e => {
               e.stopPropagation();
-              setIndex(i => (i + 1) % items.length);
+              setIndex((safeIndex + 1) % items.length);
             }}
             style={{
               position: 'absolute',
@@ -197,7 +207,7 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
               fontWeight: 600,
             }}
           >
-            {index + 1} / {items.length}
+            {safeIndex + 1} / {items.length}
           </div>
         </>
       )}
