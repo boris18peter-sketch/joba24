@@ -4,6 +4,7 @@ import App from '@/App.jsx'
 import '@/index.css'
 import { reloadFresh } from '@/lib/reloadFresh'
 import { bootMark } from '@/lib/bootTrace'
+import { installDesktopScale } from '@/lib/desktopScale'
 
 // ── "React actually started" — the signal the HTML healers were missing ──────
 // The inline guards in index.html used to decide a launch was broken purely by
@@ -19,6 +20,11 @@ import { bootMark } from '@/lib/bootTrace'
 // and the guards still heal exactly as before. So the heal now fires only for a
 // genuinely dead launch, never for a merely slow one.
 window.__joba24ReactStarted = true
+
+// The desktop / tablet scale is measured before the first paint, so the app is
+// never rendered for a frame at the wrong height. Inert at the phone scale.
+installDesktopScale()
+
 bootMark(
   'env',
   'ok',

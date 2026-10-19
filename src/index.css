@@ -1061,31 +1061,60 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
    descendant, and the bottom nav, sheets and popups are all portaled to
    <body> precisely so that they are NOT trapped inside a parent.
    ════════════════════════════════════════════════════════════════════ */
-/* ── DESKTOP — the whole screen, scaled up ─────────────────────────────────
-   The app fills the full width AND height of a computer screen: there is no
-   centred column, no frame and no backdrop behind it.
-
-   Because the app is built mobile-first, its type, controls and spacing are all
-   sized for a phone. Stretched unchanged across a desktop width that reads as
-   small and unfinished, so the whole surface is scaled up instead.
-
-   `zoom` on the root is the ONE lever that scales everything at once — every
-   inline px in every component, every shared class, and the sheets and popups
-   too (they are portaled to <body>, so scaling the app column alone would have
-   left them behind at their original size). It behaves as page zoom does, so
-   `100dvh`, `100%` heights and the fixed overlays all keep matching the visible
-   viewport exactly.
+/* ── DESKTOP AND TABLET — the same app, rendered larger ────────────────────
+   The app is built mobile-first: its type, controls and spacing are all sized
+   for a phone. Left at that size across a computer screen it reads as small and
+   unfinished, so from a tablet upwards the whole surface is scaled up — one
+   `zoom` on the root, which multiplies every inline px in every component at
+   once, including the sheets and popups (they are portaled to <body>, so
+   scaling the app column alone would have left them behind at their old size).
 
    The layout itself is untouched: same order, same structure, same behaviour —
-   simply rendered larger. */
-/* ── NO ZOOM ───────────────────────────────────────────────────────────────
-   The app used to be scaled up on a desktop (zoom 1.15, then 1.32 on a large
-   monitor). It did make the mobile-sized type easier to read, but `zoom` scales
-   the LAYOUT while the viewport does not grow with it: at 1.15 every screen was
-   already 15% taller than the window, so the bottom of a task card, the last
-   rows of a detail list and the footer of a sheet were simply cut off — content
-   the visitor could not scroll to.
+   simply rendered larger.
 
-   On a computer the app now renders at its true size and fills the screen
-   exactly, so nothing is ever hidden. The layout itself is unchanged: same
-   order, same structure, same behaviour — simply rendered at 100%. */
+   `zoom` multiplies every length, viewport units included. Whether a
+   viewport-relative length is measured against the window and then painted at
+   the scaled size, or already accounts for the scale, differs between engines.
+   Where it does not account for it, a `100dvh` box is a third taller than the
+   window it sits in: the bottom of a long list, the last rows of a detail list
+   and the footer of a sheet fall off the screen — and because the document
+   itself has no overflow, there is nothing to scroll them into view.
+
+   So it is measured, not assumed: src/lib/desktopScale.js probes it and
+   publishes `--vh-fix` / `--vw-fix` — exactly 1 when the engine already
+   accounts for the scale (every rule below is then a no-op, and the app is
+   simply scaled), and the correcting factor when it does not. Each axis is
+   corrected on its own, because an engine can scale the layout width while
+   leaving the height alone. */
+:root { --ui-scale: 1; --vh-fix: 1; --vw-fix: 1; }
+@media (min-width: 900px)  { :root { --ui-scale: 1.3; } }
+@media (min-width: 1600px) { :root { --ui-scale: 1.55; } }
+
+html { zoom: var(--ui-scale); }
+
+@media (min-width: 900px) {
+  /* The app fills the window it is painted into, not the unscaled one. */
+  html, body {
+    width:  calc(100vw * var(--vw-fix));
+    height: calc(100dvh * var(--vh-fix));
+  }
+
+  /* A sheet may never be taller than the window it is anchored to. */
+  .mobile-sheet              { max-height: calc(90dvh * var(--vh-fix)); }
+  .sheet-scroll              { max-height: calc(90dvh * var(--vh-fix)); }
+  .mobile-modal-center > div { max-height: calc(88dvh * var(--vh-fix)); }
+
+  /* ── Only when the engine paints viewport units oversized ────────────────
+     A fixed element is measured against the window rather than against the app,
+     so it would be laid out against the unscaled window and painted oversized —
+     a sheet anchored to the bottom of its overlay would sit below the screen.
+     Making <body> its containing block puts every fixed element (the bottom nav,
+     the sheets, the popups) back onto the window the app actually fills. */
+  html.j-zoom-overflow body { transform: translateZ(0); }
+
+  /* …and the same correction for the sheets that carry their cap inline. */
+  html.j-zoom-overflow [style*="position: fixed"] [style*="max-height"][style*="dvh"],
+  html.j-zoom-overflow [style*="position:fixed"]  [style*="max-height"][style*="dvh"] {
+    max-height: calc(92dvh * var(--vh-fix)) !important;
+  }
+}
