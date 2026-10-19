@@ -1467,6 +1467,33 @@ workflows:
           else
             echo "ℹ (no geolocation references in manifest — plugin may use different registration)"
           fi
+      - name: Verify the built AAB carries the advertising ID permission
+        script: |
+          # ── THE ONLY CHECK THAT MATTERS ──────────────────────────────────────
+          # Everything above inspects an INTERMEDIATE file. This one opens the
+          # finished .aab — the exact file uploaded to Play — and reads the
+          # manifest Play itself reads. If the permission is here, Play's
+          # "a manifest in one of your active artifacts" error cannot be about
+          # this build. If it is missing, the build stops here instead of
+          # producing a release Play will refuse.
+          echo "=== Checking the FINAL AAB (the file uploaded to Play) ==="
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          if [ ! -f "$AAB" ]; then
+            echo "✗ ERROR: no AAB at $AAB"
+            find android/app/build/outputs -name "*.aab" 2>/dev/null
+            exit 1
+          fi
+          echo "AAB: $(ls -lh "$AAB" | awk '{print $5}')"
+          if python3 -c "import zipfile,sys; z=zipfile.ZipFile('$AAB'); n=next((x for x in z.namelist() if x.endswith('manifest/AndroidManifest.xml')), None); sys.exit(0 if n and b'com.google.android.gms.permission.AD_ID' in z.read(n) else 1)"; then
+            echo "✓ com.google.android.gms.permission.AD_ID — PRESENT in the AAB manifest that Play reads"
+            echo "  This build satisfies Play's advertising ID requirement."
+          else
+            echo "✗ CRITICAL: the built AAB does NOT contain com.google.android.gms.permission.AD_ID."
+            echo "  Play Console will refuse this release while the advertising-ID declaration is 'Yes'."
+            echo "  The source manifest had it, so the manifest merger dropped it —"
+            echo "  check a library manifest for tools:node=\"remove\" on this permission."
+            exit 1
+          fi
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
