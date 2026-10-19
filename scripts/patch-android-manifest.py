@@ -60,8 +60,28 @@ def main():
     else:
         print("[manifest] CAMERA permission already present — skipping.")
 
+    # Add RECORD_AUDIO. The app records voice messages — in the task chat, the
+    # support chat, the quick-chat drawer, and when describing a task — through
+    # getUserMedia({ audio: true }) + MediaRecorder, five call sites in all.
+    #
+    # Android gates the microphone behind this permission, and the WebView asks
+    # the OS for it ONLY when it is DECLARED in the manifest. Undeclared, the
+    # request is refused before the user ever sees a prompt, so recording fails
+    # silently and the mic button looks dead — the same class of failure as the
+    # camera one above.
+    if 'android.permission.RECORD_AUDIO' not in content:
+        audio_perm = '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+        content = content.replace('<application', audio_perm + '<application', 1)
+        print("[manifest] added RECORD_AUDIO permission.")
+    else:
+        print("[manifest] RECORD_AUDIO permission already present — skipping.")
+
     if 'android:scheme="joba24"' in content:
-        print("[manifest] joba24:// intent-filter already present — skipping.")
+        # The permissions above are written even on this early exit. Returning
+        # without writing would silently discard every permission this script
+        # just ensured, on any re-run where the deep link already exists.
+        MANIFEST.write_text(content)
+        print("[manifest] joba24:// intent-filter already present — permissions written — skipping.")
         return
 
     idx = content.find('android:name=".MainActivity"')

@@ -1343,6 +1343,18 @@ workflows:
             echo "✗ ERROR: CAMERA NOT in manifest — the file chooser will be gallery-only and users can NEVER take a photo!"
             exit 1
           fi
+          if grep -q "android.permission.RECORD_AUDIO" "$MANIFEST"; then
+            echo "✓ RECORD_AUDIO permission found in manifest"
+          else
+            echo "✗ ERROR: RECORD_AUDIO NOT in manifest — voice messages will NEVER record on Android!"
+            exit 1
+          fi
+          if grep -q "com.google.android.gms.permission.AD_ID" "$MANIFEST"; then
+            echo "✓ Advertising ID permission found in manifest"
+          else
+            echo "✗ ERROR: com.google.android.gms.permission.AD_ID NOT in manifest after cap sync — Play will refuse the release!"
+            exit 1
+          fi
       - name: Verify capacitor.config.json has no server.url
         script: |
           if python3 -c "import json; c=json.load(open('capacitor.config.json')); exit(0 if 'server' not in c else 1)"; then
