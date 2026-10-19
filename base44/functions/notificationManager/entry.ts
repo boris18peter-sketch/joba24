@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { isServiceRoleCall, forbidden } from '../../shared/internalAuth.ts';
+import { validRecordIds } from '../../shared/recordIds.ts';
 
 /**
  * ── NotificationManager ──────────────────────────────────────────────────
@@ -388,7 +389,15 @@ Deno.serve(async (req) => {
 
     const cooldownMs = (config.cooldown_minutes || 0) * 60 * 1000;
     const targetSegments = config.segments || ['all'];
-    const userIdsArr = Array.isArray(user_ids) ? user_ids : [user_ids];
+    // Only real record IDs may reach the query below: the entity layer rejects an
+    // `$in` list containing anything else, and it rejects the WHOLE list — not
+    // just the offending entry — so one demo/legacy id would otherwise lose the
+    // entire notification for every real recipient. An unusable id now costs
+    // only its own recipient.
+    const userIdsArr = validRecordIds(user_ids);
+    if (!userIdsArr.length) {
+      return Response.json({ sent: 0, reason: 'No valid recipient ids' });
+    }
 
     // 2. שליפת נתוני משתמשים לבדיקת סגמנט
     const users = await base44.asServiceRole.entities.User.filter({ id: { $in: userIdsArr } });

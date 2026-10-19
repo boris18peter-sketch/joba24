@@ -216,10 +216,17 @@ export default function Layout() {
     if (!me?.id || !isAuthenticated) return;
     const emailKey = `joba24_welcome_email_${me.id}`;
     if (localStorage.getItem(emailKey)) return;
-    localStorage.setItem(emailKey, '1');
+    // ── CLAIM THE ONE-SHOT FLAG ONLY WHEN THE EMAIL IS ACTUALLY SENT ────────
+    // The flag was written BEFORE the checks below, so a user whose
+    // created_date happened to be missing or unparseable at that first Layout
+    // mount burned the flag and could never receive the welcome email on any
+    // later mount — silently, and permanently. Claiming it after the checks
+    // means an unusable value is retried on the next mount, while a genuine
+    // send still happens at most once.
     if (!me.created_date) return;
     const createdMs = new Date(me.created_date).getTime();
     if (isNaN(createdMs) || Date.now() - createdMs > 2 * 60 * 1000) return;
+    localStorage.setItem(emailKey, '1');
     base44.functions.invoke('sendWelcomeEmail', {}).catch(() => {});
   }, [me?.id, isAuthenticated]);
 

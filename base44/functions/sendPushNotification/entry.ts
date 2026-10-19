@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { getAuthenticatedUser, isServiceRoleCall, unauthorized } from '../../shared/internalAuth.ts';
+import { validRecordIds } from '../../shared/recordIds.ts';
 
 /**
  * Send FCM push notifications using the HTTP v1 API directly.
@@ -93,10 +95,41 @@ async function getAccessToken(privateKey, clientEmail) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // ── Authorization ──────────────────────────────────────────────────────
+    // Exactly two kinds of caller are legitimate, and no others:
+    //   • another backend function or automation, running with service authority
+    //     (every notify* function and notificationManager reach it this way);
+    //   • a signed-in app user, whose own in-app action sends the push — a
+    //     worker uploading completion proof, or issuing an invoice.
+    //
+    // Anonymous callers are refused. Without this check the endpoint was open to
+    // the internet: anyone could POST a title, a body and a link and have it
+    // delivered as a genuine Joba24 push to any user id. The app's own
+    // notification channel could be used to phish its own users — which matters
+    // most right when paid traffic starts arriving.
+    if (!isServiceRoleCall(req)) {
+      const caller = await getAuthenticatedUser(base44);
+      if (!caller) {
+        console.warn('[Push] Rejected unauthenticated invocation');
+        return unauthorized();
+      }
+    }
+
     const { user_ids, title, body, url, tag } = await req.json();
 
     if (!user_ids || !user_ids.length || !title) {
       return Response.json({ error: 'Missing required fields: user_ids, title' }, { status: 400 });
+    }
+
+    // Only real record IDs may reach the query below. The entity layer rejects an
+    // `$in` list containing anything else — and it rejects the WHOLE list, not
+    // just the bad entry — so one demo/legacy id would fail the entire send for
+    // every real recipient. An unusable id now costs only its own recipient.
+    const requestedIds = Array.isArray(user_ids) ? user_ids : [user_ids];
+    const safeIds = validRecordIds(requestedIds);
+    if (!safeIds.length) {
+      return Response.json({ sent: 0, reason: 'No valid recipient ids' });
     }
 
     const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
@@ -117,11 +150,11 @@ Deno.serve(async (req) => {
     // Get tokens for target users — every non-blocked user with a registered
     // device receives push, so notifications reach all active users accurately.
     const users = await base44.asServiceRole.entities.User.filter({
-      id: { $in: user_ids },
+      id: { $in: safeIds },
       is_blocked: { $ne: true },
     });
 
-    const requestedCount = user_ids.length;
+    const requestedCount = requestedIds.length;
     const foundCount = users.length;
     if (foundCount < requestedCount) {
       console.log(`[Push] ${requestedCount - foundCount} target user(s) not found or blocked`);
