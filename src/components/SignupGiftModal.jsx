@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
@@ -48,6 +48,18 @@ export default function SignupGiftModal({ onClose }) {
     (settings.signup_bonus ?? 0) +
     (isReferred ? (settings.referral_signup_bonus ?? 0) : 0) +
     profileBonus;
+
+  // ── ONE ANNOUNCEMENT PER BONUS ──────────────────────────────────────────
+  // When this welcome total already includes the profile-completion bonus, the
+  // welcome IS its announcement. The same per-user key the loyalty popup reads
+  // is written here, so a worker can never be celebrated twice for the one
+  // bonus — while a worker who completes their profile later still gets the
+  // popup, because this modal never counted it for them.
+  useEffect(() => {
+    if (profileBonus > 0 && me?.id) {
+      try { localStorage.setItem(`joba24_profile_bonus_popup_${me.id}`, '1'); } catch { /* storage blocked */ }
+    }
+  }, [profileBonus, me?.id]);
 
   const PERKS = [
     ...(profileBonus > 0 ? [`בונוס של ${profileBonus} ג׳ובות על השלמת הפרופיל שלך.`] : []),

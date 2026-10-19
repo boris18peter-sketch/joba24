@@ -45,18 +45,24 @@ export function useLoyaltyBonus(user) {
       // skipped rather than shown as a number that is not what the worker earned.
       const value = Number(tx.amount);
       if (!Number.isFinite(value) || value <= 0) return;
-      // ── ONLY THE RATING REWARD IS ANNOUNCED HERE ──────────────────────────
-      // A profile-completion bonus is part of the WELCOME, and the welcome is
-      // announced once, by the signup gift popup — which shows the two amounts
-      // as one total. Raising a second popup for it is exactly what gave a new
-      // worker two celebrations back to back for a single signup.
-      //
+      // ── TWO BONUSES, TWO DIFFERENT ANNOUNCEMENTS ──────────────────────────
       // The two are told apart by `task_id`: a rating reward is always tied to a
-      // task, the profile bonus never is.
-      if (!tx.task_id) return;
-      const key = `joba24_loyalty_popup_${tx.id}`;
+      // task, a profile-completion bonus never is. The popup carries copy for
+      // both (`kind`), and each must announce its own bonus.
+      //
+      // A profile bonus was skipped here on the assumption that the welcome
+      // popup had already covered it. It had not: a worker who completes the
+      // profile AFTER signing up — the normal path, from the blue banner — was
+      // granted the Jobas with no popup at all, so the bonus arrived silently.
+      //
+      // The profile bonus is one-time per worker, so it is deduped per USER; a
+      // rating bonus is deduped per TRANSACTION, because a worker earns many.
+      // SignupGiftModal writes the same per-user key whenever its welcome total
+      // already includes the profile bonus, so the two never both announce it.
+      const isProfile = !tx.task_id;
+      const key = isProfile ? `joba24_profile_bonus_popup_${user.id}` : `joba24_loyalty_popup_${tx.id}`;
       if (localStorage.getItem(key)) return;
-      pendingRef.current = { key, amount: Math.round(value), kind: 'rating' };
+      pendingRef.current = { key, amount: Math.round(value), kind: isProfile ? 'profile' : 'rating' };
       flush();
     };
 

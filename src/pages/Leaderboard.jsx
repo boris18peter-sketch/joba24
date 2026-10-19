@@ -48,9 +48,17 @@ export default function Leaderboard() {
   // board is meant to show.
   // The built-in User entity takes the positional form only — (query, sort,
   // limit) — and returns a plain array. Most completed tasks first.
+  // Served by the getLeaderboard function, NOT by reading the User entity
+  // directly. The platform only lets an admin list other users, so a regular
+  // visitor's own read came back with their own record alone and the board
+  // looked empty to exactly the people it exists for. The function returns the
+  // same ranking, with only the fields the board displays.
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.filter({}, '-tasks_completed', 100),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getLeaderboard', {});
+      return res.data?.items || [];
+    },
   });
 
   // Build leaderboard from the authoritative tasks_completed counter on each
