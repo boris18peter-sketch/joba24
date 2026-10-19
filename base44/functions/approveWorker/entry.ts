@@ -128,54 +128,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── THE WORKERS WHO WERE NOT PICKED GET THEIR JOBAS BACK, NOW ──────────
-    // Applying costs the worker Jobas, held while the publisher decides. The
-    // moment a DIFFERENT worker is picked, that hold has served its purpose:
-    // the others can no longer be chosen for this task, so keeping their Jobas
-    // locked is charging them for an outcome that is already settled. They are
-    // released here, in the same breath as the approval, rather than waiting for
-    // a terminal state that may be days away (or never come).
-    //
-    // The approved worker is excluded — their fee stays held, exactly as before,
-    // until the task reaches a terminal state.
-    let releasedCount = 0;
-    let releasedTotal = 0;
+    // ── The workers who were NOT picked stay on the list, still pending ─────
+    // Their Jobas remain committed, exactly as before. The hold is released only
+    // when the task itself reaches a terminal state — completed, deleted, or
+    // expired — so if this assignment falls through (the publisher cancels it or
+    // the worker walks away) the task simply returns to OPEN with its applicant
+    // list intact, and the publisher can approve someone else right away.
     const allApps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-    const notPicked = allApps.filter((a) => a.id !== applicationId && a.status === 'pending');
-    const notPickedIds = new Set(notPicked.map((a) => a.id));
-    for (const other of notPicked) {
-      await base44.asServiceRole.entities.TaskApplication.update(other.id, { status: 'rejected' });
-      const held = other.credits_charged || 0;
-      if (held <= 0) continue;
-      const otherUsers = await base44.asServiceRole.entities.User.filter({ id: other.worker_id });
-      const otherWorker = otherUsers[0];
-      if (!otherWorker) continue;
-      const otherBalance = (otherWorker.worker_credits ?? 0) + held;
-      await base44.asServiceRole.entities.User.update(otherWorker.id, { worker_credits: otherBalance });
-      await base44.asServiceRole.entities.CreditTransaction.create({
-        user_id: other.worker_id,
-        amount: held,
-        type: 'Refund_Rejection',
-        task_id: taskId,
-        task_title: task.title || '',
-        brand_id: task.origin_brand_id || null,
-        balance_after: otherBalance,
-        note: `נבחר עובד אחר למשימה "${task.title || ''}" — ${held} ג׳ובות הוחזרו`,
-      });
-      releasedCount += 1;
-      releasedTotal += held;
-    }
-    console.log(`↩️ Released ${releasedTotal} Jobas to ${releasedCount} worker(s) not picked for task ${taskId}`);
-
-    // The applicants list on the task is rebuilt from the applications
-    // themselves (single source of truth), so the rejected workers drop off the
-    // publisher's list at the same moment their Jobas come back.
-    // `allApps` was read BEFORE the rejections above, so the workers just turned
-    // away are still 'pending' in memory — they are excluded by id, not by the
-    // stale status, or they would stay on the publisher's list.
-    const activeApps = allApps.filter(
-      (a) => !notPickedIds.has(a.id) && (a.status === 'pending' || a.status === 'approved'),
-    );
+    const activeApps = allApps.filter((a) => a.status === 'pending' || a.status === 'approved');
     await base44.asServiceRole.entities.Task.update(taskId, {
       applicants: activeApps.map((a) => ({
         worker_id: a.worker_id,
