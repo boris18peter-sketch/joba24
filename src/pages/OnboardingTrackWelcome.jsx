@@ -8,6 +8,7 @@ import {
   isExplainerDone,
   markExplainerDone,
   destinationForTrack,
+  campaignTrackFromUrl,
 } from '@/lib/onboardingTrack';
 import { explainerSlides } from '@/lib/onboardingTrackContent';
 import TrackChoice from '@/components/onboarding/TrackChoice';
@@ -51,6 +52,10 @@ export default function OnboardingTrackWelcome() {
   const skipFirstRun = isAuthenticated;
 
   const [track, setTrack] = useState(() => {
+    // A campaign link (?track=publish|worker) names the journey itself, so the
+    // visitor is never asked to choose it — the link was sent to one audience.
+    const fromCampaign = campaignTrackFromUrl();
+    if (fromCampaign) return fromCampaign;
     const saved = getOnboardingTrack();
     return saved && !isExplainerDone(saved) ? saved : null;
   });

@@ -107,3 +107,24 @@ export function hasSeenFirstRun() {
 export function destinationForTrack(track) {
   return track === TRACKS.PUBLISH ? '/create-task' : '/welcome';
 }
+
+/**
+ * The journey a CAMPAIGN link names.
+ *
+ *   ?track=publish  (also ?flow=publisher, ?track=post…) → the publisher journey
+ *   ?track=worker   (also ?flow=helper, ?track=earn…)    → the worker journey
+ *
+ * A campaign link is sent to ONE audience, so it already knows which journey
+ * that audience wants: opening the "which one are you?" screen in front of them
+ * is exactly the step the link was meant to remove. Accepts the app's own word
+ * as well as the ones a marketing link is likely to use; anything else returns
+ * null, so a typo falls back to the normal first-run screen rather than sending
+ * someone into the wrong journey.
+ */
+export function campaignTrackFromUrl(search = window.location.search) {
+  const params = new URLSearchParams(search || '');
+  const raw = (params.get('track') || params.get('flow') || '').trim().toLowerCase();
+  if (['publish', 'publisher', 'client', 'post'].includes(raw)) return TRACKS.PUBLISH;
+  if (['worker', 'helper', 'work', 'earn'].includes(raw)) return TRACKS.WORKER;
+  return null;
+}

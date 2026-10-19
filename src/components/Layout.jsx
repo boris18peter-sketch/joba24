@@ -51,7 +51,7 @@ import { readPendingTask } from '@/lib/pendingTask';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import AppLoading from '@/components/AppLoading';
-import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack } from '@/lib/onboardingTrack';
+import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack, setOnboardingTrack, campaignTrackFromUrl } from '@/lib/onboardingTrack';
 import { bootMark } from '@/lib/bootTrace';
 
 import BoostOverlay from '@/components/BoostOverlay';
@@ -478,6 +478,20 @@ export default function Layout() {
   useEffect(() => {
     const isPublicPage = PUBLIC_PATHS_NO_AUTH.includes(location.pathname);
     if (isAuthenticated || isPublicPage) return;
+
+    // ── A CAMPAIGN LINK ALREADY NAMES THE JOURNEY ────────────────────────────
+    // ?track=publish / ?track=worker is a link sent to one specific audience, so
+    // it goes straight into that audience's flow instead of opening the "which
+    // one are you?" screen the link exists to skip. The choice is stored as the
+    // visitor's track, so the journey they arrived in is the journey the app
+    // continues from — on this visit and on the next one.
+    const campaignTrack = campaignTrackFromUrl();
+    if (campaignTrack) {
+      setOnboardingTrack(campaignTrack);
+      const campaignDest = destinationForTrack(campaignTrack);
+      if (location.pathname !== campaignDest) navigate(campaignDest, { replace: true });
+      return;
+    }
 
     // ── A SHARED LINK IS A TASK TO SEE, NOT AN ONBOARDING TO RUN ─────────────
     // Someone who opened a task link (a Facebook post, a forward) has already
