@@ -2,14 +2,15 @@ import { Star } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 // Single unified stats pill — one glass card with 3 columns
-// (rating + reviews | tasks posted | tasks completed).
+// (rating | tasks posted | tasks completed). Each column is exactly two rows
+// (value, label), so the three are symmetrical and their numbers and labels sit
+// at the same height.
 // Rendered on the blue hero of Profile / PublicProfile, so it uses a
 // translucent frosted style that blends with the gradient background.
 export default function ProfileStatsPill({ rating, reviewCount, postedCount, completedCount }) {
   const { t } = useLanguage();
   const r = Number(rating) || 0;
   const hasRating = r > 0;
-  const reviews = Number(reviewCount) || 0;
   const posted = Number(postedCount) || 0;
   const completed = Number(completedCount) || 0;
 
@@ -33,8 +34,10 @@ export default function ProfileStatsPill({ rating, reviewCount, postedCount, com
           <Star size={14} color="#fbbf24" fill="#fbbf24" />
           <span style={valueStyle}>{hasRating ? r.toFixed(1) : '—'}</span>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-hero-text, rgba(255,255,255,0.9))' }}>{t('pr_rating')}</span>
-        <span style={labelStyle}>{reviews > 0 ? t('pr_reviews_count', { n: reviews }) : t('pr_no_reviews_yet')}</span>
+        {/* The review count used to sit here as a third row, which made this
+            column taller than the other two and pushed the whole row out of
+            line. The data itself is untouched — only the display is gone. */}
+        <span style={labelStyle}>{t('pr_rating')}</span>
       </div>
       <div style={dividerStyle} />
       <div style={colStyle}>

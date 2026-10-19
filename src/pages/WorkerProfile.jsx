@@ -310,6 +310,7 @@ export default function WorkerProfile() {
           {!isViewingOther && (
             <>
               <button
+                className="j-icon-btn"
                 onClick={() => addPhotoRef.current?.click()}
                 disabled={addingPhoto}
                 aria-label={t('pph_add')}
