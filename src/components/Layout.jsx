@@ -225,7 +225,18 @@ export default function Layout() {
     // send still happens at most once.
     if (!me.created_date) return;
     const createdMs = new Date(me.created_date).getTime();
-    if (isNaN(createdMs) || Date.now() - createdMs > 2 * 60 * 1000) return;
+    // ── WELCOME WINDOW — 24 HOURS, NOT 2 MINUTES ───────────────────────────
+    // The account is created on the auth server, and only THEN does the visitor
+    // go through the OAuth round-trip and the standalone welcome / onboarding
+    // screens. Layout does not mount with their user record until all of that is
+    // done, so a 2-minute window silently skipped the welcome email for every
+    // signup that took longer than two minutes to reach the app.
+    //
+    // A full day covers every real signup. It still bounds the send to new
+    // accounts only: created_date is set by the server, so nobody whose account
+    // predates the window can ever be reached — the window is what protects
+    // existing users from a "welcome" email.
+    if (isNaN(createdMs) || Date.now() - createdMs > 24 * 60 * 60 * 1000) return;
     localStorage.setItem(emailKey, '1');
     base44.functions.invoke('sendWelcomeEmail', {}).catch(() => {});
   }, [me?.id, isAuthenticated]);
