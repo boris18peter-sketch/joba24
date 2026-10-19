@@ -9,7 +9,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
-import React, { lazy, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import PageNotFound from './lib/PageNotFound';
@@ -21,7 +21,6 @@ import BrandTheme from '@/components/BrandTheme';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { reloadFresh } from '@/lib/reloadFresh';
 import AdminRoute from '@/components/AdminRoute';
 import { TaskSheetProvider } from '@/lib/TaskSheetContext';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
@@ -38,67 +37,9 @@ import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 import AppDownloadPopup from '@/components/AppDownloadPopup';
 import AppLoading from '@/components/AppLoading';
 import ConsentBanner from '@/components/ConsentBanner';
-import { bootMark } from '@/lib/bootTrace';
+import { lazyRetry } from '@/lib/lazyRetry';
 
 // Add page imports here
-// lazyRetry — Vite lazy chunks are hashed; after a new deploy the browser may
-// still hold a stale route URL whose chunk no longer exists on the server, so
-// the dynamic import 404s ("Failed to fetch dynamically imported module").
-// Catch that and reload once (throttled to 10s) to fetch fresh assets.
-const lazyRetry = (importFn) => lazy(() =>
-  importFn().catch(async (err) => {
-    // ── THIS PROMISE MUST ALWAYS SETTLE ─────────────────────────────────────
-    // It used to end in `return new Promise(() => {})` — a promise that NEVER
-    // resolves. When that branch was taken, React's lazy() waited on it
-    // forever: Suspense kept the loading screen up for good, no error was
-    // raised, no boundary ran, and nothing in the app could recover. That is a
-    // loading screen with no end, and it is the one outcome a boot path must
-    // never be able to produce. Every path below now settles.
-    //
-    // 1. A transient failure — a dropped connection on a cold launch, the
-    //    common case — needs no reload at all: one more fetch usually succeeds.
-    try {
-      const mod = await importFn();
-      bootMark('chunk', 'ok', 'recovered on retry');
-      return mod;
-    } catch {
-      /* still failing — fall through to the stale-build heal */
-    }
-
-    // 2. Still failing: the chunk is genuinely gone (a cached index.html
-    //    pointing at a build that no longer exists), which only a reload onto
-    //    the current build fixes.
-    const KEY = 'joba24_chunk_reload_ts';
-    // Storage is read defensively for the same reason as main.jsx: an iOS
-    // WKWebView with storage blocked THROWS on sessionStorage, and an exception
-    // here would replace the real error with a SecurityError and skip the
-    // reload — leaving the visitor on a dead screen. A lost throttle costs one
-    // extra reload; a lost heal costs the app.
-    let canHeal = true;
-    try {
-      const last = Number(sessionStorage.getItem(KEY) || 0);
-      canHeal = Date.now() - last > 10000;
-      if (canHeal) sessionStorage.setItem(KEY, String(Date.now()));
-    } catch {
-      /* no throttle available — heal anyway */
-    }
-    if (canHeal) {
-      bootMark('chunk', 'fail', 'reloading onto the current build');
-      // reloadFresh, not location.reload — a stale service worker / HTTP cache
-      // can keep serving the broken chunk URL even after a rebuild, so the
-      // reload must navigate with a cache-buster to actually fetch it.
-      reloadFresh();
-      // The reload navigates away, so this normally never runs. If it does NOT
-      // — a WebView that refuses the navigation — the promise must still
-      // settle, so the error boundary can show a real, retryable error instead
-      // of leaving the spinner up forever.
-      return new Promise((_, reject) => setTimeout(() => reject(err), 3000));
-    }
-
-    // 3. The heal is throttled (it already ran moments ago) — surface it.
-    throw err;
-  })
-);
 // App entry — force reload to clear stale dynamic import cache
 // Tab pages — preloaded for instant tab switching
 const HomeFeed = lazyRetry(() => import('@/pages/HomeFeed'));

@@ -1,12 +1,17 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
+// The keep-alive tab screens go through the SAME recovery wrapper as every other
+// lazily-loaded route. As plain `lazy()` they had none: a stale hashed chunk or a
+// dropped fetch — "Failed to fetch dynamically imported module" — was a hard
+// error on the tab the user was opening, with nothing to heal it.
+import { lazyRetry } from '@/lib/lazyRetry';
 
-const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
-const MapView = lazy(() => import('@/pages/MapView'));
-const ChatInbox = lazy(() => import('@/pages/ChatInbox'));
-const Profile = lazy(() => import('@/pages/Profile'));
+const HomeFeed = lazyRetry(() => import('@/pages/HomeFeed'));
+const MapView = lazyRetry(() => import('@/pages/MapView'));
+const ChatInbox = lazyRetry(() => import('@/pages/ChatInbox'));
+const Profile = lazyRetry(() => import('@/pages/Profile'));
 
 function TabSkeleton() {
   return (
