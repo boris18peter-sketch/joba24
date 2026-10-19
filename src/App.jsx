@@ -414,19 +414,30 @@ function App() {
             </Router>
             <Toaster />
             {/* ── One surface for the app's own toasts (`toast` from 'sonner') ──
-                Rendered in the app's own design — a card in the app's surface
-                colour, radius and border — and raised ABOVE the bottom nav
-                rather than dropped over the header, where a notice landed on
-                top of the logo, the balance and the menu button. */}
+                The app raises its own notifications in twenty-odd screens, and
+                until this surface was mounted not one of them was ever rendered:
+                every success and every failure was silent. It was missing — not
+                broken — and mounting it is what brought them back.
+
+                It is rendered in the SAME design language as the app's other
+                notifications (see LiveNotificationPopup): the same card radius,
+                surface colour and border, the same 46px rounded tile holding the
+                status emoji, the same bold title over a muted line — so a notice
+                looks like part of the app instead of a foreign white box.
+
+                It sits ABOVE the bottom nav, never over the header, where a
+                notice used to land on the logo, the balance and the menu button. */}
             <SonnerToaster
               position="bottom-center"
               offset={{ bottom: 'calc(66px + env(safe-area-inset-bottom))' }}
               mobileOffset={{ bottom: 'calc(66px + env(safe-area-inset-bottom))' }}
+              icons={{ success: '✅', error: '⚠️', warning: '⚠️', info: 'ℹ️' }}
               toastOptions={{
                 classNames: {
-                  toast: 'rounded-2xl border border-jborder-1 bg-surface-2 text-jtext-1 shadow-lg',
-                  title: 'text-[13.5px] font-bold',
-                  description: 'text-jtext-2',
+                  toast: 'rounded-xl border border-jborder-1 bg-surface-2 text-jtext-1 shadow-lg',
+                  title: 'text-[15px] font-black leading-tight text-jtext-1',
+                  description: 'text-[13px] font-medium text-jtext-2',
+                  icon: 'w-[46px] h-[46px] rounded-md bg-surface-3 flex items-center justify-center text-[22px] shrink-0',
                 },
               }}
             />

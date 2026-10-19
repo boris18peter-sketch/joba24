@@ -92,6 +92,22 @@ export default function useRealtimeSync({
       updateListCache('workerTasksLayout', 'worker_id');
       updateListCache('myPublishedTasks', 'client_id');
 
+      // ── The moment I am chosen for a task ────────────────────────────────
+      // `updateListCache` can only PATCH a list that already holds the task, and
+      // a task I have just been given was never in my worker list before — so the
+      // list kept no trace of it. The home banner is DERIVED from that list, so
+      // it stayed empty until something else happened to refresh it (a return to
+      // the foreground, or an action that invalidates the caches): that is why
+      // being selected took so long to show.
+      //
+      // The event itself cannot be inserted into the list — a status change
+      // carries only the fields it changed, and a half-populated task would be
+      // wrong everywhere the list is read. So the list is refreshed instead, and
+      // the banner appears as soon as the full task arrives.
+      if (event.type === 'update' && cleanPatch.status === 'TAKEN' && cleanPatch.worker_id === me.id) {
+        queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', me.id] });
+      }
+
       // A task reaching a terminal state settles its applications (credits are
       // released or consumed), and a DELETED task releases every applicant's
       // committed jobas. Refresh the committed-balance queries either way so the
