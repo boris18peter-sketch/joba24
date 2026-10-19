@@ -10,6 +10,7 @@ import GoldBadge from '@/components/GoldBadge';
 import CopyableId from '@/components/CopyableId';
 import { getCategoryLabel } from '@/lib/categories';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { resolveUserAccess } from '@/lib/userAccess';
 
 export function SetAgentModal({ user, onClose, onSave }) {
   const [rate, setRate] = useState(user.commission_rate || 10);
@@ -110,7 +111,7 @@ export function SendCreditsModal({ user, onClose, onSave }) {
   );
 }
 
-export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, onToggleSelect, onAssignAgent }) {
+export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, onToggleSelect, onAssignAgent, launchSettings }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
@@ -118,6 +119,10 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const isAgent = user.role === 'agent';
+  // The user's REAL access, computed by the same rule the app enforces — so the
+  // approve/revoke control can never contradict what the user is actually able
+  // to do inside the app right now.
+  const access = resolveUserAccess(user, launchSettings);
 
   const handleBlock = async (e) => {
     e.stopPropagation();
@@ -213,9 +218,14 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
                 לא מאומת
               </span>
             )}
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: user.is_approved ? '#dcfce7' : '#fef9c3', color: user.is_approved ? '#166534' : '#854d0e' }}>
-              {user.is_approved ? '✓ מאושר' : '⏳ ממתין'}
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: access.hasAccess ? '#dcfce7' : '#fef9c3', color: access.hasAccess ? '#166534' : '#854d0e' }}>
+              {access.hasAccess ? '✓ מאושר' : '⏳ ממתין'}
             </span>
+            {access.releasedByLaunch && (
+              <span title="האפליקציה פתוחה לכולם בהגדרות ההשקה, ולכן כל משתמש רשום נכנס גם בלי אישור אישי" style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' }}>
+                🔓 פתוח לכולם
+              </span>
+            )}
             {user.kyc_status && (
               <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8' }}>KYC: {user.kyc_status}</span>
             )}
@@ -325,7 +335,10 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-            {!user.is_approved && (
+            {/* Only the action that can actually change this user's access is
+                offered: no "אשר גישה" for someone the app already lets in, and
+                no "בטל גישה" where the grant does not come from an approval. */}
+            {!access.hasAccess && (
               <button
                 onClick={async (e) => { e.stopPropagation(); await onSetAgent(user, { is_approved: true }); }}
                 style={{ padding: '3px 10px', borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
@@ -333,13 +346,18 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
                 אשר גישה
               </button>
             )}
-            {user.is_approved && (
+            {access.hasAccess && access.explicitlyApproved && (
               <button
                 onClick={async (e) => { e.stopPropagation(); await onSetAgent(user, { is_approved: false }); }}
                 style={{ padding: '3px 10px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
               >
                 בטל גישה
               </button>
+            )}
+            {access.releasedByLaunch && (
+              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, lineHeight: 1.4 }}>
+                הגישה נובעת מכך שהאפליקציה פתוחה לכולם — אין כאן אישור אישי לבטל.
+              </span>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>

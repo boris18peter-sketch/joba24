@@ -23,6 +23,8 @@ import CopyableId from '@/components/CopyableId';
 import { toast } from 'sonner';
 import ApproveAllModal from '@/components/ApproveAllModal';
 import AssignAgentModal from '@/components/AssignAgentModal';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { resolveUserAccess } from '@/lib/userAccess';
 
 // Tabs grouped by what they are for, so the dashboard reads as sections instead
 // of one long undifferentiated row. `desc` is shown as the tab's own header.
@@ -108,6 +110,9 @@ function ReportRow({ report, onDismiss, onReview }) {
 export default function AdminDashboard() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
+  // The launch settings decide who the app actually lets in, so the dashboard
+  // needs them to report each user's access truthfully.
+  const { settings: jobaSettings } = useJobaSettings();
   const [tab, setTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('tab') || 'tasks';
@@ -464,7 +469,9 @@ export default function AdminDashboard() {
 
   const pendingReports = allReports.filter(r => r.status === 'pending').length;
 
-  const pendingApproval = allUsers.filter(u => !u.is_approved && u.role !== 'admin').length;
+  // Counted by the SAME rule the app uses, so a user the launch settings
+  // already release is not reported as waiting for approval.
+  const pendingApproval = allUsers.filter(u => !resolveUserAccess(u, jobaSettings).hasAccess && u.role !== 'admin').length;
 
   const verifiedCount = allUsers.filter(u => isUserVerified(u)).length;
   const goldCount = allUsers.filter(u => isUserVerified(u) && hasSocialVerified(u)).length;
@@ -713,14 +720,14 @@ export default function AdminDashboard() {
               </div>
             )}
             {filteredUsers.map(user => (
-              <AdminUserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} isSelected={selectedUsers.has(user.id)} onToggleSelect={() => toggleSelectUser(user.id)} onAssignAgent={(u) => { setAssignTarget(u.id); setShowAssignModal(true); }} />
+              <AdminUserRow key={user.id} user={user} launchSettings={jobaSettings} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} isSelected={selectedUsers.has(user.id)} onToggleSelect={() => toggleSelectUser(user.id)} onAssignAgent={(u) => { setAssignTarget(u.id); setShowAssignModal(true); }} />
             ))}
             {showApproveModal && (
               <ApproveAllModal
                 count={pendingApproval}
                 onClose={() => setShowApproveModal(false)}
                 onConfirm={async () => {
-                  const unapproved = allUsers.filter(u => !u.is_approved && u.role !== 'admin');
+                  const unapproved = allUsers.filter(u => !resolveUserAccess(u, jobaSettings).hasAccess && u.role !== 'admin');
                   if (unapproved.length === 0) return;
                   const res = await base44.functions.invoke('adminBulkUpdateUsers', {
                     userIds: unapproved.map(u => u.id),
