@@ -19,15 +19,13 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         position: 'relative',
         background: selected
           ? 'linear-gradient(150deg, var(--brand-primary), var(--brand-primary-dark))'
-          : isPopular || isBest
-            ? 'linear-gradient(150deg, var(--surface-2), var(--surface-4))'
-            : 'var(--surface-2)',
+          : 'var(--surface-2)',
         border: selected
           ? 'none'
           : isPopular
-            ? '2px solid var(--brand-primary)'
+            ? '1.5px solid var(--brand-primary)'
             : isBest
-              ? '2px solid #a855f7'
+              ? '1.5px solid #c4b5fd'
               : '1.5px solid var(--border-1)',
         borderRadius: 'var(--r-xl)',
         padding: '18px 12px 14px',
@@ -48,22 +46,24 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         width: '100%',
       }}
     >
-      {/* Badge */}
+      {/* Badge — a small quiet chip in the corner, not a full-width coloured
+          band. The band plus the thick frame plus the tinted price plate were
+          three competing emphases on one card; the chip marks the card without
+          shouting over the two things that actually matter: credits and price. */}
       {(isPopular || isBest) && (
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          background: isBest
-            ? 'linear-gradient(90deg, #7c3aed, #a855f7)'
-            : 'linear-gradient(90deg, var(--brand-accent-dark), var(--brand-accent))',
-          color: isBest ? 'white' : '#7c2d00',
-          fontWeight: 900, fontSize: 11,
-          padding: '5px 0',
+          position: 'absolute', top: 8, right: 8,
+          background: isBest ? '#f5f3ff' : 'var(--brand-primary-light)',
+          color: isBest ? '#7c3aed' : 'var(--brand-primary)',
+          border: `1px solid ${isBest ? '#ddd6fe' : 'var(--border-2)'}`,
+          fontWeight: 800, fontSize: 10,
+          padding: '2px 7px', borderRadius: 99,
           whiteSpace: 'nowrap',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+          display: 'inline-flex', alignItems: 'center', gap: 3,
           zIndex: 10,
           letterSpacing: 0.2,
         }}>
-          {isBest ? <Crown size={12} fill="currentColor" /> : <Star size={12} fill="currentColor" />}
+          {isBest ? <Crown size={10} /> : <Star size={10} />}
           {isBest ? t('buy_best_value') : t('buy_popular_badge')}
         </div>
       )}
@@ -87,7 +87,7 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         color: selected ? 'white' : 'var(--text-1)',
         letterSpacing: -0.5, lineHeight: 1,
         display: 'flex', alignItems: 'center', gap: 6,
-        marginTop: isPopular || isBest ? 14 : 4,
+        marginTop: isPopular || isBest ? 22 : 4,
       }}>
         {pkg.credits}
         <CreditIcon size={22} />
@@ -102,29 +102,25 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         {isSubscription ? t('buy_jobs_month') : t('buy_jobs_label')}
       </div>
 
-      {/* Value label — sharp, single line */}
+      {/* Value label — supporting information, so it reads as supporting
+          information: secondary text, not a green headline repeated four times
+          that pulled the eye away from the credits and the price. */}
       <div style={{
-        fontSize: 12, fontWeight: 800,
-        color: selected ? 'rgba(255,255,255,0.95)' : 'var(--color-success)',
+        fontSize: 12, fontWeight: 700,
+        color: selected ? 'rgba(255,255,255,0.85)' : 'var(--text-2)',
         marginTop: 5, lineHeight: 1.25, textAlign: 'center',
         padding: '0 2px',
       }}>
         {packageValueLabel(pkg.credits, t)}
       </div>
 
-      {/* Price */}
-      <div style={{
-        marginTop: 'auto', width: '100%',
-        background: selected
-          ? 'rgba(255,255,255,0.15)'
-          : isPopular || isBest
-            ? 'var(--brand-primary-light)'
-            : 'var(--surface-3)',
-        borderRadius: 'var(--r-sm)', padding: '8px 6px',
-      }}>
+      {/* Price — the most important number on the card after the credits, so it
+          stays large and bold. It simply no longer sits on a tinted plate: that
+          plate looked like a second, competing button inside the card. */}
+      <div style={{ marginTop: 'auto', width: '100%', paddingTop: 10 }}>
         <div style={{
           fontSize: 20, fontWeight: 900,
-          color: selected ? 'white' : 'var(--brand-primary-dark)',
+          color: selected ? 'white' : 'var(--text-1)',
           letterSpacing: -0.3, lineHeight: 1.1,
         }}>
           {priceLabel === undefined ? `₪${pkg.price.toFixed(2)}` : (priceLabel || '…')}

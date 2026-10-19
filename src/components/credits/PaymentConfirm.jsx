@@ -59,44 +59,30 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
         <ArrowRight size={15} /> {t('buy_back_to_pkg')}
       </button>
 
-      {/* Summary card */}
+      {/* Summary — ONE compact row. The package is already chosen by the time
+          this screen opens, so it only confirms what is being bought. It used
+          to take a third of the screen and repeat the choice back at the
+          visitor instead of moving them toward the button that finishes it. */}
       <div style={{
         background: 'var(--surface-3)',
-        borderRadius: 'var(--r-lg)',
-        padding: '20px 18px',
-        textAlign: 'center',
-        marginBottom: 20,
+        borderRadius: 'var(--r-md)',
+        padding: '12px 14px',
+        display: 'flex', alignItems: 'center', gap: 7,
+        marginBottom: 18,
       }}>
-        <div style={{
-          fontSize: 12, fontWeight: 700, color: 'var(--text-3)',
-          textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12,
-        }}>
-          {isSubscription ? t('buy_selected_sub') : t('buy_selected_pkg')}
-        </div>
-        <div style={{
-          fontSize: 36, fontWeight: 900, color: 'var(--brand-primary)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          marginBottom: 6,
-        }}>
+        <span style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1, flexShrink: 0 }}>
           {pkg.credits}
-          <CreditIcon size={24} />
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>
+        </span>
+        <CreditIcon size={16} />
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-3)', minWidth: 0 }}>
           {isSubscription ? t('buy_jobs_added_monthly') : t('buy_jobs_added_balance')}
-        </div>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'var(--surface-2)', borderRadius: 99,
-          padding: '6px 18px',
+        </span>
+        <span style={{
+          marginInlineStart: 'auto', flexShrink: 0,
+          fontSize: 16, fontWeight: 900, color: 'var(--text-1)',
         }}>
-          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('buy_final_price')}</span>
-          <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>
-            ₪{pkg.price.toFixed(2)}
-          </span>
-          {isSubscription && (
-            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('buy_month_slash')}</span>
-          )}
-        </div>
+          ₪{pkg.price.toFixed(2)}{isSubscription ? t('buy_month_slash') : ''}
+        </span>
       </div>
 
       {/* Subscription explanation */}
@@ -131,7 +117,10 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
         </div>
       )}
 
-      {/* Payment methods — clickable selection */}
+      {/* Payment methods — a selection, deliberately quieter than the one button
+          that matters on this screen. Filled tiles with a heavy frame read as
+          six more calls to action competing with "continue to payment"; here
+          the choice is carried by a thin accent frame and the label colour. */}
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 10 }}>
         {t('buy_choose_pay_method')}
       </div>
@@ -148,12 +137,12 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
               style={{
                 height: 52, borderRadius: 'var(--r-md)',
                 border: selected
-                  ? '2px solid var(--brand-primary)'
-                  : '1.5px solid var(--border-1)',
-                background: selected ? 'var(--brand-primary-light)' : 'var(--surface-2)',
+                  ? '1.5px solid var(--brand-primary)'
+                  : '1px solid var(--border-1)',
+                background: 'var(--surface-2)',
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                fontSize: 12, fontWeight: 700,
+                fontSize: 12, fontWeight: selected ? 800 : 700,
                 color: selected ? 'var(--brand-primary)' : 'var(--text-2)',
                 transition: 'all 0.15s',
                 position: 'relative',
@@ -174,10 +163,15 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           );
         })}
       </div>
+      {/* ONE short trust line. Security was stated three times on this screen —
+          a redirect note, a lock line and the footer — so it stopped reading as
+          reassurance and started reading as noise. */}
       <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         fontSize: 11, color: 'var(--text-3)', fontWeight: 600,
-        marginBottom: 20, textAlign: 'center',
+        marginBottom: 18, textAlign: 'center',
       }}>
+        <Lock size={11} style={{ flexShrink: 0 }} />
         {t('buy_redirect_tranzila')}
       </div>
 
@@ -206,15 +200,6 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           </>
         )}
       </button>
-
-      {/* Trust line */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        fontSize: 11, color: 'var(--text-3)', marginBottom: 10,
-      }}>
-        <Lock size={11} />
-        {t('buy_ssl_secure')}
-      </div>
 
       {/* Legal links — Terms & Privacy (web / Android) */}
       <div style={{

@@ -354,29 +354,20 @@ export default function BuyCreditsModal({ onClose, creditsNeeded, initialState }
               ))}
             </div>
 
-            {/* Trust features — compact */}
-            <div style={{ padding: '10px 16px 0' }}>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {TRUST_FEATURES.map((feat, i) => (
-                  <div key={i} style={{
-                    flex: 1, textAlign: 'center',
-                    background: 'var(--surface-2)',
-                    border: '1px solid var(--border-1)',
-                    borderRadius: 'var(--r-md)',
-                    padding: '10px 4px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  }}>
-                    <div style={{
-                      width: 30, height: 30, borderRadius: 9,
-                      background: 'var(--brand-primary-light)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <feat.icon size={15} color="var(--brand-primary)" strokeWidth={1.8} />
-                    </div>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.2 }}>{feat.title}</div>
-                  </div>
-                ))}
-              </div>
+            {/* Trust features — a quiet row of icon + label. Boxed, they looked
+                like three more buttons next to the package cards; they are
+                reassurance, not actions, so they carry no frame. */}
+            <div style={{
+              padding: '14px 16px 0',
+              display: 'flex', justifyContent: 'center',
+              gap: 16, flexWrap: 'wrap',
+            }}>
+              {TRUST_FEATURES.map((feat, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <feat.icon size={13} color="var(--text-3)" strokeWidth={2} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{feat.title}</span>
+                </div>
+              ))}
             </div>
 
             <div style={{
