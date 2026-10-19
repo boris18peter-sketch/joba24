@@ -1087,7 +1087,7 @@ export const ru = {
     cat_cleaning: '🧹 Уборка',
     cat_moving: '🚛 Переезд',
     cat_heavy_lifting: '💪 Грузчики',
-    cat_painting: '🎨 Покраска',
+    cat_painting: '🖌️ Покраска',
     cat_carpentry: '🪵 Столярка',
     cat_ac: '❄️ Кондиционеры',
     cat_locksmith: '🔐 Замки',
@@ -1408,4 +1408,11 @@ export const ru = {
   rc_chip_price_w: '💰 Заплатил как договорились',
   rc_chip_again: '🔁 Нанял бы снова',
   rc_chip_again_w: '🔁 Работал бы снова',
+
+  // Login popup headlines — each names what the visitor was trying to do.
+  login_title_publish_task: 'Чтобы опубликовать задание, осталось только войти',
+  login_title_apply_task: 'Чтобы откликнуться, осталось только войти',
+  login_title_map: 'Чтобы увидеть карту, осталось только войти',
+  login_title_chats: 'Чтобы увидеть сообщения, осталось только войти',
+  login_title_profile: 'Чтобы увидеть профиль, осталось только войти',
 };

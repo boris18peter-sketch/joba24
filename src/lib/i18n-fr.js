@@ -1084,7 +1084,7 @@ export const fr = {
     cat_cleaning: '🧹 Nettoyage',
     cat_moving: '🚛 Déménagement',
     cat_heavy_lifting: '💪 Port de charges',
-    cat_painting: '🎨 Peinture',
+    cat_painting: '🖌️ Peinture',
     cat_carpentry: '🪵 Menuiserie',
     cat_ac: '❄️ Climatisation',
     cat_locksmith: '🔐 Serrurier',
@@ -1405,4 +1405,11 @@ export const fr = {
   rc_chip_price_w: "💰 A payé comme convenu",
   rc_chip_again: '🔁 Je referais appel',
   rc_chip_again_w: '🔁 Je retravaillerais',
+
+  // Login popup headlines — each names what the visitor was trying to do.
+  login_title_publish_task: 'Pour publier, il vous suffit de vous connecter',
+  login_title_apply_task: 'Pour postuler, il vous suffit de vous connecter',
+  login_title_map: 'Pour voir la carte, il vous suffit de vous connecter',
+  login_title_chats: 'Pour voir vos messages, il vous suffit de vous connecter',
+  login_title_profile: 'Pour voir votre profil, il vous suffit de vous connecter',
 };

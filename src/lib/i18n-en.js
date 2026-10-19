@@ -1077,7 +1077,7 @@ export const en = {
     cat_cleaning: '🧹 Cleaning',
     cat_moving: '🚛 Moving',
     cat_heavy_lifting: '💪 Heavy lifting',
-    cat_painting: '🎨 Painting',
+    cat_painting: '🖌️ Painting',
     cat_carpentry: '🪵 Carpentry',
     cat_ac: '❄️ Air conditioning',
     cat_locksmith: '🔐 Locksmith',

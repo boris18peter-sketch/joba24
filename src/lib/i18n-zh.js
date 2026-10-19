@@ -1098,7 +1098,7 @@ export const zh = {
   cat_cleaning: '🧹 清洁',
   cat_moving: '🚛 搬家',
   cat_heavy_lifting: '💪 搬运重物',
-  cat_painting: '🎨 油漆',
+  cat_painting: '🖌️ 油漆',
   cat_carpentry: '🪵 木工',
   cat_ac: '❄️ 空调',
   cat_locksmith: '🔐 锁匠',
@@ -1419,4 +1419,11 @@ export const zh = {
   rc_chip_price_w: '💰 按约定付款',
   rc_chip_again: '🔁 还会再雇',
   rc_chip_again_w: '🔁 还会再合作',
+
+  // Login popup headlines — each names what the visitor was trying to do.
+  login_title_publish_task: '发布任务只需登录即可',
+  login_title_apply_task: '申请任务只需登录即可',
+  login_title_map: '查看地图只需登录即可',
+  login_title_chats: '查看消息只需登录即可',
+  login_title_profile: '查看个人资料只需登录即可',
 };

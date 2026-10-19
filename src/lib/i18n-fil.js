@@ -1098,7 +1098,7 @@ export const fil = {
   cat_cleaning: '🧹 Paglilinis',
   cat_moving: '🚛 Paglilipat',
   cat_heavy_lifting: '💪 Mabigat na pag-angat',
-  cat_painting: '🎨 Pagpipinta',
+  cat_painting: '🖌️ Pagpipinta',
   cat_carpentry: '🪵 Carpentry',
   cat_ac: '❄️ Aircon',
   cat_locksmith: '🔐 Locksmith',
@@ -1419,4 +1419,11 @@ export const fil = {
   rc_chip_price_w: '💰 Nagbayad ayon sa napagkasunduan',
   rc_chip_again: '🔁 Kukunin ko ulit',
   rc_chip_again_w: '🔁 Magtatrabaho ako ulit',
+
+  // Login popup headlines — each names what the visitor was trying to do.
+  login_title_publish_task: 'Para makapag-post, kailangan mo lang mag-sign in',
+  login_title_apply_task: 'Para makapag-apply, kailangan mo lang mag-sign in',
+  login_title_map: 'Para makita ang mapa, kailangan mo lang mag-sign in',
+  login_title_chats: 'Para makita ang mga mensahe, kailangan mo lang mag-sign in',
+  login_title_profile: 'Para makita ang profile, kailangan mo lang mag-sign in',
 };

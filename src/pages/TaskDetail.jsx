@@ -34,7 +34,7 @@ import { creditsShortfall } from '@/lib/jobaBalance';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹', car: '🚗',
-  moving: '📦', painting: '🎨', carpentry: '🪚', ac: '❄️',
+  moving: '📦', painting: '🖌️', carpentry: '🪚', ac: '❄️',
   locksmith: '🔐', shopping: '🛍️', delivery: '🚚', babysitting: '👶',
   tutoring: '📚', it_support: '💻', other: '🔨'
 };

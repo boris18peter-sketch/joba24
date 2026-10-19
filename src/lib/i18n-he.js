@@ -1103,7 +1103,7 @@ export const he = {
     cat_cleaning: '🧹 ניקיון',
     cat_moving: '🚛 הובלה',
     cat_heavy_lifting: '💪 עזרה פיזית',
-    cat_painting: '🎨 צביעה',
+    cat_painting: '🖌️ צביעה',
     cat_carpentry: '🪵 נגרות',
     cat_ac: '❄️ מזגנים',
     cat_locksmith: '🔐 מנעולן',

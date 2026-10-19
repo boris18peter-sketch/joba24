@@ -5,7 +5,7 @@ export const CATEGORIES = [
   { value: 'cleaning',      label: '🧹 ניקיון' },
   { value: 'moving',        label: '🚛 הובלה' },
   { value: 'heavy_lifting', label: '💪 עזרה פיזית' },
-  { value: 'painting',      label: '🎨 צביעה' },
+  { value: 'painting',      label: '🖌️ צביעה' },
   { value: 'carpentry',     label: '🪵 נגרות' },
   { value: 'ac',            label: '❄️ מזגנים' },
   { value: 'locksmith',     label: '🔐 מנעולן' },

@@ -614,8 +614,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               )
             ) : null}
 
-            {isMyPublished && (
-              <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', paddingTop: 2 }}>
+            {/* Views & entries — on EVERY card, for everyone.
+                These were the publisher's private numbers, so the only activity
+                a visitor ever saw on a card was its price. Showing the same two
+                figures on every card is what makes the board read as busy. */}
+            <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', paddingTop: 2 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                   <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.views_count || 0}</strong>
                   <span>{t('views')}</span>
@@ -625,8 +628,8 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.clicks_count || 0}</strong>
                   <span>{t('clicks')}</span>
                 </span>
-              </div>
-            )}
+            </div>
+
             {!isMyPublished && (
               <>
                 {task.created_by === currentUserId && (

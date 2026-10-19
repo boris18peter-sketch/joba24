@@ -1125,7 +1125,7 @@ export const ar = {
     cat_cleaning: '🧹 تنظيف',
     cat_moving: '🚛 نقل',
     cat_heavy_lifting: '💪 رفع أثقال',
-    cat_painting: '🎨 دهان',
+    cat_painting: '🖌️ دهان',
     cat_carpentry: '🪵 نجارة',
     cat_ac: '❄️ تكييف',
     cat_locksmith: '🔐 حداد مفاتيح',
@@ -1446,4 +1446,11 @@ export const ar = {
   rc_chip_price_w: '💰 دفع كما اتفقنا',
   rc_chip_again: '🔁 سأستعين به مجدداً',
   rc_chip_again_w: '🔁 سأعمل معه مجدداً',
+
+  // Login popup headlines — each names what the visitor was trying to do.
+  login_title_publish_task: 'لنشر مهمة عليك فقط تسجيل الدخول',
+  login_title_apply_task: 'للتقديم على المهمة عليك فقط تسجيل الدخول',
+  login_title_map: 'لرؤية الخريطة عليك فقط تسجيل الدخول',
+  login_title_chats: 'لرؤية الرسائل عليك فقط تسجيل الدخول',
+  login_title_profile: 'لرؤية الملف الشخصي عليك فقط تسجيل الدخول',
 };

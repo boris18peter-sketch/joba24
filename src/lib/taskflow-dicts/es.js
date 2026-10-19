@@ -5,7 +5,7 @@ const es = {
   '🌿 גינון': '🌿 Jardinería',
   '🧹 ניקיון': '🧹 Limpieza',
   '🚛 הובלה': '🚛 Mudanzas',
-  '🎨 צביעה': '🎨 Pintura',
+  '🖌️ צביעה': '🖌️ Pintura',
   '🪵 נגרות': '🪵 Carpintería',
   '❄️ מזגנים': '❄️ Aire acondicionado',
   '🔐 מנעולן': '🔐 Cerrajería',

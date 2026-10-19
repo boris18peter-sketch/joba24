@@ -1098,7 +1098,7 @@ export const hi = {
   cat_cleaning: '🧹 सफाई',
   cat_moving: '🚛 शिफ्टिंग',
   cat_heavy_lifting: '💪 भारी उठान',
-  cat_painting: '🎨 पेंटिंग',
+  cat_painting: '🖌️ पेंटिंग',
   cat_carpentry: '🪵 बढ़ईगिरी',
   cat_ac: '❄️ एसी',
   cat_locksmith: '🔐 ताला बनाने वाला',
@@ -1419,4 +1419,11 @@ export const hi = {
   rc_chip_price_w: '💰 तय के अनुसार भुगतान',
   rc_chip_again: '🔁 दोबारा काम दूंगा',
   rc_chip_again_w: '🔁 दोबारा काम करूंगा',
+
+  // Login popup headlines — each names what the visitor was trying to do.
+  login_title_publish_task: 'पोस्ट करने के लिए बस साइन इन करना बाकी है',
+  login_title_apply_task: 'आवेदन करने के लिए बस साइन इन करना बाकी है',
+  login_title_map: 'नक्शा देखने के लिए बस साइन इन करना बाकी है',
+  login_title_chats: 'संदेश देखने के लिए बस साइन इन करना बाकी है',
+  login_title_profile: 'प्रोफ़ाइल देखने के लिए बस साइन इन करना बाकी है',
 };

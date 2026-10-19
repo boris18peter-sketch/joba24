@@ -5,7 +5,7 @@ const fil = {
   '🌿 גינון': '🌿 Paghahalaman',
   '🧹 ניקיון': '🧹 Paglilinis',
   '🚛 הובלה': '🚛 Paglilipat (Moving)',
-  '🎨 צביעה': '🎨 Pagpipinta',
+  '🖌️ צביעה': '🖌️ Pagpipinta',
   '🪵 נגרות': '🪵 Karpinterya',
   '❄️ מזגנים': '❄️ Mga Aircon',
   '🔐 מנעולן': '🔐 Locksmith',

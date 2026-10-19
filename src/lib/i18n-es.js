@@ -1122,7 +1122,7 @@ export const es = {
     cat_cleaning: '🧹 Limpieza',
     cat_moving: '🚛 Mudanza',
     cat_heavy_lifting: '💪 Carga pesada',
-    cat_painting: '🎨 Pintura',
+    cat_painting: '🖌️ Pintura',
     cat_carpentry: '🪵 Carpintería',
     cat_ac: '❄️ Aire acondicionado',
     cat_locksmith: '🔐 Cerrajero',
@@ -1443,4 +1443,11 @@ export const es = {
   rc_chip_price_w: '💰 Pagó según lo acordado',
   rc_chip_again: '🔁 Volvería a contratar',
   rc_chip_again_w: '🔁 Volvería a trabajar',
+
+  // Login popup headlines — each names what the visitor was trying to do.
+  login_title_publish_task: 'Para publicar, solo tienes que iniciar sesión',
+  login_title_apply_task: 'Para postularte, solo tienes que iniciar sesión',
+  login_title_map: 'Para ver el mapa, solo tienes que iniciar sesión',
+  login_title_chats: 'Para ver tus mensajes, solo tienes que iniciar sesión',
+  login_title_profile: 'Para ver tu perfil, solo tienes que iniciar sesión',
 };

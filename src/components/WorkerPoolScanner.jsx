@@ -5,7 +5,7 @@ import { categoryMatches } from '@/lib/brand/categoryTree';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹',
-  moving: '🚚', painting: '🎨', carpentry: '🪚', ac: '❄️',
+  moving: '🚚', painting: '🖌️', carpentry: '🪚', ac: '❄️',
   locksmith: '🔐', shopping: '🛍️', delivery: '📦', babysitting: '👶',
   tutoring: '📚', it_support: '💻', other: '👷'
 };

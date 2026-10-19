@@ -244,9 +244,9 @@ export const TASK_FLOW_CONFIG = {
     chatQuestionOrder: ['to_address', 'move_type', 'from_floor', 'elevator_from', 'elevator_to'],
   },
 
-  // ── 🎨 צביעה ────────────────────────────────────────────────────────────────
+  // ── 🖌️ צביעה ────────────────────────────────────────────────────────────────
   painting: {
-    label: '🎨 צביעה',
+    label: '🖌️ צביעה',
     keywords: ['צביעה', 'לצבוע', 'צבע קיר', 'קירות', 'רולר', 'מברשת צבע', 'גג', 'גדר', 'סיוד', 'צבעי', 'ניקוז צבע'],
     priceRange: { min: 300, max: 1500 },
     extraFields: [

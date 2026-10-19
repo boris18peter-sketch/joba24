@@ -8,7 +8,7 @@ const BUBBLES = [
   { emoji: '🧹', label: 'ניקיון',         price: '₪120', delay: 0.5,  x: '20%' },
   { emoji: '📦', label: 'העברת דירה',    price: '₪300', delay: 1.1,  x: '45%' },
   { emoji: '🌿', label: 'גינון',          price: '₪150', delay: 0.3,  x: '65%' },
-  { emoji: '🎨', label: 'צביעה',          price: '₪200', delay: 0.8,  x: '12%' },
+  { emoji: '🖌️', label: 'צביעה',          price: '₪200', delay: 0.8,  x: '12%' },
   { emoji: '⚡',  label: 'חשמל',           price: '₪180', delay: 1.4,  x: '78%' },
   { emoji: '❄️', label: 'מיזוג אוויר',   price: '₪250', delay: 0.2,  x: '35%' },
   { emoji: '🚚', label: 'משלוח',          price: '₪90',  delay: 1.7,  x: '55%' },
