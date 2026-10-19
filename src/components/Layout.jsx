@@ -52,6 +52,7 @@ import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import AppLoading from '@/components/AppLoading';
 import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack, setOnboardingTrack, campaignTrackFromUrl } from '@/lib/onboardingTrack';
+import { resolveUserAccess } from '@/lib/userAccess';
 import { bootMark } from '@/lib/bootTrace';
 
 import BoostOverlay from '@/components/BoostOverlay';
@@ -488,8 +489,13 @@ export default function Layout() {
     const campaignTrack = campaignTrackFromUrl();
     if (campaignTrack) {
       setOnboardingTrack(campaignTrack);
-      const campaignDest = destinationForTrack(campaignTrack);
-      if (location.pathname !== campaignDest) navigate(campaignDest, { replace: true });
+      // BOTH campaign links open the EXPLAINER flow of their journey — the
+      // screens that explain the app and what to do in it — and that flow ends
+      // where the journey continues: the publish form for a publisher, the
+      // sign-up step for a worker. The link carries the track, so the visitor is
+      // never asked to choose one. (A direct link to the publish form is a
+      // different link — /create-task — and is untouched.)
+      if (location.pathname !== '/welcome') navigate(`/welcome?track=${campaignTrack}`, { replace: true });
       return;
     }
 
@@ -573,37 +579,34 @@ export default function Layout() {
     // Guest on home: fall through to the full layout (feed browsing only)
   }
 
-  const isBlocked = approvalStatus?.data?.is_blocked;
-  const dbIsApproved = approvalStatus?.data?.is_approved;
-
-  // ── Pre-launch gate — FAIL CLOSED ────────────────────────────────────────
-  // Access is granted ONLY by an explicit verdict: the database says the
-  // account is approved, the account is a platform admin, or the launch
-  // settings explicitly release it. Nothing here opens the app by default — a
-  // missing settings record, a failed status check, a stale JWT or an
-  // unrecognised release mode all keep the user out. (Previously an empty or
-  // unreadable release mode released EVERYONE, which is how an account the
-  // dashboard still shows as "ממתין" could already be inside the app.)
+  // ── ONE verdict rule, shared with the admin dashboard ────────────────────
+  // The dashboard shows a user's access with resolveUserAccess(); this gate used
+  // to re-implement that same rule inline, so the two could drift — and a user
+  // the dashboard showed as "✓ מאושר" could be sitting on the waiting screen.
+  // Both sides now call the ONE function with the ONE settings record
+  // (useJobaSettings, the same hook the dashboard uses), so they cannot
+  // disagree about a given user.
+  //
+  // Which values it is given matters just as much: the FRESH ones from the
+  // database when the status check succeeded, and the session's own record when
+  // it did not. A failed status CHECK says nothing about the user — treating it
+  // as "not approved" is what locked out accounts the admin had already
+  // approved, while the dashboard (which reads the record directly) kept showing
+  // them as approved. The two were reading different things.
   const isAdmin = me?.role === 'admin';
-  const gateActive = approvalStatus?.data?.pre_launch_gate_active !== false;
-  let releasedByLaunch = false;
-  if (!gateActive) {
-    const mode = approvalStatus?.data?.pre_launch_release_mode;
-    const releaseAt = approvalStatus?.data?.pre_launch_release_at;
-    const releaseMs = releaseAt ? new Date(releaseAt).getTime() : NaN;
-    if (mode === 'all') {
-      // The admin opened the app to everyone.
-      releasedByLaunch = true;
-    } else if (mode === 'new_only') {
-      // Only accounts created at/after a REAL cutoff. A missing or invalid
-      // cutoff releases nobody — it must never fall through to "everyone".
-      const createdMs = me?.created_date ? new Date(me.created_date).getTime() : 0;
-      releasedByLaunch = Number.isFinite(releaseMs) && Number.isFinite(createdMs) && createdMs >= releaseMs;
-    }
-  }
-
-  // The server verdict is the single source of truth for approval.
-  const isApprovedUser = !isBlocked && (dbIsApproved === true || isAdmin || releasedByLaunch);
+  const fresh = approvalStatus?.data;
+  const access = resolveUserAccess(
+    {
+      ...me,
+      // The FRESH role too: a promotion made in the dashboard must not have to
+      // wait for the session's copy of it to catch up.
+      role: fresh?.role ?? me?.role,
+      is_approved: fresh ? fresh.is_approved : me?.is_approved,
+      is_blocked: fresh ? fresh.is_blocked : me?.is_blocked,
+    },
+    jobaSettings
+  );
+  const isApprovedUser = access.hasAccess;
   // No loading-window gap and no waiting-page flash: while the verdict is still
   // unknown the user stays on the splash, never on the app.
   const approvalLoading = isAuthenticated && !!me && !isAdmin && !approvalFailed && approvalStatus === undefined;
