@@ -614,22 +614,6 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               )
             ) : null}
 
-            {/* Views & entries — on EVERY card, for everyone.
-                These were the publisher's private numbers, so the only activity
-                a visitor ever saw on a card was its price. Showing the same two
-                figures on every card is what makes the board read as busy. */}
-            <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', paddingTop: 2 }}>
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.views_count || 0}</strong>
-                  <span>{t('views')}</span>
-                </span>
-                <span style={{ color: '#e2e8f0' }}>|</span>
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.clicks_count || 0}</strong>
-                  <span>{t('clicks')}</span>
-                </span>
-            </div>
-
             {!isMyPublished && (
               <>
                 {task.created_by === currentUserId && (
@@ -681,6 +665,27 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                 )}
               </>
             )}
+
+            {/* Views & entries — on EVERY card, for everyone.
+                These were the publisher's private numbers, so the only activity
+                a visitor ever saw on a card was its price. Showing the same two
+                figures on every card is what makes the board read as busy.
+
+                Placed AFTER the action above it, never before: the card is read
+                top-down, so the button a visitor came for comes first and these
+                two quiet figures close the block — the same position on an
+                owner's card and on a worker's card. */}
+            <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', paddingTop: 2 }}>
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.views_count || 0}</strong>
+                  <span>{t('views')}</span>
+                </span>
+                <span style={{ color: '#e2e8f0' }}>|</span>
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.clicks_count || 0}</strong>
+                  <span>{t('clicks')}</span>
+                </span>
+            </div>
           </div>
         </div>
 

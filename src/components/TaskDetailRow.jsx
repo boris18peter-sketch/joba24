@@ -1,10 +1,11 @@
 /**
- * TaskDetailRow — ONE field of a task's details, in a stacked structure.
+ * TaskDetailRow — ONE field of a task's details, on a single line.
  *
- * The field name sits on the first line in a soft grey-blue, and its value
- * directly beneath it in a dark, readable weight. Both are aligned to the SAME
- * edge (the right, in Hebrew), so a value is never stranded at the far side of
- * the card away from the title it belongs to.
+ * The field name and its value sit on the SAME line, separated by a colon
+ * ("שם השדה: הערך"), so a value is never stranded at the far side of the card
+ * away from the title it belongs to. The name is a soft grey-blue and the value
+ * a dark, readable weight — the two colours keep the pair scannable even though
+ * they share a line.
  *
  * This is the single primitive behind the task card's expanded details, the task
  * detail sheet and the category's own dynamic fields, so the three can never
@@ -26,33 +27,23 @@ export default function TaskDetailRow({ label, value, valueColor, compact = fals
         minWidth: 0,
       }}
     >
-      <div
-        style={{
-          fontSize: compact ? 11.5 : 12.5,
-          fontWeight: 600,
-          color: 'var(--text-3)',
-          lineHeight: 1.45,
-          marginBottom: compact ? 2 : 3,
-        }}
-      >
-        {label}
-      </div>
-
-      {/* `start` follows the document direction, so the value sits on the same
-          edge as its label in Hebrew AND in the LTR languages. */}
+      {/* `start` follows the document direction, so the line is right-aligned in
+          Hebrew AND left-aligned in the LTR languages. Long values, full
+          descriptions and multi-choice answers simply wrap onto the next line. */}
       <div
         className="selectable-text"
         style={{
           fontSize: compact ? 12.5 : 13.5,
           fontWeight: 700,
           color: valueColor || 'var(--text-1)',
-          lineHeight: 1.5,
+          lineHeight: 1.55,
           textAlign: 'start',
           wordBreak: 'break-word',
           overflowWrap: 'anywhere',
           whiteSpace: 'pre-line',
         }}
       >
+        <span style={{ color: 'var(--text-3)', fontWeight: 600 }}>{label}:</span>{' '}
         {text}
       </div>
     </div>
