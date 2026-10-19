@@ -7,8 +7,7 @@ import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, ChevronLeft, Ph
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
-import ProfileAvatar from '@/components/profile/ProfileAvatar';
-import ProfilePhotosEditor from '@/components/profile/ProfilePhotosEditor';
+import ProfilePhotoPicker from '@/components/profile/ProfilePhotoPicker';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -264,16 +263,19 @@ export default function WorkerProfile() {
 
       {/* ── Avatar block (both view modes) ── */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 22px', background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1px solid var(--border-1)' }}>
-        <div style={{ marginBottom: 14 }}>
-          <ProfileAvatar
+        {/* The picture, its camera badge and the "add photos" button are ONE
+            control at the top of the page, so adding a profile photo is
+            unmistakably about the photo shown here — not about the separate
+            media gallery further down. */}
+        <div style={{ marginBottom: 14, width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <ProfilePhotoPicker
             user={currentUser}
-            size={72}
-            textSize={24}
+            size={60}
             editable={!isViewingOther}
             onUpload={handlePhotoUpload}
             uploading={uploadingPhoto}
-            background="linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))"
-            borderColor="transparent"
+            photos={form.profile_photos}
+            onChange={(next) => setForm(f => ({ ...f, profile_photos: next }))}
           />
         </div>
 
@@ -356,16 +358,6 @@ export default function WorkerProfile() {
               isEditing={!isViewingOther}
               onChange={(newMedia) => setForm(f => ({ ...f, profile_media: newMedia }))}
               subtitle=""
-            />
-          </SectionCard>
-        )}
-
-        {/* ── Profile photos — what the avatar lightbox swipes through ── */}
-        {!isViewingOther && (
-          <SectionCard title={t('pph_title')}>
-            <ProfilePhotosEditor
-              photos={form.profile_photos}
-              onChange={(next) => setForm(f => ({ ...f, profile_photos: next }))}
             />
           </SectionCard>
         )}

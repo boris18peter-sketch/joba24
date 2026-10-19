@@ -733,6 +733,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           onLogin={() => { setShowLoginPrompt(false); base44.auth.redirectToLogin(window.location.href); }}
           onClose={() => setShowLoginPrompt(false)}
           type="apply"
+          titleKey="login_title_apply_task"
         />,
         document.body
       )}

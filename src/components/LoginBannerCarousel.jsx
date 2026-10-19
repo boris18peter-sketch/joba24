@@ -110,6 +110,7 @@ export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCr
     {showLoginModal && (
       <LoginPromptModal
         type="apply"
+        titleKey="login_title_apply_task"
         onLogin={() => { setShowLoginModal(false); base44.auth.redirectToLogin(); }}
         onClose={() => setShowLoginModal(false)}
       />

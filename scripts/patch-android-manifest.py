@@ -49,6 +49,17 @@ def main():
     else:
         print("[manifest] POST_NOTIFICATIONS permission already present — skipping.")
 
+    # Add CAMERA permission. Capacitor's BridgeWebChromeClient only offers the
+    # "Take photo" option in a file chooser when this permission is DECLARED in
+    # the manifest (isMediaCaptureSupported -> hasDefinedPermission(CAMERA)).
+    # Without it, <input type="file" accept="image/*"> is gallery-only on Android.
+    if 'android.permission.CAMERA' not in content:
+        camera_perm = '    <uses-permission android:name="android.permission.CAMERA" />\n'
+        content = content.replace('<application', camera_perm + '<application', 1)
+        print("[manifest] added CAMERA permission.")
+    else:
+        print("[manifest] CAMERA permission already present — skipping.")
+
     if 'android:scheme="joba24"' in content:
         print("[manifest] joba24:// intent-filter already present — skipping.")
         return

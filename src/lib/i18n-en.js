@@ -1463,6 +1463,8 @@ export const en = {
   share_link_copied: 'Link copied',
   // ── Login modal & guest ──
   login_modal_title: 'Join thousands of people posting and completing tasks',
+  login_title_publish_task: 'To publish, you just need to sign in',
+  login_title_apply_task: 'To apply, you just need to sign in',
   continue_with_google: 'Continue with Google',
   continue_with_email: 'Continue with Email',
   or_separator: 'or',

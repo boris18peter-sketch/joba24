@@ -1507,6 +1507,10 @@ export const he = {
   share_link_copied: 'הקישור הועתק',
   // ── Login modal & guest ──
   login_modal_title: 'הצטרפו לאלפי אנשים שמפרסמים ומבצעים משימות',
+  // The sign-in popup's headline continues the action the visitor was already
+  // doing, so it reads as the next step rather than a generic invitation.
+  login_title_publish_task: 'כדי לפרסם נשאר רק להתחבר',
+  login_title_apply_task: 'כדי להגיש בקשה נשאר רק להתחבר',
   continue_with_google: 'המשך עם Google',
   continue_with_email: 'המשך עם אימייל',
   or_separator: 'או',

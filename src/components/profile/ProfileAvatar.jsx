@@ -28,13 +28,12 @@ export default function ProfileAvatar({
   const photos = [user?.profile_photo, ...(user?.profile_photos || [])].filter(Boolean);
   const initials = (user?.full_name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
-  // The circle and the glyph are sized INDEPENDENTLY on purpose. Tying the glyph
-  // to the circle meant that making the badge smaller also made the camera
-  // smaller, until the icon was too small to read. The circle is now the part
-  // that shrinks, while the glyph keeps a floor of its own so it stays legible
-  // at every avatar size.
-  const badgeSize = Math.max(13, Math.round(size * 0.15));
-  const badgeIcon = Math.max(9, Math.round(size * 0.115));
+  // The badge is sized PURELY in proportion to the circle. A floor of its own
+  // (it used to be 13px) meant that on a small avatar the badge stopped scaling
+  // down with the picture and started reading as a second circle competing with
+  // it. Only the GLYPH keeps a small floor, so the camera stays legible.
+  const badgeSize = Math.max(11, Math.round(size * 0.17));
+  const badgeIcon = Math.max(8, Math.round(badgeSize * 0.62));
 
   return (
     <>

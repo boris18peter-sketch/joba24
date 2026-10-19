@@ -1213,6 +1213,22 @@ workflows:
           else:
               print("POST_NOTIFICATIONS permission already present")
 
+          # ── CAMERA ──────────────────────────────────────────────────────────
+          # Capacitor's WebView file chooser only offers "Take photo" when the
+          # CAMERA permission is DECLARED in the manifest — see
+          # BridgeWebChromeClient.isMediaCaptureSupported(), which checks
+          # PermissionHelper.hasDefinedPermission(context, CAMERA) before adding
+          # MediaStore.ACTION_IMAGE_CAPTURE to the chooser. Without this line the
+          # chooser silently falls back to gallery-only, which is exactly the
+          # Android bug: an <input type="file" accept="image/*"> can pick an
+          # existing image but can never open the camera.
+          if 'android.permission.CAMERA' not in content:
+              camera_perm = '    <uses-permission android:name="android.permission.CAMERA" />\n'
+              content = content.replace('<application', camera_perm + '<application', 1)
+              print("CAMERA permission added to manifest")
+          else:
+              print("CAMERA permission already present")
+
           with open(manifest_path, "w") as f:
               f.write(content)
 
@@ -1319,6 +1335,12 @@ workflows:
             echo "✓ POST_NOTIFICATIONS found in manifest"
           else
             echo "✗ ERROR: POST_NOTIFICATIONS NOT in manifest — notifications popup will NEVER appear on Android 13+!"
+            exit 1
+          fi
+          if grep -q "android.permission.CAMERA" "$MANIFEST"; then
+            echo "✓ CAMERA permission found in manifest"
+          else
+            echo "✗ ERROR: CAMERA NOT in manifest — the file chooser will be gallery-only and users can NEVER take a photo!"
             exit 1
           fi
       - name: Verify capacitor.config.json has no server.url
