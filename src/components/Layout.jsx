@@ -736,8 +736,17 @@ export default function Layout() {
               // Bottom nav is hidden on these non-root paths — don't reserve its 88px padding
               const hideNavOnPath = ['/create-task', '/support'].includes(location.pathname) || location.pathname.startsWith('/task/') || location.pathname.startsWith('/chat/');
               const scrollPad = hideNavOnPath ? 'env(safe-area-inset-bottom)' : 'calc(58px + env(safe-area-inset-bottom))';
+              // Non-root pages scroll in a plain BLOCK container — exactly like the
+              // root tabs' own scroller. As a flex column it could leave a page with
+              // no scrollable overflow at all (the schedule calendar could not be
+              // scrolled), because a flex item is sized by the flex algorithm rather
+              // than simply by its content. In block layout the page's height IS its
+              // content, so it always scrolls. The id is its own: reusing
+              // 'main-scroll' meant the scroll-to-top on navigation always found the
+              // hidden root-tab container and this one kept the previous page's
+              // scroll position.
               return (
-                <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+                <div id="main-scroll-sub" style={{ flex: 1, display: 'block', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
                   <Suspense fallback={<TabSkeleton />}>
                     <Outlet />
                   </Suspense>

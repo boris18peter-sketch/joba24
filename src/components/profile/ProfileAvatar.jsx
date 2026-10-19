@@ -34,8 +34,11 @@ export default function ProfileAvatar({
   // `j-icon-btn` class on the button (which clears that minimum and restores the
   // full tap area invisibly through ::after). Without the class the circle
   // rendered at 44px and covered most of the photo.
-  const badgeSize = Math.max(12, Math.round(size * 0.18));
-  const badgeIcon = Math.max(8, Math.round(badgeSize * 0.7));
+  // Sized to match the "+" beside the picture in the edit screen (a 30px circle
+  // with a 17px glyph), so the two shortcuts on the avatar are the same control
+  // at the same size.
+  const badgeSize = Math.max(28, Math.round(size * 0.47));
+  const badgeIcon = Math.max(15, Math.round(badgeSize * 0.57));
 
   return (
     <>

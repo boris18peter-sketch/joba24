@@ -181,8 +181,15 @@ const ResetPassword = lazyRetry(() => import('@/pages/ResetPassword'));
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
-    const scrollContainer = document.getElementById('main-scroll');
-    if (scrollContainer) scrollContainer.scrollTop = 0;
+    // TWO scroll roots, and both must be reset. Root tabs keep-alive inside
+    // 'main-scroll'; every non-root page scrolls in 'main-scroll-sub'. The
+    // non-root container used to reuse the id 'main-scroll', so this effect
+    // always reset the HIDDEN root-tab one instead and a non-root page opened
+    // at the previous page's scroll position.
+    for (const id of ['main-scroll', 'main-scroll-sub']) {
+      const el = document.getElementById(id);
+      if (el) el.scrollTop = 0;
+    }
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;

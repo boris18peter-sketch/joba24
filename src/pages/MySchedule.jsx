@@ -92,7 +92,7 @@ export default function MySchedule() {
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
-      style={{ background: 'var(--surface-1)', flexShrink: 0, paddingBottom: 28 }}
+      style={{ background: 'var(--surface-1)', paddingBottom: 28 }}
     >
       {/* Slim page header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 16px 10px' }}>
