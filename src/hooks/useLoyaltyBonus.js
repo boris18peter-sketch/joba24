@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { isPopupBlocked, subscribePopupGate } from '@/lib/popupGate';
 
 /**
  * useLoyaltyBonus — detects a professionalism bonus (5-star rating) for the
@@ -16,10 +17,26 @@ import { base44 } from '@/api/base44Client';
  */
 export function useLoyaltyBonus(user) {
   const [bonus, setBonus] = useState(null);
+  // A bonus that arrived while the rating sheet was open waits here.
+  const pendingRef = useRef(null);
 
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
+
+    // ── THE BONUS WAITS FOR THE RATING SHEET ────────────────────────────────
+    // Shown the instant the gate is free — either because the bonus arrived
+    // after the rating was given, or because the rating sheet has just closed.
+    const flush = () => {
+      if (isPopupBlocked()) return;
+      const next = pendingRef.current;
+      if (!next) return;
+      pendingRef.current = null;
+      // The dedupe key is written only once the bonus is actually shown, so a
+      // bonus held while the sheet was open is never silently lost.
+      try { localStorage.setItem(next.key, '1'); } catch { /* storage blocked */ }
+      setBonus({ amount: next.amount, kind: next.kind });
+    };
 
     const offer = (tx) => {
       if (!tx?.id) return;
@@ -39,9 +56,11 @@ export function useLoyaltyBonus(user) {
       if (!tx.task_id) return;
       const key = `joba24_loyalty_popup_${tx.id}`;
       if (localStorage.getItem(key)) return;
-      localStorage.setItem(key, '1');
-      setBonus({ amount: Math.round(value), kind: 'rating' });
+      pendingRef.current = { key, amount: Math.round(value), kind: 'rating' };
+      flush();
     };
+
+    const unsubGate = subscribePopupGate(flush);
 
     const unsub = base44.entities.CreditTransaction.subscribe((event) => {
       if (event.type !== 'create' || !event.data) return;
@@ -61,7 +80,7 @@ export function useLoyaltyBonus(user) {
       })
       .catch(() => {});
 
-    return () => { cancelled = true; unsub(); };
+    return () => { cancelled = true; unsub(); unsubGate(); };
   }, [user?.id]);
 
   return { bonus, clearBonus: () => setBonus(null) };

@@ -1056,12 +1056,14 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 
    The layout itself is untouched: same order, same structure, same behaviour —
    simply rendered larger. */
-@media (min-width: 900px) {
-  html { zoom: 1.15; }
-}
+/* ── NO ZOOM ───────────────────────────────────────────────────────────────
+   The app used to be scaled up on a desktop (zoom 1.15, then 1.32 on a large
+   monitor). It did make the mobile-sized type easier to read, but `zoom` scales
+   the LAYOUT while the viewport does not grow with it: at 1.15 every screen was
+   already 15% taller than the window, so the bottom of a task card, the last
+   rows of a detail list and the footer of a sheet were simply cut off — content
+   the visitor could not scroll to.
 
-/* A large monitor gets proportionally more, so the app never looks like a phone
-   stretched across it. */
-@media (min-width: 1600px) {
-  html { zoom: 1.32; }
-}
+   On a computer the app now renders at its true size and fills the screen
+   exactly, so nothing is ever hidden. The layout itself is unchanged: same
+   order, same structure, same behaviour — simply rendered at 100%. */

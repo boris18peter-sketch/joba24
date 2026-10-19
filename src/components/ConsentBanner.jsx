@@ -66,15 +66,15 @@ export default function ConsentBanner() {
   const copy = he
     ? {
         title: 'אנחנו משתמשים בקובצי Cookie',
-        body: 'אנחנו משתמשים ב-Cookie כדי למדוד את השימוש באתר ולהציג פרסום רלוונטי. אפשר לאשר או להמשיך בלי אישור — השימוש באתר זהה בשני המקרים.',
-        accept: 'אישור הכל',
+        body: 'אנחנו משתמשים ב-Cookie למדידת שימוש ולהצגת פרסום רלוונטי.',
+        accept: 'אישור',
         decline: 'המשך בלי אישור',
         policy: 'מדיניות הפרטיות',
       }
     : {
         title: 'We use cookies',
-        body: 'We use cookies to measure how the site is used and to show relevant advertising. You can accept or continue without accepting — the site works the same either way.',
-        accept: 'Accept all',
+        body: 'We use cookies to measure usage and show relevant ads.',
+        accept: 'Accept',
         decline: 'Continue without accepting',
         policy: 'Privacy policy',
       };
@@ -96,53 +96,56 @@ export default function ConsentBanner() {
         right: 0,
         bottom: 0,
         zIndex: 9000,
-        padding: 12,
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-        display: 'flex',
-        justifyContent: 'center',
         pointerEvents: 'none',
       }}
     >
+      {/* ── ONE SLIM STRIP, NOT A CARD ───────────────────────────────────────
+          This used to be a centred card with a title, a paragraph and two
+          full-width buttons — a third of the screen, sitting on top of whatever
+          the visitor was doing. It is now a single low-contrast strip along the
+          bottom edge: one line of text and two compact buttons, at the smallest
+          size that is still a real, informed choice. The notice keeps its legal
+          job (say what cookies are for, offer accept and decline equally, link
+          the policy) without ever standing between the visitor and the app. */}
       <div
         ref={cardRef}
         className="j-modal-surface"
         style={{
           pointerEvents: 'auto',
-          width: '100%',
-          maxWidth: 560,
-          borderRadius: 18,
-          boxShadow: 'var(--shadow-xl)',
-          padding: '16px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '8px 14px',
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+          borderLeft: 'none',
+          borderRight: 'none',
+          borderBottom: 'none',
+          boxShadow: '0 -2px 14px rgba(15,40,107,0.10)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <Cookie size={17} color="var(--brand-primary)" />
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{copy.title}</span>
-        </div>
+        <Cookie size={15} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
 
-        <p style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-2)', margin: '0 0 12px' }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-2)' }}>
           {copy.body}{' '}
           <Link to="/privacy" style={{ color: 'var(--brand-primary)', fontWeight: 700, textDecoration: 'underline' }}>
             {copy.policy}
           </Link>
-        </p>
+        </span>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => choose(CONSENT_GRANTED)}
-            className="j-btn j-btn-primary"
-            style={{ flex: '1 1 140px', height: 44, fontSize: 13.5 }}
-          >
-            {copy.accept}
-          </button>
-          <button
-            onClick={() => choose(CONSENT_DENIED)}
-            className="j-btn j-btn-ghost"
-            style={{ flex: '1 1 140px', height: 44, fontSize: 13.5 }}
-          >
-            {copy.decline}
-          </button>
-        </div>
+        <button
+          onClick={() => choose(CONSENT_DENIED)}
+          className="j-btn j-btn-ghost"
+          style={{ flexShrink: 0, height: 30, minHeight: 30, padding: '0 12px', fontSize: 11.5 }}
+        >
+          {copy.decline}
+        </button>
+        <button
+          onClick={() => choose(CONSENT_GRANTED)}
+          className="j-btn j-btn-primary"
+          style={{ flexShrink: 0, height: 30, minHeight: 30, padding: '0 14px', fontSize: 11.5 }}
+        >
+          {copy.accept}
+        </button>
       </div>
     </div>,
     document.body

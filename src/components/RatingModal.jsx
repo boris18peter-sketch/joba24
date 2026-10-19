@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
+import { setPopupBlock } from '@/lib/popupGate';
 import { useQueryClient } from '@tanstack/react-query';
 import { Star, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +12,18 @@ import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function RatingModal({ task, me, onClose }) {
+  // ── THE RATING SHEET GOES FIRST ─────────────────────────────────────────
+  // A 5-star loyalty bonus is granted by the CLIENT's review — the very moment
+  // the worker is asked to rate the client back. Both are full-screen sheets, so
+  // the bonus used to land on top of this one and the rating was never given.
+  // Holding the gate for as long as this sheet is open is what makes the rating
+  // come first and the bonus follow it. Set here, not at the call sites, so it
+  // covers every place a rating is asked for.
+  useEffect(() => {
+    setPopupBlock('rating', true);
+    return () => setPopupBlock('rating', false);
+  }, []);
+
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
   const [rating, setRating] = useState(0);

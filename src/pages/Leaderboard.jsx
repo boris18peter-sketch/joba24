@@ -39,13 +39,18 @@ export default function Leaderboard() {
     queryFn: () => base44.entities.Review.list('-created_date', 300),
   });
 
-  // Only accounts that have actually completed work can appear on the board (the
-  // table below drops everyone else anyway), so the server returns those instead
-  // of the whole user collection — verified against this app's data: 154 accounts
-  // in, 15 rows out, and noticeably faster.
+  // ── THE BOARD IS FOR EVERYONE ─────────────────────────────────────────────
+  // This used to ask only for accounts that had already completed work, so a new
+  // visitor opened the board and found it empty — the one screen whose whole
+  // point is to show them where they could get to. Everyone is returned now,
+  // most active first, and the table below lists every one of them. A brand-new
+  // account appears at the bottom with 0 tasks, which is exactly the ladder the
+  // board is meant to show.
+  // The built-in User entity takes the positional form only — (query, sort,
+  // limit) — and returns a plain array. Most completed tasks first.
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.filter({ tasks_completed: { $gt: 0 } }),
+    queryFn: () => base44.entities.User.filter({}, '-tasks_completed', 100),
   });
 
   // Build leaderboard from the authoritative tasks_completed counter on each
@@ -55,7 +60,6 @@ export default function Leaderboard() {
   const board = {};
   users.forEach(u => {
     const completed = u.tasks_completed || 0;
-    if (completed <= 0) return;
     board[u.id] = {
       user_id: u.id,
       name: u.full_name || t('anonymous'),
@@ -75,10 +79,13 @@ export default function Leaderboard() {
     }
   });
 
+  // Most completed tasks first — that is the ladder. Rating breaks a tie, so two
+  // workers on the same count are ordered by how well they were rated. Everyone
+  // with no completed tasks yet sits below them, ordered the same way.
   const sorted = Object.values(board)
     .map(u => ({ ...u, avg: u.ratings.length ? u.ratings.reduce((a, b) => a + b, 0) / u.ratings.length : 0 }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 20);
+    .sort((a, b) => (b.count - a.count) || (b.avg - a.avg))
+    .slice(0, 50);
 
   const medals = ['🥇', '🥈', '🥉'];
   const podiumColors = ['var(--brand-primary)', '#3b8fe8', '#0a52b0'];

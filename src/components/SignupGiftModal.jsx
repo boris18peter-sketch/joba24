@@ -32,7 +32,18 @@ export default function SignupGiftModal({ onClose }) {
   //
   // They used to arrive as TWO popups, one after the other, at the exact moment
   // a brand-new worker is deciding whether to trust the app.
-  const profileBonus = settings.profile_completion_bonus ?? 0;
+  //
+  // ── THE NUMBER MUST BE THE NUMBER THEY ACTUALLY GET ─────────────────────
+  // The profile bonus was added to this total unconditionally, so a visitor who
+  // signed up and skipped the profile was promised 30 Jobas and received 25 —
+  // the popup was advertising a bonus that was never granted. It is counted ONLY
+  // when the profile is genuinely complete, using the exact same definition the
+  // backend grants on (preferred_categories AND preferred_cities), so the total
+  // shown is always the total that lands in the balance.
+  const profileComplete =
+    (me?.preferred_categories?.length ?? 0) > 0 &&
+    (me?.preferred_cities?.length ?? 0) > 0;
+  const profileBonus = profileComplete ? (settings.profile_completion_bonus ?? 0) : 0;
   const giftAmount =
     (settings.signup_bonus ?? 0) +
     (isReferred ? (settings.referral_signup_bonus ?? 0) : 0) +
