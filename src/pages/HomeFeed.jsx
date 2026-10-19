@@ -36,6 +36,7 @@ import {
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import HomeBannersCarousel from '@/components/HomeBannersCarousel';
 import { useLanguage } from '@/lib/LanguageContext';
+import { hasAnnouncedBonus, rememberBonusAnnounced } from '@/lib/bonusAnnouncement';
 import { recoverIosSubscriptionCredits } from '@/lib/iosIap';
 
 export default function HomeFeed() {
@@ -101,26 +102,24 @@ export default function HomeFeed() {
   //     is no gift to celebrate, so the popup does not appear at all.
   const { settings: jobaSettings } = useJobaSettings();
   const giftAmount = (jobaSettings.signup_bonus ?? 0) + (me?.referred_by_agent_code ? (jobaSettings.referral_signup_bonus ?? 0) : 0);
-  const giftKey = me?.id ? `joba24_gift_claimed_${me.id}` : null;
   const giftScheduledRef = useRef(false);
   useEffect(() => {
     if (giftScheduledRef.current) return;
-    if (!me?.id || !giftKey) return;
-    // PER-USER ONLY. There used to be a second, GLOBAL 'joba24_gift_claimed'
-    // flag here as well, and it was written by the first account that ever
-    // opened the app on this device — so every account created afterwards on
-    // the same browser (a second user on a shared phone, a tester creating a
-    // fresh account) was silently refused the signup gift forever. The
-    // per-user key already gives the "once per account" guarantee the popup
-    // needs; the global one only ever broke the next person.
-    if (localStorage.getItem(giftKey)) return;
+    if (!me?.id) return;
     if (me?.worker_credits == null) return;
     if (giftAmount <= 0) return;
     // Claim the slot now — no cleanup, so a balance change cannot cancel it.
     giftScheduledRef.current = true;
-    localStorage.setItem(giftKey, '1');
-    setTimeout(() => setShowGiftModal(true), 800);
-  }, [me?.id, me?.worker_credits, giftAmount, giftKey]);
+    // PER-USER AND DURABLE. The "already celebrated" marker lives on the user's
+    // record, not in this browser's storage: a storage-only flag is lost on a
+    // cleared cache, a reinstall or a second device, and the same welcome gift
+    // was then announced again on every launch.
+    (async () => {
+      if (await hasAnnouncedBonus(me.id, 'welcome_gift')) return;
+      rememberBonusAnnounced(me.id, 'welcome_gift');
+      setTimeout(() => setShowGiftModal(true), 800);
+    })();
+  }, [me?.id, me?.worker_credits, giftAmount]);
 
 
   // ── My published tasks — the ONE shared list ──────────────────────────────

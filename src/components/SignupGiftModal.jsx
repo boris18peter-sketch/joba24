@@ -5,6 +5,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { X, Gift, CheckCircle2 } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
+import { rememberBonusAnnounced } from '@/lib/bonusAnnouncement';
 import { motion } from 'framer-motion';
 
 // ── Theme: matches the gold/amber verification popup style ──
@@ -57,7 +58,7 @@ export default function SignupGiftModal({ onClose }) {
   // popup, because this modal never counted it for them.
   useEffect(() => {
     if (profileBonus > 0 && me?.id) {
-      try { localStorage.setItem(`joba24_profile_bonus_popup_${me.id}`, '1'); } catch { /* storage blocked */ }
+      rememberBonusAnnounced(me.id, 'profile_bonus');
     }
   }, [profileBonus, me?.id]);
 

@@ -14,7 +14,7 @@ import ReviewsSection from '@/components/profile/ReviewsSection';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import ProfileAvatar from '@/components/profile/ProfileAvatar';
 import ProfileAboutCard from '@/components/profile/ProfileAboutCard';
-import { profileHeroBackground, profileBarBackground } from '@/lib/profileTier';
+import { profileHeroBackground } from '@/lib/profileTier';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
@@ -92,25 +92,32 @@ export default function PublicProfile() {
   const initials = user.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
   return (
-    <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* ── Back bar ── the SAME colour the profile below it starts on, so the
-          header can never clash with the surface under it — it follows the
-          rank (green / gold) exactly as the hero does. */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: profileBarBackground(user, 'var(--brand-primary-dark)'), padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <ChevronLeft size={17} color="white" style={{ transform: 'rotate(180deg)' }} />
-        </button>
-        <span style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>{t('pp_user_profile')}</span>
-      </div>
-
-      {/* ── SECTION 1 — IDENTITY ── */}
+    <div style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* ── SECTION 1 — IDENTITY ──
+          The SAME hero as the personal profile: one top bar inside it, the
+          avatar, the name with its badge, and the stats pill underneath. The
+          only difference is what the top bar carries — a Back button here,
+          where the owner has Edit. */}
       <div style={{
-        background: profileHeroBackground(user, 'linear-gradient(160deg, var(--brand-primary-dark) 0%, var(--brand-primary) 55%, #2563eb 100%)'),
-        paddingBottom: 18, position: 'relative', overflow: 'hidden',
+        background: profileHeroBackground(user, 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, var(--brand-hero-bg, #2563eb) 100%)'),
+        paddingBottom: 16, position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
         <div style={{ position: 'absolute', bottom: -40, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
 
+        {/* Top bar */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 0' }}>
+          <button
+            onClick={() => navigate(-1)}
+            aria-label={t('pp_back')}
+            style={{ width: 34, height: 34, borderRadius: 20, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
+          >
+            <ChevronLeft size={17} color="var(--brand-hero-text, white)" style={{ transform: 'rotate(180deg)' }} />
+          </button>
+          <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--brand-hero-text, white)' }}>{t('pp_user_profile')}</span>
+        </div>
+
+        {/* Avatar + Name + badges */}
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 20px 0' }}>
           <div style={{ marginBottom: 8 }}>
             <ProfileAvatar
@@ -122,31 +129,15 @@ export default function PublicProfile() {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-            <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{user.full_name}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, padding: '2px 8px' }}>
+            <span style={{ fontSize: 19, fontWeight: 900, color: 'var(--brand-hero-text, white)' }}>{user.full_name}</span>
             {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
           </div>
+        </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-            {verified && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(255,255,255,0.16)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <ShieldCheck size={11} color="#4ade80" /> {t('pr_identity_verified')}
-              </span>
-            )}
-            {social && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(251,191,36,0.2)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Link2 size={11} color="#fbbf24" /> {t('pr_social_connected')}
-              </span>
-            )}
-            {cities.length > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                <MapPin size={11} /> {getCityLabel(cities[0], lang)}{cities.length > 1 ? ` +${cities.length - 1}` : ''}
-              </span>
-            )}
-          </div>
-          <div style={{ width: '100%', padding: '4px 16px 0' }}>
-            <ProfileStatsPill rating={liveRating} reviewCount={liveRatingCount} postedCount={postedCount} completedCount={completedCount} />
-          </div>
+        {/* Stats pill */}
+        <div style={{ padding: '12px 16px 0' }}>
+          <ProfileStatsPill rating={liveRating} reviewCount={liveRatingCount} postedCount={postedCount} completedCount={completedCount} />
         </div>
       </div>
 
@@ -172,7 +163,7 @@ export default function PublicProfile() {
 
         {/* SECTION 6 — ABOUT ME */}
         {(user.profile_media?.length > 0 || user.intro_video_url) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_about_me')}</span>
             </div>
@@ -188,7 +179,7 @@ export default function PublicProfile() {
 
         {/* Certificates */}
         {(user.certificate_files?.length > 0) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
               <FileText size={12} color="var(--text-3)" />
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_certs')}</span>
@@ -207,7 +198,7 @@ export default function PublicProfile() {
 
         {/* SECTION 9 — SOCIAL NETWORKS (verified only) */}
         {social && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
               <Link2 size={12} color="var(--text-3)" />
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pp_social_networks')}</span>
@@ -238,7 +229,7 @@ export default function PublicProfile() {
 
         {/* Unified history button */}
         {(completedCount > 0 || postedCount > 0 || reviews.length > 0) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
             <button onClick={() => setShowUnifiedHistory(true)}
               style={{ all: 'unset', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '13px 14px', cursor: 'pointer' }}
               onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
@@ -270,15 +261,15 @@ export default function PublicProfile() {
 
       {/* Unified History Sheet */}
       {showUnifiedHistory && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
-          <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'var(--overlay-bg)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
+          <div className="j-modal-surface" style={{ background: 'var(--brand-modal-bg, var(--surface-2))', borderRadius: 'var(--brand-modal-radius, 24px) var(--brand-modal-radius, 24px) 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('pr_history_reviews')}</span>
               <button onClick={() => setShowUnifiedHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={16} color="#64748b" />
+                <X size={16} color="var(--text-2)" />
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 18 }} dir={isRTL ? 'rtl' : 'ltr'}>
+            <div style={{ overflowY: 'auto', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 18 }} dir="rtl">
               {/* The reviews, in the EXACT design the personal profile shows —
                   the same component, the same order, the same props. */}
               <ReviewsSection

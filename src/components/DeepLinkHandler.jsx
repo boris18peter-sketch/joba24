@@ -12,13 +12,13 @@
 //
 // Also handles foreground notification clicks: the service worker posts
 // { type: 'OPEN_TASK_SHEET', taskId } when the app is already open.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
-import { setPendingTask, readPendingTask, clearPendingTask } from '@/lib/pendingTask';
+import { setPendingTask, readPendingTask, clearPendingTask, PENDING_TASK_EVENT } from '@/lib/pendingTask';
 
 // The first-run flow owns the screen until the visitor has been through it.
 // A pending task waits for them to come out the other side.
@@ -29,7 +29,22 @@ export default function DeepLinkHandler() {
   const { isLoadingAuth, user } = useAuth();
   const { currentBrandId, isPlatformBrand } = useBrand();
   const location = useLocation();
-  const openedRef = useRef(false);
+  // The task id we have already opened, NOT a boolean. A boolean meant the
+  // handler ran once per app load and ignored every later link — including the
+  // Universal Link the native app receives while it is already running.
+  const openedRef = useRef(null);
+  const [pendingSignal, setPendingSignal] = useState(0);
+
+  // A task can arrive at any moment, not only at launch. Each arrival bumps the
+  // signal so the open effect below re-evaluates.
+  useEffect(() => {
+    const onPending = () => {
+      openedRef.current = null;
+      setPendingSignal((n) => n + 1);
+    };
+    window.addEventListener(PENDING_TASK_EVENT, onPending);
+    return () => window.removeEventListener(PENDING_TASK_EVENT, onPending);
+  }, []);
 
   // Pre-launch gate: don't open the task sheet for unapproved users.
   // TaskDetailSheet renders at App level (outside Layout), so it would appear
@@ -54,7 +69,6 @@ export default function DeepLinkHandler() {
   // (not /join — onboarding redirects to / when done, which would hide the
   // sheet via the route-change handler in TaskDetailSheet).
   useEffect(() => {
-    if (openedRef.current) return;
     if (isLoadingAuth) return;
     // ── A SHARED LINK IS NOT A SIGN-IN WALL ─────────────────────────────────
     // This used to require `isAuthenticated`, so a visitor arriving from a
@@ -66,8 +80,8 @@ export default function DeepLinkHandler() {
     if (user && !isApproved) return;
     if (FIRST_RUN_PATHS.includes(location.pathname)) return;
     const pending = readPendingTask();
-    if (!pending) return;
-    openedRef.current = true;
+    if (!pending || openedRef.current === pending) return;
+    openedRef.current = pending;
     clearPendingTask();
     // Resolve the Task's own Brand: a link for a Task created on another Brand
     // opens on THAT Brand's domain instead of failing here as "Task not found".
@@ -75,7 +89,7 @@ export default function DeepLinkHandler() {
       if (brandUrl) { window.location.href = brandUrl; return; }
       openTaskSheet(pending);
     });
-  }, [isLoadingAuth, isApproved, user, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand]);
+  }, [isLoadingAuth, isApproved, user, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand, pendingSignal]);
 
   // Foreground notification click → open the sheet immediately
   useEffect(() => {

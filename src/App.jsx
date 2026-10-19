@@ -22,6 +22,7 @@ import AppErrorBoundary from '@/components/AppErrorBoundary';
 import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
+import NativeTaskLink from '@/components/NativeTaskLink';
 import NativeAuthListener from '@/components/NativeAuthListener';
 import IosIapRecovery from '@/components/IosIapRecovery';
 import PermissionPrompt from '@/components/PermissionPrompt';
@@ -446,6 +447,10 @@ function App() {
                 <CaptureRefCode />
                 <ScrollToTop />
                 <DeepLinkHandler />
+                {/* A task link opens in the NATIVE app (iOS Universal Links /
+                    Android App Links), so the web handler above never sees it.
+                    This is the half that catches the URL the OS hands the app. */}
+                <NativeTaskLink />
                 <NativeAuthListener />
                 <IosIapRecovery />
                 <PermissionPrompt />

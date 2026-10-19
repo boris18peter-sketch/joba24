@@ -1,0 +1,50 @@
+{
+  "name": "BonusAnnouncement",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "The user this bonus announcement belongs to."
+    },
+    "announcement_key": {
+      "type": "string",
+      "description": "Which announcement has already been shown to this user (e.g. 'welcome_gift', 'profile_bonus', 'tx_<transaction id>'). A bonus is announced at most once per key, for ever."
+    }
+  },
+  "required": [
+    "user_id",
+    "announcement_key"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -16,10 +16,17 @@
  */
 const KEY = 'joba24_pending_task';
 
+// Fired whenever a task is parked. DeepLinkHandler listens for it so a link that
+// arrives while the app is ALREADY open (a Universal Link tap, a second shared
+// link) is opened too — its one-time mount check would otherwise ignore every
+// link after the first.
+export const PENDING_TASK_EVENT = 'joba24_pending_task';
+
 export function setPendingTask(taskId) {
   if (!taskId) return;
   try { sessionStorage.setItem(KEY, taskId); } catch { /* storage blocked */ }
   try { localStorage.setItem(KEY, taskId); } catch { /* storage blocked */ }
+  try { window.dispatchEvent(new Event(PENDING_TASK_EVENT)); } catch { /* no window */ }
 }
 
 export function readPendingTask() {
