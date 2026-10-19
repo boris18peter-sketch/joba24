@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import ApproveAllModal from '@/components/ApproveAllModal';
 import AssignAgentModal from '@/components/AssignAgentModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { adminActionError } from '@/lib/adminActionError';
 import { resolveUserAccess } from '@/lib/userAccess';
 
 // Tabs grouped by what they are for, so the dashboard reads as sections instead
@@ -288,7 +289,7 @@ export default function AdminDashboard() {
         old.map(u => u.id === user.id ? { ...u, is_blocked: !u.is_blocked } : u)
       );
     } catch (e) {
-      toast.error(e.message?.includes('Rate limit') ? 'יותר מדי פעולות — נסה עוד רגע' : 'שגיאה: ' + (e.message || 'לא ניתן לעדכן'));
+      toast.error(adminActionError(e));
       throw e;
     }
   };
@@ -315,7 +316,7 @@ export default function AdminDashboard() {
       );
       toast.success('המשתמש עודכן בהצלחה');
     } catch (e) {
-      toast.error('שגיאה: ' + (e.message?.includes('Rate limit') ? 'יותר מדי פעולות — נסה עוד רגע' : (e.message || 'לא ניתן לעדכן')));
+      toast.error(adminActionError(e));
       throw e;
     }
   };
@@ -347,7 +348,7 @@ export default function AdminDashboard() {
       setSelectedUsers(new Set());
       refetchUsers();
     } catch (e) {
-      toast.error('שגיאה: ' + (e.message || ''));
+      toast.error(adminActionError(e));
     }
   };
 

@@ -4,6 +4,7 @@ import App from '@/App.jsx'
 import '@/index.css'
 import { reloadFresh } from '@/lib/reloadFresh'
 import { bootMark } from '@/lib/bootTrace'
+import { installDesktopScale } from '@/lib/desktopScale'
 
 // ── "React actually started" — the signal the HTML healers were missing ──────
 // The inline guards in index.html used to decide a launch was broken purely by
@@ -140,6 +141,12 @@ window.addEventListener('error', (event) => {
     healStaleImport();
   }
 }, true);
+
+// ── The desktop scale, installed BEFORE the first paint ──────────────────────
+// On a computer the app is rendered larger by one `zoom` on the root (see the
+// desktop block in index.css). Installing it here, synchronously, is what keeps
+// the first frame from being drawn at the phone size and then jumping.
+installDesktopScale();
 
 console.log('[Joba24] App: React mounting...');
 ReactDOM.createRoot(document.getElementById('root')).render(

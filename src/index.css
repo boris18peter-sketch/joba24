@@ -1044,15 +1044,53 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   DESKTOP AND TABLET — the app at its NATURAL size
+   DESKTOP AND TABLET — the same app, rendered larger
    ════════════════════════════════════════════════════════════════════
-   The app is rendered at 100% on every screen, exactly as each screen in it was
-   designed. An earlier `zoom` on the root — meant to enlarge the phone-sized
-   layout on a computer — multiplied every viewport unit along with it, so the
-   app was painted LARGER than the window it measured itself against: content
-   fell off the bottom edge, centred columns were pushed to one side, and the
-   surface no longer fitted the screen it was drawn in.
+   The app is built mobile-first: its type, controls and spacing are all sized
+   for a phone. Left at that size across a computer screen it reads as small and
+   unfinished, so from a tablet upwards the whole surface is scaled up — ONE
+   `zoom` on the root, which multiplies every inline px in every screen at once,
+   sheets and popups included (they are portaled to <body>, so scaling the app
+   column alone would have left them behind at their old size).
 
-   So no scaling is applied at all: `zoom` is gone, and with it the measurement
-   that had to correct for it. Every layout, every sheet and every popup is
-   simply the layout the app was built and tested at. */
+   The layout itself is untouched: same order, same structure, same behaviour —
+   simply rendered larger.
+
+   `zoom` multiplies every length, viewport units included. That is the one thing
+   that made an earlier attempt overflow: a box sized `100dvh` inside a scaled
+   surface is painted taller than the window it sits in, and since the document
+   has no overflow of its own, its bottom simply falls off the screen.
+
+   So the app's own box is published in PX, never in viewport units:
+   src/lib/desktopScale.js measures the window and writes `--app-w` / `--app-h`
+   (the window divided by the scale). `html` and `body` take that box, so the app
+   is always exactly the window it is painted into — no unit has to be
+   interpreted, and no engine can disagree about what "100%" means.
+
+   And nothing can extend past that box: any element whose height was written in
+   viewport units in JSX is capped at `--app-h`, and `max-height` also clamps an
+   explicit `height`. The shared sheets and modals get the same cap. */
+:root { --ui-scale: 1; --app-w: 100vw; --app-h: 100dvh; }
+
+html.j-desktop-scale { zoom: var(--ui-scale); }
+
+/* The app fills the window it is PAINTED into, not the unscaled one. */
+html.j-desktop-scale,
+html.j-desktop-scale body {
+  width: var(--app-w);
+  height: var(--app-h);
+}
+
+/* A fixed element (the bottom nav, every sheet and popup — all portaled to
+   <body>) is measured against the window rather than against the app. Making
+   <body> its containing block puts them all back onto the box the app fills. */
+html.j-desktop-scale body { transform: translateZ(0); }
+
+/* Nothing may be taller than the app. */
+html.j-desktop-scale [style*="vh"] { max-height: var(--app-h) !important; }
+html.j-desktop-scale [style*="min-height"][style*="vh"] { min-height: 0 !important; }
+
+/* The shared sheet and modal caps, in the same box. */
+html.j-desktop-scale .mobile-sheet              { max-height: calc(var(--app-h) * 0.9); }
+html.j-desktop-scale .sheet-scroll              { max-height: calc(var(--app-h) * 0.9); }
+html.j-desktop-scale .mobile-modal-center > div { max-height: calc(var(--app-h) * 0.88); }

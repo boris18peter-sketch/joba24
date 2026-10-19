@@ -1,4 +1,10 @@
 import { Toaster } from "@/components/ui/toaster"
+// The app's own notifications (`toast` from 'sonner') are raised in twenty-odd
+// screens, and until this surface was mounted NOT ONE of them was ever rendered:
+// every success and every failure was silent. That is why a failed admin action —
+// an approval refused by the server, say — looked like a button that does
+// nothing at all.
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
@@ -466,6 +472,8 @@ function App() {
               </TaskSheetProvider>
             </Router>
             <Toaster />
+            {/* Top-centred: never under the bottom nav or a sheet. */}
+            <SonnerToaster position="top-center" />
           </QueryClientProvider>
         </AuthProvider>
         </BrandGate>
