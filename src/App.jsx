@@ -413,8 +413,23 @@ function App() {
               </TaskSheetProvider>
             </Router>
             <Toaster />
-            {/* Top-centred: never under the bottom nav or a sheet. */}
-            <SonnerToaster position="top-center" />
+            {/* ── One surface for the app's own toasts (`toast` from 'sonner') ──
+                Rendered in the app's own design — a card in the app's surface
+                colour, radius and border — and raised ABOVE the bottom nav
+                rather than dropped over the header, where a notice landed on
+                top of the logo, the balance and the menu button. */}
+            <SonnerToaster
+              position="bottom-center"
+              offset={{ bottom: 'calc(66px + env(safe-area-inset-bottom))' }}
+              mobileOffset={{ bottom: 'calc(66px + env(safe-area-inset-bottom))' }}
+              toastOptions={{
+                classNames: {
+                  toast: 'rounded-2xl border border-jborder-1 bg-surface-2 text-jtext-1 shadow-lg',
+                  title: 'text-[13.5px] font-bold',
+                  description: 'text-jtext-2',
+                },
+              }}
+            />
           </QueryClientProvider>
         </AuthProvider>
         </BrandGate>
