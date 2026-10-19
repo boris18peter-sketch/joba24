@@ -17,16 +17,23 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
       className="pkg-card"
       style={{
         position: 'relative',
+        // Each package carries a soft tint of its own so four tiles never read
+        // as four copies of one white card. The two recommended packages get a
+        // stronger tint plus a coloured frame; the rest stay quiet.
         background: selected
           ? 'linear-gradient(150deg, var(--brand-primary), var(--brand-primary-dark))'
-          : 'var(--surface-2)',
+          : isPopular
+            ? 'linear-gradient(160deg, var(--brand-primary-light), var(--surface-2))'
+            : isBest
+              ? 'linear-gradient(160deg, #f5f3ff, var(--surface-2))'
+              : 'var(--surface-3)',
         border: selected
           ? 'none'
           : isPopular
             ? '1.5px solid var(--brand-primary)'
             : isBest
               ? '1.5px solid #c4b5fd'
-              : '1.5px solid var(--border-1)',
+              : '1px solid var(--border-1)',
         borderRadius: 'var(--r-xl)',
         padding: '18px 12px 14px',
         cursor: 'pointer',
@@ -52,18 +59,21 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           shouting over the two things that actually matter: credits and price. */}
       {(isPopular || isBest) && (
         <div style={{
-          position: 'absolute', top: 8, right: 8,
-          background: isBest ? '#f5f3ff' : 'var(--brand-primary-light)',
-          color: isBest ? '#7c3aed' : 'var(--brand-primary)',
-          border: `1px solid ${isBest ? '#ddd6fe' : 'var(--border-2)'}`,
-          fontWeight: 800, fontSize: 10,
-          padding: '2px 7px', borderRadius: 99,
+          position: 'absolute', top: 7, right: 7,
+          // A filled chip, still a chip: it reads at a glance and carries real
+          // weight, without becoming the full-width colour band that used to
+          // shout louder than the credits and the price.
+          background: isBest ? '#7c3aed' : 'var(--brand-primary)',
+          color: 'white',
+          fontWeight: 900, fontSize: 10.5,
+          padding: '3px 9px', borderRadius: 99,
           whiteSpace: 'nowrap',
           display: 'inline-flex', alignItems: 'center', gap: 3,
           zIndex: 10,
           letterSpacing: 0.2,
+          boxShadow: isBest ? '0 3px 10px rgba(124,58,237,0.35)' : '0 3px 10px rgba(26,111,212,0.35)',
         }}>
-          {isBest ? <Crown size={10} /> : <Star size={10} />}
+          {isBest ? <Crown size={11} /> : <Star size={11} />}
           {isBest ? t('buy_best_value') : t('buy_popular_badge')}
         </div>
       )}
@@ -115,9 +125,12 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
       </div>
 
       {/* Price — the most important number on the card after the credits, so it
-          stays large and bold. It simply no longer sits on a tinted plate: that
-          plate looked like a second, competing button inside the card. */}
-      <div style={{ marginTop: 'auto', width: '100%', paddingTop: 10 }}>
+          stays large and bold. A hairline rule gives it an area of its own
+          instead of the tinted plate that used to look like a second button. */}
+      <div style={{
+        marginTop: 'auto', width: '100%', paddingTop: 11,
+        borderTop: `1px solid ${selected ? 'rgba(255,255,255,0.28)' : 'var(--border-1)'}`,
+      }}>
         <div style={{
           fontSize: 20, fontWeight: 900,
           color: selected ? 'white' : 'var(--text-1)',

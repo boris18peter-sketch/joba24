@@ -27,7 +27,7 @@ export function jobasToNis(jobas) {
 export function packageValueLabel(jobas, t) {
   const nis = jobasToNis(jobas).toLocaleString('en-US');
   if (typeof t === 'function') return t('buy_value_label', { nis });
-  return `מאפשר להגיש בקשות למשימות עד ₪${nis}`;
+  return `מאפשר להגיש בקשות למשימות בסה"כ עד ₪${nis}`;
 }
 
 /**
