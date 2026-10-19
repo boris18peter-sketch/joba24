@@ -580,7 +580,7 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 .j-detail-list > .j-detail-row:last-child { padding-bottom: 0; }
 
 /* Section heading — small, muted, tight. The card's gap does the spacing. */
-.j-detail-heading { padding-bottom: 8px; }
+.j-detail-heading { padding-bottom: 6px; }
 
 /* ════════════════════════════════════════════════════════════════════
    ANIMATIONS
