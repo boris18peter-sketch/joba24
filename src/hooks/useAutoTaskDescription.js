@@ -29,10 +29,10 @@
  * form's own setter, so it is part of the draft exactly like typed text is.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { buildTaskDescription } from '@/lib/taskDescriptionBuilder';
 
-export default function useAutoTaskDescription({ categoryLabel, fields, values, description, onApply }) {
+export default function useAutoTaskDescription({ categoryKey, categoryLabel, fields, values, description, onApply }) {
   const lastAutoRef = useRef(null);      // the last text WE generated
   const lastSeenRef = useRef(description); // the value the field had at the last pass
   // A description that arrived with the form is the publisher's, never ours.
@@ -50,7 +50,13 @@ export default function useAutoTaskDescription({ categoryLabel, fields, values, 
     lastSeenRef.current = description;
   }, [description]);
 
-  const suggestion = buildTaskDescription({ categoryLabel, fields, values });
+  // Composed once per change to the answers — the form re-renders on every
+  // keystroke in any other field, and the sentence cannot change without one of
+  // these four changing.
+  const suggestion = useMemo(
+    () => buildTaskDescription({ categoryKey, categoryLabel, fields, values }),
+    [categoryKey, categoryLabel, fields, values],
+  );
 
   // ── Keep the field in step with the choices ────────────────────────────────
   useEffect(() => {
@@ -77,14 +83,13 @@ export default function useAutoTaskDescription({ categoryLabel, fields, values, 
    * hand the field back to AUTO. Only called from a tap.
    */
   const regenerate = useCallback(() => {
-    const next = buildTaskDescription({ categoryLabel, fields, values });
-    if (!next) return false;
+    if (!suggestion) return false;
     userOwnedRef.current = false;
-    lastAutoRef.current = next;
-    lastSeenRef.current = next;
-    onApplyRef.current(next);
+    lastAutoRef.current = suggestion;
+    lastSeenRef.current = suggestion;
+    onApplyRef.current(suggestion);
     return true;
-  }, [categoryLabel, fields, values]);
+  }, [suggestion]);
 
   return { regenerate, hasSuggestion: !!suggestion };
 }

@@ -464,6 +464,8 @@ export default function CreateTask() {
     [form.category],
   );
   const autoDescription = useAutoTaskDescription({
+    // The stable key chooses the sentence; the label only names the fault.
+    categoryKey: form.category,
     categoryLabel: getCategoryConfig(form.category)?.label,
     fields: categoryFormFields,
     values: categoryDetails,
