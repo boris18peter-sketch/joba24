@@ -167,12 +167,49 @@ Deno.serve(async (req) => {
     const matchCategories = [...new Set([taskCategory, ...taskAncestry].filter(Boolean))];
     const taskHasCoords = !!(taskLat && taskLng);
 
+    // "Nearby" means within this many kilometres — the same threshold the feed
+    // uses for its isNearby badge (feedRanker.js).
+    const NEARBY_KM = 5;
+
     const matchClauses: any[] = [];
+
+    // 1. The category branch — a preference overlapping the task's ancestry.
     if (matchCategories.length) matchClauses.push({ preferred_categories: { $in: matchCategories } });
-    // A preferred city feeds the city match when the task names a city, and the
-    // city→coordinates proximity fallback whenever the task has coordinates.
-    if (taskCity || taskHasCoords) matchClauses.push({ preferred_cities: { $exists: true } });
-    if (taskHasCoords) matchClauses.push({ last_lat: { $exists: true } });
+
+    // 2. The city branch — a FUZZY comparison (equal, contains, or contained)
+    //    that the database cannot evaluate. Anyone holding a city at all has to
+    //    be read, so this clause stays broad on purpose.
+    if (taskCity) matchClauses.push({ preferred_cities: { $exists: true } });
+
+    // 3. The proximity branch, which the database CAN evaluate — by coordinates.
+    if (taskHasCoords) {
+      // ── The bounding box ─────────────────────────────────────────────────
+      // A worker with GPS can only be within NEARBY_KM if their coordinates
+      // fall inside a box around the task. The box is PADDED well past the
+      // radius, so it is a guaranteed SUPERSET of the circle: everyone the
+      // distance check below would call "nearby" is inside it, and the few
+      // extra workers it keeps are rejected a moment later. It replaces
+      // "anyone who has coordinates anywhere in the country".
+      const latPad = (NEARBY_KM / 110.574) * 1.5;
+      const cosLat = Math.max(0.2, Math.cos((taskLat * Math.PI) / 180));
+      const lngPad = (NEARBY_KM / (111.32 * cosLat)) * 1.5;
+      matchClauses.push({
+        $and: [
+          { last_lat: { $gte: taskLat - latPad, $lte: taskLat + latPad } },
+          { last_lng: { $gte: taskLng - lngPad, $lte: taskLng + lngPad } },
+        ],
+      });
+
+      // A worker with no GPS is located by their preferred city instead, so the
+      // cities close enough to the task are the other way to be "nearby". Only
+      // the cities this app actually knows coordinates for can place anyone, so
+      // a worker holding a city outside this list was never "nearby" anyway.
+      const nearbyCities = Object.keys(CITY_COORDS).filter((c) => {
+        const d = haversineKm(CITY_COORDS[c].lat, CITY_COORDS[c].lng, taskLat, taskLng);
+        return d !== null && d < NEARBY_KM;
+      });
+      if (nearbyCities.length) matchClauses.push({ preferred_cities: { $in: nearbyCities } });
+    }
 
     if (!matchClauses.length) {
       // Nothing about this task can match anyone: no category, no city, no
@@ -248,7 +285,6 @@ Deno.serve(async (req) => {
     //
     // "Nearby" uses the same logic as the feed: GPS (last_lat/last_lng) first,
     // then preferred_cities → CITY_COORDS fallback. < 5km = nearby (same as feed).
-    const NEARBY_KM = 5; // matches isNearby badge in feedRanker.js
     const matchedUserIds = [];
 
     for (const worker of eligibleWorkers) {

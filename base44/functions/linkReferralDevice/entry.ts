@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
 /**
  * linkReferralDevice — Link a device_id to the authenticated user.
@@ -66,13 +66,18 @@ export default async function(req) {
       e.agent_code === attributedAgentCode && !e.registered
     );
 
-    for (const evt of eventsToLink) {
-      await base44.asServiceRole.entities.ReferralEvent.update(evt.id, {
+    // Every event carries the SAME patch, so they are linked in one call rather
+    // than a database round-trip per event.
+    if (eventsToLink.length) {
+      const linkPatch = {
         user_id: user.id,
         user_email: user.email || '',
         user_name: user.full_name || '',
         registered: true,
-      });
+      };
+      await base44.asServiceRole.entities.ReferralEvent.bulkUpdate(
+        eventsToLink.map((evt) => ({ id: evt.id, ...linkPatch })),
+      );
     }
 
     // ── Only notify the ATTRIBUTED agent (not all agents who had events) ──

@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
 /**
  * פונקציית admin לניהול NotificationConfig:
@@ -124,12 +124,17 @@ Deno.serve(async (req) => {
     if (action === 'list') {
       const configs = await base44.asServiceRole.entities.NotificationConfig.list('sort_order', 100);
       const recentLogs = await base44.asServiceRole.entities.NotificationLog.list('-created_date', 50);
-      const totalSent = await base44.asServiceRole.entities.NotificationLog.filter({ status: 'sent' });
-      const totalSkipped = await base44.asServiceRole.entities.NotificationLog.filter({ status: 'skipped' });
+      // ── A number, not the records ────────────────────────────────────────
+      // These two used to download EVERY sent and every skipped log row the app
+      // has ever written — with no limit at all — purely to read `.length` off
+      // them. Two counters ask the database for the count instead, and not one
+      // log record travels.
+      const totalSent = await base44.asServiceRole.entities.NotificationLog.count({ status: 'sent' });
+      const totalSkipped = await base44.asServiceRole.entities.NotificationLog.count({ status: 'skipped' });
       return Response.json({
         configs,
         recent_logs: recentLogs,
-        stats: { total_sent: totalSent.length, total_skipped: totalSkipped.length },
+        stats: { total_sent: totalSent, total_skipped: totalSkipped },
       });
     }
 
@@ -137,14 +142,13 @@ Deno.serve(async (req) => {
     if (action === 'seed') {
       const existing = await base44.asServiceRole.entities.NotificationConfig.list('sort_order', 100);
       const existingKeys = new Set(existing.map(c => c.event_key));
-      let created = 0;
-      for (const cfg of DEFAULT_SEED_CONFIGS) {
-        if (!existingKeys.has(cfg.event_key)) {
-          await base44.asServiceRole.entities.NotificationConfig.create(cfg);
-          created++;
-        }
+      // One batched insert for everything missing, instead of a round-trip per
+      // config. Only the configs that are genuinely absent are written.
+      const missing = DEFAULT_SEED_CONFIGS.filter((cfg) => !existingKeys.has(cfg.event_key));
+      if (missing.length) {
+        await base44.asServiceRole.entities.NotificationConfig.bulkCreate(missing);
       }
-      return Response.json({ success: true, created, message: `נוצרו ${created} הגדרות חדשות` });
+      return Response.json({ success: true, created: missing.length, message: `נוצרו ${missing.length} הגדרות חדשות` });
     }
 
     // ── action: create — יצירת הגדרה חדשה ──

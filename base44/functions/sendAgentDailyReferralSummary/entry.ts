@@ -39,13 +39,30 @@ Deno.serve(async (_req) => {
     }
 
     const agentCodes = Object.keys(byAgent);
+    if (!agentCodes.length) {
+      return Response.json({ sent: 0, reason: 'No agent codes' });
+    }
+
+    // ── Every agent is read in ONE query, not one query per agent ───────────
+    // This used to look up a single agent inside the loop — a database
+    // round-trip per agent, every evening, purely to turn a code into an id.
+    // The whole set is fetched at once and indexed by code instead.
+    const agentUsers = await base44.asServiceRole.entities.User.filter(
+      { agent_code: { $in: agentCodes } }, '-created_date', 500,
+    );
+    const agentByCode = {};
+    for (const u of agentUsers || []) {
+      // The list is newest-first, so the first row seen for a code is the same
+      // one the per-agent query used to return.
+      if (u.agent_code && !agentByCode[u.agent_code]) agentByCode[u.agent_code] = u;
+    }
+
     let sent = 0;
 
     for (const code of agentCodes) {
       try {
-        const agents = await base44.asServiceRole.entities.User.filter({ agent_code: code }, '-created_date', 1);
-        if (agents.length === 0) continue;
-        const agent = agents[0];
+        const agent = agentByCode[code];
+        if (!agent) continue;
         const info = byAgent[code];
         const count = info.count;
 

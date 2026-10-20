@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
 import { syncTaskApplicants } from '../../shared/taskApplicants.ts';
 import { requireInternalOperator } from '../../shared/internalAuth.ts';
@@ -168,8 +168,12 @@ Deno.serve(async (req) => {
       await sr.entities.Task.update(taskId, { status: 'CANCELLED', worker_id: null, worker_name: null, worker_status: null });
       // Refund all pending applications
       const apps = await sr.entities.TaskApplication.filter({ task_id: taskId });
-      for (const a of apps.filter(x => x.status === 'pending' || x.status === 'approved')) {
-        await sr.entities.TaskApplication.update(a.id, { status: 'cancelled' });
+      // Every active application leaves in ONE call, not one call each.
+      const activeApps = apps.filter(x => x.status === 'pending' || x.status === 'approved');
+      if (activeApps.length) {
+        await sr.entities.TaskApplication.bulkUpdate(
+          activeApps.map(a => ({ id: a.id, status: 'cancelled' }))
+        );
       }
       log.push(`✅ Task "${task.title}" cancelled, ${apps.length} apps cleaned up`);
       return Response.json({ success: true, action, log });

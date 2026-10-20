@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { getGlobalCategories } from '../../shared/globalCategories.ts';
 import { categoryKeyForTask } from '../../shared/taskCategories.ts';
 
@@ -49,9 +49,12 @@ export default async function (req: Request): Promise<Response> {
           },
         }))
       );
-      for (const r of repairs) {
-        await base44.asServiceRole.entities.Task.update(r.task.id, r.next);
-      }
+      // One batched write for every repaired task, instead of a database
+      // round-trip each. The backup above is written first, so a failure here
+      // still leaves every original recoverable.
+      await base44.asServiceRole.entities.Task.bulkUpdate(
+        repairs.map((r) => ({ id: r.task.id, ...r.next }))
+      );
     }
 
     return Response.json({
