@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -67,6 +67,9 @@ export default function SocialConnectSheet({ user, onClose }) {
   const [copied, setCopied] = useState(false);
   const [oauthError, setOauthError] = useState('');
   const popupRef = useRef(null);
+  // The close-poll for the OAuth popup. Held in a ref so the sheet's own close
+  // can stop it — see handleInstagramOAuth.
+  const pollRef = useRef(null);
 
   const p = PLATFORMS.find(pl => pl.key === selected);
   const existingUsername = selected ? user?.[`${selected}_username`] : null;
@@ -190,12 +193,24 @@ export default function SocialConnectSheet({ user, onClose }) {
 
       // 2. Open the OAuth consent page in a popup
       const popup = window.open(url, '_blank', 'width=500,height=700');
+
+      // A BLOCKED popup is a normal outcome — especially on mobile browsers —
+      // and window.open then returns null. The poll below watched for
+      // `popup.closed`, which a null popup never reports, so the interval ran
+      // for the life of the page and called the verification endpoint on every
+      // tick. Stop and say so instead.
+      if (!popup) {
+        setOauthError('הדפדפן חסם את חלון החיבור. יש לאפשר חלונות קופצים ולנסות שוב.');
+        setLoading(false);
+        return;
+      }
       popupRef.current = popup;
 
       // 3. Poll until the popup closes (user finished or cancelled)
       const pollClose = setInterval(async () => {
-        if (!popup || popup.closed) {
+        if (popup.closed) {
           clearInterval(pollClose);
+          pollRef.current = null;
           popupRef.current = null;
 
           // 4. Call backend to verify the OAuth connection
@@ -220,11 +235,18 @@ export default function SocialConnectSheet({ user, onClose }) {
           setLoading(false);
         }
       }, 600);
+      pollRef.current = pollClose;
     } catch (e) {
       setOauthError('שגיאה בפתיחת חיבור Instagram. נסה שוב.');
       setLoading(false);
     }
   };
+
+  // Never leave the close-poll running: it outlives the sheet otherwise, and
+  // would verify against a popup the visitor has already walked away from.
+  useEffect(() => () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  }, []);
 
   const handleGenerateCode = async () => {
     if (!usernameInput.trim()) return;
@@ -242,6 +264,9 @@ export default function SocialConnectSheet({ user, onClose }) {
   };
 
   const handleClose = () => {
+    // Stop watching BEFORE closing the popup, so the poll cannot fire a
+    // verification for a connection the visitor just cancelled.
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     if (popupRef.current && !popupRef.current.closed) {
       popupRef.current.close();
     }

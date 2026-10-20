@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { queryClientInstance } from '@/lib/query-client';
 import { useBrand } from '@/lib/brand/BrandProvider';
 
 /**
@@ -42,12 +44,32 @@ const BRAND_OVERRIDABLE_KEYS = [
   'boost_cost', 'loyalty_reward_percent', 'loyalty_reward_min',
 ];
 
+// ── ONE live subscription for the whole app ─────────────────────────────────
+// The admin's own tab invalidates its own cache, so the admin watched a change
+// take effect while every OTHER open app kept the old values. The query is
+// cached for a minute and never refetches on focus, and this is a long-lived
+// SPA — so a signup bonus, a story price, a scheduling window or the launch gate
+// could stay stale for an entire session.
+//
+// Eighteen components read these settings, so this is deliberately ONE shared
+// subscription rather than one per consumer.
+let settingsUnsub = null;
+function ensureSettingsSync() {
+  if (settingsUnsub) return;
+  settingsUnsub = base44.entities.JobaSettings.subscribe(() => {
+    queryClientInstance.invalidateQueries({ queryKey: ['jobaSettings'] });
+  });
+}
+
 /**
  * useJobaSettings — single hook for reading the admin-configured Joba settings.
  * Returns settings merged over defaults, so every field is always defined.
  * Used across banners/popups so UI text stays in sync with the dashboard values.
  */
 export function useJobaSettings() {
+  // An edit in the dashboard reaches every open app the moment it is saved.
+  useEffect(() => { ensureSettingsSync(); }, []);
+
   const { data, isLoading } = useQuery({
     queryKey: ['jobaSettings'],
     queryFn: async () => {

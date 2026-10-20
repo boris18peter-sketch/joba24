@@ -264,7 +264,35 @@ export default function AdminDashboard() {
       timer = setTimeout(() => queryClient.invalidateQueries({ queryKey: ['adminApplicantCounts'] }), 1500);
     });
 
-    return () => { unsubTasks(); unsubApps(); clearTimeout(timer); };
+    // ── The user list must move on its own too ──────────────────────────────
+    // Only tasks and applications were subscribed, so a registration, a KYC
+    // submission, a name change or a block arriving while this dashboard was
+    // open simply did not appear: the admin had to reload the page to see it.
+    // The admin's own actions called refetchUsers(), which is why the gap was
+    // easy to miss — everything the admin did updated, and everything the USERS
+    // did did not.
+    //
+    // The row is patched in place rather than refetching all 500 users, and a
+    // brand-new user is prepended, which is exactly where the list's
+    // '-created_date' order puts them.
+    const unsubUsers = base44.entities.User.subscribe((event) => {
+      if (event.type === 'delete') {
+        queryClient.setQueryData(['adminUsers'], (old = []) => (old || []).filter(u => u.id !== event.id));
+        return;
+      }
+      const next = event.data;
+      if (!next?.id) return;
+      queryClient.setQueryData(['adminUsers'], (old = []) => {
+        const list = old || [];
+        const idx = list.findIndex(u => u.id === next.id);
+        if (idx === -1) return [next, ...list].slice(0, 500);
+        const copy = [...list];
+        copy[idx] = { ...copy[idx], ...next };
+        return copy;
+      });
+    });
+
+    return () => { unsubTasks(); unsubApps(); unsubUsers(); clearTimeout(timer); };
   }, [me?.role, queryClient]);
 
   // Guard: admin only — AFTER all hooks
