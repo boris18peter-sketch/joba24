@@ -40,6 +40,20 @@ Deno.serve(async (req) => {
     const brandTasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
     const brandTask = brandTasks?.[0] || null;
 
+    // ── A WORKER WHO ALREADY HAS THE JOB CANNOT CANCEL-AND-REFUND IT ────────
+    // The check above reads only the APPLICATION's own status. Selection and
+    // cancellation are two separate calls, so a cancel that started while the
+    // application was still `pending` could land AFTER the publisher picked this
+    // worker: the commitment fee came back AND the task stayed assigned — the
+    // worker was refunded for a job they went on to do. The TASK is the authority
+    // on who holds the job, so it is what is checked here: an assigned worker (or
+    // one who has already set off) has no cancellable application left.
+    const isAssignedToTask = brandTask && brandTask.worker_id === user.id;
+    const taskIsLive = brandTask && !['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(brandTask.status);
+    if (isAssignedToTask && taskIsLive) {
+      return Response.json({ error: 'already_assigned', code: 'already_assigned' }, { status: 409 });
+    }
+
     // Mark cancelled first
     await base44.asServiceRole.entities.TaskApplication.update(applicationId, { status: 'cancelled' });
 

@@ -104,6 +104,26 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.TaskApplication.update(applicationId, {
       status: 'approved'
     });
+
+    // ── THE APPLICATION MUST STILL BE OURS TO APPROVE ───────────────────────
+    // Selection and cancellation are two separate calls, so this approval can
+    // cross a cancel the worker sent while the application was still `pending`.
+    // Both sides would then "win": a task assigned to a worker whose application
+    // is cancelled, and a refund paid out for a job that was given away.
+    // Re-reading the application settles it deterministically — the worker's
+    // cancellation stands and the task returns to OPEN, so the publisher can pick
+    // someone else immediately (the applicant list is left intact).
+    const afterApps = await base44.asServiceRole.entities.TaskApplication.filter({ id: applicationId });
+    if (afterApps[0]?.status !== 'approved') {
+      await base44.asServiceRole.entities.Task.update(taskId, {
+        status: 'OPEN',
+        worker_id: null,
+        worker_name: null,
+        worker_status: null,
+        schedule_agreed_at: null,
+      });
+      return Response.json({ error: 'Application was cancelled', code: 'cancelled' }, { status: 409 });
+    }
     console.log('✅ APPLICATION APPROVED');
 
     // ── Schedule agreed → tell the worker the job is locked in ──────────────

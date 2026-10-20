@@ -283,10 +283,19 @@ export default function TaskDetail(props) {
       return arr.find((a) => a.status === 'pending' || a.status === 'approved') || null;
     },
     enabled: !!me?.id,
-    staleTime: 60000,
+    // Never serve a cached verdict. The instant this worker is selected the
+    // application becomes `approved` and the cancel control must disappear; a
+    // minute-long stale window is what kept "בקשתך ממתינה" and its cancel button
+    // on screen after the job had already been handed over.
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
   const isApproved = myApp?.status === 'approved';
-  const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
+  // The commitment fee is consumed at SELECTION, so once the job is this worker's
+  // there is no pending application left to cancel — not even if a stale cache
+  // still says `pending`, and not once the worker has set off.
+  const assignedToMe = !!me?.id && task?.worker_id === me.id;
+  const hasPendingApp = myApp?.status === 'pending' && !assignedToMe && !task?.worker_status;
 
   // Track click (entry into TaskDetail) — only for non-owners, once per session
   useEffect(() => {

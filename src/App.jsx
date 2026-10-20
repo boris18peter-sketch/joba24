@@ -1,10 +1,4 @@
 import { Toaster } from "@/components/ui/toaster"
-// The app's own notifications (`toast` from 'sonner') are raised in twenty-odd
-// screens, and until this surface was mounted NOT ONE of them was ever rendered:
-// every success and every failure was silent. That is why a failed admin action —
-// an approval refused by the server, say — looked like a button that does
-// nothing at all.
-import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
@@ -421,34 +415,15 @@ function App() {
               </TaskSheetProvider>
             </Router>
             <Toaster />
-            {/* ── One surface for the app's own toasts (`toast` from 'sonner') ──
-                The app raises its own notifications in twenty-odd screens, and
-                until this surface was mounted not one of them was ever rendered:
-                every success and every failure was silent. It was missing — not
-                broken — and mounting it is what brought them back.
-
-                It is rendered in the SAME design language as the app's other
-                notifications (see LiveNotificationPopup): the same card radius,
-                surface colour and border, the same 46px rounded tile holding the
-                status emoji, the same bold title over a muted line — so a notice
-                looks like part of the app instead of a foreign white box.
-
-                It sits ABOVE the bottom nav, never over the header, where a
-                notice used to land on the logo, the balance and the menu button. */}
-            <SonnerToaster
-              position="bottom-center"
-              offset={{ bottom: 'calc(66px + env(safe-area-inset-bottom))' }}
-              mobileOffset={{ bottom: 'calc(66px + env(safe-area-inset-bottom))' }}
-              icons={{ success: '✅', error: '⚠️', warning: '⚠️', info: 'ℹ️' }}
-              toastOptions={{
-                classNames: {
-                  toast: 'rounded-xl border border-jborder-1 bg-surface-2 text-jtext-1 shadow-lg',
-                  title: 'text-[15px] font-black leading-tight text-jtext-1',
-                  description: 'text-[13px] font-medium text-jtext-2',
-                  icon: 'w-[46px] h-[46px] rounded-md bg-surface-3 flex items-center justify-center text-[22px] shrink-0',
-                },
-              }}
-            />
+            {/* The 'sonner' toast surface that used to sit here has been REMOVED.
+                It painted a white card with a boxed emoji over the bottom of the
+                app (over the feed, over a task, over the nav) for every
+                `toast()` raised anywhere in the app — status updates like
+                "סיימתי את התיקון" among them. It read as a foreign overlay rather
+                than part of the app, and the app already has its OWN designed
+                notification surface for real events: notificationStore →
+                LiveNotificationPopup, rendered by GlobalPopups. Do not re-mount
+                it. */}
           </QueryClientProvider>
         </AuthProvider>
         </BrandGate>
