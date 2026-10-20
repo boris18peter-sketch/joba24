@@ -152,7 +152,17 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
 
   const catLabel = useTaskServiceLabel(task, t);
   const dist = task._distKm;
-  const appStatus = myApp?.status;
+  // ── THE TASK, NOT THE CACHE, DECIDES WHETHER THIS IS STILL "PENDING" ─────
+  // `myApp` comes from a cached list, so for up to a minute after the publisher
+  // selected this worker the card could still read `pending` — painting the amber
+  // "waiting for approval" banner with its cancel button onto a job that was
+  // already theirs. Tapping that cancel was refused by the server (only a
+  // genuinely pending application may be cancelled and refunded), so the button
+  // appeared to do nothing and the banner stayed on screen. Once the task is this
+  // worker's, the card shows the assigned state; the way back out is the leave
+  // control on the task itself, which refunds and returns the task to OPEN.
+  const assignedToMe = !!currentUserId && task?.worker_id === currentUserId;
+  const appStatus = assignedToMe ? 'approved' : myApp?.status;
   const hasActiveApp = appStatus === 'pending' || appStatus === 'approved';
 
   const handleCancelApp = async (e) => {
