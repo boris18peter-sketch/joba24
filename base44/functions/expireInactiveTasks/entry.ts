@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { fetchUserMap } from '../../shared/userLookup.ts';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 /**
  * Cron job — runs every hour.
@@ -122,7 +123,10 @@ Deno.serve(async (req) => {
       const base = runningBalance[worker.id] ?? (worker.worker_credits ?? 0);
       const newBalance = base + creditsToRefund;
       runningBalance[worker.id] = newBalance;
-      userPatches.push({ id: worker.id, worker_credits: newBalance });
+      // The DELTA, not the resulting balance. `runningBalance` is still what the
+      // ledger records, but the write below must be additive: an absolute balance
+      // would make each patch for the same worker a full overwrite of the last.
+      userPatches.push({ id: worker.id, delta: creditsToRefund });
 
       const task = taskById[app.task_id] || {};
       ledgerRows.push({
@@ -142,14 +146,19 @@ Deno.serve(async (req) => {
     // batched update — but everything around them is batched, which is where the
     // round-trips actually were.
     if (userPatches.length) {
-      // $inc per worker, never an absolute write — every refund adds its own
-      // amount, so nothing is lost if another balance change lands alongside.
-      // An ABSOLUTE write here, deliberately. This job runs from a scheduled
-      // workflow, with no user token on the request — and the platform refuses a
-      // bulk user update in that context ("Bulk user update not allowed"), so the
-      // atomic $inc form would fail the whole run and no one would be refunded.
-      // The absolute form works from every context.
-      await Promise.all(userPatches.map((p) => base44.asServiceRole.entities.User.update(p.id, { worker_credits: p.worker_credits })));
+      // ── ONE WRITE PER WORKER, AND IT MUST BE ADDITIVE ────────────────────
+      // A worker holding several expired applications is refunded for each of
+      // them. The patches used to carry a RESULTING BALANCE and were written in
+      // parallel, so the same worker got two writes that each replaced the
+      // other: whichever landed last won and the other refund vanished from the
+      // balance while its ledger row still claimed it was paid.
+      //
+      // applyCreditDeltas sums the deltas per worker and writes the balance ONCE,
+      // so every refund lands. It also suits this job's context: it is a
+      // scheduled run with no user token, where the platform refuses a bulk user
+      // update outright ("Bulk user update not allowed") — this uses a
+      // single-record write, which is allowed from every context.
+      await applyCreditDeltas(base44.asServiceRole, userPatches);
     }
     if (ledgerRows.length) await base44.asServiceRole.entities.CreditTransaction.bulkCreate(ledgerRows);
 
