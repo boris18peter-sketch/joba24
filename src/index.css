@@ -76,11 +76,14 @@
        BEHIND, not an opaque bar that hides it. Brands override this through
        themeTokens, which derives the same translucency from their nav colour. */
     --j-nav-glass: rgba(255,255,255,0.72);
-    /* The sliding selection bubble — a soft blue pill the active icon sits on.
-       Deliberately a tint, not a solid fill: the bar stays light and the icon
-       stays the thing you read. */
-    --j-nav-bubble: rgba(26,111,212,0.13);
-    --j-nav-bubble-border: rgba(26,111,212,0.26);
+    /* The sliding selection bubble — ONE soft blue pill the active icon sits on.
+       Strong enough to be unmistakably there as it travels (it used to be so
+       faint it read as a hover tint), still translucent enough that the icon
+       stays the thing you read. `-hi` is the top-of-glass highlight that gives
+       it depth without a blur that would have to be re-sampled while it moves. */
+    --j-nav-bubble: rgba(26,111,212,0.20);
+    --j-nav-bubble-hi: rgba(255,255,255,0.55);
+    --j-nav-bubble-border: rgba(26,111,212,0.36);
     --modal-bg:    #f2f5fb;
     --sheet-bg:    #ffffff;
     --card-bg:     #ffffff;
@@ -177,8 +180,9 @@
       --header-bg:   rgba(15,23,42,0.96);
       --nav-bg:      #1e293b;
       --j-nav-glass: rgba(15,23,42,0.72);
-      --j-nav-bubble: rgba(96,165,250,0.20);
-      --j-nav-bubble-border: rgba(96,165,250,0.36);
+      --j-nav-bubble: rgba(96,165,250,0.26);
+      --j-nav-bubble-hi: rgba(255,255,255,0.16);
+      --j-nav-bubble-border: rgba(96,165,250,0.44);
       --modal-bg:    #0f172a;
       --sheet-bg:    #1e293b;
       --card-bg:     #1e293b;
@@ -640,6 +644,29 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 
 /* Section heading — small, muted, tight. The card's gap does the spacing. */
 .j-detail-heading { padding-bottom: 6px; }
+
+/* ════════════════════════════════════════════════════════════════════
+   TASK PHOTOS — the placeholder that replaced the black square
+   ════════════════════════════════════════════════════════════════════
+   Task thumbnails used to sit in a box painted pure black, so the wait for a
+   photo — and a photo that never arrived — showed as a black rectangle in the
+   middle of the feed. This shimmer is drawn in the design's own surface tokens
+   instead, so the wait matches the card around it and a failure is handled by
+   the component's own fallback rather than by a hole.
+
+   It is a background-position sweep, not a transform: nothing moves on the
+   compositor, so a feed full of loading thumbnails costs almost nothing.
+   `prefers-reduced-motion` freezes it (the global rule below). */
+@keyframes jImgShimmer {
+  0%   { background-position: -140% 0; }
+  100% { background-position: 240% 0; }
+}
+.j-img-skeleton {
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, var(--surface-3) 30%, var(--surface-4) 50%, var(--surface-3) 70%);
+  background-size: 220% 100%;
+  animation: jImgShimmer 1.25s ease-in-out infinite;
+}
 
 /* ════════════════════════════════════════════════════════════════════
    ANIMATIONS

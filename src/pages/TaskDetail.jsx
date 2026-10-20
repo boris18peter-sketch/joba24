@@ -20,6 +20,7 @@ import TaskApplicants from '@/components/TaskApplicants';
 import ApprovedPopup from '@/components/ApprovedPopup';
 import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
+import TaskImage from '@/components/TaskImage';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
 import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
@@ -991,9 +992,12 @@ export default function TaskDetail(props) {
                 return (
                   <div style={{ flexShrink: 0, position: 'relative', width: 88, height: 72 }}>
                     <button onClick={() => { setLightboxIndex(mediaIdx); setLightboxOpen(true); }}
-                      style={{ width: 88, height: 72, borderRadius: 14, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.35)', background: '#000', padding: 0, cursor: 'pointer', display: 'block' }}>
+                      // Was `background: '#000'` — the same black square, here in the
+                      // sheet. This tile is on screen the moment the sheet opens, so
+                      // its photo is fetched with priority.
+                      style={{ width: 88, height: 72, borderRadius: 14, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.35)', background: 'var(--surface-3)', padding: 0, cursor: 'pointer', display: 'block' }}>
                       {cur.type === 'image' ? (
-                        <img src={cur.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <TaskImage src={cur.url} priority />
                       ) : (
                         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                           <video src={cur.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />

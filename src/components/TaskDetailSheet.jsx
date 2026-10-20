@@ -134,9 +134,20 @@ export default function TaskDetailSheet() {
             overscrollBehavior: 'contain',
           }}
         >
+          {/* ── A SKELETON, NOT A SPINNER ─────────────────────────────────────
+              The sheet paints its own shape for the instant the module resolves
+              (the chunk is warmed during idle and the task's own record is seeded
+              by the tap, so this is a frame or two at most). A centred spinner in
+              that gap read as "something is loading"; the sheet's own silhouette
+              reads as the sheet arriving, which is what is actually happening. */}
           <Suspense fallback={
-            <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-              <Loader2 size={28} className="animate-spin" color="var(--brand-primary)" />
+            <div style={{ padding: '8px 16px 24px' }} aria-hidden="true">
+              <div style={{ height: 96, borderRadius: 18, background: 'var(--surface-3)' }} />
+              <div style={{ height: 18, width: '62%', borderRadius: 8, background: 'var(--surface-3)', marginTop: 16 }} />
+              <div style={{ height: 12, width: '38%', borderRadius: 8, background: 'var(--surface-3)', marginTop: 10 }} />
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{ height: 44, borderRadius: 12, background: 'var(--surface-3)', marginTop: 12, opacity: 1 - i * 0.22 }} />
+              ))}
             </div>
           }>
             <TaskDetail taskId={sheetTaskId} sheetMode onSheetClose={closeTaskSheet} />

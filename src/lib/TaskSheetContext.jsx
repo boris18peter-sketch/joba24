@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const TaskSheetContext = createContext(null);
 
 export function TaskSheetProvider({ children }) {
+  const queryClient = useQueryClient();
   const [sheetTaskId, setSheetTaskId] = useState(null);
   const [hiddenTaskId, setHiddenTaskId] = useState(null);
   // Ref mirror of sheetTaskId so hideTaskSheet can read it synchronously
@@ -16,8 +18,23 @@ export function TaskSheetProvider({ children }) {
   // Opens the sheet and pushes a history entry (without URL change) so the
   // hardware back button / swipe-back closes the sheet.
   // Uses pushState (not navigate) to avoid React Router page transition animations.
-  const openTaskSheet = useCallback((taskId) => {
+  const openTaskSheet = useCallback((taskId, seed) => {
     if (!taskId) return;
+    // ── PAINT FROM WHAT THE CARD ALREADY HOLDS ────────────────────────────────
+    // The card that was just tapped is holding the task's own record in memory.
+    // Seeding the sheet's query with it lets the sheet render real content on its
+    // FIRST frame instead of a spinner, while the server is asked for the
+    // complete record at the same moment and quietly replaces it.
+    //
+    // Only when nothing is cached for this task: on a re-open the sheet already
+    // has the record, so seeding would be wasted work and the refresh below would
+    // be a request the app was not making before. This therefore adds ZERO
+    // network calls — the one it triggers is the one the sheet would have made
+    // anyway, simply started a moment earlier and no longer blocking the paint.
+    if (seed && seed.id === taskId && !queryClient.getQueryData(['task', taskId])) {
+      queryClient.setQueryData(['task', taskId], seed);
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    }
     sheetTaskIdRef.current = taskId;
     setSheetTaskId(taskId);
     setHiddenTaskId(null);

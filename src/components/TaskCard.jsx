@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap, ShieldCheck, X } from 'lucide-react';
 import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
+import TaskImage from '@/components/TaskImage';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import useTaskServiceLabel from '@/components/useTaskServiceLabel';
 import { categoryKeyForTask } from '@/lib/brand/categoryTree';
@@ -304,7 +305,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     <>
       <div
         ref={cardRef}
-        onClick={() => { if (showMenu) { setShowMenu(false); return; } openTaskSheet(task.id); }}
+        onClick={() => { if (showMenu) { setShowMenu(false); return; } openTaskSheet(task.id, task); }}
         className="j-task-card"
         style={{
           background: 'var(--brand-card-bg, var(--surface-2))',
@@ -393,7 +394,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{t('approved')} ✅</div>
                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1 }}>{t('approved_sub')}</div>
              </div>
-             <button onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
+             <button onClick={e => { e.stopPropagation(); openTaskSheet(task.id, task); }}
                className="btn-tap"
                style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent' }}>
                {t('go_now')}
@@ -541,10 +542,16 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               return (
                 <div
                   onClick={e => { e.stopPropagation(); setLightboxIndex(0); setLightboxOpen(true); }}
-                  style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--brand-card-border, var(--border-1))', position: 'relative', background: '#000', cursor: 'pointer' }}
+                  // Was `background: '#000'` — the black square in the feed was this
+                  // box waiting for its photo, not a slow image. The design's own
+                  // surface colour shows through the placeholder instead.
+                  style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--brand-card-border, var(--border-1))', position: 'relative', background: 'var(--surface-3)', cursor: 'pointer' }}
                 >
                   {cur.type === 'image' ? (
-                    <img src={cur.url} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    // `priority` only for the first card — the thumbnail that is on
+                    // screen the moment the feed opens. Every other card stays lazy,
+                    // so a long feed still fetches only what is near the viewport.
+                    <TaskImage src={cur.url} priority={!!task._isFirstCard} />
                   ) : (
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                       <video src={cur.url} preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -600,7 +607,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   <ApplicantsGoldButton
                     count={liveApplicantCount}
                     label={t('view_applicants')}
-                    onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
+                    onClick={e => { e.stopPropagation(); openTaskSheet(task.id, task); }}
                     scanning={<ScanningLabel taskId={task.id} />}
                   />
                 </div>

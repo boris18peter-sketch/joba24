@@ -106,9 +106,14 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
       setPct(0);
       setCharged(false);
       setBoostedAt(Date.now());
-      queryClient.invalidateQueries({ queryKey: ['me'] });
-      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+      // ── THE OVERLAY OPENS FIRST ────────────────────────────────────────────
+      // The server has confirmed the boost — that is the only thing the user was
+      // waiting for. The refresh of the wallet, the task and the feed is work the
+      // UI does for itself, and it used to be started BEFORE the overlay was
+      // asked to appear, so the popup waited behind three cache invalidations it
+      // does not depend on. The refreshes are still started here, unchanged —
+      // simply after the screen the user is waiting for.
+      //
       // dismiss_task_sheet (not hide_task_sheet): the sheet must disappear
       // completely while the Boost overlay owns the screen. hide_task_sheet
       // would leave a "return to task" bar waiting behind the overlay, which
@@ -118,6 +123,9 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
         detail: { taskId: task.id, taskTitle: task.title, taskPrice: task.price, taskCategory: task.category }
       }));
       onBoostDone?.();
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
     } finally {
       setLoading(false);
     }

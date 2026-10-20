@@ -930,11 +930,16 @@ export default function CreateTask() {
     // fixed) with the brand key preserved in category_details.
     const finalCategory = taskCategoryFor(form.category || 'other');
 
-    for (const imgUrl of (form.images || [])) {
+    // The photos are checked TOGETHER, not one after another. They are
+    // independent questions, so awaiting them in a loop made the publisher wait
+    // for a separate round-trip per photo — before the task had even been sent.
+    // Same checks, same verdict, one wait instead of N.
+    const imageUrls = form.images || [];
+    if (imageUrls.length) {
       setCheckingModeration('images');
-      const imgCheck = await moderateImage(imgUrl);
+      const imageChecks = await Promise.all(imageUrls.map((url) => moderateImage(url)));
       setCheckingModeration('');
-      if (imgCheck.flagged) {
+      if (imageChecks.some((check) => check.flagged)) {
         setModerationErrors({ images: t('ct_mod_img') });
         setShowErrorBanner(true);
         setLoading(false);

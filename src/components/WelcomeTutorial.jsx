@@ -131,6 +131,17 @@ export default function WelcomeTutorial() {
     // navigated away, which is how the publish button appeared dead.
     if (pathname !== '/') return;
     const track = getOnboardingTrack();
+    // ── ONLY THE ORDINARY ENTRY GETS THE GENERAL TOUR ───────────────────────
+    // A visitor who arrived by choosing a journey — the publisher's or the
+    // worker's — is here to do ONE specific thing, and the journey's own
+    // explainer screens already told them what they need. A general walkthrough
+    // in front of that is an obstacle, not a help.
+    //
+    // Their track is remembered, so this holds on every later visit too, and the
+    // tour is deliberately NOT marked as seen: nothing was shown, so nothing is
+    // recorded. Someone who arrives through the ordinary route afterwards still
+    // meets it.
+    if (track) return;
     if (localStorage.getItem(STORAGE_KEY(track))) return;
     // Only the steps that belong to the track this person chose. With no track
     // saved the full list is kept, exactly as before.
