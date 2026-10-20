@@ -248,6 +248,20 @@ export default function Layout() {
       // Only refetch if app was backgrounded for more than 3 seconds (avoids redundant refetch on quick tab switches)
       if (Date.now() - lastVisible < 3000) return;
       if (!isAuthenticated || !me?.id) return;
+      // ── CLAIM THE RESUME HERE, NOT ONLY ON HIDE ───────────────────────────
+      // Returning to the app fires TWO events: `visibilitychange` (→ visible)
+      // and `focus`. Both were wired to this function, and because `lastVisible`
+      // was only ever written when the app HID, neither call moved it — so the
+      // 3-second guard above still passed for the second event and every one of
+      // the invalidations below ran TWICE on every resume.
+      //
+      // Stamping the time as soon as a resume is ACCEPTED makes the second event
+      // a no-op through that same guard, with no new state and no new condition.
+      // Both listeners stay registered, so every resume path is still covered:
+      // visibilitychange catches a plain background → foreground, and focus
+      // catches a window that lost focus while the page stayed visible (desktop
+      // alt-tab, a dialog stealing focus).
+      lastVisible = Date.now();
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', me.id] });
       queryClient.invalidateQueries({ queryKey: ['myPublishedTasks', me.id] });
@@ -810,7 +824,25 @@ export default function Layout() {
       })()}
 
       {/* Bottom Nav */}
-      {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(window.location.pathname) && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
+      {/* ── THE NAV READS THE ROUTER'S LOCATION, NOT window.location ──────────
+          This is the ONE place in Layout still reading `window.location`
+          directly. It matters for two reasons:
+
+          1. It is not reactive. `window.location` is a plain global — React
+             does not re-render when it changes, so this condition was evaluated
+             against whatever the URL happened to be at the last render rather
+             than at the current route.
+          2. It can DISAGREE with the router. `useLocation()` reports the
+             location React Router is actually rendering; `window.location` is
+             the raw URL, which other code rewrites in place (the deep-link
+             handler calls history.replaceState to strip its parameters). When
+             the two diverge, the nav was decided by one source while the page
+             was decided by the other.
+
+          The sibling check 38 lines above — the scroll padding — already reads
+          `location.pathname`. Both now read the same source, so the nav's
+          visibility and the space reserved for it can no longer disagree. */}
+      {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(location.pathname) && !location.pathname.startsWith('/task/') && !location.pathname.startsWith('/chat/') && createPortal(
         <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr', alignItems: 'center', padding: '4px 4px 2px', position: 'relative' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
