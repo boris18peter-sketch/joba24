@@ -46,22 +46,40 @@ export const myPublishedTasksQuery = (meId) => ({
   refetchOnWindowFocus: false,
 });
 
-/** Tasks I am working on (I am the worker). */
+/**
+ * Tasks I am working on (I am the worker).
+ *
+ * The realtime subscription is the PRIMARY path — this list is what the home
+ * banner is derived from, so being selected must show up at once. The polling
+ * below is the net underneath it: iOS and Android tear the socket down when the
+ * app is backgrounded, and a dropped connection is exactly when a worker would
+ * otherwise sit on a stale list with no banner for a job they have already been
+ * given. It matches the safety net the published list and the marketplace feed
+ * already carry.
+ */
 export const workerTasksQuery = (meId) => ({
   queryKey: ['workerTasksLayout', meId],
   queryFn: () => base44.entities.Task.filter({ worker_id: meId }, '-created_date', MY_TASKS_LIMIT),
   enabled: !!meId,
   staleTime: 60000,
-  refetchOnWindowFocus: false,
+  refetchInterval: 60000,
+  refetchOnWindowFocus: true,
 });
 
-/** Applications I submitted. */
+/**
+ * Applications I submitted.
+ *
+ * Selection, rejection and every refund settle here, and the balance and the
+ * "committed Jobas" figure are both read off it — so it gets the same net as the
+ * two task lists rather than relying on the socket alone.
+ */
 export const myApplicationsQuery = (meId) => ({
   queryKey: ['myApplicationsFeed', meId],
   queryFn: () => base44.entities.TaskApplication.filter({ worker_id: meId }, '-created_date', MY_APPLICATIONS_LIMIT),
   enabled: !!meId,
   staleTime: 60000,
-  refetchOnWindowFocus: false,
+  refetchInterval: 60000,
+  refetchOnWindowFocus: true,
 });
 
 /** The task I am actively working on — derived from the worker list. */

@@ -9,6 +9,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { chatMessagePreview } from '@/lib/chatPreview';
+import { patchTaskCache } from '@/lib/taskCache';
 
 const TERMINAL_STATUSES = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
 const ACTIVE_WORKER_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'];
@@ -80,6 +81,16 @@ export default function useRealtimeSync({
           if (!Array.isArray(old)) return old;
           if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
           if (event.type === 'update') {
+            // ── OWNERSHIP CLEARED → THE TASK LEAVES THE LIST ─────────────────
+            // Each of these lists means "tasks I am the worker/client OF", so the
+            // moment ownership is cleared — the worker left the job, or the
+            // publisher cancelled the pick — the task no longer belongs in it.
+            // Patching it in place (the old behaviour) left a phantom row behind:
+            // the task stayed on My Tasks with an OPEN status, for a job that was
+            // no longer the worker's at all.
+            if (ownerField in cleanPatch && cleanPatch[ownerField] === null) {
+              return old.filter((x) => x.id !== event.id);
+            }
             const exists = old.find((x) => x.id === event.id);
             return exists ? old.map((x) => x.id === event.id ? { ...x, ...cleanPatch } : x) : old;
           }
@@ -91,6 +102,18 @@ export default function useRealtimeSync({
       };
       updateListCache('workerTasksLayout', 'worker_id');
       updateListCache('myPublishedTasks', 'client_id');
+
+      // ── THE OPEN TASK SHEET / DETAIL PAGE ─────────────────────────────────
+      // Those screens read their own single-task cache, and NOTHING patched it on
+      // a task update — only the task LISTS were kept live. So while the publisher
+      // had the task open, a worker advancing the status flow (בדרך → הגעתי →
+      // סיימתי) or leaving the job changed nothing on that sheet until something
+      // else happened to refresh it. patchTaskCache merges into whichever shape
+      // the cache currently holds; `create: false` leaves it alone when nobody has
+      // this task cached.
+      if (event.type === 'update') {
+        patchTaskCache(queryClient, event.id, cleanPatch, { create: false });
+      }
 
       // ── The moment I am chosen for a task ────────────────────────────────
       // `updateListCache` can only PATCH a list that already holds the task, and
