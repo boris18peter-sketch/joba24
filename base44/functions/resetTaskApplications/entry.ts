@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { fetchUserMap } from '../../shared/userLookup.ts';
 
 /**
  * Called when a publisher reopens an expired/cancelled task.
@@ -29,37 +30,50 @@ Deno.serve(async (req) => {
 
     let refundedCount = 0;
 
-    // Batch-fetch all worker records to avoid N+1 queries
+    // Every applicant's worker record is read in ONE query, not one query each.
     const workerIds = [...new Set(activeApps.filter(a => (a.credits_charged || 0) > 0).map(a => a.worker_id))];
-    const workerResults = await Promise.all(workerIds.map(id => base44.asServiceRole.entities.User.filter({ id })));
-    const workerMap = {};
-    workerResults.forEach(res => { if (res[0]) workerMap[res[0].id] = res[0]; });
+    const workerMap = await fetchUserMap(base44.asServiceRole, workerIds);
 
-    await Promise.all(activeApps.map(async (app) => {
+    // Cancel every application in one call, then settle the refunds in batches.
+    if (activeApps.length) {
+      await base44.asServiceRole.entities.TaskApplication.bulkUpdate(
+        activeApps.map(a => ({ id: a.id, status: 'cancelled' }))
+      );
+    }
+
+    const runningBalance = {};
+    const userPatches = [];
+    const ledgerRows = [];
+    for (const app of activeApps) {
       const creditsToRefund = app.credits_charged || 0;
+      if (creditsToRefund <= 0) continue;
 
-      if (creditsToRefund > 0) {
-        const worker = workerMap[app.worker_id];
-        if (worker) {
-          const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
-          await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
-          await base44.asServiceRole.entities.CreditTransaction.create({
-            user_id: app.worker_id,
-            amount: creditsToRefund,
-            type: 'Refund_Expiration',
-            task_id: taskId,
-            task_title: task.title || '',
-            balance_after: newBalance,
-            brand_id: task.origin_brand_id || null,
-            note: 'החזר ג\'ובות — המשימה פורסמה מחדש',
-          });
-          refundedCount++;
-        }
-      }
+      const worker = workerMap[app.worker_id];
+      if (!worker) continue;
 
-      // Mark application as cancelled
-      await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'cancelled' });
-    }));
+      const base = runningBalance[worker.id] ?? (worker.worker_credits ?? 0);
+      const newBalance = base + creditsToRefund;
+      runningBalance[worker.id] = newBalance;
+      userPatches.push({ id: worker.id, worker_credits: newBalance });
+      ledgerRows.push({
+        user_id: app.worker_id,
+        amount: creditsToRefund,
+        type: 'Refund_Expiration',
+        task_id: taskId,
+        task_title: task.title || '',
+        balance_after: newBalance,
+        brand_id: task.origin_brand_id || null,
+        note: 'החזר ג\'ובות — המשימה פורסמה מחדש',
+      });
+      refundedCount++;
+    }
+    // The balance writes stay one call per worker — the User entity rejects a
+    // batched update — but the application statuses and the whole ledger are
+    // written in single calls now, which is where the round-trips actually were.
+    if (userPatches.length) {
+      await Promise.all(userPatches.map((p) => base44.asServiceRole.entities.User.update(p.id, { worker_credits: p.worker_credits })));
+    }
+    if (ledgerRows.length) await base44.asServiceRole.entities.CreditTransaction.bulkCreate(ledgerRows);
 
     // Reset task: clear applicants array, reset price to base_price
     const resetPrice = task.base_price || task.price;
