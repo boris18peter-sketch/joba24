@@ -105,8 +105,18 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
   // Runs whenever the destination changes AND whenever a drag ends — so a drag
   // that did not reach another tab springs gently home. During a drag the finger
   // owns the value and this stands aside.
+  const firstAimRef = useRef(true);
   useEffect(() => {
     if (targetX == null || dragging) return;
+    // The very first placement is a JUMP, never a slide: the nav unmounts on the
+    // map and the publish screens, so it remounts on the way back — and a bubble
+    // that glided in from the left edge every time would read as a glitch rather
+    // than as motion.
+    if (firstAimRef.current) {
+      firstAimRef.current = false;
+      x.set(targetX);
+      return;
+    }
     const controls = animate(
       x,
       targetX,

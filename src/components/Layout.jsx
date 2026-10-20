@@ -676,14 +676,16 @@ export default function Layout() {
   // anything but the feed, and tapping the tab you are ALREADY on scrolls it
   // back to the top. Kept here rather than inside the nav so the gesture and the
   // navigation stay separate concerns.
+  // `e` is absent when the destination came from a DRAG rather than a tap — a
+  // swipe has no click to cancel — so every use of it is optional.
   const handleNavClick = (to, e) => {
     if (effectiveGuest && to !== '/') {
-      e.preventDefault();
+      e?.preventDefault?.();
       login(GUEST_LOGIN_TITLE_KEY[to]);
       return;
     }
     if (location.pathname === to) {
-      e.preventDefault();
+      e?.preventDefault?.();
       const el = document.getElementById('main-scroll');
       if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
     }
