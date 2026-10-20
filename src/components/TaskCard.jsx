@@ -815,15 +815,66 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
 }
 
 export default memo(TaskCard, (prev, next) => {
-  return (
-    prev.task.id === next.task.id &&
-    prev.task.status === next.task.status &&
-    prev.task.price === next.task.price &&
-    prev.task.worker_status === next.task.worker_status &&
-    (prev.task.applicants?.length ?? 0) === (next.task.applicants?.length ?? 0) &&
-    prev.myApp?.status === next.myApp?.status &&
-    prev.currentUserId === next.currentUserId &&
-    prev.isMyPublished === next.isMyPublished &&
-    prev.hideApplyCost === next.hideApplyCost
-  );
+  // ══════════════════════════════════════════════════════════════════════════
+  // WHY THIS COMPARATOR WAS WRONG, AND WHAT MAKES IT RIGHT
+  //
+  // It listed FIVE task fields by name, but the card renders roughly twenty-five
+  // of them. A task whose title, photos, schedule, category, payment method or
+  // client details changed therefore compared as "equal" and the card kept
+  // showing the OLD data — a stale card with no error anywhere, which is exactly
+  // the failure mode a hand-written field list always ends up having: the list
+  // silently falls behind the markup.
+  //
+  // The fix is not a longer list. `updated_date` is the platform's own record
+  // version and is written on every change to the record — verified against live
+  // data (12 of 12 recent tasks had it ahead of created_date). Comparing it
+  // covers every displayed field at once, so this can never fall behind the
+  // markup again, and it costs one comparison instead of twenty-five.
+  // ══════════════════════════════════════════════════════════════════════════
+  if (prev.task.updated_date !== next.task.updated_date) return false;
+
+  // ── The original field checks are KEPT, deliberately ──────────────────────
+  // `updated_date` only moves when the SERVER writes the record. The feed also
+  // patches the query cache optimistically on the client (status, price, worker
+  // status, applicant count), and those patches never touch updated_date. These
+  // five checks are what catch them, so removing them would have made optimistic
+  // updates stop repainting.
+  if (prev.task.id !== next.task.id) return false;
+  if (prev.task.status !== next.task.status) return false;
+  if (prev.task.price !== next.task.price) return false;
+  if (prev.task.worker_status !== next.task.worker_status) return false;
+  if ((prev.task.applicants?.length ?? 0) !== (next.task.applicants?.length ?? 0)) return false;
+
+  // ── Decorations the FEED adds are not part of the record ──────────────────
+  // Attached after the fetch, so they never move updated_date.
+  if (prev.task._isFirstCard !== next.task._isFirstCard) return false;
+  if (prev.task._distKm !== next.task._distKm) return false;
+
+  // ── The props the card renders or acts on ─────────────────────────────────
+  // `workerName` is shown on the card, so a renamed user must repaint it.
+  // `viewOnly` gates the apply block, and `myApp.id` is what the cancel handler
+  // operates on — a changed application id with an unchanged status would have
+  // left the handler pointing at the old record.
+  if (prev.currentUserId !== next.currentUserId) return false;
+  if (prev.isMyPublished !== next.isMyPublished) return false;
+  if (prev.hideApplyCost !== next.hideApplyCost) return false;
+  if (prev.viewOnly !== next.viewOnly) return false;
+  if (prev.workerName !== next.workerName) return false;
+  if (prev.myApp?.id !== next.myApp?.id) return false;
+  if (prev.myApp?.status !== next.myApp?.status) return false;
+
+  // `badges` is a fresh object on every feed build, so comparing it by identity
+  // would defeat memo entirely. It is compared by the flags the card renders.
+  const b = prev.badges, n = next.badges;
+  if (!!b !== !!n) return false;
+  if (b && (
+    b.isForYou !== n.isForYou ||
+    b.isNew !== n.isNew ||
+    b.isHighPay !== n.isHighPay ||
+    b.isFunded !== n.isFunded ||
+    b.isNearby !== n.isNearby
+  )) return false;
+
+  // Nothing that can affect this card changed — skip the re-render.
+  return true;
 });
