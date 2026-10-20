@@ -253,6 +253,18 @@
      container, and the effective value for a touch is the intersection of the
      chain, so the map keeps its own pinch gesture. */
   [data-no-zoom] { touch-action: pan-x pan-y; }
+
+  /* ── The non-root page container ───────────────────────────────────────────
+     It is a flex COLUMN so a page can fill it exactly (the publish form does,
+     with `flex: 1`, and scrolls its own body — see the comment in Layout.jsx).
+     A flex item is allowed to shrink, and a page taller than the screen would
+     then be clipped instead of scrolling, so every page is pinned at its
+     content height here. That keeps ordinary pages behaving exactly as they did
+     in the block container this replaced: the page is as tall as its content,
+     so it overflows the container and the container scrolls.
+     A page that must fill the container sets its own inline `flex: 1`, and an
+     inline declaration outranks this rule. */
+  #main-scroll-sub > * { flex-shrink: 0; }
   button:active { opacity: 0.85; transform: scale(0.97); }
 
   /* ── Selectable text content (overrides global user-select: none) ── */

@@ -792,17 +792,31 @@ export default function Layout() {
               // Bottom nav is hidden on these non-root paths — don't reserve its 88px padding
               const hideNavOnPath = ['/create-task', '/support'].includes(location.pathname) || location.pathname.startsWith('/task/') || location.pathname.startsWith('/chat/');
               const scrollPad = hideNavOnPath ? 'env(safe-area-inset-bottom)' : 'calc(58px + env(safe-area-inset-bottom))';
-              // Non-root pages scroll in a plain BLOCK container — exactly like the
-              // root tabs' own scroller. As a flex column it could leave a page with
-              // no scrollable overflow at all (the schedule calendar could not be
-              // scrolled), because a flex item is sized by the flex algorithm rather
-              // than simply by its content. In block layout the page's height IS its
-              // content, so it always scrolls. The id is its own: reusing
-              // 'main-scroll' meant the scroll-to-top on navigation always found the
-              // hidden root-tab container and this one kept the previous page's
-              // scroll position.
+              // ── THIS CONTAINER'S SHAPE IS WHAT MAKES THE PUBLISH FORM SCROLL ──
+              // It must be a FLEX COLUMN, exactly like the public container above
+              // and like the root tabs' own scroller.
+              //
+              // The publish form fills its container with `flex: 1` and scrolls its
+              // own body (the blue band is pinned, everything below it scrolls). That
+              // only works when the container IS a flex column: there `flex: 1`
+              // gives the form a definite height, the body inside it gets the
+              // remaining space, and the body scrolls. In a plain BLOCK container
+              // `flex: 1` is inert, the form fell back to its content height, its
+              // body became exactly as tall as its content (so it had nothing to
+              // scroll) and the rest was clipped by the layout's `overflow: hidden`
+              // — the form simply would not scroll, with no error anywhere.
+              //
+              // That is why a guest could scroll the form (the public container above
+              // is a flex column) while a signed-in user could not: the two
+              // containers had different shapes. They are the same now.
+              //
+              // A flex item may SHRINK, which would clip a page that is taller than
+              // the screen instead of letting it scroll — so every page is pinned at
+              // its content height by the `#main-scroll-sub > *` rule in index.css.
+              // A page that wants to fill the container exactly (the publish form)
+              // sets its own inline `flex: 1`, which overrides that rule.
               return (
-                <div id="main-scroll-sub" style={{ flex: 1, display: 'block', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+                <div id="main-scroll-sub" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
                   <Suspense fallback={<TabSkeleton />}>
                     <Outlet />
                   </Suspense>
