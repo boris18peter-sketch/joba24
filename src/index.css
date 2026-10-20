@@ -1123,3 +1123,38 @@ html.j-desktop-scale [style*="min-height"][style*="vh"] { min-height: 0 !importa
 html.j-desktop-scale .mobile-sheet              { max-height: calc(var(--app-h) * 0.9); }
 html.j-desktop-scale .sheet-scroll              { max-height: calc(var(--app-h) * 0.9); }
 html.j-desktop-scale .mobile-modal-center > div { max-height: calc(var(--app-h) * 0.88); }
+
+/* ════════════════════════════════════════════════════════════════════
+   REDUCED MOTION — honour the device's own preference
+   ════════════════════════════════════════════════════════════════════
+   iOS and Android both let a user ask the whole system to calm down: the
+   setting exists for people who get dizzy, nauseous or disoriented from
+   motion, and it is a real accessibility need rather than a preference.
+
+   The app declared nothing for it, so a user who had turned motion OFF in
+   their phone settings still got every slide, pop, bounce, shimmer and
+   staggered card entrance. This one rule covers the whole app — every CSS
+   animation and transition, in every component and every sheet — because it
+   is applied at the root and the durations are reduced to effectively zero.
+
+   Only duration and iteration are touched. Nothing is removed, no element
+   changes size or position, and no logic runs differently: the same state
+   arrives, it simply arrives without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* A loading spinner is a STATUS, not decoration. Frozen, it reads as a hung
+     app — the opposite of what reduced motion is asking for. Keep it turning. */
+  .animate-spin,
+  [class*="animate-spin"] {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

@@ -137,36 +137,20 @@ export default function Layout() {
   const [boostOverlayData, setBoostOverlayData] = useState(null);
   const [guestBlock, setGuestBlock] = useState(null);
 
-  // Swipe between tabs — WhatsApp style horizontal swipe
-  const SWIPE_TABS = ['/', '/map', '/chats', '/profile'];
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-  const touchStartTime = useRef(0);
-
-  const touchInsideHorizontalScroll = useRef(false);
-
-  const onTouchStart = useCallback((e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    touchStartTime.current = Date.now();
-    // Detect if the touch started inside a horizontally-scrollable element (e.g. example chips).
-    // If so, don't trigger tab-swipe navigation — let the user scroll the content.
-    touchInsideHorizontalScroll.current = false;
-    let el = e.touches[0].target;
-    while (el && el !== document.body) {
-      const style = window.getComputedStyle(el);
-      const overflowX = style.overflowX;
-      if ((overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth) {
-        touchInsideHorizontalScroll.current = true;
-        break;
-      }
-      el = el.parentElement;
-    }
-  }, []);
-
-  const onTouchEnd = useCallback((e) => {
-    // Swipe-to-tab navigation disabled — swiping on the feed no longer changes pages
-  }, []);
+  // ── THE TAB-SWIPE HANDLERS ARE GONE, AND THAT IS A PERFORMANCE FIX ────────
+  // Swiping between tabs was disabled long ago (onTouchEnd was an empty
+  // function), but its onTouchStart was still attached to the whole tab
+  // container — and it was expensive. It walked UP the DOM from the touched
+  // element calling window.getComputedStyle() on every ancestor, and
+  // getComputedStyle forces the browser to resolve styles before it can answer.
+  //
+  // touchstart fires at the beginning of EVERY scroll gesture, so the feed paid
+  // a full style recalculation on each one, on the main thread, before a single
+  // frame could be painted — the classic "the list hesitates when I start
+  // scrolling" on Android and older iPhones.
+  //
+  // It did all of that for a feature that no longer existed. Both handlers and
+  // their refs are removed; nothing reads them.
 
   // Lazy-mount tabs
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter((p) => ROOT_TAB_PATHS.includes(p))));
@@ -747,8 +731,6 @@ export default function Layout() {
         return (
           <>
             <div
-              onTouchStart={onTouchStart}
-              onTouchEnd={onTouchEnd}
               style={{ flex: isNonRootTab ? 0 : 1, display: isNonRootTab ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}
             >
               {ROOT_TAB_PATHS.map((tabPath) => {

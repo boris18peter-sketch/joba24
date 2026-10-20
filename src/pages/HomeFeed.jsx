@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 // HomeFeed — main dashboard
 import { base44 } from '@/api/base44Client';
@@ -534,6 +534,27 @@ export default function HomeFeed() {
     return base;
   }, [sortedTasks, smartSections, activeSection, filters, search, behavioralProfile]);
 
+  // ── WHY THE CARDS ARE PREPARED ONCE, IN A useMemo ────────────────────────
+  // TaskCard is memoized, but the feed handed it `{ ...task, _isFirstCard }` —
+  // a BRAND NEW object on every render. A changed prop identity defeats memo, so
+  // every card re-rendered whenever anything on this screen changed: a filter, a
+  // section tab, a dismissal, a keystroke. Preparing the list once per DATA
+  // change instead of once per render is what lets the card's memo actually
+  // short-circuit — the single biggest win for feed smoothness.
+  //
+  // Declared AFTER displayedTasks on purpose: the factory runs during render, so
+  // reading displayedTasks before its own declaration would throw.
+  const preparedTasks = useMemo(
+    () => displayedTasks.map((task, index) => ({ ...task, _isFirstCard: index === 0 })),
+    [displayedTasks],
+  );
+
+  // The dismiss handler is stable too — an inline arrow here would be a new
+  // function on every render and would break the same memo.
+  const handleDismissTask = useCallback((taskId) => {
+    setDismissedTasks((prev) => new Set([...prev, taskId]));
+  }, []);
+
   // task_status_update is handled centrally by Layout (single broadcaster) — no duplicate here
 
   // Pull to refresh — refetch main tasks list
@@ -811,14 +832,14 @@ export default function HomeFeed() {
                 onReset={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false }); }}
               /> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-                {displayedTasks.map((task, index) => {
+                {preparedTasks.map((task, index) => {
                   const isOwn = !!me?.id && task.client_id === me.id;
                   const myApp = !isOwn ? myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved')) : undefined;
                   const isNew = newTaskIds.has(task.id);
                   return (
                     <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : `slideInStagger 0.45s ease-out both`, animationDelay: isNew ? undefined : `${Math.min(index, 12) * 50}ms` }}>
-                      <TaskCardWithSwipe task={{ ...task, _isFirstCard: index === 0 }} myApp={myApp} isMyPublished={isOwn} currentUserId={isAuthenticated ? me?.id : null} workerName={me?.full_name} badges={isOwn ? undefined : task._badges}
-                        onDismiss={isOwn ? undefined : (taskId) => setDismissedTasks((prev) => new Set([...prev, taskId]))} />
+                      <TaskCardWithSwipe task={task} myApp={myApp} isMyPublished={isOwn} currentUserId={isAuthenticated ? me?.id : null} workerName={me?.full_name} badges={isOwn ? undefined : task._badges}
+                        onDismiss={isOwn ? undefined : handleDismissTask} />
                     </div>
                   );
                 })}
