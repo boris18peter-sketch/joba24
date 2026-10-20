@@ -162,6 +162,13 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
 
   const onPointerDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // A press that BEGINS on the raised publish button is never the start of a
+    // drag. Without this, pressing that button and sliding sideways turned into a
+    // tab gesture — the bubble travelled and the release navigated. Dragging
+    // ACROSS the middle still works: the gesture starts on a tab, the pointer is
+    // captured by the row, and every move after that is tracked wherever the
+    // finger goes.
+    if (e.target?.closest?.('#onboarding-create-btn')) return;
     gesture.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
     setEmphasisIndex(activeIndex);
     // The response begins HERE, under the finger — not when the finger leaves.
