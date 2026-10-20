@@ -190,13 +190,20 @@ export function assembleParts(answers, categoryLabel, frame) {
     floors: [],
     extras: [],
     subjectFromFault: false,
+    // True only when the subject came from an ANSWER. Without it the category's
+    // own label cannot be told apart from something the publisher chose, and the
+    // label ends up inside the sentence ("מחפש תקליטן לתקליטנים").
+    subjectFromAnswer: false,
   };
 
   for (const a of answers) {
     const value = valueText(a.raw);
     switch (a.role) {
       case 'subject':
-        if (!parts.subject) parts.subject = stripParens(value);
+        if (!parts.subject) {
+          parts.subject = stripParens(value);
+          parts.subjectFromAnswer = true;
+        }
         break;
       case 'fault':
         if (!parts.fault) parts.fault = stripParens(value);
@@ -292,7 +299,7 @@ function composeRepair(parts, frame) {
     : '';
   // A fault the publisher named replaces the category's own noun; otherwise the
   // frame's noun describes it better than the label does ("בעיה בשקע").
-  const subject = parts.subjectFromFault || !frame.noun ? parts.subject : frame.noun;
+  const subject = parts.subjectFromFault ? parts.subject : (frame.noun || parts.subject);
   // "2 שקעים" and "בעיה בשקע" are the same thing twice. When the count already
   // names it, the count IS the subject — no repeating the category's name.
   const countIsSubject = !!countText && sameThing(subject, countText);
@@ -328,13 +335,16 @@ function sameThing(a, b) {
   const words = (s) => String(s)
     .replace(/[^\u05d0-\u05ea\s]/g, ' ')
     .split(/\s+/)
-    .filter(Boolean)
-    // A leading preposition is not part of the word ("בשקע" → "שקע").
-    .map((w) => w.replace(/^[בהלמשכ]/, ''))
     .filter(Boolean);
   const stem = (w) => w.replace(/(ים|ות|ה|י)$/, '');
-  const left = words(a).map(stem).filter((w) => w.length >= 3);
-  const right = words(b).map(stem).filter((w) => w.length >= 3);
+  // Both readings of a word are kept: the word itself, and — as a second chance
+  // — the same word with a leading preposition removed ("בשקע" → "שקע"). It is a
+  // SECOND chance and never a replacement, because in Hebrew a ב/ה/ל/מ/ש/כ is
+  // just as often the first letter of the word itself: dropping it outright
+  // turned "ברז" into "רז" and "שקע" into "קע".
+  const forms = (w) => [stem(w), stem(w.replace(/^[בהלמשכ]/, ''))].filter((x) => x.length >= 3);
+  const left = words(a).flatMap(forms);
+  const right = words(b).flatMap(forms);
   return left.some((x) => right.some((y) => x === y || x.startsWith(y) || y.startsWith(x)));
 }
 
@@ -351,7 +361,7 @@ function composeEvent(parts, frame) {
   // What is being booked FOR is the first parallel phrase ("מחפש צלם לצילום
   // מוצרים") — unless it merely repeats the role, which it often does
   // ("צוות הקמה ופירוק").
-  if (frame.role && parts.subject && !parts.subjectIsTrade) {
+  if (frame.role && parts.subjectFromAnswer && !parts.subjectIsTrade) {
     const what = firstOption(String(parts.subject).split(',')[0].trim());
     if (what && !sameThing(role, what)) phrases.push(`ל${what}`);
   }

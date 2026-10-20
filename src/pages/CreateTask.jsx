@@ -1416,6 +1416,10 @@ export default function CreateTask() {
             setExtraFieldsText('');
             set('category_details', {});
             setModerationErrors(p => ({ ...p, categoryMismatch: null }));
+            // A new category is a new task: the description drops the sentence
+            // written for the old one and follows the new choices from here on,
+            // with no button press.
+            autoDescription.resetForCategory();
           }} />
           </div>
         </SectionCard>
@@ -1504,22 +1508,32 @@ export default function CreateTask() {
             </div>
           )}
 
-          {/* The one deliberate way back to an automatic description, after the
-              publisher has taken the text over. Small and out of the way: it is
-              an offer, never a prompt. */}
-          {autoDescription.hasSuggestion && (
-            <button
-              type="button"
-              onClick={() => autoDescription.regenerate()}
-              style={{
-                marginTop: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)',
-              }}
-            >
-              <Sparkles size={13} />
-              {t('ct_desc_update_from_choices', 'עדכן לפי הבחירות')}
-            </button>
+          {/* The description writes itself from the choices above, so the field
+              says so while that is true — and offers the one deliberate way back
+              once the publisher has taken the text over. Changing the category
+              rebuilds it on its own; there is nothing to press. */}
+          {autoDescription.isAuto ? (
+            autoDescription.hasSuggestion && (
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: 'var(--text-3)' }}>
+                <Sparkles size={13} color="var(--brand-primary)" />
+                {t('ct_desc_auto_note', 'נכתב אוטומטית מהבחירות שלך — אפשר לערוך בחופשיות')}
+              </div>
+            )
+          ) : (
+            autoDescription.hasSuggestion && (
+              <button
+                type="button"
+                onClick={() => autoDescription.regenerate()}
+                style={{
+                  marginTop: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)',
+                }}
+              >
+                <Sparkles size={13} />
+                {t('ct_desc_update_from_choices', 'עדכן לפי הבחירות')}
+              </button>
+            )
           )}
         </SectionCard>
 
