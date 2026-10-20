@@ -31,7 +31,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>ג'ובה 24 זקוקה למצלמה כדי שתוכל לצלם תמונות וסרטונים למשימות שלך</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>ג'ובה 24 זקוקה למיקרופון כדי שתוכל לצלם סרטונים למשימות שלך</string>
+	<string>ג'ובה 24 זקוקה למיקרופון כדי שתוכל להקליט הודעות קוליות ולצלם סרטונים למשימות שלך</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ג'ובה 24 זקוקה לגישה לגלריה כדי שתוכל לצרף תמונות למשימות שלך</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

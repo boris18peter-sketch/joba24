@@ -1229,6 +1229,34 @@ workflows:
           else:
               print("CAMERA permission already present")
 
+          # ── RECORD_AUDIO + MODIFY_AUDIO_SETTINGS ────────────────────────────
+          # The app records voice messages in five places (task chat, support
+          # chat, quick-chat drawer, task description) through
+          # getUserMedia({ audio: true }) + MediaRecorder.
+          #
+          # Android gates the microphone behind RECORD_AUDIO, and the WebView
+          # asks the OS for it ONLY when it is DECLARED here. Undeclared, the
+          # request is refused before the user ever sees a prompt — recording
+          # then fails silently and the mic button looks dead.
+          #
+          # MODIFY_AUDIO_SETTINGS is a NORMAL (non-runtime) permission that
+          # Chromium's WebRTC audio device module uses to put the device into
+          # the right audio mode while capturing (AudioManager.setMode /
+          # setSpeakerphoneOn). It shows no prompt and needs no Play
+          # declaration — declared explicitly so the audio path does not depend
+          # on the manifest merger keeping it.
+          if 'android.permission.RECORD_AUDIO' not in content:
+              audio_perms = ('    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+                             '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n')
+              content = content.replace('<application', audio_perms + '<application', 1)
+              print("RECORD_AUDIO + MODIFY_AUDIO_SETTINGS permissions added to manifest")
+          else:
+              print("RECORD_AUDIO permission already present")
+              if 'MODIFY_AUDIO_SETTINGS' not in content:
+                  modify_perm = '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n'
+                  content = content.replace('<application', modify_perm + '<application', 1)
+                  print("MODIFY_AUDIO_SETTINGS permission added to manifest")
+
           with open(manifest_path, "w") as f:
               f.write(content)
 
@@ -1450,6 +1478,19 @@ workflows:
           else
             echo "✗ CRITICAL: POST_NOTIFICATIONS missing from final APK manifest — notifications will NOT work on Android 13+!"
             exit 1
+          fi
+          if grep -q "android.permission.RECORD_AUDIO" "$MERGED"; then
+            echo "✓ RECORD_AUDIO — present in final APK manifest"
+          else
+            echo "✗ CRITICAL: RECORD_AUDIO missing from final APK manifest — voice messages will NEVER record on Android!"
+            echo "=== Full merged manifest ==="
+            cat "$MERGED"
+            exit 1
+          fi
+          if grep -q "MODIFY_AUDIO_SETTINGS" "$MERGED"; then
+            echo "✓ MODIFY_AUDIO_SETTINGS — present in final APK manifest"
+          else
+            echo "ℹ MODIFY_AUDIO_SETTINGS not in the merged manifest — WebRTC audio mode switching may fall back to defaults"
           fi
           echo ""
           echo "=== Advertising ID permission in final manifest ==="

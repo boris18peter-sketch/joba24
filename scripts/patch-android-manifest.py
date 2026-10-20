@@ -69,12 +69,20 @@ def main():
     # request is refused before the user ever sees a prompt, so recording fails
     # silently and the mic button looks dead — the same class of failure as the
     # camera one above.
+    # MODIFY_AUDIO_SETTINGS rides along with it: it is a NORMAL (non-runtime)
+    # permission Chromium's WebRTC audio device module uses to switch the device
+    # into the right audio mode while capturing. No prompt, no Play declaration.
     if 'android.permission.RECORD_AUDIO' not in content:
-        audio_perm = '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
-        content = content.replace('<application', audio_perm + '<application', 1)
-        print("[manifest] added RECORD_AUDIO permission.")
+        audio_perms = ('    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
+                       '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n')
+        content = content.replace('<application', audio_perms + '<application', 1)
+        print("[manifest] added RECORD_AUDIO + MODIFY_AUDIO_SETTINGS permissions.")
     else:
         print("[manifest] RECORD_AUDIO permission already present — skipping.")
+        if 'MODIFY_AUDIO_SETTINGS' not in content:
+            modify_perm = '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n'
+            content = content.replace('<application', modify_perm + '<application', 1)
+            print("[manifest] added MODIFY_AUDIO_SETTINGS permission.")
 
     if 'android:scheme="joba24"' in content:
         # The permissions above are written even on this early exit. Returning
