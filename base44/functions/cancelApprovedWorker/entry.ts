@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 import { fetchUserMap } from '../../shared/userLookup.ts';
 
 /**
@@ -72,12 +73,10 @@ Deno.serve(async (req) => {
     // batched update — but the application statuses and the whole ledger are
     // written in single calls now, which is where the round-trips actually were.
     if (userPatches.length) {
-      // $inc per worker, never an absolute write — every refund adds its own
-      // amount, so nothing is lost if another balance change lands alongside.
-      await Promise.all(userPatches.map((p) => base44.asServiceRole.entities.User.updateMany(
-        { id: p.id },
-        { $inc: { worker_credits: p.delta } },
-      )));
+      // One write per user, applied by applyCreditDeltas — the platform rejects a
+      // bulk User update outright, and two absolute writes for the same user in
+      // parallel would lose one of them.
+      await applyCreditDeltas(base44.asServiceRole, userPatches);
     }
     if (ledgerRows.length) await base44.asServiceRole.entities.CreditTransaction.bulkCreate(ledgerRows);
 

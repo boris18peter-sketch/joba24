@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 /**
  * boostTask — Deducts credits from the task owner and updates the task's boost metadata.
@@ -65,9 +66,11 @@ Deno.serve(async (req) => {
 
     // Deduct credits + update task boost metadata in parallel
     await Promise.all([
-      // $inc, never an absolute write — the charge must subtract from whatever
-      // the balance actually is, not from the value read a moment ago.
-      base44.asServiceRole.entities.User.updateMany({ id: user.id }, { $inc: { worker_credits: -BOOST_COST } }),
+      // Written by applyCreditDeltas, which subtracts from whatever the balance
+      // actually is. The atomic $inc form cannot be used: the platform rejects a
+      // bulk User update outright, and that rejection is what was silently
+      // blocking every boost.
+      applyCreditDeltas(base44.asServiceRole, [{ id: user.id, delta: -BOOST_COST }]),
       base44.asServiceRole.entities.Task.update(taskId, {
         last_boost_at: new Date().toISOString(),
         boost_count: (task.boost_count || 0) + 1,

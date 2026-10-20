@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 /**
  * workerLeaveTask — Called by the WORKER to voluntarily exit a TAKEN task.
@@ -44,18 +45,12 @@ Deno.serve(async (req) => {
       if (creditsToRefund <= 0 || !worker) return;
 
       const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
-      // $inc, never an absolute write. This runs once per active application and
-      // every one of them read the SAME `worker`, so an absolute write made each
-      // refund overwrite the previous one — a worker holding two applications was
-      // paid for only one. Each refund now adds its own amount.
-      // $inc, never an absolute write. This runs once per active application and
-      // every one of them read the SAME `worker`, so an absolute write made each
-      // refund overwrite the previous one — a worker holding two applications was
-      // paid for only one. Each refund now adds its own amount.
-      await base44.asServiceRole.entities.User.updateMany(
-        { id: worker.id },
-        { $inc: { worker_credits: creditsToRefund } }
-      );
+      // This runs once per active application and every one of them read the SAME
+      // `worker`. applyCreditDeltas sums the deltas per user and writes the
+      // balance once, so a worker holding two applications is paid for both — and
+      // it is the only form that works, since the platform rejects a bulk User
+      // update outright.
+      await applyCreditDeltas(base44.asServiceRole, [{ id: worker.id, delta: creditsToRefund }]);
       await base44.asServiceRole.entities.CreditTransaction.create({
         user_id: user.id,
         amount: creditsToRefund,

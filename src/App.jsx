@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
@@ -415,15 +416,24 @@ function App() {
               </TaskSheetProvider>
             </Router>
             <Toaster />
-            {/* The 'sonner' toast surface that used to sit here has been REMOVED.
-                It painted a white card with a boxed emoji over the bottom of the
-                app (over the feed, over a task, over the nav) for every
-                `toast()` raised anywhere in the app — status updates like
-                "סיימתי את התיקון" among them. It read as a foreign overlay rather
-                than part of the app, and the app already has its OWN designed
-                notification surface for real events: notificationStore →
-                LiveNotificationPopup, rendered by GlobalPopups. Do not re-mount
-                it. */}
+            {/* ── THE SURFACE THAT MAKES THE APP'S OWN MESSAGES VISIBLE ─────────
+                Around fifty files report outcomes with `toast(...)` from 'sonner':
+                a boost that could not be charged, an application that was
+                rejected, a refund that landed, a save that failed. This surface is
+                what makes every one of them visible, and it had been removed while
+                all of those callers stayed in place — so the messages were still
+                raised and simply had nowhere to appear.
+
+                That is why a failed Boost looked like a button that did nothing,
+                and why a real failure could go unnoticed.
+
+                It is mounted at the BOTTOM, clear of the header and of the task
+                sheet, and styled from the app's own tokens (see ui/sonner.jsx), so
+                it reads as part of the app rather than as a foreign overlay. The
+                app's own designed notification surface — notificationStore →
+                LiveNotificationPopup, rendered by GlobalPopups — is untouched and
+                still owns real events. */}
+            <SonnerToaster position="bottom-center" />
           </QueryClientProvider>
         </AuthProvider>
         </BrandGate>

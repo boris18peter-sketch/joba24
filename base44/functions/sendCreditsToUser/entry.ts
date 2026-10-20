@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -23,12 +24,11 @@ Deno.serve(async (req) => {
     const currentCredits = target.worker_credits ?? 0;
     const newBalance = currentCredits + numericAmount;
 
-    // $inc, never an absolute write — a manual grant must ADD to the balance,
-    // not overwrite a refund that landed while the admin was filling the form.
-    await base44.asServiceRole.entities.User.updateMany(
-      { id: targetUserId },
-      { $inc: { worker_credits: numericAmount } }
-    );
+    // A manual grant must ADD to the balance, not overwrite a refund that landed
+    // while the admin was filling the form — applyCreditDeltas reads the balance
+    // and adds to it. The atomic $inc form cannot be used: the platform rejects a
+    // bulk User update outright.
+    await applyCreditDeltas(base44.asServiceRole, [{ id: targetUserId, delta: numericAmount }]);
 
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: targetUserId,

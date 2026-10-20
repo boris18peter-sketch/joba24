@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 /**
  * deductStoryCredits — Deducts credits for a Story task publication.
@@ -42,14 +43,10 @@ Deno.serve(async (req) => {
     }
 
     const newBalance = currentCredits - STORY_COST;
-    // $inc, never an absolute write — the charge must subtract from whatever the
-    // balance actually is, not from the value read a moment ago.
-    // $inc, never an absolute write — the charge must subtract from whatever the
-    // balance actually is, not from the value read a moment ago.
-    await base44.asServiceRole.entities.User.updateMany(
-      { id: user.id },
-      { $inc: { worker_credits: -STORY_COST } }
-    );
+    // The charge subtracts from whatever the balance actually is, applied by
+    // applyCreditDeltas. The atomic $inc form cannot be used: the platform
+    // rejects a bulk User update outright.
+    await applyCreditDeltas(base44.asServiceRole, [{ id: user.id, delta: -STORY_COST }]);
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: user.id,
       amount: -STORY_COST,

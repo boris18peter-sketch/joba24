@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 /**
  * cancelMyApplication — Called by the WORKER to cancel their own pending application.
@@ -62,14 +63,9 @@ Deno.serve(async (req) => {
       const worker = workerUsers[0];
       if (worker) {
         const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
-        // $inc, never an absolute write — a cancellation landing beside any other
-        // balance change must add to it, not overwrite it.
-        // $inc, never an absolute write — a cancellation landing beside any other
-        // balance change must add to it, not overwrite it.
-        await base44.asServiceRole.entities.User.updateMany(
-          { id: worker.id },
-          { $inc: { worker_credits: creditsToRefund } }
-        );
+        // A cancellation landing beside any other balance change must add to it,
+        // not overwrite it — applyCreditDeltas reads the balance and adds.
+        await applyCreditDeltas(base44.asServiceRole, [{ id: worker.id, delta: creditsToRefund }]);
         await base44.asServiceRole.entities.CreditTransaction.create({
           user_id: user.id,
           amount: creditsToRefund,

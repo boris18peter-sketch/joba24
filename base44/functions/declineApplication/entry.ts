@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 /**
  * declineApplication — Publisher declines a pending application.
@@ -60,13 +61,11 @@ Deno.serve(async (req) => {
       const workers = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
       const worker = workers[0];
       if (worker) {
-        // $inc, never an absolute write. A publisher declining several applicants
-        // in quick succession sends several of these together; an absolute write
-        // made each one overwrite the last, so only ONE refund ever landed.
-        await base44.asServiceRole.entities.User.updateMany(
-          { id: worker.id },
-          { $inc: { worker_credits: creditsToRefund } }
-        );
+        // A publisher declining several applicants in quick succession sends
+        // several of these together. applyCreditDeltas sums them per user and
+        // writes the balance once, so every refund lands — and it is the only form
+        // that works, since the platform rejects a bulk User update outright.
+        await applyCreditDeltas(base44.asServiceRole, [{ id: worker.id, delta: creditsToRefund }]);
         // Read the balance back rather than assuming it: the ledger row below is
         // what the wallet renders, so it has to carry the balance that ACTUALLY
         // resulted. Under concurrency that is not the value read a moment ago.

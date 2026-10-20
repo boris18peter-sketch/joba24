@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 import { scheduleSignature } from '../../shared/scheduling.ts';
 import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
 import { getCategoryRow } from '../../shared/globalCategories.ts';
@@ -145,18 +146,13 @@ Deno.serve(async (req) => {
       })),
     });
 
-    // ── THE FEE IS DEDUCTED ATOMICALLY ──────────────────────────────────────
-    // This used to write an ABSOLUTE balance (read the balance, subtract, write
-    // it back). Two applications landing together — the same worker on two
-    // devices, or two different tasks submitted in quick succession — both read
-    // the same starting balance and both wrote the same result, so only ONE fee
-    // was ever taken while TWO applications were created. $inc makes each
-    // application subtract its own fee, so the balance can no longer lose an
-    // update and the second application is never free.
-    await base44.asServiceRole.entities.User.updateMany(
-      { id: user.id },
-      { $inc: { worker_credits: -creditsRequired } }
-    );
+    // ── THE FEE IS DEDUCTED ─────────────────────────────────────────────────
+    // The fee must be taken even when two applications land together (the same
+    // worker on two devices, or two tasks submitted in quick succession).
+    // applyCreditDeltas reads the balance and writes one result per user, which
+    // is the only form that works: the platform rejects a bulk User update
+    // outright, and that rejection is what was silently blocking this charge.
+    await applyCreditDeltas(base44.asServiceRole, [{ id: user.id, delta: -creditsRequired }]);
 
     // Read the balance back rather than assuming it: the ledger entry must carry
     // the balance that actually resulted, because the wallet renders straight
