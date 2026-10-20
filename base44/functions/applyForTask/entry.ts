@@ -76,8 +76,6 @@ Deno.serve(async (req) => {
       }, { status: 403 });
     }
 
-    const newBalance = currentCredits - creditsRequired;
-
     // NOTE: price is NOT changed here. The auto-bump cron is the single source of
     // truth — it skips tasks that already have active applications (price frozen at
     // whatever it was bumped to). Recalculating the price on apply would discard
@@ -107,6 +105,26 @@ Deno.serve(async (req) => {
       schedule_snapshot: scheduleSignature(task),
     });
 
+    // ── ONE APPLICATION PER WORKER, EVEN FROM TWO DEVICES AT ONCE ───────────
+    // The duplicate check above is a read-then-write, so two submissions landing
+    // together (two devices, or a double-tap) both see "no existing application"
+    // and both create one. The worker then holds TWO applications on the same
+    // task, each carrying a charged fee — and a later decline refunds both,
+    // paying out credits that were never taken.
+    //
+    // The records settle it deterministically instead: the OLDEST active
+    // application is the real one. A later arrival cancels itself here, before
+    // any credit moves, and the worker gets the same "already applied" answer
+    // the check above would have given them.
+    const mineAfter = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId, worker_id: user.id });
+    const activeMine = mineAfter
+      .filter((a) => a.status === 'pending' || a.status === 'approved')
+      .sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    if (activeMine.length > 1 && activeMine[0].id !== newApp.id) {
+      await base44.asServiceRole.entities.TaskApplication.update(newApp.id, { status: 'cancelled' });
+      return Response.json({ error: 'already_applied' }, { status: 409 });
+    }
+
     // Applying on a Brand's task is the moment this worker JOINS that Brand.
     await ensureBrandMembership(base44.asServiceRole, user.id, task.origin_brand_id, 'apply_for_task');
 
@@ -121,8 +139,25 @@ Deno.serve(async (req) => {
       })),
     });
 
-    // Deduct credits only after application is successfully created
-    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
+    // ── THE FEE IS DEDUCTED ATOMICALLY ──────────────────────────────────────
+    // This used to write an ABSOLUTE balance (read the balance, subtract, write
+    // it back). Two applications landing together — the same worker on two
+    // devices, or two different tasks submitted in quick succession — both read
+    // the same starting balance and both wrote the same result, so only ONE fee
+    // was ever taken while TWO applications were created. $inc makes each
+    // application subtract its own fee, so the balance can no longer lose an
+    // update and the second application is never free.
+    await base44.asServiceRole.entities.User.updateMany(
+      { id: user.id },
+      { $inc: { worker_credits: -creditsRequired } }
+    );
+
+    // Read the balance back rather than assuming it: the ledger entry must carry
+    // the balance that actually resulted, because the wallet renders straight
+    // from it.
+    const afterUser = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    const newBalance = afterUser[0]?.worker_credits ?? (currentCredits - creditsRequired);
+
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: user.id,
       amount: -creditsRequired,

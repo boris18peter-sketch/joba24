@@ -124,6 +124,20 @@ Deno.serve(async (req) => {
       });
       return Response.json({ error: 'Application was cancelled', code: 'cancelled' }, { status: 409 });
     }
+
+    // ── ONLY ONE APPROVAL CAN WIN THE TASK ──────────────────────────────────
+    // Two approvals landing together — the publisher on two devices, or a
+    // double-tap — both read the task as OPEN and both assign. The second
+    // overwrites worker_id, and BOTH applications are left `approved`, so two
+    // workers each believe the job is theirs. The TASK is the arbiter: whoever
+    // is not its worker steps their own application back to pending, so the
+    // publisher can pick again and no worker is left holding a job that was
+    // already given to someone else.
+    const afterAssign = await base44.asServiceRole.entities.Task.filter({ id: taskId });
+    if (afterAssign[0]?.worker_id !== workerId) {
+      await base44.asServiceRole.entities.TaskApplication.update(applicationId, { status: 'pending' });
+      return Response.json({ error: 'already_assigned', note: 'Task was assigned to another worker' }, { status: 409 });
+    }
     console.log('✅ APPLICATION APPROVED');
 
     // ── Schedule agreed → tell the worker the job is locked in ──────────────

@@ -16,5 +16,19 @@
   },
   "required": [
     "user_id"
-  ]
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }

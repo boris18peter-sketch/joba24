@@ -35,5 +35,45 @@
     "task_id",
     "sender_id",
     "content"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.sender_id": "{{user.id}}"
+        },
+        {
+          "data.recipient_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.sender_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.sender_id": "{{user.id}}"
+        },
+        {
+          "data.recipient_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }
