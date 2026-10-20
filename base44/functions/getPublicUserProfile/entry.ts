@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
 Deno.serve(async (req) => {
   try {
@@ -80,23 +80,41 @@ Deno.serve(async (req) => {
     // Presentation surfaces use it to keep a review's real category inside a
     // Brand that offers it, and to fall back to a neutral "General" outside it.
     // The stored Review is never rewritten — this is read-only context.
-    const [tasksAsWorker, tasksAsClient] = await Promise.all([
-      base44.asServiceRole.entities.Task.filter({ worker_id: userId }, '-created_date', 300),
-      base44.asServiceRole.entities.Task.filter({ client_id: userId }, '-created_date', 300),
-    ]);
+    // ── Only the tasks the REVIEWS actually reference are read ──────────────
+    // This used to pull the user's 300 tasks as worker AND 300 as client purely
+    // to build a taskId → category map for the reviews it was already holding:
+    // up to 600 task records transferred to decorate at most 200 reviews.
+    //
+    // That matters because this endpoint is called ONCE PER APPLICANT every time
+    // a publisher opens the applicants list. On a popular task that was tens of
+    // thousands of records for one screen — and it is the publisher's most-used
+    // screen during exactly the moment many workers are applying at once.
+    // The reviews name their own tasks, so only those are fetched.
+    const reviewTaskIds = [...new Set(reviews.map(r => r.task_id).filter(Boolean))].slice(0, 200);
+    const reviewTasks = reviewTaskIds.length
+      ? await base44.asServiceRole.entities.Task.filter({ id: { $in: reviewTaskIds } }, '-created_date', 200)
+      : [];
     const categoryByTaskId: Record<string, string> = {};
-    for (const tk of [...(tasksAsWorker || []), ...(tasksAsClient || [])]) {
+    for (const tk of reviewTasks || []) {
       categoryByTaskId[tk.id] = tk.category_details?.brand_category_key || tk.category || '';
     }
+
     const reviewRatings = reviews.map(r => r.rating).filter(r => typeof r === 'number' && r > 0);
     const computedRating = reviewRatings.length > 0
       ? reviewRatings.reduce((a, b) => a + b, 0) / reviewRatings.length
       : (targetUser.rating || 0);
     const computedRatingCount = reviews.length || targetUser.rating_count || 0;
-    const completedTasks = await base44.asServiceRole.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 200);
-    const computedTasksCompleted = completedTasks.length || targetUser.tasks_completed || 0;
-    const postedTasks = await base44.asServiceRole.entities.Task.filter({ client_id: userId, status: 'COMPLETED' }, '-created_date', 200);
-    const computedTasksPosted = postedTasks.length || 0;
+
+    // ── The two "completed tasks" figures are COUNTED, not downloaded ───────
+    // Each was fetched as up to 200 full task records and then measured with
+    // .length — 400 records per profile view for two numbers. count() returns
+    // the number itself, so the records never travel at all.
+    const [completedAsWorker, completedAsClient] = await Promise.all([
+      base44.asServiceRole.entities.Task.count({ worker_id: userId, status: 'COMPLETED' }),
+      base44.asServiceRole.entities.Task.count({ client_id: userId, status: 'COMPLETED' }),
+    ]);
+    const computedTasksCompleted = completedAsWorker || targetUser.tasks_completed || 0;
+    const computedTasksPosted = completedAsClient || 0;
 
     return Response.json({
       user: {

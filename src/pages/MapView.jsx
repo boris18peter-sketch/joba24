@@ -596,7 +596,7 @@ export default function MapView() {
                 {/* Time */}
                 <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
                   <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -0.5 }}>
-                    {formatTime(remainTime)}
+                    {formatTime(remainTime, t)}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>{t('travel_time')}</div>
                 </div>

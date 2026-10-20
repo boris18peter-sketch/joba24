@@ -405,6 +405,25 @@ Deno.serve(async (req) => {
     const eligibleUserIds = [];
     const skippedUsers = [];
 
+    // ── Cooldown is answered by ONE query for the whole batch ───────────────
+    // This used to run a NotificationLog query INSIDE the per-recipient loop
+    // below. A cooldown-configured event fanned out to 500 matched workers
+    // therefore cost 500 sequential database round-trips BEFORE a single push
+    // left the building — easily past the function's time limit, and a timeout
+    // mid-loop means some workers get the notification and the rest silently do
+    // not. One query for the whole batch answers exactly the same question.
+    let cooledDownIds = new Set();
+    if (cooldownMs > 0) {
+      const since = new Date(Date.now() - cooldownMs).toISOString();
+      const recentLogs = await base44.asServiceRole.entities.NotificationLog.filter({
+        user_id: { $in: userIdsArr },
+        event_key,
+        status: 'sent',
+        created_date: { $gte: since },
+      });
+      cooledDownIds = new Set((recentLogs || []).map((l) => l.user_id));
+    }
+
     for (const user of users) {
       // אם force=true (שליחה ידנית מדשבורד) — דלג על כל הבדיקות
       if (force) {
@@ -422,19 +441,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      // בדיקת cooldown
-      if (cooldownMs > 0) {
-        const since = new Date(Date.now() - cooldownMs).toISOString();
-        const recentLogs = await base44.asServiceRole.entities.NotificationLog.filter({
-          user_id: user.id,
-          event_key,
-          status: 'sent',
-          created_date: { $gte: since },
-        });
-        if (recentLogs.length > 0) {
-          skippedUsers.push({ id: user.id, reason: 'cooldown' });
-          continue;
-        }
+      // בדיקת cooldown — נענתה מראש בשאילתה אחת לכלל הנמענים
+      if (cooledDownIds.has(user.id)) {
+        skippedUsers.push({ id: user.id, reason: 'cooldown' });
+        continue;
       }
 
       eligibleUserIds.push(user.id);
@@ -469,39 +479,46 @@ Deno.serve(async (req) => {
     // log as 'failed' so the admin dashboard shows the real status and isn't misled.
     const deliveryStatus = sentCount > 0 ? 'sent' : 'failed';
     const deliveryReason = sentCount === 0 ? (pushResult?.data?.reason || 'no_device_token') : null;
-    for (const userId of eligibleUserIds) {
-      try {
-        await base44.asServiceRole.entities.NotificationLog.create({
-          user_id: userId,
-          event_key,
-          title,
-          body,
-          deep_link: deepLink,
-          status: deliveryStatus,
-          skip_reason: deliveryReason,
-          task_id: task_id || null,
-          // The idempotency anchor for time-based notifications. The sender
-          // checks for this before sending, so the same task+occurrence+type
-          // never reaches the same recipient twice.
-          occurrence_key: occurrence_key || null,
-        });
-      } catch (logErr) {
-        console.log('[NotificationManager] Log write failed:', logErr.message);
-      }
-    }
 
-    // רישום דחיות
-    for (const skipped of skippedUsers) {
+    // ── The log is written in BATCHES, not one insert per recipient ─────────
+    // The serial loops that used to sit here were the single biggest cost in
+    // this function: a broadcast to 500 matched workers meant 500 awaited
+    // inserts. That is slow enough to time out part-way, and a timeout leaves
+    // the log half-written so the admin dashboard reports a send that only
+    // partly happened. bulkCreate writes them in one round-trip, in chunks of
+    // the SDK's own limit.
+    //
+    // The eligible and skipped records are built as ONE list so the two paths
+    // cannot drift apart, and occurrence_key still carries the idempotency
+    // anchor for time-based notifications.
+    const logRecords = [
+      ...eligibleUserIds.map((userId) => ({
+        user_id: userId,
+        event_key,
+        title,
+        body,
+        deep_link: deepLink,
+        status: deliveryStatus,
+        skip_reason: deliveryReason,
+        task_id: task_id || null,
+        occurrence_key: occurrence_key || null,
+      })),
+      ...skippedUsers.map((skipped) => ({
+        user_id: skipped.id,
+        event_key,
+        status: 'skipped',
+        skip_reason: skipped.reason,
+        task_id: task_id || null,
+        occurrence_key: occurrence_key || null,
+      })),
+    ];
+
+    for (let i = 0; i < logRecords.length; i += 500) {
       try {
-        await base44.asServiceRole.entities.NotificationLog.create({
-          user_id: skipped.id,
-          event_key,
-          status: 'skipped',
-          skip_reason: skipped.reason,
-          task_id: task_id || null,
-          occurrence_key: occurrence_key || null,
-        });
-      } catch {}
+        await base44.asServiceRole.entities.NotificationLog.bulkCreate(logRecords.slice(i, i + 500));
+      } catch (logErr) {
+        console.log('[NotificationManager] Log batch failed:', logErr.message);
+      }
     }
 
     // 6. שליחת אימייל אם מוגדר
