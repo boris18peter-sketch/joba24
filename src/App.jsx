@@ -369,16 +369,24 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
-  // Prevent pinch zoom on iOS — only block on elements that explicitly opt in
-  React.useEffect(() => {
-    const handleTouchMove = (e) => {
-      if (e.touches.length > 1 && e.target.closest('[data-no-zoom]')) {
-        e.preventDefault();
-      }
-    };
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    return () => document.removeEventListener('touchmove', handleTouchMove);
-  }, []);
+  // ── THE PINCH-ZOOM LOCK IS CSS NOW, AND THAT IS AN ANDROID FIX ────────────
+  // This used to register a `touchmove` listener on `document` with
+  // `{ passive: false }`. An explicit non-passive listener OPTS OUT of the
+  // passive-by-default behaviour Chrome gave document-level touch listeners, and
+  // the cost is paid on EVERY scroll in the app, not just where the lock is
+  // needed: Android's compositor has to synchronise with the main thread before
+  // it may scroll, so any React work in flight visibly stalls the scroll. That is
+  // exactly the "the app scrolls badly / a form feels stuck" class of complaint
+  // on Android, and it does not reproduce on iOS, whose WebView uses its own
+  // scroll model.
+  //
+  // The lock itself is one element — the map's container, marked `data-no-zoom`
+  // — and CSS expresses it better: `touch-action` is decided by the browser
+  // before the main thread is involved, so it blocks page pinch-zoom with zero
+  // scroll cost. See `[data-no-zoom]` in src/index.css. Mapbox already manages
+  // `touch-action` on its own canvas, so the map's own gestures are untouched.
+  //
+  // Do NOT re-add a non-passive touch/touchmove listener on `document` here.
 
   return (
     <AppErrorBoundary>

@@ -54,7 +54,7 @@ export default function StoreKitStudio() {
   };
 
   return (
-    <div dir="rtl" style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#f4f7fc', fontFamily: 'var(--font-inter)' }}>
+    <div dir="rtl" style={{ flex: 1, height: '100%', minHeight: 0, overflowY: 'auto', background: '#f4f7fc', fontFamily: 'var(--font-inter)' }}>
       {/* Toolbar */}
       <div
         style={{

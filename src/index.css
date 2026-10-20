@@ -236,6 +236,23 @@
   }
   input, textarea, select, button { -webkit-user-select: text; user-select: text; }
   button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+  /* ── The page pinch-zoom lock ──────────────────────────────────────────────
+     `user-scalable=no` in the viewport meta is IGNORED by Chrome on Android
+     (it was dropped for accessibility), so on Android a two-finger pinch would
+     still zoom the whole UI. The map page opts out of that with `data-no-zoom`
+     on its container, and this is the rule that does it.
+
+     It replaced a non-passive `touchmove` listener on `document` in App.jsx.
+     `touch-action` is resolved by the browser BEFORE the main thread is
+     consulted, so it blocks the page zoom with no cost to any scroll anywhere
+     else in the app — which is what that listener was charging on Android.
+
+     `pan-x pan-y` allows single-finger panning but not pinch-zoom. It does not
+     interfere with the map: Mapbox sets its own `touch-action` on the canvas
+     container, and the effective value for a touch is the intersection of the
+     chain, so the map keeps its own pinch gesture. */
+  [data-no-zoom] { touch-action: pan-x pan-y; }
   button:active { opacity: 0.85; transform: scale(0.97); }
 
   /* ── Selectable text content (overrides global user-select: none) ── */

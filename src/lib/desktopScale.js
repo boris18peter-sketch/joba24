@@ -23,8 +23,20 @@
 
 const CLASS = 'j-desktop-scale';
 
-/** The scale for a window width — the same breakpoints the stylesheet's comment names. */
-function scaleFor(width) {
+/**
+ * The scale for a window — the same breakpoints the stylesheet's comment names.
+ *
+ * A WIDE WINDOW IS NOT ENOUGH: IT MUST ALSO BE A TALL ONE.
+ * A phone rotated to landscape reports a desktop-like WIDTH (a Pixel 7 is
+ * 915×412 CSS px, a Pixel 8 Pro 998×448) while its height stays phone-sized. On
+ * width alone those crossed the 900px breakpoint, so rotating an Android phone
+ * applied the 1.3× desktop zoom to a 412px-tall screen — the app was laid out as
+ * if the window were 704×317 and then magnified. A real desktop or tablet is
+ * never that short, so requiring a desktop-like height keeps the scale where it
+ * belongs and leaves a rotated phone at scale 1.
+ */
+function scaleFor(width, height) {
+  if (height < 600) return 1;
   if (width >= 1900) return 1.7;
   if (width >= 1440) return 1.5;
   if (width >= 900) return 1.3;
@@ -35,7 +47,7 @@ function apply() {
   const root = document.documentElement;
   const width = window.innerWidth;
   const height = window.innerHeight;
-  const scale = scaleFor(width);
+  const scale = scaleFor(width, height);
 
   if (!(scale > 1) || !(width > 0) || !(height > 0)) {
     root.classList.remove(CLASS);
