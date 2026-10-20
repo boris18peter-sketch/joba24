@@ -1225,8 +1225,19 @@ export default function CreateTask() {
     );
   }
 
+  // ── THE FORM OWNS ITS OWN HEIGHT, WHATEVER CONTAINER IT LANDS IN ──────────
+  // The body below is the form's scroller (flex: 1, minHeight: 0, overflowY:
+  // auto); it can only scroll when THIS element has a definite height. `flex: 1`
+  // supplied one in the signed-out layout (a flex-column container) but NOT in
+  // the signed-in one, whose non-root route container is a plain BLOCK — there
+  // `flex: 1` is inert, so this box fell back to its content height, the
+  // scroller inside it became exactly as tall as its content (nothing to
+  // scroll), and its `overscroll-behavior: contain` swallowed the swipe instead
+  // of passing it to the page container. `height: 100%` gives it a definite
+  // height there too; in the flex container `flex: 1` still wins (flex-basis
+  // overrides height), so the signed-out path is untouched.
   return (
-    <div style={{ background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div style={{ background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerify && (
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
