@@ -26,6 +26,7 @@ import VerificationRequiredModal from '@/components/VerificationRequiredModal';
 import { parseDescription } from '@/lib/descriptionParser';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
+import ApplicantsGoldButton from '@/components/ApplicantsGoldButton';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { raiseAppOffer } from '@/lib/appOffer';
@@ -596,19 +597,12 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               task.status === 'OPEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />}
-                  <button
-                   onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
-                   style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 'var(--r-sm)', background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,var(--color-warning))' : 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: 'var(--shadow-sm)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
-                  >
-                    {liveApplicantCount > 0 ? (
-                       <>
-                         <span>{t('view_applicants')}</span>
-                         <span style={{ background: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 900, borderRadius: 8, padding: '1px 7px' }}>{liveApplicantCount}</span>
-                       </>
-                     ) : (
-                       <ScanningLabel taskId={task.id} />
-                     )}
-                  </button>
+                  <ApplicantsGoldButton
+                    count={liveApplicantCount}
+                    label={t('view_applicants')}
+                    onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
+                    scanning={<ScanningLabel taskId={task.id} />}
+                  />
                 </div>
               ) : task.status === 'TAKEN' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>

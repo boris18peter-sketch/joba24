@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster"
-import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
@@ -30,6 +29,7 @@ import NativeOAuthBounce from '@/components/NativeOAuthBounce';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 import AppDownloadPopup from '@/components/AppDownloadPopup';
+import FirstTaskPublishedFlow from '@/components/FirstTaskPublishedFlow';
 import AppLoading from '@/components/AppLoading';
 import ConsentBanner from '@/components/ConsentBanner';
 import { lazyRetry } from '@/lib/lazyRetry';
@@ -411,29 +411,15 @@ function App() {
                 {/* The "get the app" nudge for a web publisher, raised once after
                     their first published task has been seen on the feed. */}
                 <AppDownloadPopup />
+                {/* The publisher's FIRST task gets one connected flow instead of
+                    that nudge: "your task is live", then the download step in the
+                    same window — no second popup arriving after it. */}
+                <FirstTaskPublishedFlow />
                 {/* Advertising-consent notice — shown until the visitor chooses */}
                 <ConsentBanner />
               </TaskSheetProvider>
             </Router>
             <Toaster />
-            {/* ── THE SURFACE THAT MAKES THE APP'S OWN MESSAGES VISIBLE ─────────
-                Around fifty files report outcomes with `toast(...)` from 'sonner':
-                a boost that could not be charged, an application that was
-                rejected, a refund that landed, a save that failed. This surface is
-                what makes every one of them visible, and it had been removed while
-                all of those callers stayed in place — so the messages were still
-                raised and simply had nowhere to appear.
-
-                That is why a failed Boost looked like a button that did nothing,
-                and why a real failure could go unnoticed.
-
-                It is mounted at the BOTTOM, clear of the header and of the task
-                sheet, and styled from the app's own tokens (see ui/sonner.jsx), so
-                it reads as part of the app rather than as a foreign overlay. The
-                app's own designed notification surface — notificationStore →
-                LiveNotificationPopup, rendered by GlobalPopups — is untouched and
-                still owns real events. */}
-            <SonnerToaster position="bottom-center" />
           </QueryClientProvider>
         </AuthProvider>
         </BrandGate>

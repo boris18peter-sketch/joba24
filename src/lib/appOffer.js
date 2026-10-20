@@ -41,6 +41,19 @@ export function pendingAppOffer() {
   return null;
 }
 
+/**
+ * The offer has been delivered by ANOTHER surface — the first-task flow shows
+ * the download step inside its own window. Mark it seen so it can never also
+ * arrive on its own, and drop any flag still waiting.
+ */
+export function consumeAppOffer(kind) {
+  if (!SEEN_KEYS[kind]) return;
+  try {
+    localStorage.setItem(SEEN_KEYS[kind], '1');
+    localStorage.removeItem(OFFER_KEYS[kind]);
+  } catch { /* storage blocked — nothing to consume */ }
+}
+
 /** The visitor has answered — the offer never returns. */
 export function clearAppOffer(kind) {
   if (!OFFER_KEYS[kind]) return;

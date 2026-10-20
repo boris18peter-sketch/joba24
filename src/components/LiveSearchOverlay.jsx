@@ -16,7 +16,9 @@ import { actionableCategoryKey, globalCategoryFor } from '@/lib/brand/categoryRe
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import { BrandLogo } from '@/components/BrandIdentity';
-import { raiseAppOffer } from '@/lib/appOffer';
+import { consumeAppOffer, raiseAppOffer } from '@/lib/appOffer';
+import { raiseFirstTaskFlow } from '@/lib/firstTaskFlow';
+import { useAuth } from '@/lib/AuthContext';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
@@ -510,6 +512,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
 function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation, onNavigate }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [workerCount,       setWorkerCount]       = useState(0);
   const [pulseWorkers,      setPulseWorkers]       = useState([]);
   const [firstAppReceived,  setFirstAppReceived]   = useState(false);
@@ -532,12 +535,19 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
   const workerLabel = t('lso_workers_of', { category: translatedCategory });
 
   const goToTask = () => {
-    // A web visitor who has just published is the one person worth offering the
-    // app to: applicant updates arrive as push notifications, which only the
-    // installed app can deliver. Flagged ONCE, on the first publish only —
-    // AppDownloadPopup picks it up after the visitor has seen their own task
-    // highlighted on the feed.
-    raiseAppOffer('publish');
+    // The publisher's FIRST task gets the connected intro flow — "your task is
+    // live", then the download step inside the same window. The publish offer is
+    // consumed either way, so the standalone download popup can never arrive on
+    // its own right after it.
+    if (!user?.first_task_intro_seen) {
+      consumeAppOffer('publish');
+      raiseFirstTaskFlow();
+    } else {
+      // Already introduced (on any device): a web visitor is still the one person
+      // worth offering the app to — applicant updates arrive as push
+      // notifications, which only the installed app can deliver.
+      raiseAppOffer('publish');
+    }
     onNavigate?.();
     navigate(`/?newTaskId=${taskId}`);
   };
