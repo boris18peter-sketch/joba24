@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { resolvePackage } from '../../shared/paymentCatalog.ts';
+import { buildSignedCallbackUrl } from '../../shared/webhookSignature.ts';
 
 /**
  * tranzilaCreatePayment
@@ -164,12 +165,27 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Payment record created: ${payment.id} | terminal=${supplier} | sum=${sum} | credits=${credits} | method=${pay_method || 'card'} | thtk=${thtk ? 'yes' : 'no'}`);
 
+    // ── The callback URL is built HERE, on the server ───────────────────────
+    // It carries a token only the server can mint (see shared/webhookSignature.ts).
+    // A URL assembled in the browser could not carry one, and without it the
+    // notification is indistinguishable from a forged request — which is exactly
+    // how a signed-in user could previously credit themselves for a payment that
+    // never happened. If it cannot be signed, the purchase is not started at all:
+    // a payment we could not receive a trustworthy confirmation for must never
+    // be taken.
+    const notifyUrl = await buildSignedCallbackUrl(payment.id);
+    if (!notifyUrl) {
+      console.error('❌ Callback signing unavailable — refusing to start the payment');
+      return new Response(JSON.stringify({ error: 'Callback signing unavailable' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
     return new Response(JSON.stringify({
       supplier,
       sum,
       payment_id: payment.id,
       pay_method: pay_method || 'card',
       thtk,
+      notify_url: notifyUrl,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
   } catch (error) {

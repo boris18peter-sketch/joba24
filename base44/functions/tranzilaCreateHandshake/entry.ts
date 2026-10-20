@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { resolvePackage } from '../../shared/paymentCatalog.ts';
+import { buildSignedCallbackUrl } from '../../shared/webhookSignature.ts';
 
 /**
  * tranzilaCreateHandshake
@@ -81,11 +82,17 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Handshake created for payment ${payment.id}, thtk=${thtk.substring(0, 8)}...`);
 
+    // The signed callback URL, same as tranzilaCreatePayment: this endpoint also
+    // creates a payment record, so it must hand back a URL that carries a token
+    // the notification endpoint will accept.
+    const notifyUrl = await buildSignedCallbackUrl(payment.id);
+
     return new Response(JSON.stringify({
       thtk,
       supplier,
       sum,
       payment_id: payment.id,
+      notify_url: notifyUrl || '',
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
   } catch (error) {

@@ -60,11 +60,6 @@ Deno.serve(async (req) => {
       const workers = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
       const worker = workers[0];
       if (worker) {
-        const currentCredits = worker.worker_credits ?? 0;
-        const newBalance = currentCredits + creditsToRefund;
-        // $inc, never an absolute write. A publisher declining several applicants
-        // in quick succession sends several of these together; an absolute write
-        // made each one overwrite the last, so only ONE refund ever landed.
         // $inc, never an absolute write. A publisher declining several applicants
         // in quick succession sends several of these together; an absolute write
         // made each one overwrite the last, so only ONE refund ever landed.
@@ -72,6 +67,11 @@ Deno.serve(async (req) => {
           { id: worker.id },
           { $inc: { worker_credits: creditsToRefund } }
         );
+        // Read the balance back rather than assuming it: the ledger row below is
+        // what the wallet renders, so it has to carry the balance that ACTUALLY
+        // resulted. Under concurrency that is not the value read a moment ago.
+        const afterWorker = await base44.asServiceRole.entities.User.filter({ id: worker.id });
+        const newBalance = afterWorker[0]?.worker_credits ?? ((worker.worker_credits ?? 0) + creditsToRefund);
         await base44.asServiceRole.entities.CreditTransaction.create({
           user_id: app.worker_id,
           amount: creditsToRefund,

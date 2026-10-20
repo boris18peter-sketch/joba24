@@ -524,8 +524,16 @@ Deno.serve(async (req) => {
     // 6. שליחת אימייל אם מוגדר
     if (config.send_email && config.email_subject_template) {
       const emailSubject = fillTemplate(config.email_subject_template, variables);
-      for (const user of users) {
-        if (eligibleUserIds.includes(user.id) && user.email) {
+      const eligibleSet = new Set(eligibleUserIds);
+      const recipients = users.filter((u) => eligibleSet.has(u.id) && u.email);
+      // SendEmail takes ONE recipient, so these cannot be collapsed into a single
+      // call — but they must not be sent one after another either. Sent serially,
+      // a broadcast to a few hundred recipients ran past the function's time
+      // limit, and everyone after the cutoff silently never got their email.
+      // A small pool does the same total work well inside the limit.
+      const EMAIL_POOL = 5;
+      for (let i = 0; i < recipients.length; i += EMAIL_POOL) {
+        await Promise.all(recipients.slice(i, i + EMAIL_POOL).map(async (user) => {
           try {
             await base44.integrations.Core.SendEmail({
               to: user.email,
@@ -539,7 +547,7 @@ Deno.serve(async (req) => {
           } catch (emailErr) {
             console.log('[NotificationManager] Email failed:', emailErr.message);
           }
-        }
+        }));
       }
     }
 

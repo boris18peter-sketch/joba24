@@ -255,6 +255,25 @@ export async function getGlobalCategoryMap(base44: any) {
 }
 
 /**
+ * ONE category row, by its key.
+ *
+ * The paths that CHARGE a fee — applying for a task — need one number from one
+ * category. Reading it through getGlobalCategoryMap downloaded the ENTIRE
+ * catalogue first: every service, every root, each row carrying its whole task
+ * form, its status flow and its translations. That cost was then paid again by
+ * every worker applying to the same task at the same moment, which is precisely
+ * the traffic that has to stay cheap.
+ *
+ * `resolveFee` reads nothing but this row's own `fee`, so a single-row lookup
+ * answers the same question for a fraction of the work.
+ */
+export async function getCategoryRow(base44: any, categoryKey: string) {
+  if (!categoryKey) return null;
+  const rows = await base44.asServiceRole.entities.GlobalCategory.filter({ category_key: categoryKey });
+  return rows?.[0] ?? null;
+}
+
+/**
  * The global task form for a category, as ordered enabled fields.
  * Returns [] when the category has no form or does not exist.
  */

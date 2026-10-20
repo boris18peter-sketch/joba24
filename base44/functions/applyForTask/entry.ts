@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { scheduleSignature } from '../../shared/scheduling.ts';
 import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
-import { getGlobalCategoryMap } from '../../shared/globalCategories.ts';
+import { getCategoryRow } from '../../shared/globalCategories.ts';
 import { resolveFee, computeApplicationFee } from '../../shared/categoryFee.ts';
 import { ensureBrandMembership } from '../../shared/brandMembership.ts';
 import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
@@ -41,9 +41,15 @@ Deno.serve(async (req) => {
     // service inherits its root's fee — and a cap on the root stops an expensive
     // job from being charged a proportionally expensive application.
     const settings = await getBrandMarketplaceSettings(base44, task.origin_brand_id);
-    const globalMap = await getGlobalCategoryMap(base44);
     const categoryKey = task.category_details?.brand_category_key || task.category || '';
-    const creditsRequired = computeApplicationFee(task.price, resolveFee(categoryKey, globalMap, settings));
+    // ONE row, not the whole catalogue. The fee is a field of this category
+    // alone — resolveFee reads nothing else — and this line runs on every single
+    // application, including many at once on a task everyone wants.
+    const feeRow = await getCategoryRow(base44, categoryKey);
+    const creditsRequired = computeApplicationFee(
+      task.price,
+      resolveFee(categoryKey, feeRow ? { [categoryKey]: feeRow } : {}, settings),
+    );
 
     // Fetch fresh worker data for credits check
     const workerUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });

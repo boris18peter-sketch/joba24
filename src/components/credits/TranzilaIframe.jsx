@@ -27,7 +27,7 @@ import { loadTranzilaSdk } from '@/lib/tranzilaSdk';
  *   onClose       — Called when user closes
  *   onSuccess     — Called when payment confirmed completed
  */
-export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, payMethod, thtk, onClose, onSuccess }) {
+export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, payMethod, thtk, notifyUrl: signedNotifyUrl, onClose, onSuccess }) {
   const { t } = useLanguage();
   const formRef = useRef(null);
   const pollRef = useRef(null);
@@ -44,11 +44,15 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
   // is not a publicly reachable HTTPS endpoint means a paid purchase is never
   // credited. The URL is therefore built from an explicit trusted constant and
   // then fail-closed validated.
-  const TRUSTED_NOTIFY_ORIGIN = 'https://joba24.base44.app';
   const TRUSTED_NOTIFY_HOST = 'joba24.base44.app';
   const TRUSTED_NOTIFY_PATH = '/functions/tranzilaNotify';
 
-  const notifyUrl = `${TRUSTED_NOTIFY_ORIGIN}${TRUSTED_NOTIFY_PATH}?payment_id=${encodeURIComponent(paymentId)}`;
+  // ── The URL is ISSUED BY THE SERVER, not built here ──────────────────────
+  // It carries a token only the server can mint, and the notification endpoint
+  // refuses anything without one — an unsigned callback is indistinguishable
+  // from a forged one. So this comes straight from tranzilaCreatePayment; if the
+  // server could not sign it, there is no URL and the payment is not started.
+  const notifyUrl = signedNotifyUrl || '';
 
   const notifyConfigError = (() => {
     try {
@@ -56,6 +60,8 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
       if (u.protocol !== 'https:') return 'protocol';
       if (u.hostname !== TRUSTED_NOTIFY_HOST) return 'host';
       if (!u.pathname.startsWith(TRUSTED_NOTIFY_PATH)) return 'path';
+      // No token → not a URL the notification endpoint would accept.
+      if (!u.searchParams.get('t')) return 'unsigned';
       return null;
     } catch {
       return 'parse';

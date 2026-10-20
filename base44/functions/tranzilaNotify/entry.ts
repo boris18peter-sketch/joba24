@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { resolvePackage } from '../../shared/paymentCatalog.ts';
+import { verifyPaymentCallback } from '../../shared/webhookSignature.ts';
 
 /**
  * tranzilaNotify — server-to-server notification endpoint called by Tranzila.
@@ -59,6 +60,22 @@ Deno.serve(async (req) => {
 
     if (!paymentId) {
       console.error('❌ Missing payment_id in query');
+      return new Response('OK', { status: 200 });
+    }
+
+    // ── THE CALLBACK MUST BE OURS ───────────────────────────────────────────
+    // This endpoint is public: Tranzila's servers hold no Joba24 session, so
+    // there is no user token to check. Everything it used to grant on —
+    // `Response=000`, the `index` — arrives in the request body, i.e. from
+    // whoever sent it. A signed-in user could therefore create a pending
+    // payment, POST those two fields for its id, and be credited a package's
+    // worth of Jobas without ever paying.
+    //
+    // The URL is issued by the server with a token only the server can mint, so
+    // a request without a valid one is not a notification at all. It answers 200
+    // (so Tranzila never retries a forged request) and grants nothing.
+    if (!(await verifyPaymentCallback(paymentId, url.searchParams.get('t')))) {
+      console.error(`❌ Rejected unsigned/forged notification for payment ${paymentId} — nothing granted`);
       return new Response('OK', { status: 200 });
     }
 
@@ -139,11 +156,6 @@ Deno.serve(async (req) => {
       });
 
       // 2. Balance, then 3. payment flag.
-      // $inc, never an absolute write. A purchase arriving beside any other
-      // balance change must ADD to the balance, not overwrite it — an absolute
-      // write would silently discard whichever change lost the race. The ledger
-      // row above is written first, so idempotency is unchanged; `newBalance` is
-      // only what the ledger records.
       // An ABSOLUTE write here, deliberately. This is Tranzila's webhook, so the
       // request carries no user token — and the platform refuses a bulk user
       // update in that context ("Bulk user update not allowed"). An atomic $inc
