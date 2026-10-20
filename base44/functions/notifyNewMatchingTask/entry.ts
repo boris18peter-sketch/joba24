@@ -103,57 +103,14 @@ Deno.serve(async (req) => {
       return false;
     };
 
-    // ── Only users who can actually be notified are read ────────────────────
-    // This used to page through EVERY user in the app on every single publish,
-    // and then throw almost all of them away in JavaScript. Measured on the live
-    // app it was scanning 160 users to find 8 eligible ones — 95% of the work,
-    // the bandwidth and the latency spent purely to discard records. That ratio
-    // only gets worse as the app grows, and because this runs on EVERY new task
-    // it is the most repeated cost in the whole system.
+    // ── The task's own branch of the taxonomy is read FIRST ─────────────────
+    // (Moved above the user scan, because the ancestry it produces is part of
+    // the scan's own filter — see the match clauses below.)
     //
-    // The two questions the database can answer exactly — "has a push token" and
-    // "is an active account" — are now asked in the query, so only the survivors
-    // travel. The matching logic below is unchanged and still decides every
-    // single recipient, and isActiveUser() still re-checks every row that comes
-    // back, so nobody who used to be notified can be missed.
-    const activeCondition = gateActive
-      ? { $or: [{ is_approved: true }, { role: 'admin' }] }
-      : (releaseMode === 'new_only' && Number.isFinite(releaseAtMs))
-        ? { $or: [{ is_approved: true }, { role: 'admin' }, { created_date: { $gte: new Date(releaseAtMs).toISOString() } }] }
-        : {};
-
-    const scanQuery = {
-      fcm_tokens: { $exists: true },
-      is_blocked: { $ne: true },
-      disabled: { $ne: true },
-      ...activeCondition,
-    };
-
-    let allUsers = [];
-    let skip = 0;
-    const pageSize = 200;
-    while (true) {
-      const page = await base44.asServiceRole.entities.User.filter(scanQuery, '-created_date', pageSize, skip);
-      allUsers = allUsers.concat(page);
-      if (page.length < pageSize) break;
-      skip += pageSize;
-    }
-
-    const eligibleWorkers = allUsers.filter(u =>
-      u.fcm_tokens?.length > 0 &&
-      u.id !== data.client_id &&
-      isActiveUser(u)
-    );
-
-    if (!eligibleWorkers.length) {
-      return Response.json({ sent: 0, reason: 'No eligible workers' });
-    }
-
-    // ── Global category labels + ancestry ───────────────────────────────────
     // The category name in the notification must be the REAL, current label of
     // the task's category — not a raw key and not a legacy hardcoded table that
     // drifted away from the live taxonomy.
-    // ── Only the task's own branch of the taxonomy is read ──────────────────
+    //
     // This used to download the ENTIRE category table on every publish — every
     // service, every root, and every heavy field each row carries (its whole
     // form definition, its status flow, its translations, its examples) — purely
@@ -187,6 +144,99 @@ Deno.serve(async (req) => {
       return chain;
     };
 
+    // ── What the MATCH needs from a worker — pushed into the query ──────────
+    // A worker is notified only when the task is a "For You" match, and every
+    // branch of that match needs one of exactly three things from the worker:
+    //
+    //   · a category preference overlapping the task's ancestry → categoryMatch
+    //   · a preferred city → the city match, AND the city→coords proximity route
+    //   · GPS coordinates  → the other way to be "nearby"
+    //
+    // A worker with none of the three cannot match under ANY branch, so the
+    // database excludes them instead of shipping them here to be thrown away.
+    //
+    // This is deliberately a SUPERSET: it over-includes (an empty
+    // preferred_cities array still passes) and the match below still decides
+    // every single recipient. It removes only the provably unreachable.
+    //
+    // Each clause is added only when the TASK makes that route possible at all:
+    // a task with no coordinates can never produce a "nearby", and one with no
+    // city can never produce a city match — so those clauses are dropped rather
+    // than scanning for a match that cannot happen.
+    const taskAncestry = taskCategory ? ancestryOf(taskCategory) : [];
+    const matchCategories = [...new Set([taskCategory, ...taskAncestry].filter(Boolean))];
+    const taskHasCoords = !!(taskLat && taskLng);
+
+    const matchClauses: any[] = [];
+    if (matchCategories.length) matchClauses.push({ preferred_categories: { $in: matchCategories } });
+    // A preferred city feeds the city match when the task names a city, and the
+    // city→coordinates proximity fallback whenever the task has coordinates.
+    if (taskCity || taskHasCoords) matchClauses.push({ preferred_cities: { $exists: true } });
+    if (taskHasCoords) matchClauses.push({ last_lat: { $exists: true } });
+
+    if (!matchClauses.length) {
+      // Nothing about this task can match anyone: no category, no city, no
+      // coordinates. There is no candidate set to read.
+      return Response.json({ sent: 0, reason: 'Task carries nothing to match on' });
+    }
+
+    // SECURITY (pre-launch gate) — unchanged: only reach users who can actually
+    // USE the app. Unapproved users on the waiting page must not receive task
+    // notifications. Active = approved, admin, or released by the launch settings.
+    const activeCondition = gateActive
+      ? { $or: [{ is_approved: true }, { role: 'admin' }] }
+      : (releaseMode === 'new_only' && Number.isFinite(releaseAtMs))
+        ? { $or: [{ is_approved: true }, { role: 'admin' }, { created_date: { $gte: new Date(releaseAtMs).toISOString() } }] }
+        : {};
+
+    // ── Only users who can actually be notified are read ────────────────────
+    // This used to page through EVERY user in the app on every single publish,
+    // and then throw almost all of them away in JavaScript. Measured on the live
+    // app it was scanning 160 users to find 8 eligible ones — 95% of the work,
+    // the bandwidth and the latency spent purely to discard records. That ratio
+    // only gets worse as the app grows, and because this runs on EVERY new task
+    // it is the most repeated cost in the whole system.
+    //
+    // The questions the database can answer exactly — "has a push token", "is an
+    // active account", and "could this worker match at all" — are now asked in
+    // the query, so only the survivors travel. The matching logic below is
+    // unchanged and still decides every single recipient, and isActiveUser()
+    // still re-checks every row that comes back, so nobody who used to be
+    // notified can be missed.
+    //
+    // The clauses are combined with $and rather than spread, because the launch
+    // gate and the match clauses are each an $or of their own — spreading them
+    // would have let one overwrite the other.
+    const scanQuery = {
+      $and: [
+        { fcm_tokens: { $exists: true } },
+        { is_blocked: { $ne: true } },
+        { disabled: { $ne: true } },
+        ...(Object.keys(activeCondition).length ? [activeCondition] : []),
+        { $or: matchClauses },
+      ],
+    };
+
+    let allUsers = [];
+    let skip = 0;
+    const pageSize = 200;
+    while (true) {
+      const page = await base44.asServiceRole.entities.User.filter(scanQuery, '-created_date', pageSize, skip);
+      allUsers = allUsers.concat(page);
+      if (page.length < pageSize) break;
+      skip += pageSize;
+    }
+
+    const eligibleWorkers = allUsers.filter(u =>
+      u.fcm_tokens?.length > 0 &&
+      u.id !== data.client_id &&
+      isActiveUser(u)
+    );
+
+    if (!eligibleWorkers.length) {
+      return Response.json({ sent: 0, reason: 'No eligible workers' });
+    }
+
     // ── "For You" matching logic (mirrors feedRanker.js) ────────────────────
     // A worker receives a notification when the task is a "For You" match:
     //
@@ -200,7 +250,6 @@ Deno.serve(async (req) => {
     // then preferred_cities → CITY_COORDS fallback. < 5km = nearby (same as feed).
     const NEARBY_KM = 5; // matches isNearby badge in feedRanker.js
     const matchedUserIds = [];
-    const taskAncestry = taskCategory ? ancestryOf(taskCategory) : [];
 
     for (const worker of eligibleWorkers) {
       const prefs = Array.isArray(worker.preferred_categories) ? worker.preferred_categories : [];
