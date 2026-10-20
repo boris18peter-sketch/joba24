@@ -73,6 +73,13 @@ if (typeof window !== 'undefined') {
     warm(() => import('@/pages/ChatInbox'));
     warm(() => import('@/pages/Profile'));
     warm(() => import('@/pages/CreateTask'));
+    // The task-detail sheet is opened by tapping a card — the single most
+    // frequent action in the app — and until now its chunk started downloading
+    // at that very tap, so the sheet sat behind a spinner. Warming it during
+    // idle means the sheet has nothing left to fetch when it opens. The map
+    // library it used to drag in (1.8 MB) is now its own lazy chunk and is
+    // deliberately NOT warmed here.
+    warm(() => import('@/pages/TaskDetail'));
   };
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(preloadPages, { timeout: 4000 });

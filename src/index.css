@@ -76,6 +76,11 @@
        BEHIND, not an opaque bar that hides it. Brands override this through
        themeTokens, which derives the same translucency from their nav colour. */
     --j-nav-glass: rgba(255,255,255,0.72);
+    /* The sliding selection bubble — a soft blue pill the active icon sits on.
+       Deliberately a tint, not a solid fill: the bar stays light and the icon
+       stays the thing you read. */
+    --j-nav-bubble: rgba(26,111,212,0.13);
+    --j-nav-bubble-border: rgba(26,111,212,0.26);
     --modal-bg:    #f2f5fb;
     --sheet-bg:    #ffffff;
     --card-bg:     #ffffff;
@@ -172,6 +177,8 @@
       --header-bg:   rgba(15,23,42,0.96);
       --nav-bg:      #1e293b;
       --j-nav-glass: rgba(15,23,42,0.72);
+      --j-nav-bubble: rgba(96,165,250,0.20);
+      --j-nav-bubble-border: rgba(96,165,250,0.36);
       --modal-bg:    #0f172a;
       --sheet-bg:    #1e293b;
       --card-bg:     #1e293b;

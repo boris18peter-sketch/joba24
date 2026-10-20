@@ -27,7 +27,7 @@ import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import { releaseFirstTaskFlow } from '@/lib/firstTaskFlow';
-import { isPublisherContext, markPublisherContext } from '@/lib/publisherContext';
+import { isPublisherContext } from '@/lib/publisherContext';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import {
   myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery,
@@ -120,23 +120,30 @@ export default function HomeFeed() {
       if (await hasAnnouncedBonus(me.id, 'welcome_gift')) return;
       // ── THE WELCOME CELEBRATION IS FOR A VISITOR WHO CAME TO FIND WORK ─────
       // Joba24 lets one person be both publisher and worker, so this is decided
-      // by CONTEXT, never by "has a task": a visitor inside the publish flow —
-      // or acting as a publisher — is on a different journey, and the signup
-      // popup is not part of it. A visitor who came to find work keeps the
-      // celebration exactly as it was.
+      // by the CONTEXT the visitor is in — the publish flow they have entered —
+      // and never by "has a task". Someone filling in the publish form is on a
+      // different journey, and the signup celebration is not part of it.
       //
       // This decides ONE thing: whether the POPUP is shown. Eligibility,
       // balances and the granting of every bonus are untouched.
-      if (isPublisherContext()) {
-        rememberBonusAnnounced(me.id, 'welcome_gift');
-        return;
-      }
-      rememberBonusAnnounced(me.id, 'welcome_gift');
+      //
+      // ── AND SUPPRESSING IT MUST NOT BURN IT ────────────────────────────────
+      // The one-time "already celebrated" marker used to be written HERE, before
+      // the popup appeared — so a publisher's suppressed popup was marked as
+      // announced for ever, on every device, and the welcome gift they were owed
+      // could never be announced to them again. Suppression now returns WITHOUT
+      // touching the marker: this session simply passes, and the celebration is
+      // still waiting the next time they browse as a job-seeker.
+      if (isPublisherContext()) return;
       setTimeout(() => {
         // Re-checked at the moment of showing: a visitor can open the publish
         // form in the second between scheduling and showing, and the welcome
         // celebration must never land on top of that.
         if (isPublisherContext()) return;
+        // The marker is written only NOW — when the popup is genuinely about to
+        // appear. Anything that stopped it before this line costs nothing, so a
+        // closed app or a fast navigation can no longer swallow the gift.
+        rememberBonusAnnounced(me.id, 'welcome_gift');
         setShowGiftModal(true);
       }, 800);
     })();
@@ -160,13 +167,6 @@ export default function HomeFeed() {
       : allMyPublishedTasks.filter(t => !t.origin_brand_id || t.origin_brand_id === brandId)),
     [allMyPublishedTasks, isPlatformBrand, brandId]
   );
-
-  // A visitor with a task of their own already on the feed is acting as a
-  // publisher — the same context the publish form marks, recognised here on any
-  // device so a returning publisher is treated like one in mid-flow.
-  useEffect(() => {
-    if (myTasks.length > 0) markPublisherContext();
-  }, [myTasks.length]);
 
   // ── Active tasks are DERIVED, never fetched ───────────────────────────────
   // Both used to be their own one-row query — plus a 30-second poll each — for

@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import BottomNav from '@/components/BottomNav';
 import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
@@ -671,6 +672,23 @@ export default function Layout() {
     { to: '/profile', icon: User, label: navLabel('nav_profile_short') },
   ];
 
+  // The nav's own click behaviour, unchanged: a guest is asked to sign in for
+  // anything but the feed, and tapping the tab you are ALREADY on scrolls it
+  // back to the top. Kept here rather than inside the nav so the gesture and the
+  // navigation stay separate concerns.
+  const handleNavClick = (to, e) => {
+    if (effectiveGuest && to !== '/') {
+      e.preventDefault();
+      login(GUEST_LOGIN_TITLE_KEY[to]);
+      return;
+    }
+    if (location.pathname === to) {
+      e.preventDefault();
+      const el = document.getElementById('main-scroll');
+      if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
@@ -843,40 +861,16 @@ export default function Layout() {
           `location.pathname`. Both now read the same source, so the nav's
           visibility and the space reserved for it can no longer disagree. */}
       {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(location.pathname) && !location.pathname.startsWith('/task/') && !location.pathname.startsWith('/chat/') && createPortal(
-        <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--j-nav-glass, var(--nav-bg))', borderTop: '1px solid var(--border-1)', boxShadow: '0 -1px 10px rgba(10,90,190,0.05)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr', alignItems: 'center', padding: '4px 4px 2px', position: 'relative' }}>
-            {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
-              const active = location.pathname === to;
-              if (primary) {
-                return (
-                  // The publish form is open to EVERYONE: a visitor — guest
-                  // included — fills it freely and is asked to sign in only at
-                  // the PUBLISH step. Gating this button behind login was the one
-                  // reason the form was reachable from the side menu but not from
-                  // the main feed.
-                  <button id="onboarding-create-btn" key={to} onClick={() => navigate(to)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent', justifySelf: 'center' }}>
-                    <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-nav-active, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
-                      <Icon size={24} color="white" />
-                    </div>
-                    <span style={{ fontSize: 9.5, color: 'var(--brand-nav-active, var(--brand-primary))', marginTop: 3, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
-                  </button>
-                );
-              }
-              return (
-                <Link key={to} to={to} onClick={(e) => { if (effectiveGuest && to !== '/') { e.preventDefault(); login(GUEST_LOGIN_TITLE_KEY[to]); return; } if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={21} color={active ? 'var(--brand-nav-active, var(--brand-primary))' : 'var(--brand-nav-text, #9bb3d4)'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
-                    {badge > 0 && (
-                      <div style={{ position: 'absolute', top: -5, right: -10, background: '#dc2626', color: 'white', fontSize: 9, fontWeight: 900, minWidth: 17, height: 17, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white', padding: '0 4px' }}>{badge}</div>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 9.5, color: active ? 'var(--brand-nav-active, var(--brand-primary))' : 'var(--brand-nav-text, var(--text-3))', fontWeight: active ? 700 : 500, transition: 'color 0.2s' }}>{label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>,
+        // The bar itself lives in its own component now: the sliding bubble and
+        // the drag gesture are a self-contained interaction, and this file is
+        // already long enough. The tab list, the guest gating and the
+        // scroll-to-top behaviour are all unchanged — they are simply handed in.
+        <BottomNav
+          items={navItems}
+          activePath={location.pathname}
+          onNavigate={handleNavClick}
+          onPrimary={() => navigate('/create-task')}
+        />,
         document.body
       )}
       {boostOverlayData && createPortal(

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { trackEvent } from '@/lib/analytics';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
@@ -49,7 +49,6 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import MediaLightbox from '@/components/MediaLightbox';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import ReportModal from '@/components/ReportModal';
-import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
 import { parseDescription } from '@/lib/descriptionParser';
@@ -92,7 +91,14 @@ function ScanningLabelDetail({ t }) {
   );
 }
 
-import TaskLocationMap from '@/components/TaskLocationMap';
+// ── THE TWO HEAVY CHILDREN ARE FETCHED SEPARATELY, ON PURPOSE ────────────────
+// Both used to be static imports, so opening ANY task card downloaded them
+// before the sheet could paint: the map pulls in Mapbox (~1.8 MB) and the
+// credits popup pulls in three.js. A task with no location, or a user who never
+// buys credits, paid for both. They are their own chunks now and are requested
+// only when the thing that needs them is actually on screen.
+const TaskLocationMap = lazy(() => import('@/components/TaskLocationMap'));
+const BuyCreditsModal = lazy(() => import('@/components/BuyCreditsModal'));
 
 
 import ApplySheet from '@/components/ApplySheet';
@@ -1243,10 +1249,12 @@ export default function TaskDetail(props) {
 
         {/* Task location map — shown for all tasks with location (including TAKEN/active) */}
         {task.lat && task.lng && !['CANCELLED', 'EXPIRED'].includes(task.status) &&
-        <TaskLocationMap
-          task={task}
-          onGenerateInvoice={task.status === 'COMPLETED' && me?.id === task.worker_id ? () => setShowInvoice(true) : undefined}
-        />
+        <Suspense fallback={<div style={{ height: 168, margin: '8px 12px 0', borderRadius: 20, background: 'var(--surface-3)' }} className="animate-pulse" />}>
+          <TaskLocationMap
+            task={task}
+            onGenerateInvoice={task.status === 'COMPLETED' && me?.id === task.worker_id ? () => setShowInvoice(true) : undefined}
+          />
+        </Suspense>
         }
 
 
@@ -1380,10 +1388,12 @@ export default function TaskDetail(props) {
       {/* Purchase popup — must render from inside the sheet too, otherwise the
           "not enough jobas" flow from the task sheet does nothing. */}
       {showBuyCredits && createPortal(
-        <BuyCreditsModal
-          creditsNeeded={creditsNeeded}
-          onClose={() => { setShowBuyCredits(false); setCreditsNeeded(null); }}
-        />,
+        <Suspense fallback={null}>
+          <BuyCreditsModal
+            creditsNeeded={creditsNeeded}
+            onClose={() => { setShowBuyCredits(false); setCreditsNeeded(null); }}
+          />
+        </Suspense>,
         document.body
       )}
 

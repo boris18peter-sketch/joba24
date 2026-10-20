@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Users, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp } from 'lucide-react';
+import { X, Home, Map, Plus, User, Users, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -31,6 +31,7 @@ export default function SideMenu({ open, onClose }) {
     { to: '/map', icon: Map, label: t('nav_map') },
     { to: '/chats', icon: MessageCircle, label: t('nav_chats') },
     { to: '/notifications', icon: Bell, label: t('nav_notifications') },
+    { to: '/schedule', icon: CalendarDays, label: t('sched_title') },
     { to: '/daily-goal', icon: Target, label: t('nav_daily_goal') },
     { to: '/leaderboard', icon: Trophy, label: t('nav_leaderboard') },
     // No first-run link here on purpose. The onboarding screens belong to a
