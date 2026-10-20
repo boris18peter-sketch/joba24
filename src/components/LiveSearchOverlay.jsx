@@ -17,7 +17,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import { BrandLogo } from '@/components/BrandIdentity';
 import { consumeAppOffer, raiseAppOffer } from '@/lib/appOffer';
-import { raiseFirstTaskFlow } from '@/lib/firstTaskFlow';
+import { requestFirstTaskFlow } from '@/lib/firstTaskFlow';
 import { useAuth } from '@/lib/AuthContext';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
@@ -541,7 +541,9 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
     // its own right after it.
     if (!user?.first_task_intro_seen) {
       consumeAppOffer('publish');
-      raiseFirstTaskFlow();
+      // REQUESTED, not opened: the feed has not been reached yet, and the
+      // highlight that points the publisher at their new task has not run.
+      requestFirstTaskFlow();
     } else {
       // Already introduced (on any device): a web visitor is still the one person
       // worth offering the app to — applicant updates arrive as push

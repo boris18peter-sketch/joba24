@@ -843,7 +843,7 @@ export default function Layout() {
           `location.pathname`. Both now read the same source, so the nav's
           visibility and the space reserved for it can no longer disagree. */}
       {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(location.pathname) && !location.pathname.startsWith('/task/') && !location.pathname.startsWith('/chat/') && createPortal(
-        <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--j-nav-glass, var(--nav-bg))', borderTop: '1px solid var(--border-1)', boxShadow: '0 -1px 10px rgba(10,90,190,0.05)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr', alignItems: 'center', padding: '4px 4px 2px', position: 'relative' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
               const active = location.pathname === to;

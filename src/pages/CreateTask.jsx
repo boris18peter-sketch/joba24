@@ -14,6 +14,7 @@ import { getRequirementCategories, getActiveRequirements } from '@/lib/requireme
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { markPublisherContext } from '@/lib/publisherContext';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
@@ -229,6 +230,13 @@ export default function CreateTask() {
   const audioChunksRef = useRef([]);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const submittingRef = useRef(false);
+
+  // ── This session is publishing ────────────────────────────────────────────
+  // The welcome-bonus celebration belongs to a visitor who came to find work.
+  // A publisher — including a guest who signs in half-way through this form — is
+  // on a different journey, and that popup must not land on top of it. Marked
+  // here, at the one place every publish starts.
+  useEffect(() => { markPublisherContext(); }, []);
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });

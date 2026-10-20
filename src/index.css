@@ -72,6 +72,10 @@
     /* ── Layout ── */
     --header-bg:   rgba(248,250,254,0.96);
     --nav-bg:      #ffffff;
+    /* The bottom nav is frosted glass: a translucent tint the page scrolls
+       BEHIND, not an opaque bar that hides it. Brands override this through
+       themeTokens, which derives the same translucency from their nav colour. */
+    --j-nav-glass: rgba(255,255,255,0.72);
     --modal-bg:    #f2f5fb;
     --sheet-bg:    #ffffff;
     --card-bg:     #ffffff;
@@ -167,6 +171,7 @@
       /* ── Layout ── */
       --header-bg:   rgba(15,23,42,0.96);
       --nav-bg:      #1e293b;
+      --j-nav-glass: rgba(15,23,42,0.72);
       --modal-bg:    #0f172a;
       --sheet-bg:    #1e293b;
       --card-bg:     #1e293b;
@@ -473,7 +478,25 @@ html[data-brand-themed] .j-modal-surface {
    that is also portaled to <body> with z-index ≥ 9999 will always
    render above it. This is a hard rule across the entire app.
    ════════════════════════════════════════════════════════════════════ */
-.j-bottom-nav { z-index: 30 !important; }
+.j-bottom-nav {
+  z-index: 30 !important;
+  /* ── THE FROSTED FOOTER ────────────────────────────────────────────────────
+     ONE static backdrop-filter on the bar itself, deliberately not driven by
+     scroll. A filter recomputed on every scroll event is exactly the per-frame
+     work that makes an Android WebView stutter, and this effect is identical
+     whether the browser samples it once or a hundred times. Nothing on this
+     element animates, so it can neither shift the layout nor cause a re-render.
+
+     `saturate` stops the content behind the bar turning grey through the blur;
+     the tint carries the legibility instead of a heavy shadow. */
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+}
+/* No backdrop-filter (older WebViews): fall back to the opaque bar, so the
+   labels are never sitting on top of unreadable content. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .j-bottom-nav { background: var(--nav-bg) !important; }
+}
 
 .mobile-sheet-overlay,
 .mobile-modal-center,

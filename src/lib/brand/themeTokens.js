@@ -289,6 +289,22 @@ export function resolveTheme(theme, inherited = {}) {
   return t;
 }
 
+/**
+ * The bottom nav is frosted glass, so its tint has to stay TRANSLUCENT — an
+ * opaque brand colour would hide the content scrolling behind it, which is the
+ * one thing that look must not do. The brand still chooses the colour; only the
+ * alpha is decided here.
+ */
+function toGlass(color, fallback) {
+  const c = String(color || '').trim();
+  if (!c) return fallback;
+  if (c.startsWith('rgba') || c.startsWith('hsla')) return c;
+  const hex = c.match(/^#([0-9a-fA-F]{6})$/);
+  if (!hex) return c;
+  const n = parseInt(hex[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0.72)`;
+}
+
 /** A tint of a hex colour over white — used for the light "selected" surface. */
 function tint(hex, amount = 0.9) {
   let h = String(hex || '').replace('#', '');
@@ -341,6 +357,7 @@ export function themeToCssVars(theme) {
     '--card-bg': t.card_bg,
     '--sheet-bg': t.modal_bg,
     '--nav-bg': t.nav_bg,
+    '--j-nav-glass': toGlass(t.nav_bg, 'rgba(255,255,255,0.72)'),
     '--brand-muted-surface': t.surface_alt,
     '--brand-hero-bg': t.hero_bg,
     '--brand-hero-text': t.hero_text,

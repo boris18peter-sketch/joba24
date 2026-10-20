@@ -26,6 +26,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
 import SignupGiftModal from '@/components/SignupGiftModal';
+import { releaseFirstTaskFlow } from '@/lib/firstTaskFlow';
+import { isPublisherContext, markPublisherContext } from '@/lib/publisherContext';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import {
   myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery,
@@ -116,8 +118,27 @@ export default function HomeFeed() {
     // was then announced again on every launch.
     (async () => {
       if (await hasAnnouncedBonus(me.id, 'welcome_gift')) return;
+      // ── THE WELCOME CELEBRATION IS FOR A VISITOR WHO CAME TO FIND WORK ─────
+      // Joba24 lets one person be both publisher and worker, so this is decided
+      // by CONTEXT, never by "has a task": a visitor inside the publish flow —
+      // or acting as a publisher — is on a different journey, and the signup
+      // popup is not part of it. A visitor who came to find work keeps the
+      // celebration exactly as it was.
+      //
+      // This decides ONE thing: whether the POPUP is shown. Eligibility,
+      // balances and the granting of every bonus are untouched.
+      if (isPublisherContext()) {
+        rememberBonusAnnounced(me.id, 'welcome_gift');
+        return;
+      }
       rememberBonusAnnounced(me.id, 'welcome_gift');
-      setTimeout(() => setShowGiftModal(true), 800);
+      setTimeout(() => {
+        // Re-checked at the moment of showing: a visitor can open the publish
+        // form in the second between scheduling and showing, and the welcome
+        // celebration must never land on top of that.
+        if (isPublisherContext()) return;
+        setShowGiftModal(true);
+      }, 800);
     })();
   }, [me?.id, me?.worker_credits, giftAmount]);
 
@@ -139,6 +160,13 @@ export default function HomeFeed() {
       : allMyPublishedTasks.filter(t => !t.origin_brand_id || t.origin_brand_id === brandId)),
     [allMyPublishedTasks, isPlatformBrand, brandId]
   );
+
+  // A visitor with a task of their own already on the feed is acting as a
+  // publisher — the same context the publish form marks, recognised here on any
+  // device so a returning publisher is treated like one in mid-flow.
+  useEffect(() => {
+    if (myTasks.length > 0) markPublisherContext();
+  }, [myTasks.length]);
 
   // ── Active tasks are DERIVED, never fetched ───────────────────────────────
   // Both used to be their own one-row query — plus a 30-second poll each — for
@@ -604,6 +632,24 @@ export default function HomeFeed() {
     const glowTimer = setTimeout(() => setHighlightTaskId(null), 5200);
     return () => { clearTimeout(scrollTimer); clearTimeout(tapClearTimer); clearTimeout(glowTimer); };
   }, [highlightTaskId, myTasks.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── The first-task intro waits for the highlight to finish ────────────────
+  // It used to open the instant the publisher landed on the feed, on top of the
+  // glow that is telling them where their task is. It now FOLLOWS that phase:
+  // `highlightTaskId` is the very state the glow is driven by, and the glow's own
+  // timer is what clears it — so the popup trails the animation instead of racing
+  // it, with no arbitrary delay of our own. `releaseFirstTaskFlow` consumes the
+  // request, so a re-render, a navigation or a data refresh cannot open it twice.
+  const prevHighlightRef = useRef(null);
+  useEffect(() => {
+    const had = prevHighlightRef.current;
+    prevHighlightRef.current = highlightTaskId;
+    if (had && !highlightTaskId) releaseFirstTaskFlow();
+  }, [highlightTaskId]);
+
+  // Nothing is being highlighted — the visitor reached the feed directly, so the
+  // request must not be held back for ever.
+  useEffect(() => { if (!highlightTaskId) releaseFirstTaskFlow(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearchSubmit = (val) => {
     if (!val.trim()) return;
