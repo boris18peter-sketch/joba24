@@ -42,7 +42,14 @@ Deno.serve(async (req) => {
     }
 
     const newBalance = currentCredits - STORY_COST;
-    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
+    // $inc, never an absolute write — the charge must subtract from whatever the
+    // balance actually is, not from the value read a moment ago.
+    // $inc, never an absolute write — the charge must subtract from whatever the
+    // balance actually is, not from the value read a moment ago.
+    await base44.asServiceRole.entities.User.updateMany(
+      { id: user.id },
+      { $inc: { worker_credits: -STORY_COST } }
+    );
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: user.id,
       amount: -STORY_COST,

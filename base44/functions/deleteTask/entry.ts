@@ -88,7 +88,7 @@ export default async function (req) {
       const base = runningBalance[worker.id] ?? (worker.worker_credits ?? 0);
       const newBalance = base + creditsToRefund;
       runningBalance[worker.id] = newBalance;
-      userPatches.push({ id: worker.id, worker_credits: newBalance });
+      userPatches.push({ id: worker.id, delta: creditsToRefund });
       ledgerRows.push({
         user_id: worker.id,
         amount: creditsToRefund,
@@ -105,7 +105,12 @@ export default async function (req) {
     // batched update — but the application statuses and the whole ledger are
     // written in single calls now, which is where the round-trips actually were.
     if (userPatches.length) {
-      await Promise.all(userPatches.map((p) => base44.asServiceRole.entities.User.update(p.id, { worker_credits: p.worker_credits })));
+      // $inc per worker, never an absolute write — every refund adds its own
+      // amount, so nothing is lost if another balance change lands alongside.
+      await Promise.all(userPatches.map((p) => base44.asServiceRole.entities.User.updateMany(
+        { id: p.id },
+        { $inc: { worker_credits: p.delta } },
+      )));
     }
     if (ledgerRows.length) await base44.asServiceRole.entities.CreditTransaction.bulkCreate(ledgerRows);
 

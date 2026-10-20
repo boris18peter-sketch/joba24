@@ -42,7 +42,12 @@ Deno.serve(async (req) => {
     const currentCredits = worker.worker_credits ?? 0;
     const newBalance = currentCredits + creditsToRefund;
 
-    // Update worker credits
+    // Update worker credits — $inc, so a refund landing beside any other balance
+    // change adds to it instead of overwriting it. `newBalance` is what the
+    // ledger records.
+    // An ABSOLUTE write here, deliberately. This runs as an internal service-role
+    // call with no user token, and the platform refuses a bulk user update in
+    // that context. The absolute form works from every context.
     await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
 
     // Log transaction

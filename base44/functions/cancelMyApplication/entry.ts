@@ -62,7 +62,14 @@ Deno.serve(async (req) => {
       const worker = workerUsers[0];
       if (worker) {
         const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
-        await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
+        // $inc, never an absolute write — a cancellation landing beside any other
+        // balance change must add to it, not overwrite it.
+        // $inc, never an absolute write — a cancellation landing beside any other
+        // balance change must add to it, not overwrite it.
+        await base44.asServiceRole.entities.User.updateMany(
+          { id: worker.id },
+          { $inc: { worker_credits: creditsToRefund } }
+        );
         await base44.asServiceRole.entities.CreditTransaction.create({
           user_id: user.id,
           amount: creditsToRefund,

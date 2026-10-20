@@ -23,7 +23,12 @@ Deno.serve(async (req) => {
     const currentCredits = target.worker_credits ?? 0;
     const newBalance = currentCredits + numericAmount;
 
-    await base44.asServiceRole.entities.User.update(targetUserId, { worker_credits: newBalance });
+    // $inc, never an absolute write — a manual grant must ADD to the balance,
+    // not overwrite a refund that landed while the admin was filling the form.
+    await base44.asServiceRole.entities.User.updateMany(
+      { id: targetUserId },
+      { $inc: { worker_credits: numericAmount } }
+    );
 
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: targetUserId,

@@ -62,7 +62,16 @@ Deno.serve(async (req) => {
       if (worker) {
         const currentCredits = worker.worker_credits ?? 0;
         const newBalance = currentCredits + creditsToRefund;
-        await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
+        // $inc, never an absolute write. A publisher declining several applicants
+        // in quick succession sends several of these together; an absolute write
+        // made each one overwrite the last, so only ONE refund ever landed.
+        // $inc, never an absolute write. A publisher declining several applicants
+        // in quick succession sends several of these together; an absolute write
+        // made each one overwrite the last, so only ONE refund ever landed.
+        await base44.asServiceRole.entities.User.updateMany(
+          { id: worker.id },
+          { $inc: { worker_credits: creditsToRefund } }
+        );
         await base44.asServiceRole.entities.CreditTransaction.create({
           user_id: app.worker_id,
           amount: creditsToRefund,

@@ -65,7 +65,9 @@ Deno.serve(async (req) => {
 
     // Deduct credits + update task boost metadata in parallel
     await Promise.all([
-      base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance }),
+      // $inc, never an absolute write — the charge must subtract from whatever
+      // the balance actually is, not from the value read a moment ago.
+      base44.asServiceRole.entities.User.updateMany({ id: user.id }, { $inc: { worker_credits: -BOOST_COST } }),
       base44.asServiceRole.entities.Task.update(taskId, {
         last_boost_at: new Date().toISOString(),
         boost_count: (task.boost_count || 0) + 1,

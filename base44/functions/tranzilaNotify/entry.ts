@@ -139,6 +139,16 @@ Deno.serve(async (req) => {
       });
 
       // 2. Balance, then 3. payment flag.
+      // $inc, never an absolute write. A purchase arriving beside any other
+      // balance change must ADD to the balance, not overwrite it — an absolute
+      // write would silently discard whichever change lost the race. The ledger
+      // row above is written first, so idempotency is unchanged; `newBalance` is
+      // only what the ledger records.
+      // An ABSOLUTE write here, deliberately. This is Tranzila's webhook, so the
+      // request carries no user token — and the platform refuses a bulk user
+      // update in that context ("Bulk user update not allowed"). An atomic $inc
+      // would fail the webhook and the customer would be charged without being
+      // credited. The absolute form works from every context.
       await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
       await markProcessed();
 

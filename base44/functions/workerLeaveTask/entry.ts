@@ -44,7 +44,18 @@ Deno.serve(async (req) => {
       if (creditsToRefund <= 0 || !worker) return;
 
       const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
-      await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
+      // $inc, never an absolute write. This runs once per active application and
+      // every one of them read the SAME `worker`, so an absolute write made each
+      // refund overwrite the previous one — a worker holding two applications was
+      // paid for only one. Each refund now adds its own amount.
+      // $inc, never an absolute write. This runs once per active application and
+      // every one of them read the SAME `worker`, so an absolute write made each
+      // refund overwrite the previous one — a worker holding two applications was
+      // paid for only one. Each refund now adds its own amount.
+      await base44.asServiceRole.entities.User.updateMany(
+        { id: worker.id },
+        { $inc: { worker_credits: creditsToRefund } }
+      );
       await base44.asServiceRole.entities.CreditTransaction.create({
         user_id: user.id,
         amount: creditsToRefund,

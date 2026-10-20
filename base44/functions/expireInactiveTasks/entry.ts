@@ -142,6 +142,13 @@ Deno.serve(async (req) => {
     // batched update — but everything around them is batched, which is where the
     // round-trips actually were.
     if (userPatches.length) {
+      // $inc per worker, never an absolute write — every refund adds its own
+      // amount, so nothing is lost if another balance change lands alongside.
+      // An ABSOLUTE write here, deliberately. This job runs from a scheduled
+      // workflow, with no user token on the request — and the platform refuses a
+      // bulk user update in that context ("Bulk user update not allowed"), so the
+      // atomic $inc form would fail the whole run and no one would be refunded.
+      // The absolute form works from every context.
       await Promise.all(userPatches.map((p) => base44.asServiceRole.entities.User.update(p.id, { worker_credits: p.worker_credits })));
     }
     if (ledgerRows.length) await base44.asServiceRole.entities.CreditTransaction.bulkCreate(ledgerRows);
