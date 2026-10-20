@@ -1142,9 +1142,11 @@ export default function CreateTask() {
         payment_method: chatFormData.payment_method || 'Cash',
         contactPhone: chatFormData.contactPhone || form.contactPhone || undefined,
         title: chatFormData.title,
-        description: extraFieldsText
-          ? (chatFormData.description ? chatFormData.description + '\n\n' + extraFieldsText : extraFieldsText)
-          : chatFormData.description,
+        // The description already IS the sentence composed from the publisher's
+        // choices; the answers themselves are stored on `category_details` and
+        // rendered from there. Appending the raw "label: value" dump here wrote
+        // the same information twice.
+        description: chatFormData.description,
         price: Number(chatFormData.price),
         base_price: Number(chatFormData.price),
         max_price: chatFormData.auto_bump_enabled && chatFormData.max_price ? Number(chatFormData.max_price) : undefined,
