@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
@@ -21,7 +21,8 @@ import PriceSuggestion from '@/components/PriceSuggestion';
 import { generateTaskTitle, autoGenerateTitle as heuristicTitle } from '@/lib/generateTaskTitle';
 
 import { CATEGORIES, getCategoryLabel, isHourlyCategory } from '@/lib/categories';
-import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras, getCategoryExtraFields } from '@/lib/taskFlowConfig';
+import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras, getCategoryExtraFields, getCategoryConfig } from '@/lib/taskFlowConfig';
+import useAutoTaskDescription from '@/hooks/useAutoTaskDescription';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
@@ -450,6 +451,25 @@ export default function CreateTask() {
     }
     return Object.keys(cd).length > 0 ? cd : undefined;
   };
+
+  // ── The description follows the publisher's own answers ─────────────────────
+  // Choosing details in the category form is enough to write a natural Hebrew
+  // sentence into the description: no AI call, no server round trip, no new
+  // state and no new database field — it is the SAME description field, written
+  // through the form's own setter, so it becomes part of the draft exactly like
+  // typed text does. The moment the publisher edits the text themselves the hook
+  // stops writing, and "update from my choices" is the one deliberate way back.
+  const categoryFormFields = useMemo(
+    () => getCategoryExtraFields(form.category),
+    [form.category],
+  );
+  const autoDescription = useAutoTaskDescription({
+    categoryLabel: getCategoryConfig(form.category)?.label,
+    fields: categoryFormFields,
+    values: categoryDetails,
+    description: form.description,
+    onApply: (value) => setForm(p => (p.description === value ? p : { ...p, description: value })),
+  });
 
   // ── Schedule ↔ price synchronization ──
   const hasScheduleField = getCategoryExtraFields(form.category).some(f => f.type === 'schedule');
@@ -968,9 +988,12 @@ export default function CreateTask() {
       payment_method: form.payment_method,
       contactPhone: form.contactPhone || undefined,
       title: autoTitle,
-      description: extraFieldsText
-        ? (form.description ? form.description + '\n\n' + extraFieldsText : extraFieldsText)
-        : form.description,
+      // The description IS the sentence composed from the publisher's own
+      // choices (see useAutoTaskDescription). The category answers are stored
+      // structurally on `category_details` and rendered from there by
+      // CategoryDetailsView, so appending a raw "label: value" dump here would
+      // be the same information written twice — which is what this replaced.
+      description: form.description,
       price: Number(form.price),
       base_price: Number(form.price),
       max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
@@ -1063,9 +1086,7 @@ export default function CreateTask() {
         await base44.entities.Task.update(editId, {
           title: chatFormData.title,
           contactPhone: chatFormData.contactPhone || form.contactPhone || undefined,
-          description: extraFieldsText
-            ? (chatFormData.description ? chatFormData.description + '\n\n' + extraFieldsText : extraFieldsText)
-            : chatFormData.description,
+          description: chatFormData.description,
           price: hasActiveApplications ? editTask.price : Number(chatFormData.price),
           max_price: chatFormData.auto_bump_enabled && chatFormData.max_price ? Number(chatFormData.max_price) : undefined,
           auto_bump_enabled: chatFormData.auto_bump_enabled,
@@ -1477,6 +1498,24 @@ export default function CreateTask() {
                 🏷️ {getCategoryLabel(form.category, t)}
               </span>
             </div>
+          )}
+
+          {/* The one deliberate way back to an automatic description, after the
+              publisher has taken the text over. Small and out of the way: it is
+              an offer, never a prompt. */}
+          {autoDescription.hasSuggestion && (
+            <button
+              type="button"
+              onClick={() => autoDescription.regenerate()}
+              style={{
+                marginTop: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                display: 'flex', alignItems: 'center', gap: 5,
+                fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)',
+              }}
+            >
+              <Sparkles size={13} />
+              {t('ct_desc_update_from_choices', 'עדכן לפי הבחירות')}
+            </button>
           )}
         </SectionCard>
 

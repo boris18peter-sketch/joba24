@@ -2,37 +2,60 @@
  * BottomNav — the app's bottom bar, with ONE selection bubble that behaves like
  * a piece of soft material rather than a highlighted background.
  *
- * ── WHAT MAKES IT FEEL NATIVE ───────────────────────────────────────────────
- * There is exactly ONE bubble element. It is not a per-tab background that turns
- * on and off; it is a single rounded shape that MOVES to wherever the selection
- * is. Because it persists, every transition is a movement of the same object —
- * which is the whole difference between "the active tab changed colour" and "the
- * selection travelled".
+ * ── WHY THE PREVIOUS VERSION COULD NOT BE DRAGGED ───────────────────────────
+ * The gesture died on its first frame, and the cause was a single line. On touch,
+ * the browser gives the pressed element an IMPLICIT pointer capture. The handler
+ * then called `setPointerCapture` on the bar to take the gesture over — which
+ * TRANSFERS capture, so the element that had it (the tab link under the finger)
+ * fires `lostpointercapture`. That event bubbles, the bar listened for it, and
+ * the handler treated it as "the gesture was cancelled" — so every drag was torn
+ * down the instant it started, and the bar fell back to being a row of buttons.
  *
- * Three things happen to it:
+ * Two changes make that impossible now:
+ *   • the gesture is followed with `pointermove`/`pointerup`/`pointercancel`
+ *     listeners on the WINDOW, attached when the gesture starts and removed when
+ *     it ends. They receive every move wherever the finger goes, so the gesture
+ *     no longer depends on who holds the capture — and `lostpointercapture` is
+ *     not listened for at all, so it cannot cancel anything.
+ *   • capture is taken only for a MOUSE, where there is no implicit capture to
+ *     transfer and the drag must survive the pointer leaving the bar.
  *
- *   1. PRESS — on `pointerdown`, before the finger is lifted, it squashes
- *      (wider and shorter) and springs back on release. The response starts on
- *      TOUCH, not on click.
+ * ── THREE THINGS HAPPEN TO THE BUBBLE ───────────────────────────────────────
+ *   1. PRESS — on `pointerdown`, before the finger is lifted, it shrinks
+ *      slightly. The response starts on TOUCH, not on click, and it is visible
+ *      even when the finger never moves.
  *   2. DRAG — while the finger travels, the bubble follows it frame by frame and
- *      stretches along the axis of travel, thinning across it: a rubber band,
- *      not a cursor. The tab nearest the bubble's centre lights up as it passes,
- *      so the selection is readable mid-gesture.
+ *      the tab nearest the bubble's centre lights up, so the selection is
+ *      readable mid-gesture. The gesture can start ANYWHERE in the bar, not only
+ *      on an icon.
  *   3. LOCK — on release it springs onto the nearest tab. Navigation happens
  *      ONLY here, once, on the final selection — never on a move.
  *
- * ── PERFORMANCE ─────────────────────────────────────────────────────────────
- * The bubble's position, width and shape are framer-motion values written
- * directly by the pointer handler. A finger moving across the bar therefore
- * causes NO React render: the transform is updated on the compositor. The only
- * state a gesture sets is the index of the lit tab, and only when it CHANGES —
- * at most a handful of renders for a whole drag.
+ * ── ONE SHAPE, AND IT NEVER CHANGES ─────────────────────────────────────────
+ * The bubble is a single fixed size — uniform width and height on every tab, one
+ * radius, no stretching and no scaling while it travels. An earlier version
+ * stretched it along the axis of travel; that is what made it read as
+ * asymmetric, because the shape you saw depended on how fast you were dragging.
+ * It is now positioned only, so it is perfectly symmetric at every instant.
  *
- * There is deliberately no `backdrop-filter` on the bubble. A blur that has to be
- * re-sampled while an element is moving is the single most expensive thing this
- * bar could do on Android, and the glassy look is achieved instead with a
- * translucent gradient plus an inner highlight — identical to the eye, free to
- * move. The bar itself keeps its static frosted blur, which never animates.
+ * ── GEOMETRY IS MEASURED, NEVER GUESSED ─────────────────────────────────────
+ * Every position comes from the real elements' boxes: each tab's own centre, and
+ * the bar's own width. Nothing is a hard-coded `left`/`right`, so RTL (where the
+ * first tab is on the right), a zoomed desktop surface, a wider phone and a font
+ * change all land in the right place with no direction-specific calculation.
+ * Because all tab cells are equal and the bubble has one uniform width, the gap
+ * between the bubble and each end of the bar is identical on both sides — that
+ * symmetry is a consequence of the measurement, not a number anyone tuned.
+ *
+ * ── PERFORMANCE ─────────────────────────────────────────────────────────────
+ * The bubble's position is a framer-motion value written directly by the pointer
+ * handler, so a moving finger causes NO React render. The only state a gesture
+ * sets is the index of the lit tab, and only when it CHANGES — at most a handful
+ * of renders for a whole drag. Tab boxes are measured once per layout change,
+ * never per pointer event.
+ *
+ * `touch-action: pan-y` keeps vertical scrolling with the browser and hands us
+ * the horizontal gesture instead of having it cancelled mid-drag.
  *
  * ── THE PUBLISH BUTTON ──────────────────────────────────────────────────────
  * The raised blue button is an ACTION, not a tab. It is excluded from the tab
@@ -40,45 +63,44 @@
  * passes straight through to the tab on the far side, and no gesture can ever
  * trigger a publish.
  *
- * ── GEOMETRY, RTL AND ACCESSIBILITY ─────────────────────────────────────────
- * Every position comes from the real elements' measured boxes, so RTL (where the
- * first tab is on the right), a zoomed desktop surface and a font change all land
- * in the right place with no direction-specific calculation.
- * `touch-action: pan-y` keeps vertical scrolling with the browser and hands us
- * the horizontal gesture instead of having it cancelled mid-drag.
  * The bar is a real `nav` of real links: Tab moves through them, Enter opens
  * one, and the arrow keys move focus along the row. `prefers-reduced-motion`
  * turns the springs into instant placement.
  */
-
-const DRAG_THRESHOLD = 8;     // px of horizontal travel before a press becomes a drag
-const MAX_STRETCH = 0.28;     // most the bubble will stretch while being dragged
-const PRESS_SQUISH_X = 1.16;  // the squash it takes under a finger
-const PRESS_SQUISH_Y = 0.84;
-const SPRING_MOVE = { type: 'spring', stiffness: 430, damping: 32, mass: 0.7 };
-const SPRING_SHAPE = { type: 'spring', stiffness: 520, damping: 26, mass: 0.5 };
 
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { animate, motion, useMotionValue, useReducedMotion } from 'framer-motion';
 
+// ── The bubble's shape — one size for every tab ──────────────────────────────
+const BUBBLE_H = 40;         // uniform height
+const BUBBLE_RATIO = 0.74;   // width as a share of a tab's own cell…
+const BUBBLE_MIN_W = 52;     // …bounded, so it is never a sliver on a narrow
+const BUBBLE_MAX_W = 68;     // screen and never a wide bar on a wide one
+const BUBBLE_RADIUS = 999;   // one radius, everywhere
+
+// ── The gesture ──────────────────────────────────────────────────────────────
+const DRAG_THRESHOLD = 6;    // px of clearly-horizontal travel before a press is a drag
+const PRESS_SCALE = 0.95;    // the gentle shrink under a finger
+const LIFT_SCALE = 1.04;     // and the slight lift once it is being carried
+const SPRING_MOVE = { type: 'spring', stiffness: 430, damping: 34, mass: 0.7 };
+const SPRING_PRESS = { type: 'spring', stiffness: 620, damping: 30, mass: 0.5 };
+
 export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrimary }) {
   const reduceMotion = useReducedMotion();
-  const trackRef = useRef(null);
+  const navRef = useRef(null);
   const tabRefs = useRef({});
   const gesture = useRef(null);
   const emphasisRef = useRef(null);
   const suppressClickRef = useRef(false);
   const firstAimRef = useRef(true);
 
-  // Written by the pointer handler and by the aim effect — never by a render.
-  const x = useMotionValue(0);      // the bubble's left edge, inside the track
-  const w = useMotionValue(0);      // and its width
-  const sx = useMotionValue(1);     // shape: stretch along the travel axis…
-  const sy = useMotionValue(1);     // …and thin across it
+  // Written by the pointer handler — never by a render.
+  const x = useMotionValue(0);       // the bubble's left edge, inside the bar
+  const scale = useMotionValue(1);   // press / lift, uniform on both axes
 
-  const [rects, setRects] = useState([]);
+  const [geom, setGeom] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [emphasis, setEmphasis] = useState(null);
 
@@ -89,46 +111,58 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
   const tabKey = regular.map((i) => i.to).join('|');
 
   const activeIndex = Math.max(0, regular.findIndex((i) => i.to === activePath));
-  const activeRect = rects[activeIndex] || null;
 
   // ── Measure the real tab boxes ─────────────────────────────────────────────
   useLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
+    const nav = navRef.current;
+    if (!nav) return;
     const measure = () => {
-      const base = track.getBoundingClientRect();
-      const next = regular.map((item) => {
+      const base = nav.getBoundingClientRect();
+      const next = [];
+      for (const item of regular) {
         const node = tabRefs.current[item.to];
-        if (!node) return null;
+        if (!node) return; // the row is not laid out yet — leave the last good numbers
         const r = node.getBoundingClientRect();
-        return {
-          left: r.left - base.left,
-          width: r.width,
+        next.push({
           center: r.left - base.left + r.width / 2,
-          top: r.top - base.top,
+          width: r.width,
           height: r.height,
-        };
-      });
-      if (next.some((r) => !r)) return;
+          top: r.top - base.top,
+        });
+      }
+      if (!next.length) return;
+
+      const cellW = next[0].width;
+      const bubbleW = Math.round(Math.min(Math.max(cellW * BUBBLE_RATIO, BUBBLE_MIN_W), BUBBLE_MAX_W));
+      const bubbleH = Math.round(Math.min(BUBBLE_H, next[0].height - 8));
+      const bubbleTop = next[0].top + next[0].height / 2 - bubbleH / 2;
+      const candidate = { rects: next, bubbleW, bubbleH, bubbleTop };
+
       // Only commit when something actually moved: the same numbers in a new
-      // array would re-render the bar on every parent render.
-      setRects((prev) => (
-        prev.length === next.length &&
-        prev.every((p, i) => Math.abs(p.left - next[i].left) < 0.5 && Math.abs(p.width - next[i].width) < 0.5 && Math.abs(p.top - next[i].top) < 0.5)
+      // object would re-render the bar on every parent render.
+      setGeom((prev) => (
+        prev &&
+        prev.rects.length === next.length &&
+        Math.abs(prev.bubbleW - bubbleW) < 0.5 &&
+        Math.abs(prev.bubbleTop - bubbleTop) < 0.5 &&
+        prev.rects.every((p, i) => Math.abs(p.center - next[i].center) < 0.5 && Math.abs(p.width - next[i].width) < 0.5)
           ? prev
-          : next
+          : candidate
       ));
     };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(track);
+    ro.observe(nav);
     window.addEventListener('resize', measure);
     return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
   }, [tabKey, activePath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Where the bubble rests ─────────────────────────────────────────────────
-  const restX = activeRect ? activeRect.left : null;
-  const restW = activeRect ? activeRect.width : null;
+  const rects = geom?.rects || null;
+  const activeRect = rects ? (rects[activeIndex] || rects[0]) : null;
+  // Centred on the active tab's own centre — so it sits exactly around that
+  // tab's icon and label, whatever the screen width.
+  const restX = geom && activeRect ? activeRect.center - geom.bubbleW / 2 : null;
 
   useEffect(() => {
     if (restX == null || dragging) return;
@@ -138,90 +172,113 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
     if (firstAimRef.current) {
       firstAimRef.current = false;
       x.set(restX);
-      w.set(restW);
       return;
     }
     const opts = reduceMotion ? { duration: 0 } : SPRING_MOVE;
     const move = animate(x, restX, opts);
-    const size = animate(w, restW, opts);
-    return () => { move.stop(); size.stop(); };
-  }, [restX, restW, dragging, reduceMotion, x, w]);
+    return () => move.stop();
+  }, [restX, dragging, reduceMotion, x]);
 
-  // ── Gesture ────────────────────────────────────────────────────────────────
+  // ── Gesture plumbing ───────────────────────────────────────────────────────
+  const detach = (g) => {
+    if (!g) return;
+    window.removeEventListener('pointermove', g.onMove);
+    window.removeEventListener('pointerup', g.onEnd);
+    window.removeEventListener('pointercancel', g.onCancel);
+  };
+
+  // A finished gesture must leave nothing behind if the bar unmounts mid-drag.
+  useEffect(() => () => detach(gesture.current), []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const setEmphasisIndex = (i) => {
     if (emphasisRef.current === i) return;
     emphasisRef.current = i;
     setEmphasis(i);
   };
 
-  const springShapeBack = () => {
-    if (reduceMotion) { sx.set(1); sy.set(1); return; }
-    animate(sx, 1, SPRING_SHAPE);
-    animate(sy, 1, SPRING_SHAPE);
-  };
-
   const onPointerDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     // A press that BEGINS on the raised publish button is never the start of a
-    // drag. Without this, pressing that button and sliding sideways turned into a
-    // tab gesture — the bubble travelled and the release navigated. Dragging
-    // ACROSS the middle still works: the gesture starts on a tab, the pointer is
-    // captured by the row, and every move after that is tracked wherever the
-    // finger goes.
+    // drag — so no gesture can ever publish by accident. A drag ACROSS the middle
+    // still works: it starts on a tab and every move after that is tracked
+    // wherever the finger goes, including over the button.
     if (e.target?.closest?.('#onboarding-create-btn')) return;
-    gesture.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
-    setEmphasisIndex(activeIndex);
+    if (!geom || restX == null) return;
+
+    const g = {
+      id: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+      from: restX,
+      rects: geom.rects,
+      bubbleW: geom.bubbleW,
+      // The bubble can never leave the span of the outer tab centres, so it can
+      // neither be clipped at an end nor protrude past the bar asymmetrically.
+      minX: geom.rects[0].center - geom.bubbleW / 2,
+      maxX: geom.rects[geom.rects.length - 1].center - geom.bubbleW / 2,
+    };
+    gesture.current = g;
+
     // The response begins HERE, under the finger — not when the finger leaves.
-    if (!reduceMotion) { sx.set(PRESS_SQUISH_X); sy.set(PRESS_SQUISH_Y); }
-  };
+    if (!reduceMotion) animate(scale, PRESS_SCALE, SPRING_PRESS);
+    setEmphasisIndex(activeIndex);
 
-  const onPointerMove = (e) => {
-    const g = gesture.current;
-    if (!g || g.id !== e.pointerId) return;
-    const dx = e.clientX - g.startX;
-    const dy = e.clientY - g.startY;
-
-    if (!g.moved) {
-      // A press only becomes a drag once it is clearly horizontal, so a vertical
-      // swipe still scrolls the feed and a slightly-off tap stays a tap.
-      if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
-      g.moved = true;
-      setDragging(true);
-      try { trackRef.current?.setPointerCapture?.(e.pointerId); } catch { /* unsupported */ }
+    // A mouse has no implicit capture, so take it — otherwise a fast drag that
+    // leaves the bar stops receiving moves. Touch is deliberately NOT captured:
+    // that transfer is what used to fire `lostpointercapture` on the tab and kill
+    // the gesture.
+    if (e.pointerType === 'mouse') {
+      try { navRef.current?.setPointerCapture?.(e.pointerId); } catch { /* unsupported */ }
     }
 
-    if (!activeRect || rects.length < 2) return;
+    g.onMove = (ev) => {
+      const cur = gesture.current;
+      if (!cur || ev.pointerId !== cur.id) return;
+      const dx = ev.clientX - cur.startX;
+      const dy = ev.clientY - cur.startY;
 
-    // The bubble tracks the finger continuously, clamped to the row so it can
-    // never wander off the bar. Written straight to the motion value.
-    const minLeft = rects[0].left;
-    const maxLeft = rects[rects.length - 1].left;
-    const left = Math.min(Math.max(activeRect.left + dx, minLeft), maxLeft);
-    x.set(left);
+      if (!cur.moved) {
+        // A press only becomes a drag once it is clearly horizontal, so a
+        // vertical swipe still scrolls the feed and a slightly-off tap stays a tap.
+        if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
+        cur.moved = true;
+        setDragging(true);
+        if (!reduceMotion) animate(scale, LIFT_SCALE, SPRING_PRESS);
+      }
 
-    // Rubber: it stretches along the direction of travel and thins across it, so
-    // the material reads as being pulled rather than teleported.
-    if (!reduceMotion) {
-      const s = Math.min(Math.abs(dx) / 150, MAX_STRETCH);
-      sx.set(1 + s);
-      sy.set(1 - s * 0.35);
-    }
+      if (ev.cancelable) ev.preventDefault(); // no text selection / native drag
 
-    // The tab nearest the bubble's centre is lit while the bubble is over it.
-    const centre = left + w.get() / 2;
-    let nearest = 0;
-    let best = Infinity;
-    rects.forEach((r, i) => {
-      const d = Math.abs(r.center - centre);
-      if (d < best) { best = d; nearest = i; }
-    });
-    setEmphasisIndex(nearest);
+      // The bubble tracks the finger's travel continuously, at pixel resolution —
+      // this is a motion value, so no React render happens here.
+      const left = Math.min(Math.max(cur.from + dx, cur.minX), cur.maxX);
+      x.set(left);
+
+      // The tab nearest the BUBBLE's centre is lit while the bubble is over it.
+      const centre = left + cur.bubbleW / 2;
+      let nearest = 0;
+      let best = Infinity;
+      cur.rects.forEach((r, i) => {
+        const d = Math.abs(r.center - centre);
+        if (d < best) { best = d; nearest = i; }
+      });
+      setEmphasisIndex(nearest);
+    };
+
+    g.onEnd = (ev) => endGesture(ev, false);
+    g.onCancel = (ev) => endGesture(ev, true);
+
+    window.addEventListener('pointermove', g.onMove, { passive: false });
+    window.addEventListener('pointerup', g.onEnd);
+    window.addEventListener('pointercancel', g.onCancel);
   };
 
   const endGesture = (e, cancelled) => {
     const g = gesture.current;
-    if (!g || (e && e.pointerId !== g.id)) return;
+    if (!g) return;
+    if (e && e.pointerId !== g.id) return;
     gesture.current = null;
+    detach(g);
 
     const moved = g.moved;
     const landedOn = emphasisRef.current;
@@ -236,17 +293,13 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
 
     setDragging(false);
     setEmphasis(null);
-    springShapeBack();
+    if (reduceMotion) scale.set(1);
+    else animate(scale, 1, SPRING_PRESS);
 
-    // Navigation happens ONLY here, once, on the final selection.
+    // Navigation happens ONLY here, once, on the final selection. The resting
+    // spring-back is the aim effect's job — it runs the moment `dragging` clears.
     if (moved && !cancelled && landedOn != null && landedOn !== activeIndex) {
       onNavigate?.(regular[landedOn].to);
-      return; // the aim effect springs it onto the newly active tab
-    }
-    // Not enough travel, or cancelled: the bubble returns to where it belongs.
-    if (activeRect) {
-      if (reduceMotion) x.set(activeRect.left);
-      else animate(x, activeRect.left, SPRING_MOVE);
     }
   };
 
@@ -268,19 +321,17 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
         background: 'var(--j-nav-glass, var(--nav-bg))',
         borderTop: '1px solid var(--border-1)',
         paddingBottom: 'env(safe-area-inset-bottom)',
+        // The browser keeps vertical scrolling and leaves the horizontal
+        // gesture to us, instead of cancelling it mid-drag.
         touchAction: 'pan-y',
         WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none',
       }}
     >
       <nav
-        ref={trackRef}
+        ref={navRef}
         aria-label="ניווט ראשי"
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={(e) => endGesture(e, false)}
-        onPointerCancel={(e) => endGesture(e, true)}
-        onLostPointerCapture={(e) => endGesture(e, true)}
         onContextMenu={(e) => { if (gesture.current) e.preventDefault(); }}
         style={{
           display: 'grid',
@@ -288,22 +339,26 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
           alignItems: 'center',
           position: 'relative',
           maxWidth: 560, margin: '0 auto',
+          touchAction: 'pan-y',
         }}
       >
         {/* ── THE ONE BUBBLE ──────────────────────────────────────────────────
-            A single element that moves. Its translucency and inner highlight give
-            it the depth of glass without a blur that would have to be re-sampled
-            while it travels. */}
-        {restX != null && (
+            A single element that moves. Fixed width and height, one radius, no
+            stretch — so it is symmetric on every tab and at every instant. Its
+            translucency and inner highlight give it the depth of glass without a
+            blur that would have to be re-sampled while it travels. */}
+        {geom && restX != null && (
           <motion.div
             aria-hidden="true"
             style={{
               position: 'absolute',
-              top: activeRect.top,
               left: 0,
-              height: activeRect.height,
-              borderRadius: 999,
-              x, width: w, scaleX: sx, scaleY: sy,
+              top: geom.bubbleTop,
+              width: geom.bubbleW,
+              height: geom.bubbleH,
+              borderRadius: BUBBLE_RADIUS,
+              x, scale,
+              transformOrigin: 'center',
               background: 'linear-gradient(160deg, var(--j-nav-bubble-hi, rgba(255,255,255,0.5)) 0%, var(--j-nav-bubble, rgba(26,111,212,0.20)) 100%)',
               border: '1.5px solid var(--j-nav-bubble-border, rgba(26,111,212,0.36))',
               boxShadow: 'inset 0 1px 0 var(--j-nav-bubble-hi, rgba(255,255,255,0.6)), 0 2px 10px rgba(26,111,212,0.14)',
@@ -359,7 +414,9 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
                 WebkitTapHighlightColor: 'transparent', zIndex: 1,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', transform: lit ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.2s cubic-bezier(0.34,1.4,0.64,1)' }}>
+              {/* The icons never move — only their colour and weight respond, so
+                  the row is still while the bubble travels through it. */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon
                   size={21}
                   color={lit ? 'var(--brand-nav-active, var(--brand-primary))' : 'var(--brand-nav-text, #9bb3d4)'}
