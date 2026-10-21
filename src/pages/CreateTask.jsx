@@ -1305,7 +1305,7 @@ export default function CreateTask() {
         return (
           <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--brand-hero-bg, #0f2b6b), var(--brand-hero-bg, var(--brand-primary)))', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px' }}>
               {/* CLOSE, not back. A visitor who decides not to publish is not
                   stepping back through the form — they are leaving it, and they
                   must land in the app's own feed, never back in the first-run
@@ -1360,14 +1360,16 @@ export default function CreateTask() {
                 {chatMode ? '📋 טופס' : '💬 צ\'אט'}
               </button>
               */}
-              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
+              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, flexShrink: 0 }}><Save size={11} /> {t('draft_saved')}</div>}
+              {/* ── THE MARKETPLACE IS INHABITED ────────────────────────────────
+                  On the TITLE's own line, where a publisher is deciding whether
+                  to post — the title on the right, the faces on the left. An
+                  empty form asks "will anyone even see this?"; a stack of faces
+                  answers it before the question is finished, and the header stays
+                  ONE bar instead of two. Purely visual: the honest count already
+                  sits one row below. */}
+              <LiveWorkerAvatars />
             </div>
-            {/* ── THE MARKETPLACE IS INHABITED ────────────────────────────────
-                Directly under the title, where a publisher is deciding whether
-                to post. An empty form asks "will anyone even see this?" — a
-                stack of faces answers before the question is finished. Purely
-                visual: the honest count already sits one row below. */}
-            <LiveWorkerAvatars />
             {/* Worker availability — unified into header */}
             <WorkerAvailabilityIndicator category={form.category} city={form.city} />
             {/* Progress bar */}
