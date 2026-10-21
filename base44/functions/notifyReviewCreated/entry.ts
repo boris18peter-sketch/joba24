@@ -21,11 +21,22 @@ Deno.serve(async (req) => {
     }
 
     const stars = '⭐'.repeat(data.rating || 0);
-    const roleLabel = data.role === 'worker' ? 'עובד' : 'מפרסם';
-    const whoLabel = data.role === 'worker' ? 'המפרסם' : 'העובד';
+
+    // ── EVERY LABEL IS WRITTEN FROM THE RECIPIENT'S SIDE ──────────────────
+    // `data.role` is the REVIEWER's role — the person who LEFT the rating. The
+    // notification goes to the REVIVEE, so both labels must be expressed from
+    // the reviewee's point of view.
+    //
+    // These two were inverted, so a publisher was told "מפרסם המשימה דירג
+    // אותך" — the publisher being informed that the publisher had rated them.
+    // The worker's side happened to read correctly, which is why it went
+    // unnoticed: the bug was only ever visible to the publisher.
+    const reviewerIsWorker = data.role === 'worker';
+    const whoLabel = reviewerIsWorker ? 'העובד' : 'המפרסם';        // who rated YOU
+    const revieweeLabel = reviewerIsWorker ? 'מפרסם' : 'עובד';      // what YOU are
     const reviewBody = data.comment
       ? `"${data.comment.substring(0, 100)}"`
-      : `${whoLabel} השאיר דירוג של ${data.rating} כוכבים — כ${roleLabel}`;
+      : `${whoLabel} השאיר דירוג של ${data.rating} כוכבים — כ${revieweeLabel}`;
 
     // ── Route through NotificationManager ──
     await base44.asServiceRole.functions.invoke('notificationManager', {

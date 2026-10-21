@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { markPublisherContext } from '@/lib/publisherContext';
 import PageHeader from '@/components/PageHeader';
+import LiveWorkerAvatars from '@/components/LiveWorkerAvatars';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import { generateTaskTitle, autoGenerateTitle as heuristicTitle } from '@/lib/generateTaskTitle';
@@ -1361,6 +1362,12 @@ export default function CreateTask() {
               */}
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
+            {/* ── THE MARKETPLACE IS INHABITED ────────────────────────────────
+                Directly under the title, where a publisher is deciding whether
+                to post. An empty form asks "will anyone even see this?" — a
+                stack of faces answers before the question is finished. Purely
+                visual: the honest count already sits one row below. */}
+            <LiveWorkerAvatars />
             {/* Worker availability — unified into header */}
             <WorkerAvailabilityIndicator category={form.category} city={form.city} />
             {/* Progress bar */}
@@ -2080,6 +2087,22 @@ export default function CreateTask() {
             placeholder="05X-XXXXXXX"
             value={form.contactPhone || ''}
             onChange={e => { set('contactPhone', e.target.value); setErrors(p => ({ ...p, contactPhone: false })); }}
+            // ── THE PHONE IS REMEMBERED FROM THE FIRST TASK ONWARD ───────────
+            // The form has always PREFILLED from the profile, but nothing ever
+            // wrote the number TO the profile — so the field was empty every
+            // single time and the publisher retyped it on every task.
+            //
+            // Saved on blur, not on every keystroke: a half-typed number is not
+            // a phone number, and the blur is the first moment the value is
+            // finished. Only a number that could actually be called is stored,
+            // and only when it differs from what is already on the profile, so
+            // this never fires a pointless write.
+            onBlur={() => {
+              const typed = (form.contactPhone || '').trim();
+              if (typed.replace(/\D/g, '').length < 9) return;
+              if (typed === (me?.phone || '')) return;
+              base44.auth.updateMe({ phone: typed }).catch(() => {});
+            }}
             style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.contactPhone ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 16 }}
           />
           {errors.contactPhone && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_phone_err')}</p>}

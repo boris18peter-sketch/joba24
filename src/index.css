@@ -103,6 +103,9 @@
     --preview-stage-bg:     #eef3fc;
     --preview-border:       #e4eaf5;
     --preview-screen-border:#dfe7f5;
+    /* The wash that tells the eye "this is an example, not the app". Kept very
+       light on purpose: the illustration still has to be READ. */
+    --preview-veil:        rgba(255,255,255,0.20);
 
     /* ── Shadows ── */
     --shadow-xs:   0 1px 3px rgba(15,40,107,0.06);
@@ -202,6 +205,7 @@
       --preview-stage-bg:     #0a1220;
       --preview-border:       #2b3a55;
       --preview-screen-border:#33445f;
+      --preview-veil:        rgba(255,255,255,0.05);
 
       /* ── Semantic backgrounds ── */
       --color-success-bg:    rgba(5,150,105,0.1);
@@ -840,11 +844,44 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   background: var(--preview-stage-bg);
   box-shadow: var(--shadow-md);
 }
+.j-preview { position: relative; }
 .j-preview-stage {
   position: relative;
   flex: 1 1 auto; min-height: 0;
   overflow: hidden;
   background: var(--preview-stage-bg);
+}
+
+/* ── "THIS IS AN EXAMPLE" — the two cues that stop the press ────────────────
+   The stage was always inert; the problem was that it LOOKED live. A visitor
+   pressed a screen that looked exactly like the real feed, nothing happened,
+   and the app read as broken.
+
+   A named badge plus a light wash is how the apps people already use say
+   "example" — it is a familiar convention, so it needs no explaining. The wash
+   sits ABOVE the illustration and BELOW nothing, so it can never block a tap
+   (there are no taps) and never dims the illustration past the point of being
+   read. Both cues are non-interactive: `pointer-events: none` on the veil, and
+   the badge is plain text in a pill. */
+.j-preview-badge {
+  position: absolute;
+  top: 9px;
+  inset-inline-start: 9px;
+  z-index: 4;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  border: 1px solid var(--preview-border);
+  color: var(--text-2);
+  font-size: 11px; font-weight: 800; letter-spacing: 0.2px;
+  box-shadow: var(--shadow-xs);
+  pointer-events: none;
+}
+.j-preview-veil {
+  position: absolute; inset: 0; z-index: 3;
+  background: var(--preview-veil);
+  pointer-events: none;
 }
 /* The stage scrolls only when an illustration still cannot fit — never as the
    default, because the illustration is scaled to the space it is given. */

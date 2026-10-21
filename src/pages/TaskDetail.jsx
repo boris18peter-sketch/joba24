@@ -226,7 +226,9 @@ export default function TaskDetail(props) {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   // Use the real-time auth user for verification gating (instantly synced via WebSocket + polling)
   const verifyUser = authUser || me;
-  const { gate, showVerify, setShowVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(verifyUser);
+  // `gateAuth` alongside `gate`: sending the owner a signal is a message, not
+  // taking work, so it needs a signed-in user and not a verified identity.
+  const { gate, gateAuth, showVerify, setShowVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(verifyUser);
 
   // Check if current user already reviewed this task
   const { data: myReview } = useQuery({
@@ -368,6 +370,21 @@ export default function TaskDetail(props) {
       }
       if (patch.status === 'COMPLETED') {
         queryClient.invalidateQueries({ queryKey: ['myReview', id, currentMeId] });
+
+        // ── THE SHEET MUST NOT OUTLIVE THE JOB ───────────────────────────────
+        // The publisher approved the completion from INSIDE this sheet, so the
+        // sheet stayed open on a task that was already finished — and the rating
+        // popup then opened on top of it, leaving the user to close two layers of
+        // a job that no longer existed.
+        //
+        // Closing it first is what lets the completion flow be READ: the sheet
+        // drops away, the task card underneath shows its ✓, and only then does
+        // the rating arrive. Deliberately a beat, not instant — the sheet
+        // vanishing in the same frame as the approval would read as a dismissal
+        // rather than a result. The rating is dispatched below and Layout holds it
+        // for 800ms, so the card's ✓ is always seen before anything covers it.
+        setTimeout(() => onSheetClose?.(), 300);
+
         // Reliable rating trigger for both owner and worker — dispatches with the
         // full cached task (now COMPLETED). Dedup in maybeShowRating (shownRatingRef
         // + localStorage) prevents double-popups if Layout's WebSocket handler also fires.
@@ -895,7 +912,7 @@ export default function TaskDetail(props) {
               </Button>
           }
             {!isOwner && !signalSent &&
-          <Button onClick={() => gate(handleSignalReopen)} variant="outline"
+          <Button onClick={() => gateAuth(handleSignalReopen)} variant="outline"
           className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11">
             
                 <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> {t('send_signal_owner')}

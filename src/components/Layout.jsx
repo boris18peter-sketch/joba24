@@ -46,6 +46,7 @@ import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
 import RatingModal from '@/components/RatingModal';
+import TaskCompletedCongratsPopup from '@/components/TaskCompletedCongratsPopup';
 import { taskAlertStore } from '@/lib/taskAlertStore';
 
 import { useAuth } from '@/lib/AuthContext';
@@ -346,6 +347,9 @@ export default function Layout() {
 
   // Rating modal
   const [ratingTask, setRatingTask] = useState(null);
+  // The closing note of the completion flow — shown once the rating is behind
+  // the user. See TaskCompletedCongratsPopup for why the order matters.
+  const [congratsTask, setCongratsTask] = useState(null);
   const shownRatingRef = useRef(new Set());
   const maybeShowRating = useCallback((task) => {
     if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
@@ -702,18 +706,31 @@ export default function Layout() {
       {ratingTask && me && createPortal(
         <RatingModal task={ratingTask} me={me} onClose={() => {
           localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');
-          // Task-completed celebration now flows through the shared notification
-          // queue (notificationStore) so it never overlaps other popups — it shows
-          // in order, styled green. Worker → tap navigates to earnings dashboard.
-          addNotification({
-            type: 'task_completed_celebration',
-            taskTitle: ratingTask.title,
-            taskId: ratingTask.id,
+          // ── THE THANK-YOU COMES AFTER THE ASK ────────────────────────────
+          // Completion is three moments, in this order: the ✓ on the task card,
+          // then the rating sheet, then this. Asking and then thanking is a
+          // conversation; thanking and then asking is a transaction.
+          //
+          // This replaced the green completion notification rather than being
+          // added beside it. The notification carried the same fact and the same
+          // destination, so keeping both would have told the user the same news
+          // twice with one copy underneath the other. The popup carries the
+          // destination now (earnings for a worker, the task for a publisher).
+          setCongratsTask({
             task: ratingTask,
             role: me.id === ratingTask.worker_id ? 'worker' : 'client',
           });
           setRatingTask(null);
         }} />,
+        document.body
+      )}
+
+      {congratsTask && createPortal(
+        <TaskCompletedCongratsPopup
+          task={congratsTask.task}
+          role={congratsTask.role}
+          onClose={() => setCongratsTask(null)}
+        />,
         document.body
       )}
 

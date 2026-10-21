@@ -380,6 +380,32 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           </div>
         )}
 
+        {/* ── COMPLETED BANNER — the ✓ that lands the moment the job is done ──
+            Completion is the one event both sides waited for, and it used to be
+            announced ONLY by a popup taking over the screen. The card underneath
+            — the thing the user was actually looking at — said nothing. So the
+            fact arrived and then vanished with the popup, leaving no trace on the
+            card that it had happened.
+
+            Same shape as the approved banner below it, deliberately: a user who
+            has seen one already knows how to read the other. It is the FIRST
+            beat of the completion flow — the ✓ on the card, then the rating, then
+            the thank-you — so it is on screen before anything else opens. */}
+        {task.status === 'COMPLETED' && (
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--r-sm)',
+            padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'cardFadeIn 0.3s ease',
+          }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CheckCircle2 size={16} color="#16a34a" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{t('task_completed_badge')} ✅</div>
+            </div>
+          </div>
+        )}
+
         {/* Approved banner */}
         {isApproved && (
           <div onClick={e => e.stopPropagation()} style={{
@@ -615,7 +641,14 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {statusLabel(resolveStatusFlow(task.category, catRows), task.worker_status, 'worker') || t('in_progress')}
+                      {/* The viewer here is the PUBLISHER (this whole branch is
+                          `isMyPublished`), so the label must be the OWNER's.
+                          It was hardcoded to 'worker', so a publisher watching
+                          their job progress was shown the worker's own
+                          first-person wording — "יצאתי לדרך" — a sentence that
+                          only makes sense coming from the person doing the
+                          work. The owner now reads the owner's line. */}
+                      {statusLabel(resolveStatusFlow(task.category, catRows), task.worker_status, 'owner') || t('in_progress')}
                     </span>
                   </div>
               ) : (

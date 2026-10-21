@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { getJobaSettings } from '../../shared/jobaSettings.ts';
 import { getAuthenticatedUser, unauthorized } from '../../shared/internalAuth.ts';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 // ── grantProfileCompletionBonus (UH-1) ─────────────────────────────────────
 // The single authoritative way the worker profile-completion bonus is granted.
@@ -43,10 +44,24 @@ Deno.serve(async (req) => {
     });
     if (existing.length > 0) return Response.json({ granted: false, reason: 'already_granted' });
 
-    const currentCredits = fresh.worker_credits ?? 0;
-    const newBalance = currentCredits + bonus;
-
-    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
+    // ── THE BALANCE IS RE-READ AT THE WRITE, NOT AT THE TOP ─────────────────
+    // `fresh` was fetched before the settings read and the idempotency check, so
+    // by the time the balance was written it could already be stale — and an
+    // absolute write from a stale read does not "add" a bonus, it REPLACES the
+    // balance with whatever it saw plus the bonus.
+    //
+    // That is exactly what happened to a real account: a 25-Joba signup bonus was
+    // followed minutes later by a 5-Joba profile bonus, and the second write
+    // turned 25 into 5. The publisher did nothing wrong and lost 25 Jobas.
+    //
+    // applyCreditDeltas re-reads the balance immediately before writing and
+    // applies the bonus as a DELTA — the app's single sanctioned way to move a
+    // balance (see shared/userCredits.ts) — so a bonus can never again overwrite
+    // credits it did not create.
+    const balances = await applyCreditDeltas(base44.asServiceRole, [
+      { id: user.id, delta: bonus },
+    ]);
+    const newBalance = balances[user.id];
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: user.id,
       amount: bonus,

@@ -103,7 +103,11 @@ export default function Chat() {
   const { recording, recordSeconds, uploading: uploadingVoice, start: startRecording, stop: stopRecording, cancel: cancelRecording, formatTime } = useVoiceRecording();
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
+  // `gateAuth` — NOT `gate`. Sending a message is a conversation, not taking
+  // work, so it requires a signed-in user and nothing more. Gating it on
+  // identity verification locked every new user out of the one thing the
+  // product is for. See useVerifyGuard for the full reasoning.
+  const { gateAuth, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   usePingPresence(me?.id);
 
   const { data: task } = useQuery({
@@ -241,7 +245,7 @@ export default function Chat() {
 
   // ── Sending ──────────────────────────────────────────────────────────────
   const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
-    gate(async () => {
+    gateAuth(async () => {
       const trimmed = content.trim();
 
       // ── MODERATION RUNS BEFORE THE MESSAGE IS CREATED ────────────────────
@@ -282,7 +286,7 @@ export default function Chat() {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    gate(async () => {
+    gateAuth(async () => {
       setUploading(true);
       try {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
