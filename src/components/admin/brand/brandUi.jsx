@@ -97,6 +97,38 @@ export function Btn({ children, onClick, variant = 'primary', disabled, loading,
 }
 
 /**
+ * A compact icon-only control — for the small per-row actions inside the
+ * category and form editors (move up/down, expand, delete).
+ *
+ * `j-icon-btn` keeps it visually 30×30 while the tap target stays 44×44 (see
+ * src/index.css), so a dense list of fields stays scannable without any control
+ * becoming hard to hit.
+ */
+export function IconBtn({ children, onClick, disabled, title, danger }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      className="j-icon-btn"
+      style={{
+        width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-1)',
+        color: danger ? 'var(--color-danger)' : 'var(--text-2)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.35 : 1,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
  * Invalidate everything a Brand edit can affect. BrandManager reads
  * `['adminBrand', id]`; the marketplace reads `['brandCategories', id]`.
  * Both must be refreshed or a save appears to do nothing.
