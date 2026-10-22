@@ -44,7 +44,17 @@ export default function CategoryServiceSelector({ value, onChange, allowHistoric
   if (isLoading) return <p className="text-sm text-jtext-3">{t('loading')}</p>;
   if (!categories.length && !allowHistorical) return <p className="text-sm text-jtext-3">אין שירותים זמינים במותג זה.</p>;
 
-  const option = (c) => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>;
+  // localizedCategoryLabel already PREFIXES the label with the category's emoji
+  // (taken from the Hebrew label or the legacy i18n entry). Reading the row's
+  // icon as well printed it twice — "🚗 🚗 רכב". The leading emoji is split off
+  // here so it becomes the icon and the label keeps only the words. This is the
+  // same fix the market filter already applies.
+  const option = (c) => {
+    const lead = String(c.label || '').match(/^[^\p{L}\p{N}]+/u);
+    const label = lead ? c.label.slice(lead[0].length) : c.label;
+    const icon = (lead ? lead[0].trim() : '') || c.icon || '';
+    return <option key={c.value} value={c.value}>{icon} {label}</option>;
+  };
   const historical = allowHistorical && value && !categories.some((c) => c.value === value);
   const historicalOption = historical && <option value={value}>{globalMap[value]?.label || value} (היסטורי)</option>;
 

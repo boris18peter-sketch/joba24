@@ -16,6 +16,9 @@ export default async function(req) {
       const nodeType = ['group','parent','root','service'].includes(body.node_type) ? body.node_type : 'service';
       if (target && PLATFORM_CATEGORY_KEYS.includes(key) && nodeType === 'parent') return Response.json({ error: 'legacy_key_is_service' }, { status: 409 });
       const patch = { category_key: key, label: String(body.label || '').trim().slice(0,120), icon: String(body.icon || '').slice(0,32), image_url: String(body.image_url || '').slice(0,1000), description: String(body.description || '').slice(0,240), parent_key: String(body.parent_key || ''), node_type: nodeType, active: body.active !== false, sort_order: Number(body.sort_order) || 0 };
+      // The placeholder shown inside the description box. Editable from the
+      // dashboard like every other piece of the category's copy.
+      if (body.description_example !== undefined) patch.description_example = String(body.description_example || '').slice(0, 400);
       if (!patch.label) return Response.json({ error: 'label_required' }, { status: 400 });
       if (patch.image_url && !/^https:\/\//.test(patch.image_url)) return Response.json({ error: 'image_url_invalid' }, { status: 400 });
       if (nodeType === 'service' && !patch.parent_key) return Response.json({ error: 'parent_required' }, { status: 400 });

@@ -305,6 +305,17 @@ export default function CreateTask() {
     // fields from the server.  Never load a stale draft here, it would
     // momentarily show wrong data and can race with the server load.
     if (isEditMode) return { ...DEFAULT_FORM };
+    // A CAMPAIGN LINK — ?category=<key>, the form the ads point at.
+    // The category the visitor arrived for WINS over a saved draft: they came
+    // here for that trade, so the form must open on it and not on whatever they
+    // happened to be drafting before. Every other field still comes from the
+    // draft, so a returning visitor keeps what they had already typed.
+    const linkedCategory = searchParams.get('category');
+    if (linkedCategory) {
+      let base = DEFAULT_FORM;
+      try { const saved = localStorage.getItem(DRAFT_KEY); if (saved) base = { ...DEFAULT_FORM, ...JSON.parse(saved) }; } catch (_) {}
+      return { ...base, category: linkedCategory, category_details: {} };
+    }
     // Try to load saved draft
     try {
       const saved = localStorage.getItem(DRAFT_KEY);

@@ -27,11 +27,15 @@ export default function GlobalCategoryEditor({ category, rows, onSaved, onClose 
       <Field label="אייקון"><input className="j-input p-2" value={form.icon || ''} onChange={e => set('icon',e.target.value)} /></Field>
       <Field label="תמונה (קישור HTTPS)"><input className="j-input p-2" dir="ltr" value={form.image_url || ''} onChange={e => set('image_url',e.target.value)} /></Field>
       <Field label="תיאור"><input className="j-input p-2" value={form.description || ''} onChange={e => set('description',e.target.value)} /></Field>
+      <Field label="דוגמת תיאור (מה שמופיע בתיבת התיאור)"><input className="j-input p-2" value={form.description_example || ''} onChange={e => set('description_example',e.target.value)} /></Field>
       <Field label="סדר"><input className="j-input p-2" type="number" value={form.sort_order || 0} onChange={e => set('sort_order',Number(e.target.value))} /></Field>
     </div>
     <label className="flex gap-2"><input type="checkbox" checked={form.active !== false} onChange={e => set('active',e.target.checked)} /> פעילה בכל המותגים</label>
-    {form.node_type === 'service' && <GlobalFormEditor fields={form.fields || []} onChange={v => set('fields',v)} />}
-    {form.node_type === 'service' && <StatusFlowEditor flow={form.status_flow} onChange={v => set('status_flow',v)} />}
+    {/* A ROOT carries its own form too — the questions every service beneath it
+        inherits — so the form editor is shown for every node that can own a
+        form. Only a visual group has none. */}
+    {['root','service'].includes(form.node_type) && <GlobalFormEditor fields={form.fields || []} onChange={v => set('fields',v)} />}
+    {['root','service'].includes(form.node_type) && <StatusFlowEditor flow={form.status_flow} onChange={v => set('status_flow',v)} />}
     {form.node_type !== 'group' && <CategoryFeeEditor fee={form.fee} onChange={v => set('fee',v)} />}
     {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
     <div className="flex gap-2"><Btn loading={busy} onClick={save}>שמור גלובלית</Btn><Btn variant="soft" disabled={busy} onClick={onClose}>ביטול</Btn></div>
