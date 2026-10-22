@@ -36,6 +36,7 @@ import CategoryServiceSelector from '@/components/CategoryServiceSelector';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
 import { trackEvent } from '@/lib/analytics';
+import { usePublishFunnel } from '@/hooks/usePublishFunnel';
 import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
@@ -763,6 +764,36 @@ export default function CreateTask() {
     requiredFieldOrder().forEach(key => { if (!values[key]) errs[key] = true; });
     return errs;
   };
+
+  // ── Publisher funnel — how far THIS attempt got, and where it stopped ─────
+  // The step is DERIVED from the form's own state and reported as one value
+  // rather than fired from eight different places in the markup: a derived step
+  // cannot be missed because somebody forgot a call site. The ladder is strictly
+  // cumulative (each step implies the ones above it) and the hook only ever
+  // moves forward, so clearing a field again cannot walk the funnel backwards.
+  // Reported for signed-out visitors too — that is the whole point, since the
+  // campaign sends people here before they have an account.
+  const trackFunnel = usePublishFunnel();
+  const funnelStep = (() => {
+    const phoneOk = (form.contactPhone || '').replace(/\D/g, '').length >= 9;
+    const pricingOk = !!(form.price && form.payment_method);
+    if (requiredFieldOrder().every(k => requiredValues()[k])) return 'ready';
+    if (pricingOk && phoneOk) return 'contact';
+    if (pricingOk) return 'pricing';
+    if (form.location_name && addressConfirmed) return 'location';
+    if (form.title && form.description) return 'details';
+    if (form.category) return 'category';
+    return 'opened';
+  })();
+  useEffect(() => {
+    trackFunnel(funnelStep, {
+      category: form.category || undefined,
+      city: form.city || undefined,
+      has_account: isAuthenticated,
+      source_track: new URLSearchParams(window.location.search).get('track') || undefined,
+    });
+  }, [funnelStep]);
+
   const focusFirstMissingField = (errs) => {
     const first = requiredFieldOrder().find(k => errs[k]);
     if (!first || !fieldRefs[first]?.current) return;
@@ -1052,6 +1083,7 @@ export default function CreateTask() {
       { category: finalCategory, city: form.city, value: Number(form.price), currency: 'ILS' },
       { dedupeKey: created?.id }
     );
+    trackFunnel('published', { published_task_id: created?.id, category: finalCategory, city: form.city });
     toast.success(t('ct_publish_ok'));
     if (created?.id) {
       setSearchingTaskId(created.id);
@@ -1197,6 +1229,7 @@ export default function CreateTask() {
         { category: chatFormData.category || 'other', city: chatFormData.city, value: Number(chatFormData.price), currency: 'ILS' },
         { dedupeKey: created?.id }
       );
+      trackFunnel('published', { published_task_id: created?.id, category: chatFormData.category, city: chatFormData.city });
       toast.success(t('ct_publish_ok'));
 
       if (created?.id) {

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, ListChecks, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store } from 'lucide-react';
+import { Users, ClipboardList, ListChecks, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store, Filter } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import NotificationManagerTab from '@/components/NotificationManagerTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
@@ -11,6 +11,7 @@ import JobaSettingsTab from '@/components/JobaSettingsTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { exportToCSV } from '@/lib/csvExport';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
+import AdminPublishFunnelTab from '@/components/admin/AdminPublishFunnelTab';
 import BrandsTab from '@/components/admin/BrandsTab';
 import GlobalCategoriesTab from '@/components/admin/GlobalCategoriesTab';
 import TaskFormFieldsTab from '@/components/admin/TaskFormFieldsTab';
@@ -32,6 +33,7 @@ import { resolveUserAccess } from '@/lib/userAccess';
 const TAB_GROUPS = [
   { label: 'סקירה', tabs: [
     { key: 'analytics', label: 'אנליטיקה', icon: TrendingUp, desc: 'מגמות, התפלגויות וביצועי הפלטפורמה לאורך זמן' },
+    { key: 'publish_funnel', label: 'פאנל פרסום', icon: Filter, desc: 'כמה התחילו לפרסם משימה, ובאיזה שלב בדיוק כל אחד עצר' },
   ] },
   { label: 'תפעול', tabs: [
     { key: 'tasks', label: 'משימות', icon: ClipboardList, desc: 'כל המשימות, הביקוש שלהן ומי הגיש מועמדות' },
@@ -568,6 +570,11 @@ export default function AdminDashboard() {
         {/* ANALYTICS TAB */}
         {tab === 'analytics' && (
           <AdminAnalyticsTab allUsers={allUsers} />
+        )}
+
+        {/* PUBLISH FUNNEL — where publishing attempts stop, step by step */}
+        {tab === 'publish_funnel' && (
+          <AdminPublishFunnelTab />
         )}
 
         {/* BRANDS TAB — Platform Admin only (Package 4.5) */}
