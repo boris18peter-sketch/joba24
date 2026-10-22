@@ -1,3 +1,5 @@
+import { globalCategoryFor } from '@/lib/brand/categoryRegistry';
+
 export const CATEGORIES = [
   { value: 'plumbing',      label: '🔧 אינסטלציה' },
   { value: 'electricity',   label: '⚡ חשמלאות' },
@@ -33,7 +35,13 @@ export const getCategoryLabel = (value, t) => {
     const translated = t(key);
     if (translated && translated !== key) return translated;
   }
-  return CATEGORIES.find(c => c.value === value)?.label || '📋 אחר';
+  // The fixed list first — it carries the emoji-prefixed labels the app has
+  // always shown — then the CATALOGUE, which is the only place a root such as
+  // "התקנות והרכבות" or one of its services exists. Reading it here is what
+  // stops a real category from being labelled "אחר".
+  return CATEGORIES.find(c => c.value === value)?.label
+    || globalCategoryFor(value)?.label
+    || '📋 אחר';
 };
 
 export const getCategoryPluralLabel = (value, t) => {

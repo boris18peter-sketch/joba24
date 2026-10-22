@@ -682,6 +682,12 @@ export default function Layout() {
   // navigation stay separate concerns.
   // `e` is absent when the destination came from a DRAG rather than a tap — a
   // swipe has no click to cancel — so every use of it is optional.
+  // ── EVERY ROOT TAB SCROLLS IN ITS OWN BOX ────────────────────────────────
+  // So the box must be named after the tab. Only the feed's carried the name
+  // 'main-scroll', and the nav looked up that one name for every tab — tapping
+  // Profile scrolled the HIDDEN feed, so nothing moved on screen.
+  const tabScrollId = (path) => (path === '/' ? 'main-scroll' : `main-scroll${path.replace(/\//g, '-')}`);
+
   const handleNavClick = (to, e) => {
     if (effectiveGuest && to !== '/') {
       e?.preventDefault?.();
@@ -690,7 +696,7 @@ export default function Layout() {
     }
     if (location.pathname === to) {
       e?.preventDefault?.();
-      const el = document.getElementById('main-scroll');
+      const el = document.getElementById(tabScrollId(to));
       if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -793,7 +799,7 @@ export default function Layout() {
                 const needsAuth = !isAuthenticated && (tabPath === '/chats' || tabPath === '/profile');
                 const TabComponent = tabPath === '/' ? HomeFeed : tabPath === '/map' ? MapView : tabPath === '/chats' ? ChatInbox : Profile;
                 return (
-                  <div key={tabPath} id={tabPath === '/' ? 'main-scroll' : undefined}
+                  <div key={tabPath} id={tabScrollId(tabPath)}
                     style={{
                       flex: isActive ? 1 : undefined, display: isActive ? 'block' : 'none',
                       overflowY: tabPath === '/map' ? 'hidden' : 'auto', overflowX: 'hidden',

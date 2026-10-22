@@ -354,6 +354,10 @@ export default function CreateTask() {
   // Submission is unaffected: it still requires an actionable service key.
   useEffect(() => {
     if (categoriesLoading || isEditMode) return;
+    // An EMPTY catalogue is "not loaded yet", never "nothing is offered": without
+    // this, the moment between the brand resolving and its services arriving
+    // wiped the visitor's category to ''.
+    if (!brandCategories.length) return;
     if (!form.category) return;
     if (brandCategories.some(c => c.value === form.category)) return;
     if (representableRoots.has(form.category)) return;
