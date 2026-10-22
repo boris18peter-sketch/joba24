@@ -31,7 +31,7 @@ import { moderateText, moderateImage } from '@/hooks/useModeration';
 import SelectedCategoryForm from '@/components/SelectedCategoryForm';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
-import { globalFormError } from '@/lib/brand/categoryTree';
+import { globalFormError, rootOf } from '@/lib/brand/categoryTree';
 import CategoryServiceSelector from '@/components/CategoryServiceSelector';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
@@ -275,7 +275,7 @@ export default function CreateTask() {
   // offers (falls back to the platform catalogue). A brand-specific category is
   // persisted on the Task as 'other' with its brand key kept in category_details.
   const { brandId } = useBrand();
-  const { categories: brandCategories, taskCategoryFor, formFieldsFor, contentFor, isLoading: categoriesLoading } = useBrandCategories();
+  const { categories: brandCategories, globalMap, taskCategoryFor, formFieldsFor, contentFor, isLoading: categoriesLoading } = useBrandCategories();
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
@@ -324,17 +324,42 @@ export default function CreateTask() {
     return DEFAULT_FORM;
   });
 
+  // ── The ROOT keys the picker can represent ────────────────────────────────
+  // A campaign link may point at a ROOT — ?category=assemblies names the
+  // Installations & Assembly niche, not one of the services under it. The value
+  // handed to the form must be an actionable service, but the PICKER understands
+  // a root key as well: it opens on that root and lists its services for the
+  // visitor to choose. These are exactly the roots the picker draws — one per
+  // actionable category this Brand offers — so a key in this set is never stale.
+  const representableRoots = useMemo(() => {
+    const set = new Set();
+    for (const c of brandCategories) {
+      const row = globalMap[c.value];
+      const root = rootOf(row, globalMap) || row;
+      if (root?.category_key) set.add(root.category_key);
+    }
+    return set;
+  }, [brandCategories, globalMap]);
+
   // Rescue ONLY a stale category — one this Brand genuinely does not offer.
   // An empty value means "the user is still choosing" (parent picked, service
   // pending) and must never be overwritten: that reset is what silently snapped
   // the picker back to the first category in the list.
+  //
+  // A ROOT key is NOT stale, and rescuing it was a real fault: an
+  // ?category=assemblies link was rejected here and replaced with
+  // brandCategories[0] — the first service in the catalogue, a plumbing one —
+  // so the Installations & Assembly link opened the plumbing form. The root is
+  // kept, and the picker opens on it with its services ready to choose from.
+  // Submission is unaffected: it still requires an actionable service key.
   useEffect(() => {
     if (categoriesLoading || isEditMode) return;
-    if (form.category && !brandCategories.some(c => c.value === form.category)) {
-      setForm(p => ({ ...p, category: brandCategories[0]?.value || '', category_details: {} }));
-      setCategoryDetails({});
-    }
-  }, [categoriesLoading, brandCategories.map(c => c.value).join('|'), isEditMode, form.category]);
+    if (!form.category) return;
+    if (brandCategories.some(c => c.value === form.category)) return;
+    if (representableRoots.has(form.category)) return;
+    setForm(p => ({ ...p, category: brandCategories[0]?.value || '', category_details: {} }));
+    setCategoryDetails({});
+  }, [categoriesLoading, brandCategories.map(c => c.value).join('|'), representableRoots, isEditMode, form.category]);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
