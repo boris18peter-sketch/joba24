@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Joba24" />
     <meta name="mobile-web-app-capable" content="true" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f2f5fb" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -147,16 +147,40 @@
       })();
     </script>
     <style>
-      html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #ffffff; }
+      /* ── ONE LOADING SCREEN, ONE DESIGN ──────────────────────────────────
+         This first painted frame is the SAME screen React then renders as
+         AppLoading (src/components/AppLoading.jsx): the app's own surface, the
+         brand mark, the blue spinner, the same size and the same spacing.
+
+         It used to be a white bar with a spinner and the word "טוען…", so a
+         launch showed one loading screen and then a different one. A skeleton
+         may be simpler than the real screen; it must never be a different one.
+
+         KEEP THE `.preload-spinner` CLASS NAME — the boot watchdog below looks
+         for it to tell a slow launch from a dead one. */
+      html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #f2f5fb; }
       body { padding-top: max(0px, env(safe-area-inset-top)); padding-bottom: 0; padding-left: max(0px, env(safe-area-inset-left)); padding-right: max(0px, env(safe-area-inset-right)); }
       #root { width: 100%; height: 100%; display: flex; flex-direction: column; }
-      /* Inline skeleton — shown instantly until React mounts */
-      .preload-header { width:100%; height:56px; background:#ffffff; display:flex; align-items:center; padding:0 16px; box-sizing:border-box; flex-shrink:0; }
-      .preload-logo { width:36px; height:36px; border-radius:10px; background:#ffffff; }
-      .preload-body { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
-      .preload-spinner { width:36px; height:36px; border-radius:50%; border:3px solid #e8edf5; border-top-color:#1a6fd4; animation:preload-spin .8s linear infinite; }
-      .preload-text { font-family:-apple-system,BlinkMacSystemFont,sans-serif; font-size:14px; color:#94a3b8; font-weight:500; }
+      .preload-splash {
+        position: fixed; inset: 0;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 14px;
+        background: #f2f5fb;
+      }
+      .preload-logo { width: 64px; height: 64px; border-radius: 18px; display: block; }
+      .preload-spinner {
+        width: 30px; height: 30px; border-radius: 50%;
+        border: 3px solid #e4eaf5; border-top-color: #1a6fd4;
+        animation: preload-spin .8s linear infinite;
+      }
       @keyframes preload-spin { to{transform:rotate(360deg)} }
+      /* The same screen in the dark. AppLoading reads --surface-1 / --border-1,
+         which flip under prefers-color-scheme, so this must flip with them. */
+      @media (prefers-color-scheme: dark) {
+        html, body { background: #0f172a; }
+        .preload-splash { background: #0f172a; }
+        .preload-spinner { border-color: #334155; border-top-color: #60a5fa; }
+      }
     </style>
     <!-- ── Tranzila Apple Pay SDK — REMOVED FROM <head>, LOADED ON DEMAND ──
          These were plain, render-blocking <script> tags, so every launch
@@ -174,10 +198,10 @@
   </head>
   <body>
     <div id="root">
-      <div class="preload-header"><div class="preload-logo"></div></div>
-      <div class="preload-body">
+      <div class="preload-splash">
+        <img class="preload-logo" width="64" height="64" alt=""
+             src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/ae3541b67_Joba24_120x120.png" />
         <div class="preload-spinner"></div>
-        <div class="preload-text">טוען...</div>
       </div>
     </div>
     <!-- Firebase is loaded on-demand via lib/fcm.js — no blocking CDN scripts on initial load -->
@@ -185,7 +209,7 @@
       console.log('[Joba24] HTML: page loaded, React not yet mounted');
       window.__joba24Startup = { htmlReady: Date.now() };
       // Ensure body isn't white even if CSS fails entirely
-      document.body.style.backgroundColor = '#ffffff';
+      document.body.style.backgroundColor = '#f2f5fb';
     </script>
     <!-- Self-heal: Android's WebView caches index.html aggressively and keeps
          serving a STALE version after a new deploy — so the app runs old code
