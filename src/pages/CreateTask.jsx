@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getRequirementCategories, getActiveRequirements } from '@/lib/requirements';
@@ -270,6 +270,10 @@ export default function CreateTask() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [extraFieldsText, setExtraFieldsText] = useState('');
   const [categoryDetails, setCategoryDetails] = useState({});
+  // The "?" beside the budget label. It holds the one line in this block that
+  // is a RULE rather than a reassurance (both sides honour the agreed price),
+  // so it is offered on demand instead of taking a row of its own.
+  const [showPriceHelp, setShowPriceHelp] = useState(false);
   // BrandCategory is the authoritative source for the categories THIS Brand
   // offers (falls back to the platform catalogue). A brand-specific category is
   // persisted on the Task as 'other' with its brand key kept in category_details.
@@ -2049,20 +2053,80 @@ export default function CreateTask() {
             </>
           ) : (
             <>
-              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
-              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
-                value={form.price}
-                onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
-                disabled={hasActiveApplications}
-                style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
-              />
+              {/* ── THE BUDGET ────────────────────────────────────────────────
+                  The label asks the question the publisher is actually answering
+                  — what is your budget — instead of naming the field. The shekel
+                  then sits INSIDE the field, on the side the digits do not
+                  occupy, so the eye lands on the number and the currency is
+                  context rather than a second thing to read.
+
+                  `insetInlineEnd` / `paddingInlineEnd` rather than left/right:
+                  the symbol must always take the side the number is NOT on, so
+                  it follows the writing direction instead of being pinned to a
+                  screen edge. */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>
+                  {t('price_label')} *
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setShowPriceHelp(v => !v)}
+                  aria-label={t('ct_price_note')}
+                  aria-expanded={showPriceHelp}
+                  className="j-icon-btn"
+                  style={{
+                    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', color: 'var(--text-3)',
+                  }}
+                >
+                  <HelpCircle size={17} />
+                </button>
+              </div>
+              {showPriceHelp && (
+                <div style={{
+                  background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+                  borderRadius: 12, padding: '10px 12px', marginBottom: 8,
+                  fontSize: 12, color: 'var(--text-2)', fontWeight: 600, lineHeight: 1.55,
+                }}>
+                  {t('ct_price_note')}
+                </div>
+              )}
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
+                  value={form.price}
+                  onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
+                  disabled={hasActiveApplications}
+                  style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, paddingInlineEnd: 40, opacity: hasActiveApplications ? 0.5 : 1 }}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute', insetInlineEnd: 14, top: '50%', transform: 'translateY(-50%)',
+                    fontSize: 17, fontWeight: 700, color: 'var(--text-3)', pointerEvents: 'none',
+                  }}
+                >
+                  ₪
+                </span>
+              </div>
             </>
           )}
           {hasActiveApplications && <p style={{ fontSize: 12, color: 'var(--color-danger)', marginBottom: 6 }}>{t('ct_price_locked')}</p>}
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>{t('ct_required')}</p>}
-          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
-            {t('ct_price_note')}
+          {/* ── WHAT HAPPENS AFTER THE NUMBER ─────────────────────────────────
+              The two things a publisher needs before typing a price. The first
+              is a FACT — nothing is charged now — so it is short, stated plainly
+              and carries the green that means "no risk" everywhere else in the
+              app. The second explains how the offer works, which is guidance
+              rather than a promise, so it sits one step quieter underneath. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+            <ShieldCheck size={16} color="var(--color-success)" strokeWidth={2.2} style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--color-success)' }}>
+              {t('ct_no_pay_now')}
+            </span>
           </div>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.55, fontWeight: 600, marginBottom: 8 }}>
+            {t('ct_budget_explain')}
+          </p>
           <PriceSuggestion
             category={form.category}
             estimatedTime={form.estimated_time}
