@@ -22,11 +22,13 @@ import {
   CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp,
   Play, Zap, Clock, User, Wallet, Star, MessageCircle, ShieldCheck,
   Sparkles, Bell, Map, List, CreditCard, Flag, Navigation,
-  Eye, AlertTriangle, Gift, Phone, BarChart3, Layers, Layout, Building2
+  Eye, AlertTriangle, Gift, Phone, BarChart3, Layers, Layout, Building2, Factory
 } from 'lucide-react';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCategoryLabel } from '@/lib/categories';
 import DemoTasksManager from '@/components/simulator/DemoTasksManager';
+import MarketMakerPanel from '@/components/simulator/MarketMakerPanel';
+import useTaskCategoryOptions from '@/hooks/useTaskCategoryOptions';
 import { JOBA24_BRAND_ID } from '@/lib/jobaBrand';
 
 /* ─── Reusable UI ─────────────────────────── */
@@ -195,25 +197,10 @@ export default function SimulatorPanel() {
     refetchOnWindowFocus: false,
   });
 
-  const CATEGORY_OPTIONS = [
-    { value: 'plumbing', label: 'אינסטלציה' },
-    { value: 'electricity', label: 'חשמל' },
-    { value: 'handyman', label: 'יד אמן' },
-    { value: 'cleaning', label: 'ניקיון' },
-    { value: 'moving', label: 'הובלות' },
-    { value: 'heavy_lifting', label: 'הרמה כבדה' },
-    { value: 'painting', label: 'צבעות' },
-    { value: 'carpentry', label: 'נגרות' },
-    { value: 'ac', label: 'מזגנים' },
-    { value: 'locksmith', label: 'מנעולים' },
-    { value: 'gardening', label: 'גינון' },
-    { value: 'home_maintenance', label: 'תחזוקת בית' },
-    { value: 'car', label: 'רכב' },
-    { value: 'delivery', label: 'משלוחים' },
-    { value: 'shopping', label: 'קניות' },
-    { value: 'pets', label: 'חיות מחמד' },
-    { value: 'other', label: 'אחר' },
-  ];
+  // The categories come from the live catalogue, never from a list kept in
+  // code — a category added in Admin → Categories is selectable here the moment
+  // it exists, and a task is always filed under a category the app really has.
+  const { options: CATEGORY_OPTIONS } = useTaskCategoryOptions();
 
   const toggleCategory = (cat) => {
     setBulkCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
@@ -953,6 +940,16 @@ export default function SimulatorPanel() {
         {allTasks.slice(0, 8).map(t => (
           <TaskPill key={t.id} task={t} onClick={() => openTaskSheet(t.id)} />
         ))}
+      </Section>
+
+      {/* ── Market Maker — the automaton that keeps the feed alive ── */}
+      <Section title="🏭 Market Making — אוטומט פעילות" icon={<Factory size={14} color="#7c3aed" />} defaultOpen badge={openTasks.filter(t => t.client_id?.startsWith('demo_')).length}>
+        <div style={{ fontSize: 11, color: '#4c1d95', padding: '7px 10px', background: '#f5f3ff', borderRadius: 8, border: '1px solid #ddd6fe', lineHeight: 1.6 }}>
+          מפרסם משימות דמו מהחשבונות שהכנו, מוסיף צפיות, כניסות ופניות למשימות הקיימות וסוגר את הישנות — כדי שמשתמש שנכנס בפעם הראשונה יראה שוק פעיל.
+          <br />
+          המחזור רץ אוטומטית כל שעה, ובפועל מתבצע רק כשעבר פרק הזמן שהגדרת.
+        </div>
+        <MarketMakerPanel />
       </Section>
 
       {/* ── Demo Task Generator ── */}

@@ -8,26 +8,8 @@ import {
   RefreshCw, Eye, ChevronDown, ChevronUp, User
 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
-
-const CATEGORY_OPTIONS = [
-  { value: 'plumbing', label: 'אינסטלציה' },
-  { value: 'electricity', label: 'חשמל' },
-  { value: 'handyman', label: 'יד אמן' },
-  { value: 'cleaning', label: 'ניקיון' },
-  { value: 'moving', label: 'הובלות' },
-  { value: 'heavy_lifting', label: 'הרמה כבדה' },
-  { value: 'painting', label: 'צבעות' },
-  { value: 'carpentry', label: 'נגרות' },
-  { value: 'ac', label: 'מזגנים' },
-  { value: 'locksmith', label: 'מנעולים' },
-  { value: 'gardening', label: 'גינון' },
-  { value: 'home_maintenance', label: 'תחזוקת בית' },
-  { value: 'car', label: 'רכב' },
-  { value: 'delivery', label: 'משלוחים' },
-  { value: 'shopping', label: 'קניות' },
-  { value: 'pets', label: 'חיות מחמד' },
-  { value: 'other', label: 'אחר' },
-];
+import ImageUploader from '@/components/ImageUploader';
+import useTaskCategoryOptions from '@/hooks/useTaskCategoryOptions';
 
 const STATUS_COLORS = {
   OPEN: '#16a34a', TAKEN: '#b07020', COMPLETED: '#1a6fd4', CANCELLED: '#dc2626',
@@ -39,12 +21,16 @@ function EditTaskModal({ task, onClose, onSave }) {
   const [description, setDescription] = useState(task.description || '');
   const [price, setPrice] = useState(task.price || 0);
   const [category, setCategory] = useState(task.category || 'other');
+  const [images, setImages] = useState(Array.isArray(task.images) ? task.images : []);
   const [loading, setLoading] = useState(false);
+  // The live catalogue, so a demo task can never be filed under a category the
+  // app no longer has.
+  const { options: CATEGORY_OPTIONS } = useTaskCategoryOptions();
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      await onSave({ title, description, price: Number(price), category });
+      await onSave({ title, description, price: Number(price), category, images });
     } catch {}
     setLoading(false);
   };
@@ -82,6 +68,15 @@ function EditTaskModal({ task, onClose, onSave }) {
               </select>
             </div>
           </div>
+
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 4 }}>תמונות</label>
+            <ImageUploader images={images} onChange={setImages} max={4} />
+            <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>
+              נשמרות באחסון ציבורי — כל מי שיש לו את הקישור יכול לפתוח אותן, בדיוק כמו כל תמונה בפיד.
+            </div>
+          </div>
+
           <button onClick={handleSave} disabled={loading || !title.trim()} style={{ width: '100%', height: 46, borderRadius: 12, background: title.trim() ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-3)', color: title.trim() ? 'white' : 'var(--text-3)', border: 'none', fontWeight: 800, fontSize: 14, cursor: title.trim() && !loading ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {loading ? <Loader2 size={18} className="animate-spin" /> : <><Check size={16} /> שמור שינויים</>}
           </button>
@@ -129,6 +124,13 @@ function DemoTaskRow({ task, onEdit, onDelete }) {
         <div style={{ padding: '0 12px 10px', borderTop: '1px solid var(--border-1)', fontSize: 11, color: 'var(--text-2)' }}>
           {task.description && <div style={{ marginTop: 6, lineHeight: 1.6, color: 'var(--text-2)' }}>{task.description}</div>}
           <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>מיקום: {task.location_name} · תשלום: {task.payment_method}</div>
+          {Array.isArray(task.images) && task.images.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+              {task.images.map((url) => (
+                <img key={url} src={url} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border-1)' }} />
+              ))}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
             <button onClick={() => openTaskSheet(task.id)} style={{ flex: 1, height: 32, borderRadius: 8, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
               <Eye size={12} /> צפה בפיד
