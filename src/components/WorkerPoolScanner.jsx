@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { categoryMatches } from '@/lib/brand/categoryTree';
+import { useWorkerPool } from '@/hooks/useWorkerPool';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹',
@@ -23,12 +22,9 @@ const PROFESSIONAL_CATS = new Set(['plumbing', 'electricity', 'carpentry', 'pain
 
 function useWorkerCount(category, city) {
   const { globalMap } = useBrandCategories();
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['workerPool'],
-    queryFn: () => base44.entities.User.list('-last_active_at', 500),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  // The public pool, not the User entity — a count that vanishes for a signed-out
+  // visitor is a count that vanishes exactly when it is most persuasive.
+  const { data: allUsers = [] } = useWorkerPool();
 
   if (!category || !city || !allUsers.length) return null;
 
@@ -128,12 +124,9 @@ export function WorkerPoolPill({ category, city }) {
 // ── Category-only hint — shown right after category selection ────────────────
 export function CategoryWorkerHint({ category }) {
   const { globalMap } = useBrandCategories();
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['workerPool'],
-    queryFn: () => base44.entities.User.list('-last_active_at', 500),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  // The public pool, not the User entity — a count that vanishes for a signed-out
+  // visitor is a count that vanishes exactly when it is most persuasive.
+  const { data: allUsers = [] } = useWorkerPool();
 
   if (!category || !allUsers.length) return null;
 

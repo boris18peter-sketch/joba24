@@ -30,7 +30,9 @@ export default function GlobalTreeBranch({ node, rows, siblings, busy, onEdit, o
       <span className="text-xs text-jtext-2">{node.active === false ? 'לא פעילה' : 'פעילה'}</span>
       <button type="button" aria-label="העלה קטגוריה" disabled={busy} onClick={() => move(-1)}>↑</button><button type="button" aria-label="הורד קטגוריה" disabled={busy} onClick={() => move(1)}>↓</button>
       {copyable && <button type="button" className="text-xs font-bold underline text-brand-primary" onClick={copyLink}>העתק קישור קמפיין</button>}
-      <Btn variant="soft" disabled={busy} onClick={() => onEdit(node)}>עריכה</Btn><Btn variant="soft" disabled={busy} onClick={() => onToggle(node)}>{node.active === false ? 'הפעל' : 'השבת'}</Btn>
+      {/* Editing is the action an admin comes here for, so it carries the
+          primary weight and the others sit quietly beside it. */}
+      <Btn disabled={busy} onClick={() => onEdit(node)}>עריכה</Btn><Btn variant="soft" disabled={busy} onClick={() => onToggle(node)}>{node.active === false ? 'הפעל' : 'השבת'}</Btn>
       {isBranch && <><Btn variant="soft" onClick={() => setExpanded(v => !v)}>{expanded ? 'סגור' : 'הצג ילדים'}</Btn><Btn variant="soft" onClick={() => onAdd(node.category_key)}>הוסף שירות</Btn></>}
     </div>
     {node.description && <p className="text-sm text-jtext-3">{node.description}</p>}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUp, ArrowDown, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash2, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { Field, IconBtn } from '@/components/admin/brand/brandUi';
 import GlobalOptionsEditor from '@/components/admin/categories/GlobalOptionsEditor';
 
@@ -51,16 +51,33 @@ export default function GlobalFieldEditor({ field: f, index, onChange, onMove, o
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="flex-1 text-start min-w-0"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
           <span className="font-bold text-sm">{f.label || 'שדה ללא שם'}</span>
           <span className="text-xs text-jtext-3"> · {summary}</span>
         </button>
         <IconBtn title="העלה שדה" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={14} /></IconBtn>
         <IconBtn title="הורד שדה" onClick={() => onMove(1)}><ArrowDown size={14} /></IconBtn>
-        <IconBtn title={open ? 'סגור' : 'עריכה'} onClick={() => setOpen((v) => !v)}>
-          {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </IconBtn>
+        {/* The way into a question, spelled out. This was a bare chevron, so an
+            admin looking at an existing question saw no way to change it and
+            concluded the form could only be added to. A labelled button says
+            what it does. */}
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          style={{
+            height: 30, padding: '0 11px', borderRadius: 9, flexShrink: 0,
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            background: open ? 'var(--surface-2)' : 'var(--brand-primary-light)',
+            border: `1px solid ${open ? 'var(--border-1)' : 'var(--border-2)'}`,
+            color: open ? 'var(--text-2)' : 'var(--brand-primary)',
+            fontSize: 12, fontWeight: 800, cursor: 'pointer',
+          }}
+        >
+          {open ? <ChevronUp size={14} /> : <Pencil size={13} />}
+          {open ? 'סגור' : 'עריכה'}
+        </button>
         <IconBtn title="הסר שדה" danger onClick={onRemove}><Trash2 size={15} /></IconBtn>
       </div>
 

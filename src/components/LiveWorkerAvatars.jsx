@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { categoryMatches } from '@/lib/brand/categoryTree';
+import { useWorkerPool } from '@/hooks/useWorkerPool';
 
 /**
  * LiveWorkerAvatars — the overlapping stack of REAL professionals who work in
@@ -36,12 +35,9 @@ const MAX = 4;
 export default function LiveWorkerAvatars({ category }) {
   const { globalMap } = useBrandCategories();
 
-  const { data: pool = [] } = useQuery({
-    queryKey: ['workerPool'],
-    queryFn: () => base44.entities.User.list('-last_active_at', 500),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  // Read through the public pool, never the User entity: this row has to be
+  // there for a visitor who is not signed in.
+  const { data: pool = [] } = useWorkerPool();
 
   const workers = useMemo(() => {
     if (!category) return [];

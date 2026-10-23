@@ -22,7 +22,7 @@ export default function GlobalCategoriesTab() {
   const add = parent => setEditing({ node_type: parent ? 'service' : 'root', parent_key: parent || '', sort_order: rows.filter(r => (r.parent_key || '') === (parent || '')).length });
   if (isLoading) return <p className="text-sm text-jtext-3">טוען קטגוריות…</p>;
   return <Section title="עץ הקטגוריות הגלובלי" desc="קטגוריות אב מגדירות תחומים; שירותי הילד וטופסיהם משותפים לכל המותגים." actions={<Btn onClick={() => add('')}>הוסף קטגוריית אב</Btn>}>
-    {editing && <GlobalCategoryEditor key={editing.id || `${editing.node_type}:${editing.parent_key}`} category={editing} rows={rows} onSaved={saved} onClose={() => setEditing(null)} />}
+    {editing && <GlobalCategoryEditor key={editing.id || `${editing.node_type}:${editing.parent_key}`} category={editing} rows={rows} onSaved={saved} onClose={() => setEditing(null)} onEdit={setEditing} />}
     {roots.map(node => <GlobalTreeBranch key={node.id} node={node} rows={rows} siblings={roots} busy={busy} onEdit={setEditing} onAdd={add}
       onToggle={r => act({ action: 'toggle',id:r.id }, rows.map(g => g.id === r.id ? { ...g,active:g.active === false } : g))}
       onReorder={next => act({ action: 'reorder',order:next.map(r => ({ id:r.id })) }, rows.map(r => { const i=next.findIndex(g => g.id === r.id); return i < 0 ? r : { ...r,sort_order:i }; }))} />)}
