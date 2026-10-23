@@ -5,6 +5,7 @@ import '@/index.css'
 import { reloadFresh } from '@/lib/reloadFresh'
 import { bootMark } from '@/lib/bootTrace'
 import { installDesktopScale } from '@/lib/desktopScale'
+import { hideNativeSplash } from '@/lib/hideNativeSplash'
 
 // ── "React actually started" — the signal the HTML healers were missing ──────
 // The inline guards in index.html used to decide a launch was broken purely by
@@ -152,3 +153,16 @@ console.log('[Joba24] App: React mounting...');
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />
 )
+
+// ── HAND THE SCREEN OVER FROM THE NATIVE SPLASH ─────────────────────────────
+// See src/lib/hideNativeSplash.js. The native splash used to leave on a fixed
+// timer, which could be before the WebView had painted anything — that gap is
+// the blank frame between the splash and the app.
+//
+// TWO animation frames, not one: the first fires BEFORE the paint that follows
+// this call, the second after it. React 18 commits asynchronously, so a real
+// painted frame is the only honest signal that the WebView has something on
+// screen. And if the commit lands a frame later than this, the frame underneath
+// is the skeleton in index.html — the same design, in the same colour, so
+// nothing shows either way.
+requestAnimationFrame(() => requestAnimationFrame(() => hideNativeSplash()));

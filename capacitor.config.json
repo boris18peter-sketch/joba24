@@ -2,6 +2,7 @@
   "appId": "com.base69e6bdb4986a04a256653a23.app",
   "appName": "Joba24",
   "webDir": "dist",
+  "backgroundColor": "#f2f5fb",
   "server": {
     "url": "https://joba24.com/",
     "cleartext": false,
@@ -24,7 +25,7 @@
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 500,
+      "launchShowDuration": 1000,
       "launchAutoHide": true,
       "backgroundColor": "#f2f5fb",
       "showSpinner": false
