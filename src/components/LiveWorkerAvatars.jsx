@@ -1,90 +1,114 @@
-import { User } from 'lucide-react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { useBrandCategories } from '@/lib/brand/brandCategories';
+import { categoryMatches } from '@/lib/brand/categoryTree';
 
 /**
- * LiveWorkerAvatars — the overlapping avatar stack that sits ON the publish
- * form's title line.
+ * LiveWorkerAvatars — the overlapping stack of REAL professionals who work in
+ * the category the publisher has just chosen.
  *
- * Its one job is to make the marketplace feel INHABITED at the moment a
- * publisher is deciding whether to post. An empty form asks "will anyone even
- * see this?"; a stack of faces answers that before the question is finished.
+ * ── WHY REAL FACES ──────────────────────────────────────────────────────────
+ * The stack used to be four drawn glyphs: honest, but silent. A publisher
+ * deciding whether to post is asking one question — "will anyone actually
+ * answer this?" — and the most direct answer is the people themselves. These
+ * are profile photos of registered users whose own profile says they work in
+ * this category, so the reassurance is a fact rather than a mood.
  *
- * ── IT BELONGS ON THE TITLE LINE, NOT UNDER IT ──────────────────────────────
- * It used to be a row of its own below the header, which cost ~38px of height
- * for four 28px circles and pushed the actual form further down the screen.
- * The header then read as two stacked bars instead of one. Here it shares the
- * title's row — the title on the right (RTL), the faces on the left — so the
- * reassurance is exactly where the eye already is and the header stays one bar.
+ * ── AND WHY IT CAN DISAPPEAR ────────────────────────────────────────────────
+ * If nobody matching has a photo, this renders NOTHING. A placeholder face or
+ * an invented count would be exactly the false impression it is meant to
+ * remove, so the row simply falls back to the honest number it already shows.
  *
- * ── WHY THESE ARE DRAWN, NOT FETCHED ────────────────────────────────────────
- * Real profile photos would mean either shipping strangers' faces as marketing
- * or pulling random users out of the database to decorate a form — neither is
- * something a publisher should see. So the circles are drawn from the app's own
- * palette with a person glyph: unmistakably an avatar stack, unmistakably not a
- * claim about a specific person. The count is not printed either, because the
- * honest number already sits one row below in the worker-availability bar, and
- * two different numbers on one screen is worse than one.
+ * ── ONE REQUEST, SHARED ─────────────────────────────────────────────────────
+ * The worker pool is read under the same query key the availability scanners
+ * use, so this costs no extra request and can never disagree with them about
+ * who is in the pool.
  */
-const TINTS = [
-  ['#1a6fd4', '#0a52b0'],
-  ['#f59e0b', '#d97706'],
-  ['#10b981', '#059669'],
-  ['#8b5cf6', '#6d28d9'],
-];
-
-// Sized to live beside a 17px title without crowding it: the whole stack is
-// ~82px, which is the most four faces can take before the title loses the line.
-const SIZE = 22;
-const OVERLAP = -7;
+const SIZE = 24;
+const OVERLAP = -8;
+// A light ring, never a solid colour: the bar behind this is a translucent
+// tint over the header's gradient, so no single colour would ever match it.
+// The ring is what makes the overlap read as separate faces.
 const RING = '2px solid rgba(255,255,255,0.85)';
+const MAX = 4;
 
-export default function LiveWorkerAvatars() {
+export default function LiveWorkerAvatars({ category }) {
+  const { globalMap } = useBrandCategories();
+
+  const { data: pool = [] } = useQuery({
+    queryKey: ['workerPool'],
+    queryFn: () => base44.entities.User.list('-last_active_at', 500),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const workers = useMemo(() => {
+    if (!category) return [];
+    // Matched in BOTH directions, so the stack is right whichever way the
+    // profiles were filled in: a professional who put the whole trade on their
+    // profile ("התקנות והרכבות") counts for the single service the publisher
+    // picked, and one who listed only a service counts when the publisher
+    // picked the trade. The pool is already ordered most-recently-active first,
+    // so the faces shown are the ones most likely to answer today.
+    const matches = (key) =>
+      categoryMatches(category, key, globalMap) || categoryMatches(key, category, globalMap);
+    return pool.filter((u) => u.profile_photo && (u.preferred_categories || []).some(matches));
+  }, [pool, category, globalMap]);
+
+  if (!workers.length) return null;
+
   return (
     <div
       dir="ltr"
       aria-hidden="true"
       style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
     >
-      {TINTS.map(([from, to], i) => (
+      {workers.slice(0, MAX).map((u, i) => (
         <div
-          key={from}
+          key={u.id}
           style={{
             width: SIZE, height: SIZE, borderRadius: '50%',
             marginInlineStart: i === 0 ? 0 : OVERLAP,
-            background: `linear-gradient(135deg, ${from}, ${to})`,
-            // A light ring, not a background-coloured one: the header behind this
-            // is a gradient, so no single solid colour would ever match it. The
-            // ring is what makes the overlap read as separate faces.
             border: RING,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden',
+            background: 'var(--surface-3)',
             flexShrink: 0,
-            // Later circles sit ON TOP of earlier ones, so each tucks under the
+            // Later faces sit ON TOP of earlier ones, so each tucks under the
             // right edge of the one before it — the standard avatar stack.
             zIndex: i + 1,
             boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
           }}
         >
-          <User size={11} color="rgba(255,255,255,0.92)" strokeWidth={2.4} />
+          <img
+            src={u.profile_photo}
+            alt=""
+            loading="lazy"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
         </div>
       ))}
 
-      {/* The trailing "+" — the stack continues past the edge of the line. That
-          is what turns four circles into "many people". On top of the last
-          circle rather than under it, so the sign itself is always readable. */}
-      <div
-        style={{
-          width: SIZE, height: SIZE, borderRadius: '50%',
-          marginInlineStart: OVERLAP,
-          background: 'rgba(255,255,255,0.18)',
-          border: RING,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-          color: 'var(--brand-hero-text, #ffffff)',
-          fontSize: 11, fontWeight: 900, lineHeight: 1,
-          zIndex: TINTS.length + 1,
-        }}
-      >
-        +
-      </div>
+      {/* The trailing "+" — shown ONLY when the stack is genuinely full, i.e.
+          when there really are more. The honest count is printed right beside
+          this row, so a second number here would only contradict it. */}
+      {workers.length > MAX && (
+        <div
+          style={{
+            width: SIZE, height: SIZE, borderRadius: '50%',
+            marginInlineStart: OVERLAP,
+            background: 'rgba(255,255,255,0.18)',
+            border: RING,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            color: 'var(--brand-hero-text, #ffffff)',
+            fontSize: 12, fontWeight: 900, lineHeight: 1,
+            zIndex: MAX + 1,
+          }}
+        >
+          +
+        </div>
+      )}
     </div>
   );
 }

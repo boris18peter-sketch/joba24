@@ -3,6 +3,7 @@ import { useWorkerStats } from '@/hooks/useWorkerStats';
 import { getCategoryLabel } from '@/lib/categories';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { useLanguage } from '@/lib/LanguageContext';
+import LiveWorkerAvatars from '@/components/LiveWorkerAvatars';
 
 /**
  * WorkerAvailabilityIndicator — compact, transparent indicator
@@ -93,6 +94,14 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
           {hint}
         </div>
       </div>
+
+      {/* ── THE FACES BEHIND THE COUNT ────────────────────────────────────────
+          The number on the right says how many professionals are available;
+          these are the people it refers to, pulled from their own profiles for
+          THIS category and refreshed whenever the publisher changes it. The
+          component renders nothing at all when nobody matching has a photo, so
+          the row falls back to the plain number rather than inventing a face. */}
+      <LiveWorkerAvatars category={category} />
 
       <style>{`
         @keyframes waiPulse {

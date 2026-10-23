@@ -16,7 +16,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { markPublisherContext } from '@/lib/publisherContext';
 import PageHeader from '@/components/PageHeader';
-import LiveWorkerAvatars from '@/components/LiveWorkerAvatars';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import { generateTaskTitle, autoGenerateTitle as heuristicTitle } from '@/lib/generateTaskTitle';
@@ -1416,7 +1415,13 @@ export default function CreateTask() {
               >
                 <X size={18} color="var(--brand-hero-text, white)" strokeWidth={2.4} />
               </button>
-              <span style={{ fontWeight: 800, fontSize: 17, color: 'var(--brand-hero-text, white)', flex: 1 }}>
+              <span style={{
+                // The headline now carries the whole promise — free to post, and
+                // people will answer — so it is sized to wrap onto a second line
+                // in the bar instead of being clipped to one.
+                fontWeight: 800, fontSize: 15.5, lineHeight: 1.32,
+                color: 'var(--brand-hero-text, white)', flex: 1, minWidth: 0,
+              }}>
         {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
               {/* Chat feature button — temporarily disabled
@@ -1434,14 +1439,6 @@ export default function CreateTask() {
               </button>
               */}
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, flexShrink: 0 }}><Save size={11} /> {t('draft_saved')}</div>}
-              {/* ── THE MARKETPLACE IS INHABITED ────────────────────────────────
-                  On the TITLE's own line, where a publisher is deciding whether
-                  to post — the title on the right, the faces on the left. An
-                  empty form asks "will anyone even see this?"; a stack of faces
-                  answers it before the question is finished, and the header stays
-                  ONE bar instead of two. Purely visual: the honest count already
-                  sits one row below. */}
-              <LiveWorkerAvatars />
             </div>
             {/* Worker availability — unified into header */}
             <WorkerAvailabilityIndicator category={form.category} city={form.city} />
