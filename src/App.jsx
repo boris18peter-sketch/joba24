@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
@@ -31,6 +31,7 @@ import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 import AppDownloadPopup from '@/components/AppDownloadPopup';
 import FirstTaskPublishedFlow from '@/components/FirstTaskPublishedFlow';
 import AppLoading from '@/components/AppLoading';
+import SplashVideo from '@/components/SplashVideo';
 import ConsentBanner from '@/components/ConsentBanner';
 import { lazyRetry } from '@/lib/lazyRetry';
 
@@ -224,6 +225,10 @@ const AuthenticatedApp = () => {
   // compiled in, so for a Hebrew launch — and for every first-ever launch — this
   // is true on the very first render and adds no wait whatsoever.
   const { ready: langReady } = useLanguage();
+  // The opening video. `splashOn` goes false only when the launch has clearly
+  // hung (see SplashVideo), at which point AppLoading takes over — so a stuck
+  // boot still offers a real retry instead of looping a video for ever.
+  const [splashOn, setSplashOn] = useState(true);
   const prevDepthRef = useRef(getDepth(location.pathname));
   const curDepth = getDepth(location.pathname);
   const slideDir = curDepth >= prevDepthRef.current ? 1 : -1;
@@ -239,7 +244,9 @@ const AuthenticatedApp = () => {
   // is read from the context rather than gating inside the provider because this
   // point already sits BELOW <BrandProvider>, which AppLoading needs for its logo.
   if (isLoadingPublicSettings || isLoadingAuth || !langReady) {
-    return <AppLoading />;
+    return splashOn
+      ? <SplashVideo onGiveUp={() => setSplashOn(false)} />
+      : <AppLoading />;
   }
 
   if (authError?.type === 'user_not_registered') {
