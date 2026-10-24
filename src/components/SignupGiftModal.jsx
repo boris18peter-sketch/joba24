@@ -71,11 +71,27 @@ export default function SignupGiftModal({ onClose }) {
   // Closes on the spot — no confetti, no burst of coins flying to the header,
   // no two-second wait. The balance is refreshed in the background, after the
   // popup is already gone.
-  const handleClaim = () => {
+  // ── THE POPUP MUST DELIVER WHAT IT PROMISES ─────────────────────────────
+  // The welcome total includes the profile-completion bonus whenever the profile
+  // is complete — but that bonus was granted from ONE place only: the worker
+  // flow's last step. Anyone who completed their profile any other way (the
+  // Profile screen, a restored session) was promised 30 Jobas and received 25.
+  //
+  // Claiming now grants BOTH, in order. Sequenced on purpose: grantSignupBonus
+  // writes the balance, so it must land before the profile bonus is added on top
+  // of it. Both calls are idempotent server-side, so a repeat can never double.
+  const handleClaim = async () => {
     if (claimed) return;
     setClaimed(true);
     onClose();
-    base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
+    try {
+      await base44.functions.invoke('grantSignupBonus', {});
+      if (profileBonus > 0) {
+        await base44.functions.invoke('grantProfileCompletionBonus', {});
+      }
+    } catch {
+      /* the balance is authoritative server-side; a retry happens on next login */
+    }
     queryClient.invalidateQueries({ queryKey: ['me'] });
   };
 

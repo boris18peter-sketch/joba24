@@ -3,7 +3,7 @@
  * Urgency is handled separately in the card header — not shown here.
  */
 export default function TaskBadges({ badges = {} }) {
-  const { isNew, isFunded, isNearby, isHighPay, isVerifiedClient, isLowComp } = badges;
+  const { isNew, isFunded, isNearby, isVerifiedClient, isLowComp } = badges;
 
   const items = [];
 
@@ -11,7 +11,6 @@ export default function TaskBadges({ badges = {} }) {
   const neutralStyle = { color: 'var(--brand-status-text, #64748b)', bg: 'var(--brand-status-bg, #f1f5f9)' };
 
   if (isNew)            items.push({ label: 'חדש',         ...neutralStyle });
-  if (isHighPay)        items.push({ label: 'שכר גבוה',    ...neutralStyle });
   if (isFunded)         items.push({ label: 'ממומן',        ...neutralStyle });
   if (isNearby)         items.push({ label: 'קרוב אליך',   ...neutralStyle });
   if (isVerifiedClient) items.push({ label: 'לקוח מאומת',  ...neutralStyle });

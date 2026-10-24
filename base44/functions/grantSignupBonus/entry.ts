@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { applyCreditDeltas } from '../../shared/userCredits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -35,8 +36,18 @@ Deno.serve(async (req) => {
     const referralBonus = isReferred ? settings.referral_signup_bonus : 0;
     const totalBonus = baseBonus + referralBonus;
 
-    // Use service role to update credits reliably
-    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: totalBonus });
+    // ── THE BONUS IS A DELTA, NEVER AN ABSOLUTE ─────────────────────────────
+    // This used to write `worker_credits: totalBonus` — an absolute value read
+    // from a user record fetched earlier in the request. Any credit that landed
+    // in between (a profile-completion bonus, a refund) was not "added to", it
+    // was ERASED, because the write replaced the whole balance with a stale
+    // figure. applyCreditDeltas re-reads the balance immediately before writing
+    // and applies the bonus as a delta — the app's single sanctioned way to move
+    // a balance (see shared/userCredits.ts).
+    const balances = await applyCreditDeltas(base44.asServiceRole, [
+      { id: user.id, delta: totalBonus },
+    ]);
+    const newBalance = balances[user.id];
 
     // Log the transaction
     const noteParts = [`בונוס הצטרפות - ${baseBonus} ג'ובות במתנה`];
@@ -47,7 +58,7 @@ Deno.serve(async (req) => {
       user_id: user.id,
       amount: totalBonus,
       type: 'Signup_Bonus',
-      balance_after: totalBonus,
+      balance_after: newBalance,
       note: noteParts.join(' '),
     });
 

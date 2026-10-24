@@ -6,6 +6,7 @@ import { reloadFresh } from '@/lib/reloadFresh'
 import { bootMark } from '@/lib/bootTrace'
 import { installDesktopScale } from '@/lib/desktopScale'
 import { hideNativeSplash } from '@/lib/hideNativeSplash'
+import { ensureFreshBuild } from '@/lib/ensureFreshBuild'
 
 // ── "React actually started" — the signal the HTML healers were missing ──────
 // The inline guards in index.html used to decide a launch was broken purely by
@@ -166,3 +167,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // is the skeleton in index.html — the same design, in the same colour, so
 // nothing shows either way.
 requestAnimationFrame(() => requestAnimationFrame(() => hideNativeSplash()));
+
+// ── AND THE NATIVE APP IS MOVED OFF A STALE BUILD ───────────────────────────
+// Delayed on purpose: the launch itself must finish first, so a reload happens
+// on a settled screen rather than on top of the opening transition. See
+// src/lib/ensureFreshBuild.js — it runs once per launch, native only.
+setTimeout(() => ensureFreshBuild(), 2500);

@@ -291,14 +291,79 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
 
 
 
-  // Build badge labels (urgency handled separately)
-  const badgeLabels = [];
+  // ── THE CARD'S TAGS — ONE ORDERED LIST, NEVER MORE THAN TWO ─────────────
+  // Ordered by what a worker scanning the feed needs first: is this FOR ME, is
+  // it urgent, when is it, then the softer signals. The list is built here and
+  // sliced to two where it renders, so the row cannot overflow the card however
+  // many signals a task happens to carry.
+  //
+  // "שכר גבוה" (high pay) is deliberately gone: the price is already the most
+  // prominent number on the card, so the tag only repeated it while taking the
+  // space the row needed.
   const isForYou = !hasActiveApp && badges?.isForYou;
+  const headerTags = [];
+
+  if (isForYou) {
+    headerTags.push(
+      <span style={{
+        fontSize: 10, fontWeight: 800,
+        padding: '2px 8px', borderRadius: 6,
+        background: 'linear-gradient(135deg,#f59e0b,var(--color-warning))',
+        color: 'white',
+        display: 'inline-flex', alignItems: 'center', gap: 3,
+        boxShadow: '0 2px 6px rgba(245,158,11,0.45)',
+        whiteSpace: 'nowrap', letterSpacing: 0.1,
+        border: '1px solid rgba(255,255,255,0.25)',
+      }}>
+        ✦ {t('for_you_badge')}
+      </span>
+    );
+  }
+
+  if (task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag]) {
+    const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
+    headerTags.push(
+      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`, whiteSpace: 'nowrap' }}>
+        {tag.emoji} {t(tag.label)}
+      </span>
+    );
+  }
+
+  if (task.scheduled_time) {
+    const raw = String(task.scheduled_time);
+    const sDate = new Date(raw.includes('T') && !raw.endsWith('Z') && !raw.includes('+') ? raw + 'Z' : raw);
+    if (!isNaN(sDate.getTime())) {
+      const now = new Date();
+      const isToday = sDate.toDateString() === now.toDateString();
+      const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+      const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
+      const locale = LOCALE_MAP[lang] || 'he-IL';
+      const timeStr = sDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+      let label;
+      if (isToday) label = `${t('today')} ${timeStr}`;
+      else if (isTomorrow) label = `${t('tomorrow')} ${timeStr}`;
+      else label = sDate.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) + ' ' + timeStr;
+      const slotCount = Array.isArray(task.category_details?.schedule) ? task.category_details.schedule.length : 0;
+      headerTags.push(
+        <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+          📅 {label}{slotCount > 1 ? ` · ${slotCount} ${t('slots')}` : ''}
+        </span>
+      );
+    }
+  }
+
   if (badges && !hasActiveApp) {
-    if (badges.isNew)    badgeLabels.push(t('new_tag'));
-    if (badges.isHighPay) badgeLabels.push(t('high_pay_tag'));
-    if (badges.isFunded)  badgeLabels.push(t('funded_tag'));
-    if (badges.isNearby)  badgeLabels.push(t('nearby_tag'));
+    const softLabel = badges.isNew ? t('new_tag')
+      : badges.isFunded ? t('funded_tag')
+      : badges.isNearby ? t('nearby_tag')
+      : null;
+    if (softLabel) {
+      headerTags.push(
+        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: 'var(--text-2)', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+          {softLabel}
+        </span>
+      );
+    }
   }
 
   return (
@@ -440,77 +505,17 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
            </div>
          )}
 
-        {/* Card Header: tags (right in RTL = first child) + applicant count (left = second child) */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          {/* First child = RIGHT side in RTL: all tags */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag] && (() => {
-              const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
-              return (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`, whiteSpace: 'nowrap' }}>
-                  {tag.emoji} {t(tag.label)}
-                </span>
-              );
-            })()}
-            {task.scheduled_time && (() => {
-              const raw = String(task.scheduled_time);
-              const sDate = new Date(raw.includes('T') && !raw.endsWith('Z') && !raw.includes('+') ? raw + 'Z' : raw);
-              if (isNaN(sDate.getTime())) return null;
-              const now = new Date();
-              const isToday = sDate.toDateString() === now.toDateString();
-              const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
-              const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
-              const locale = LOCALE_MAP[lang] || 'he-IL';
-              const timeStr = sDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-              let label;
-              if (isToday) label = `${t('today')} ${timeStr}`;
-              else if (isTomorrow) label = `${t('tomorrow')} ${timeStr}`;
-              else label = sDate.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) + ' ' + timeStr;
-              const slotCount = Array.isArray(task.category_details?.schedule) ? task.category_details.schedule.length : 0;
-              return (
-                <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'linear-gradient(135deg,var(--brand-primary-light),var(--brand-primary-light))', color: 'var(--brand-primary)', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                  📅 {label}{slotCount > 1 ? ` · ${slotCount} ${t('slots')}` : ''}
-                </span>
-              );
-            })()}
-            {badgeLabels.slice(0, 1).map((label, i) => (
-              <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: 'var(--text-2)', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-                {label}
-              </span>
-            ))}
-          </div>
-          {/* Second child = LEFT side in RTL: For You badge + applicant count */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {isForYou && (
-              <span style={{
-                fontSize: 10, fontWeight: 800,
-                padding: '2px 8px', borderRadius: 6,
-                background: 'linear-gradient(135deg,#f59e0b,var(--color-warning))',
-                color: 'white',
-                display: 'inline-flex', alignItems: 'center', gap: 3,
-                boxShadow: '0 2px 6px rgba(245,158,11,0.45)',
-                whiteSpace: 'nowrap',
-                letterSpacing: 0.1,
-                border: '1px solid rgba(255,255,255,0.25)',
-              }}>
-                ✦ {t('for_you_badge')}
-              </span>
-            )}
-            {task.status === 'OPEN' && liveApplicantCount > 0 && (
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                padding: '2px 8px', borderRadius: 20,
-                background: '#fffbeb', border: '1px solid #fde68a',
-                color: '#92400e',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                whiteSpace: 'nowrap',
-              }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
-                {liveApplicantCount} {t('applications_count')}
-              </span>
-            )}
-
-          </div>
+        {/* Card Header: AT MOST TWO TAGS.
+            This row used to hold urgency + schedule + a badge on one side and the
+            For-You marker + the applicant count on the other — up to five pills in
+            a single ~400px row, which is what pushed the tags past the card's edge
+            on narrower phones and made the card look broken. It is now ONE ordered
+            list capped at two; the applicant count moved down to the meta row with
+            the rest of the task's facts. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8, overflow: 'hidden' }}>
+          {headerTags.slice(0, 2).map((node, i) => (
+            <span key={i} style={{ display: 'inline-flex', flexShrink: 0 }}>{node}</span>
+          ))}
         </div>
 
         {/* Card Body: title + description + meta + media */}
@@ -549,6 +554,15 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                       rating={task.client_rating}
                     />
                   )
+                )}
+                {/* Moved here from the tag row, which could no longer hold it
+                    without overflowing the card. It reads better among the other
+                    facts anyway — it is a count, not a signal. */}
+                {task.status === 'OPEN' && liveApplicantCount > 0 && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
+                    {liveApplicantCount} {t('applications_count')}
+                  </span>
                 )}
               </div>
               {task.created_date && getRelativeTime(task.created_date, t) && (
