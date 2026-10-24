@@ -824,7 +824,15 @@ export default function CreateTask() {
     if (pricingOk && phoneOk) return 'contact';
     if (pricingOk) return 'pricing';
     if (form.location_name && addressConfirmed) return 'location';
-    if (form.title && form.description) return 'details';
+    // ── THE DESCRIPTION IS THE STEP, NOT THE TITLE ──────────────────────────
+    // This used to require `form.title && form.description`, and the title is
+    // NOT a required field: it is only a suggestion held in its own state, so
+    // form.title stays empty for anyone who lets it be. The result was that
+    // writing the description — the first thing the form asks for after the
+    // category, and the field that takes the most effort — was INVISIBLE, and
+    // every one of those attempts was filed as "stopped at the category".
+    // The step now measures what the form actually requires.
+    if (form.description) return 'details';
     if (form.category) return 'category';
     return 'opened';
   })();

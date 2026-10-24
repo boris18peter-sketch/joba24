@@ -63,6 +63,8 @@ export default async function (req) {
       const created = await base44.asServiceRole.entities.PublishFunnelEvent.create({
         session_id: sessionId,
         user_id: user?.id,
+        user_name: trim(user?.full_name, 120),
+        user_email: trim(user?.email, 160),
         furthest_step: STEPS[index],
         furthest_step_index: index,
         steps_reached: [STEPS[index]],
@@ -93,8 +95,13 @@ export default async function (req) {
 
     // The account is attached the first time one exists. This is the join that
     // makes a campaign visit traceable end to end: anonymous row at 'opened',
-    // same row owned by a user by the time it reaches 'published'.
-    if (!record.user_id && user?.id) patch.user_id = user.id;
+    // same row owned by a user by the time it reaches 'published'. The NAME
+    // travels with it, so the dashboard shows a person and not an id.
+    if (!record.user_id && user?.id) {
+      patch.user_id = user.id;
+      patch.user_name = trim(user.full_name, 120);
+      patch.user_email = trim(user.email, 160);
+    }
     if (body.has_account === true) patch.has_account = true;
 
     const category = trim(body.category, 80);

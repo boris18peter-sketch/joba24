@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { Loader2, TrendingDown, Megaphone, UserX, CheckCircle2 } from 'lucide-react';
+import { Loader2, TrendingDown, Megaphone, UserX, Users, CheckCircle2 } from 'lucide-react';
 
 /**
  * Admin — where publishing attempts stop.
@@ -21,7 +21,7 @@ import { Loader2, TrendingDown, Megaphone, UserX, CheckCircle2 } from 'lucide-re
 const STEPS = [
   { key: 'opened', label: 'פתחו את טופס הפרסום' },
   { key: 'category', label: 'בחרו קטגוריה' },
-  { key: 'details', label: 'כתבו כותרת ותיאור' },
+  { key: 'details', label: 'כתבו תיאור למשימה' },
   { key: 'location', label: 'אישרו כתובת' },
   { key: 'pricing', label: 'קבעו מחיר ואמצעי תשלום' },
   { key: 'contact', label: 'הזינו מספר טלפון' },
@@ -71,6 +71,26 @@ export default function AdminPublishFunnelTab() {
     refetchOnWindowFocus: false,
   });
 
+  // ── WHO is behind an attempt ─────────────────────────────────────────────
+  // The name is stored on the row from now on. Rows written before that carry
+  // only a user_id, so they are resolved here — otherwise the table would show
+  // a raw id for exactly the attempts the admin is trying to identify.
+  const missingNameIds = Array.from(new Set(
+    events.filter(e => e.user_id && !e.user_name).map(e => e.user_id),
+  ));
+  const { data: nameById = {} } = useQuery({
+    queryKey: ['adminPublishFunnelNames', missingNameIds.join(',')],
+    enabled: missingNameIds.length > 0,
+    queryFn: async () => {
+      const users = await base44.entities.User.filter({ id: { $in: missingNameIds } });
+      const list = Array.isArray(users) ? users : (users?.items || []);
+      return Object.fromEntries(list.map(u => [u.id, u.full_name || u.email || '']));
+    },
+    staleTime: 300000,
+    refetchOnWindowFocus: false,
+  });
+  const nameOf = (e) => e.user_name || nameById[e.user_id] || '';
+
   const total = events.length;
   const stepIndex = (e) => (typeof e.furthest_step_index === 'number' ? e.furthest_step_index : 0);
 
@@ -80,9 +100,20 @@ export default function AdminPublishFunnelTab() {
   const reached = STEPS.map((_, i) => events.filter(e => stepIndex(e) >= i).length);
   const published = events.filter(e => e.furthest_step === 'published').length;
   const neverSignedIn = events.filter(e => !e.user_id && !e.has_account).length;
+  const signedIn = events.filter(e => !!e.user_id || e.has_account).length;
   const fromCampaign = events.filter(e => !!e.source_track).length;
 
   const conversion = total ? Math.round((published / total) * 1000) / 10 : 0;
+
+  // ── THE ONE NUMBER THAT LEADS TO A FIX ───────────────────────────────────
+  // Every other figure on this screen describes the funnel; this one names the
+  // step where it is leaking, which is the only thing that can be acted on.
+  const biggestDrop = STEPS.slice(1).reduce((worst, step, i) => {
+    const from = reached[i];
+    const to = reached[i + 1];
+    const lost = from - to;
+    return lost > worst.lost ? { step, from, to, lost } : worst;
+  }, { step: null, from: 0, to: 0, lost: 0 });
 
   if (isLoading) {
     return (
@@ -135,8 +166,26 @@ export default function AdminPublishFunnelTab() {
             <StatCard icon={<CheckCircle2 size={13} />} label="פורסמו בפועל" value={published} tone="var(--color-success)" />
             <StatCard icon={<TrendingDown size={13} />} label="אחוז השלמה" value={`${conversion}%`} tone="var(--brand-primary)" />
             <StatCard icon={<UserX size={13} />} label="לא התחברו בכלל" value={neverSignedIn} tone="var(--color-danger)" />
+            <StatCard icon={<Users size={13} />} label="התחברו לחשבון" value={signedIn} tone="var(--color-success)" />
             <StatCard icon={<Megaphone size={13} />} label="מקמפיין (עם track)" value={fromCampaign} />
           </div>
+
+          {/* The leak, named */}
+          {biggestDrop.lost > 0 && (
+            <div style={{
+              background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)',
+              borderRadius: 14, padding: '13px 16px',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <TrendingDown size={17} color="var(--color-danger)" style={{ flexShrink: 0 }} />
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-1)' }}>
+                <strong style={{ fontWeight: 900 }}>הנשירה הגדולה: אחרי „{biggestDrop.step.label}”.</strong>{' '}
+                {biggestDrop.lost} מתוך {biggestDrop.from} לא המשיכו
+                {biggestDrop.from > 0 && ` (${Math.round((biggestDrop.to / biggestDrop.from) * 100)}% המשיכו)`}.
+                שם כדאי לבדוק קודם.
+              </div>
+            </div>
+          )}
 
           {/* Funnel */}
           <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 16, padding: '16px' }}>
@@ -194,7 +243,7 @@ export default function AdminPublishFunnelTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: 'var(--surface-3)' }}>
-                    {['מתי', 'עצר בשלב', 'קטגוריה', 'עיר', 'חשבון', 'מקור'].map(h => (
+                    {['מתי', 'שם', 'עצר בשלב', 'קטגוריה', 'עיר', 'חשבון', 'מקור'].map(h => (
                       <th key={h} style={{ textAlign: 'right', padding: '8px 12px', fontWeight: 800, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -204,6 +253,9 @@ export default function AdminPublishFunnelTab() {
                     <tr key={e.id} style={{ borderTop: '1px solid var(--border-1)' }}>
                       <td style={{ padding: '8px 12px', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
                         {e.first_seen_at ? format(new Date(e.first_seen_at), 'd בMMM, HH:mm', { locale: he }) : '—'}
+                      </td>
+                      <td style={{ padding: '8px 12px', fontWeight: 800, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>
+                        {nameOf(e) || <span style={{ color: 'var(--text-3)', fontWeight: 600 }}>אורח</span>}
                       </td>
                       <td style={{ padding: '8px 12px', fontWeight: 700, color: e.furthest_step === 'published' ? 'var(--color-success)' : 'var(--text-1)' }}>
                         {STEP_LABEL[e.furthest_step] || e.furthest_step}
