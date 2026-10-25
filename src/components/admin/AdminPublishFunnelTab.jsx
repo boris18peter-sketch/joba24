@@ -4,6 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Loader2, TrendingDown, Megaphone, UserX, Users, CheckCircle2 } from 'lucide-react';
+import FunnelSegmentTable from '@/components/admin/funnel/FunnelSegmentTable';
+import TrackingHealth from '@/components/admin/funnel/TrackingHealth';
 
 /**
  * Admin — where publishing attempts stop.
@@ -91,6 +93,33 @@ export default function AdminPublishFunnelTab() {
   });
   const nameOf = (e) => e.user_name || nameById[e.user_id] || '';
 
+  // ── "NO ACTIVITY" OR "BROKEN COLLECTOR"? ─────────────────────────────────
+  // These two questions look identical on a funnel that reads zero and demand
+  // opposite responses, so the tab asks the entity directly: has it EVER
+  // recorded anything, and when was the last time.
+  const { data: ever } = useQuery({
+    queryKey: ['adminPublishFunnelEver'],
+    queryFn: async () => {
+      const page = await base44.entities.PublishFunnelEvent.list({ sort: '-created_date', limit: 1 });
+      const count = await base44.entities.PublishFunnelEvent.count({});
+      const last = (page?.items || [])[0];
+      return { count, lastAt: last?.first_seen_at || last?.created_date || null };
+    },
+    staleTime: 120000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Where the visitor came from, in the order the ad platforms themselves use:
+  // campaign name first, then source/medium, then the click id, then the link's
+  // own track parameter. "אורגני" means none of the above was recorded.
+  const sourceLabel = (e) => {
+    if (e.utm_campaign) return e.utm_campaign;
+    if (e.utm_source) return e.utm_medium ? `${e.utm_source} / ${e.utm_medium}` : e.utm_source;
+    if (e.gclid) return 'Google Ads (gclid)';
+    if (e.source_track) return e.source_track;
+    return 'אורגני';
+  };
+
   const total = events.length;
   const stepIndex = (e) => (typeof e.furthest_step_index === 'number' ? e.furthest_step_index : 0);
 
@@ -145,6 +174,15 @@ export default function AdminPublishFunnelTab() {
           </button>
         ))}
       </div>
+
+      {/* Is the funnel empty, or is the instrument broken? Answered before any
+          other number on this screen is worth reading. */}
+      <TrackingHealth
+        events={events}
+        everCount={ever?.count ?? 0}
+        lastEverAt={ever?.lastAt ? format(new Date(ever.lastAt), 'd בMMM, HH:mm', { locale: he }) : null}
+        rangeLabel={RANGES.find(r => r.key === range)?.label || range}
+      />
 
       {total === 0 ? (
         <div style={{
@@ -233,6 +271,23 @@ export default function AdminPublishFunnelTab() {
               })}
             </div>
           </div>
+
+          {/* Which traffic does the drop-off belong to? */}
+          <FunnelSegmentTable
+            title="לפי מקור תנועה"
+            subtitle="אותו פאנל, מפוצל לפי הקמפיין שהביא את המבקר. כך רואים איזה קישור מחזיר אנשים שמתחילים לכתוב — ואיזה מחזיר קליקים בלבד."
+            rows={events}
+            labelOf={sourceLabel}
+            emptyLabel="לא נרשם מקור"
+          />
+
+          <FunnelSegmentTable
+            title="לפי קטגוריה"
+            subtitle="הקטגוריה שנבחרה בטופס. שתי הקטגוריות של הקמפיין — הנדימן והרכבות — מופיעות כאן בנפרד."
+            rows={events}
+            labelOf={(e) => e.category}
+            emptyLabel="ללא קטגוריה"
+          />
 
           {/* Recent attempts */}
           <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 16, overflow: 'hidden' }}>
