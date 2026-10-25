@@ -1,15 +1,29 @@
 import { useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { readCampaign } from '@/lib/analytics/campaign';
 
 /**
  * Publisher funnel — records how far one publishing attempt got.
  *
- * WHY THE STEP IS DERIVED AND NOT FIRED FROM THE MARKUP
+ * WHY THE STEPS ARE DERIVED AND NOT FIRED FROM THE MARKUP
  * A funnel is only worth reading if it cannot miss. Firing a call from each
  * screen, each button and each field would mean eight chances to forget one,
  * and a forgotten one reads as a drop-off that never happened. So the form
- * derives ONE step from its own state and hands it here; this hook only decides
- * whether it is worth a request.
+ * derives WHICH steps are true from its own state and hands them here.
+ *
+ * ── EVERY TRUE STEP, IN ORDER — NOT ONLY THE FURTHEST ONE ───────────────────
+ * The form used to hand over ONE step: the furthest condition that happened to
+ * be met. That is wrong whenever a lower step is satisfied later than a higher
+ * one — a publisher who confirms the address before writing the description
+ * reported 'location' immediately, and writing the description afterwards could
+ * never be seen, because the ladder still answered 'location'. The description
+ * was therefore invisible in the data even though it is the field that takes the
+ * most effort.
+ *
+ * The form now hands over the ascending list of satisfied steps and this hook
+ * fires them in order. Because it only ever moves forward, the first pass sends
+ * the whole prefix at once and later passes send only what is new — so the
+ * request count is the same, but no step can be skipped.
  *
  * The order itself is not defined here — the backend owns it and refuses a name
  * it does not recognise. This list exists so a request is never even attempted
@@ -63,11 +77,17 @@ export function usePublishFunnel() {
 
     if (!sidRef.current) sidRef.current = getSessionId();
 
+    // The campaign travels with every call so the row is attributed from its
+    // very first step — including the visit that never gets past 'opened',
+    // which is exactly the population the campaign is paying for.
+    const campaign = readCampaign() || {};
+
     // Fire-and-forget. Funnel capture must never be able to block or break
     // publishing, so a failed request is swallowed.
     base44.functions.invoke('trackPublishFunnel', {
       session_id: sidRef.current,
       step,
+      ...campaign,
       ...extra,
     }).catch(() => {});
   }, []);

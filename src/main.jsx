@@ -7,6 +7,7 @@ import { bootMark } from '@/lib/bootTrace'
 import { installDesktopScale } from '@/lib/desktopScale'
 import { hideNativeSplash } from '@/lib/hideNativeSplash'
 import { ensureFreshBuild } from '@/lib/ensureFreshBuild'
+import { captureCampaign } from '@/lib/analytics/campaign'
 
 // ── "React actually started" — the signal the HTML healers were missing ──────
 // The inline guards in index.html used to decide a launch was broken purely by
@@ -149,6 +150,16 @@ window.addEventListener('error', (event) => {
 // desktop block in index.css). Installing it here, synchronously, is what keeps
 // the first frame from being drawn at the phone size and then jumping.
 installDesktopScale();
+
+// ── CAPTURE THE CAMPAIGN BEFORE ANYTHING CAN REWRITE THE URL ────────────────
+// The campaign link (?track=publish) is immediately rewritten to
+// /welcome?track=publish by Layout.jsx, which drops every other query parameter
+// — the category, the UTMs and the gclid with them. By the time the publish form
+// mounts there is nothing left in the URL to attribute the visit with, so the
+// landing URL, the UTM parameters and the ad click ids are read here, at boot,
+// before any navigation happens, and kept for the whole session. See
+// src/lib/analytics/campaign.js.
+captureCampaign();
 
 console.log('[Joba24] App: React mounting...');
 ReactDOM.createRoot(document.getElementById('root')).render(

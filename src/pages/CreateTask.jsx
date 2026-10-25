@@ -817,33 +817,54 @@ export default function CreateTask() {
   // Reported for signed-out visitors too — that is the whole point, since the
   // campaign sends people here before they have an account.
   const trackFunnel = usePublishFunnel();
-  const funnelStep = (() => {
+
+  // ── EVERY STEP THAT IS TRUE, IN ORDER — NEVER ONLY THE FURTHEST ONE ───────
+  // This used to compute a SINGLE step: the furthest condition that happened to
+  // be met, evaluated top-down. That silently lost whole steps. The address
+  // check sat above the description check, so the moment a publisher confirmed
+  // their address the ladder answered 'location' — and it kept answering
+  // 'location' after they wrote the description, because the address was still
+  // confirmed. The description, the field that takes the most effort in the
+  // entire form, was therefore recorded ZERO times in the live data while
+  // 'location' was recorded normally. That is a tracking fault, not a drop-off.
+  //
+  // The ladder is now built as an ascending list of every step whose condition
+  // holds. The hook fires them in order and the server keeps the highest, so a
+  // step that is satisfied later than a higher one is still recorded when it
+  // arrives, and no step can ever be skipped by the order of the checks below.
+  //
+  // 'opened' is ALWAYS first and unconditional. A campaign link prefills the
+  // category, so the old single-step version reported 'category' on the very
+  // first pass and 'opened' was never sent at all — which is why the entry step
+  // of the funnel read almost empty while the second step was full.
+  const funnelSteps = (() => {
     const phoneOk = (form.contactPhone || '').replace(/\D/g, '').length >= 9;
     const pricingOk = !!(form.price && form.payment_method);
-    if (requiredFieldOrder().every(k => requiredValues()[k])) return 'ready';
-    if (pricingOk && phoneOk) return 'contact';
-    if (pricingOk) return 'pricing';
-    if (form.location_name && addressConfirmed) return 'location';
-    // ── THE DESCRIPTION IS THE STEP, NOT THE TITLE ──────────────────────────
-    // This used to require `form.title && form.description`, and the title is
-    // NOT a required field: it is only a suggestion held in its own state, so
-    // form.title stays empty for anyone who lets it be. The result was that
-    // writing the description — the first thing the form asks for after the
-    // category, and the field that takes the most effort — was INVISIBLE, and
-    // every one of those attempts was filed as "stopped at the category".
-    // The step now measures what the form actually requires.
-    if (form.description) return 'details';
-    if (form.category) return 'category';
-    return 'opened';
+    const steps = ['opened'];
+    if (form.category) steps.push('category');
+    // The description is the step, NOT the title: the title is a suggestion
+    // held in its own state and is not required, so requiring it filed every
+    // attempt as "stopped at the category". The description is also written
+    // automatically from the category answers — that text IS the description,
+    // so it counts exactly like typed text does.
+    if (form.description) steps.push('details');
+    if (form.location_name && addressConfirmed) steps.push('location');
+    if (pricingOk) steps.push('pricing');
+    if (pricingOk && phoneOk) steps.push('contact');
+    if (requiredFieldOrder().every(k => requiredValues()[k])) steps.push('ready');
+    return steps;
   })();
+  // The dep is the joined list, so the effect runs whenever the SET of satisfied
+  // steps changes — not on every keystroke in an unrelated field.
+  const funnelKey = funnelSteps.join(',');
   useEffect(() => {
-    trackFunnel(funnelStep, {
+    funnelSteps.forEach(step => trackFunnel(step, {
       category: form.category || undefined,
       city: form.city || undefined,
       has_account: isAuthenticated,
-      source_track: new URLSearchParams(window.location.search).get('track') || undefined,
-    });
-  }, [funnelStep]);
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [funnelKey]);
 
   const focusFirstMissingField = (errs) => {
     const first = requiredFieldOrder().find(k => errs[k]);
