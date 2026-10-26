@@ -177,6 +177,24 @@ export default function WorkerProfile() {
     mutationFn: async () => {
       const name = validateDisplayName(form.display_name).name;
       await base44.auth.updateMe({ ...form, display_name: name });
+
+      // ── THE PROFILE BONUS IS GRANTED WHERE THE PROFILE IS ACTUALLY SAVED ───
+      // It used to be granted from only two places: the signup popup, which runs
+      // BEFORE the profile can be complete (so the server answered
+      // "profile_incomplete" and never tried again), and the worker flow's last
+      // step. Anyone who filled their categories and cities here instead was
+      // promised the bonus and never received it — a real account was credited
+      // 25 of the promised 30 for exactly this reason.
+      //
+      // The function is idempotent and derives eligibility from the record it
+      // re-reads, so calling it on every save grants exactly once and costs
+      // nothing when the profile is still incomplete. Awaited on purpose: the
+      // refresh below must see the balance the bonus produced.
+      try {
+        await base44.functions.invoke('grantProfileCompletionBonus', {});
+      } catch (bonusErr) {
+        console.error('[WorkerProfile] profile bonus failed:', bonusErr?.message);
+      }
       // Keep the name snapshotted on this user's still-open tasks in sync, so the
       // feed and active chats show it immediately. Tasks that already ended keep
       // the name they were published under (invoices and history must not change

@@ -120,6 +120,20 @@ export default function AdminPublishFunnelTab() {
     return 'אורגני';
   };
 
+  // The exact link the visitor landed on, without the origin — the path and its
+  // query string are what identify one campaign link from another, and showing
+  // the host on every row would only push the part that differs off the edge.
+  const landingLabel = (e) => {
+    const url = e.landing_url || '';
+    if (!url) return 'לא נרשם קישור';
+    try {
+      const u = new URL(url);
+      return u.pathname + (u.search || '');
+    } catch {
+      return url;
+    }
+  };
+
   const total = events.length;
   const stepIndex = (e) => (typeof e.furthest_step_index === 'number' ? e.furthest_step_index : 0);
 
@@ -287,6 +301,18 @@ export default function AdminPublishFunnelTab() {
             rows={events}
             labelOf={(e) => e.category}
             emptyLabel="ללא קטגוריה"
+          />
+
+          {/* The exact link — one row per landing URL, so a campaign's links can
+              be compared with each other rather than only with each other's
+              category. Rows recorded before landing_url was captured fall into
+              "לא נרשם קישור" on their own, which is the honest reading. */}
+          <FunnelSegmentTable
+            title="לפי קישור נחיתה"
+            subtitle="זיהוי מדויק: הנתיב והפרמטרים של הקישור שעליו נחת המבקר. שתי שורות נפרדות = שני קישורים שונים, גם אם הקטגוריה זהה."
+            rows={events}
+            labelOf={landingLabel}
+            emptyLabel="לא נרשם קישור"
           />
 
           {/* Recent attempts */}
