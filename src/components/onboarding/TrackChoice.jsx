@@ -62,10 +62,13 @@ export default function TrackChoice({ onChoose }) {
       <div className="j-hero-inner">
         <div className="j-hero-top">
           <div className="j-hero-logo">
-            {/* `contain`, never `cover`: the mark is a picture with its own
-                margins, so cropping it to fill the square cut the character's
-                head off. Shown whole, it reads as a logo instead of a mistake. */}
-            <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            {/* ── THE MARK MUST BE AS WIDE AS THE FRAME, NEVER WIDER ──────────
+                A fixed `size={88}` inside a 70px frame painted an 88px mark
+                into a 70px box, so the frame cropped its right and bottom edges
+                and the logo looked broken and off-centre. "100%" makes the mark
+                exactly the frame's own square: nothing overflows, nothing is
+                cropped, and it stays centred at every screen size. */}
+            <BrandLogo size="100%" radius={0} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <span className="j-hero-brand">
             <BrandName />

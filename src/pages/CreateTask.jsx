@@ -45,6 +45,12 @@ import PublishStepIntro from '@/components/publish/PublishStepIntro';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
+// Which step of the slider the publisher had reached. A visitor who is asked to
+// sign in at the end of the form comes back to a NEW page load, and without
+// this they landed on step one of a form they had already filled — the publish
+// button they were about to press was several screens away from where they
+// were standing.
+const STEP_KEY = 'joba24_publish_step';
 // The COMPLETE form, stashed the moment a visitor is asked to sign in before
 // publishing and restored verbatim when they come back — so they resume at the
 // exact point they were stopped instead of re-typing the task.
@@ -583,7 +589,24 @@ export default function CreateTask() {
   // with the same switches — so flipping the style can never change which
   // questions are asked, only how they are presented.
   const isSliderForm = jobaSettings?.task_form_style === 'slider';
-  const [stepIdx, setStepIdx] = useState(0);
+  // Picked up from the last session so a sign-in (or any reload) puts the
+  // publisher back on the step they were on, not at the beginning. Only when
+  // there is still work saved — a leftover step with no task behind it would
+  // drop someone onto the last screen of an empty form.
+  const [stepIdx, setStepIdx] = useState(() => {
+    try {
+      const hasWork = localStorage.getItem(DRAFT_KEY) || localStorage.getItem(PENDING_PUBLISH_KEY);
+      const saved = parseInt(localStorage.getItem(STEP_KEY), 10);
+      return hasWork && Number.isFinite(saved) && saved > 0 ? saved : 0;
+    } catch (_) { return 0; }
+  });
+
+  // Remember it, so the step survives the page load that a login causes. Never
+  // for editing or reposting: those open the form fresh on purpose.
+  useEffect(() => {
+    if (!isSliderForm || isEditMode || isRepost) return;
+    try { localStorage.setItem(STEP_KEY, String(stepIdx)); } catch (_) { /* ignore */ }
+  }, [stepIdx, isSliderForm, isEditMode, isRepost]);
 
   // A step per section the admin left switched ON. The 'schedule' card holds
   // three separate questions, so it stands as long as ANY of them is on —
@@ -1211,6 +1234,7 @@ export default function CreateTask() {
     setLoading(false);
     submittingRef.current = false;
     localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(STEP_KEY);
     // Publisher funnel — KEY CONVERSION. Fires only after the backend returned
     // a persisted task record, so it can never report a failed publish.
     trackEvent(
@@ -1358,6 +1382,7 @@ export default function CreateTask() {
       setLoading(false);
       submittingRef.current = false;
       localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem(STEP_KEY);
       // Publisher funnel — KEY CONVERSION (chat-composer publish path).
       trackEvent(
         'task_published',

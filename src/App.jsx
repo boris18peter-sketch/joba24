@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { TRACKS, setOnboardingTrack } from '@/lib/onboardingTrack';
 import { useEffect, useRef } from 'react';
 import React, { Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -128,6 +129,29 @@ const OnboardingTrackWelcome = lazyRetry(() => import('@/pages/OnboardingTrackWe
 const AdminDashboard = lazyRetry(() => import('@/pages/AdminDashboard'));
 const EarningsDashboard = lazyRetry(() => import('@/pages/EarningsDashboard'));
 const ResetPassword = lazyRetry(() => import('@/pages/ResetPassword'));
+
+// ── CAMPAIGN LINKS: ?track=publish / ?track=worker ──────────────────────────
+// A campaign link names the journey it was sent to, so the visitor is never
+// asked to choose one. The parameter was being ignored at "/" though, which is
+// why the link "went nowhere at all" — the visitor landed on the feed with the
+// track silently dropped. Here the parameter becomes the destination it always
+// meant: the publish form for ?track=publish, the worker flow for ?track=worker.
+// The query string is carried over untouched, because the publish funnel reads
+// its campaign parameters (track, utm_*, gclid) straight from the URL.
+function CampaignTrackEntry() {
+  const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    if (pathname !== '/' || !search) return;
+    const track = new URLSearchParams(search).get('track');
+    if (track !== TRACKS.PUBLISH && track !== TRACKS.WORKER) return;
+    setOnboardingTrack(track);
+    navigate(`${track === TRACKS.PUBLISH ? '/create-task' : '/welcome'}${search}`, { replace: true });
+  }, [pathname, search, navigate]);
+
+  return null;
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -406,6 +430,7 @@ function App() {
             <Router>
               <TaskSheetProvider>
                 <CaptureRefCode />
+                <CampaignTrackEntry />
                 <ScrollToTop />
                 <DeepLinkHandler />
                 {/* A task link opens in the NATIVE app (iOS Universal Links /
