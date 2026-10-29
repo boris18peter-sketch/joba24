@@ -124,8 +124,10 @@ const FIELD = Object.fromEntries(TASK_FORM_FIELDS.map(f => [f.key, f]));
  */
 const SECTIONS = [
   { key: 'category_form' },
-  { key: 'description' },
-  { key: 'media' },
+  // The photos belong to the description, not to a screen of their own: a
+  // publisher describing a job is also showing it. One step, one card — and one
+  // less screen between "I said what I need" and "published".
+  { key: 'description', children: ['media'] },
   {
     key: 'schedule',
     label: 'מועד',

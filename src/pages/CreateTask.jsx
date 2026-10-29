@@ -37,11 +37,10 @@ import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolSca
 import { trackEvent } from '@/lib/analytics';
 import { usePublishFunnel } from '@/hooks/usePublishFunnel';
 import TaskChatInterface from '@/components/TaskChatInterface';
-import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
+
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/lib/taskFormFields';
 import PublishWizardNav from '@/components/publish/PublishWizardNav';
-import PublishWizardHeader from '@/components/publish/PublishWizardHeader';
 import PublishStepIntro from '@/components/publish/PublishStepIntro';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
@@ -1536,38 +1535,24 @@ export default function CreateTask() {
               */}
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, flexShrink: 0 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
-            {/* Worker availability — unified into header */}
-            <WorkerAvailabilityIndicator category={form.category} city={form.city} />
-            {/* Field-completion bar — classic mode only. In slider mode the step
-            bar above already shows where you are, and two progress numbers on
-            one screen answer the same question twice. */}
-        {!isSliderForm && (
-            <div style={{ padding: '0 16px 12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{t('form_progress')}</span>
-                <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ ' + t('ready_to_publish') : ''}</span>
-              </div>
-              <div style={{ height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+            {/* How complete the task is. In the slider this is the ONLY bar on
+                the screen — a single small line, not a step tracker — because a
+                row of pips told the publisher how MANY screens were left and
+                made a short form feel like a long one. */}
+            <div style={{ padding: isSliderForm ? '0 16px 10px' : '0 16px 12px' }}>
+              {!isSliderForm && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{t('form_progress')}</span>
+                  <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ ' + t('ready_to_publish') : ''}</span>
+                </div>
+              )}
+              <div style={{ height: isSliderForm ? 3 : 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
               </div>
             </div>
-        )}
           </div>
         );
       })()}
-
-      {/* ── THE STEP BAR ────────────────────────────────────────────────────
-          Under the brand header and above the step itself, exactly where the
-          Welcome flow puts it: back, one pip per step, and the position. This
-          is what makes the slider readable at a glance — how far in you are and
-          how much is left — which a percentage of filled fields cannot say. */}
-      {isSliderForm && (
-        <PublishWizardHeader
-          index={stepIdx}
-          total={wizardTotal}
-          onBack={() => setStepIdx(i => Math.max(0, i - 1))}
-        />
-      )}
 
       <div ref={wizardScrollRef} className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
         {/* What THIS step is asking, in the publisher's own question — not the
@@ -1575,7 +1560,7 @@ export default function CreateTask() {
             the content it belongs to. */}
         {isSliderForm && (
           <div key={stepIdx} className="j-step-in">
-            <PublishStepIntro stepKey={stepIdx === 0 ? 'category' : wizardKey} />
+            <PublishStepIntro stepKey={stepIdx === 0 ? 'category' : wizardKey} fieldOn={fieldOn} />
           </div>
         )}
 
@@ -1676,9 +1661,6 @@ export default function CreateTask() {
               {transcribing ? t('processing') : recording ? t('stop_recording') : t('record_description')}
             </button>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
-            {t('ct_describe_helper')}
-          </div>
           {recording && (
             <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--color-danger)', fontWeight: 700 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-danger)', display: 'inline-block' }} />
@@ -1740,22 +1722,22 @@ export default function CreateTask() {
               </button>
             )
           )}
+
+          {/* ── IMAGES + VIDEO — THE SAME STEP AS THE DESCRIPTION ─────────────
+              They were a step of their own, so a publisher who had just said
+              what he needs was handed a whole screen whose only message was
+              "add a picture" — one more screen to get through, and one more
+              place to give up. A photo is part of describing the job, so it
+              now sits in the same card, directly under the text. */}
+          {fieldOn('media') && (
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
+              <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
+              <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
+            </div>
+          )}
         </SectionCard>
-
-
 
         </div>
-        )}
-
-        </>))}
-
-        {/* Images + Video */}
-        {void (sections.media = (<>
-        {fieldOn('media') && (
-        <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
-          <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
-        </SectionCard>
         )}
 
         </>))}

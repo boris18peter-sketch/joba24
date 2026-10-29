@@ -9,8 +9,10 @@ import { wizardCopy } from '@/lib/publishWizardCopy';
  *
  * It answers the only two questions a person has when a form appears one screen
  * at a time: "what am I being asked right now?" and "what happens if I do it?".
- * The rest of the step is only the fields themselves, so nothing below the
- * headline repeats it.
+ *
+ * `fieldOn` is passed straight through to the copy: a step must describe the
+ * fields this form actually renders, so a heading never names a question that
+ * is not on the screen under it.
  *
  * The icon is here for orientation — after a tap the eye finds the step again
  * by the same mark it saw in the step before, not by re-reading the title.
@@ -30,8 +32,8 @@ const ICONS = {
   contactPhone: Phone,
 };
 
-export default function PublishStepIntro({ stepKey }) {
-  const { title, hint } = wizardCopy(stepKey);
+export default function PublishStepIntro({ stepKey, fieldOn }) {
+  const { title, hint } = wizardCopy(stepKey, fieldOn);
   if (!title) return null;
 
   const Icon = ICONS[stepKey] || LayoutGrid;

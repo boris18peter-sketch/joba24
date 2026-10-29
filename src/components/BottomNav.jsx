@@ -224,13 +224,25 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
     if (!reduceMotion) animate(scale, PRESS_SCALE, SPRING_PRESS);
     setEmphasisIndex(activeIndex);
 
-    // A mouse has no implicit capture, so take it — otherwise a fast drag that
-    // leaves the bar stops receiving moves. Touch is deliberately NOT captured:
-    // that transfer is what used to fire `lostpointercapture` on the tab and kill
-    // the gesture.
-    if (e.pointerType === 'mouse') {
-      try { navRef.current?.setPointerCapture?.(e.pointerId); } catch { /* unsupported */ }
-    }
+    // ── CAPTURE ON DRAG, NEVER ON A PLAIN PRESS ──────────────────────────────
+    // This used to capture the pointer here, on pointerdown, "so a fast drag
+    // that leaves the bar keeps receiving moves". That is a real need — but
+    // capturing this early also RETARGETS the compatibility mouse events to the
+    // capturing element, so the `click` that follows a press was dispatched to
+    // the bar itself instead of to the tab under the cursor. On a phone there is
+    // no mouse and no problem; on a DESKTOP the entire bottom bar was visible
+    // and completely dead — every tab press did nothing at all.
+    //
+    // The capture is now taken in onMove, at the exact moment the press becomes
+    // a real drag, which is the only moment it is needed. A tap therefore keeps
+    // its own click and navigates; a drag still tracks the pointer past the edge
+    // of the bar. Touch remains uncaptured for the same reason as before: that
+    // hand-over is what used to fire `lostpointercapture` and kill the gesture.
+    g.capture = () => {
+      if (g.captured) return;
+      g.captured = true;
+      try { navRef.current?.setPointerCapture?.(g.id); } catch { /* unsupported */ }
+    };
 
     g.onMove = (ev) => {
       const cur = gesture.current;
@@ -243,6 +255,9 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
         // vertical swipe still scrolls the feed and a slightly-off tap stays a tap.
         if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
         cur.moved = true;
+        // Now that it is a drag, hold the pointer so the moves keep arriving
+        // even when the cursor leaves the bar.
+        cur.capture?.();
         setDragging(true);
         if (!reduceMotion) animate(scale, LIFT_SCALE, SPRING_PRESS);
       }
