@@ -36,6 +36,9 @@ export const DEFAULT_JOBA_SETTINGS = {
   // The order the form's sections render in. Empty = the form's own default
   // order, so a settings record written before this existed is unchanged.
   task_form_order: [],
+  // 'classic' = one long form, 'slider' = step by step. The admin switches it
+  // in Dashboard → Task Form; the same sections feed both.
+  task_form_style: 'classic',
 };
 
 /** Pricing keys a Brand is allowed to override (mirrors base44/shared/brandSettings.ts). */
