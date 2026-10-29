@@ -61,6 +61,20 @@ export function useLoyaltyBonus(user) {
       // already includes the bonus, so the two never both announce it.
       const isProfile = !tx.task_id;
       const key = isProfile ? 'profile_bonus' : `tx_${tx.id}`;
+
+      // ── A NEW WORKER GETS ONE CELEBRATION, NOT TWO ────────────────────────
+      // The profile bonus is granted on the last step of the worker flow, and
+      // the welcome gift popup then opens on the feed with the WHOLE welcome
+      // total (signup + referral + profile) in it. Firing this popup first meant
+      // a brand-new worker saw "5" and then "30" back to back — the same money
+      // announced twice, which reads as a bug (it was one).
+      //
+      // So the profile bonus announces ITSELF only once the welcome celebration
+      // is already behind this user. Until then the welcome total covers it —
+      // and that modal marks the same 'profile_bonus' key, so it can never
+      // surface again afterwards.
+      if (isProfile && !(await hasAnnouncedBonus(userId, 'welcome_gift'))) return;
+
       if (await hasAnnouncedBonus(userId, key)) return;
       if (cancelled) return;
       pendingRef.current = { key, amount: Math.round(value), kind: isProfile ? 'profile' : 'rating' };

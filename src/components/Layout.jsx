@@ -52,6 +52,7 @@ import { taskAlertStore } from '@/lib/taskAlertStore';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
+import usePermissionStatus from '@/hooks/usePermissionStatus';
 import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { readPendingTask } from '@/lib/pendingTask';
@@ -473,6 +474,10 @@ export default function Layout() {
   const activeClientTask = useMemo(() => myPublishedTasks.find((t) => t.status === 'TAKEN') || null, [myPublishedTasks]);
 
   usePushNotifications();
+  // Records the push / location permission state on the user's own record so the
+  // admin dashboard can report how many workers will actually receive a push or
+  // share a location. Display-only data — it changes no in-app behaviour.
+  usePermissionStatus(me);
 
   const { data: unreadNotifCount = 0 } = useQuery({
     queryKey: ['notifUnread'],

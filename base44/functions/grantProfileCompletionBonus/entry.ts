@@ -37,12 +37,17 @@ Deno.serve(async (req) => {
     const bonus = Number(settings.profile_completion_bonus) || 0;
     if (bonus <= 0) return Response.json({ granted: false, reason: 'bonus_disabled' });
 
-    // Idempotency — unchanged guard, now authoritative.
+    // Idempotency — the guard asks about THIS bonus, not about the type.
+    // A rating reward is also a 'Loyalty_Reward', but it always carries a
+    // task_id; the profile bonus never does. Matching on the type alone meant a
+    // worker who had ever earned a rating bonus could never receive the profile
+    // completion bonus they were owed.
     const existing = await base44.asServiceRole.entities.CreditTransaction.filter({
       user_id: user.id,
       type: 'Loyalty_Reward',
     });
-    if (existing.length > 0) return Response.json({ granted: false, reason: 'already_granted' });
+    const rows = Array.isArray(existing) ? existing : (existing?.items || []);
+    if (rows.some((t) => !t.task_id)) return Response.json({ granted: false, reason: 'already_granted' });
 
     // ── THE BALANCE IS RE-READ AT THE WRITE, NOT AT THE TOP ─────────────────
     // `fresh` was fetched before the settings read and the idempotency check, so

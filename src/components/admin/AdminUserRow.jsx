@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import GoldBadge from '@/components/GoldBadge';
 import CopyableId from '@/components/CopyableId';
+import PermissionChips from '@/components/admin/PermissionChips';
 import { getCategoryLabel } from '@/lib/categories';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { resolveUserAccess } from '@/lib/userAccess';
@@ -173,7 +174,9 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
               const p = platMap[plat] || platMap.web;
               return <span title={p.title} style={{ fontSize: 10 }}>{p.label}</span>;
             })()}
+            <PermissionChips user={user} />
           </div>
+
         </div>
         {user.rating > 0 && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#d97706', fontWeight: 700, flexShrink: 0 }}>

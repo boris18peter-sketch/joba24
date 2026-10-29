@@ -102,13 +102,19 @@ export default function HomeFeed() {
   //     closed mid-popup showed it again next session.)
   //   · NEVER AT ZERO — with the signup bonus switched off in the dashboard there
   //     is no gift to celebrate, so the popup does not appear at all.
-  const { settings: jobaSettings } = useJobaSettings();
+  const { settings: jobaSettings, isLoading: settingsLoading } = useJobaSettings();
   const giftAmount = (jobaSettings.signup_bonus ?? 0) + (me?.referred_by_agent_code ? (jobaSettings.referral_signup_bonus ?? 0) : 0);
   const giftScheduledRef = useRef(false);
   useEffect(() => {
     if (giftScheduledRef.current) return;
     if (!me?.id) return;
     if (me?.worker_credits == null) return;
+    // ── WAIT FOR THE ADMIN'S REAL NUMBERS ──────────────────────────────────
+    // Until the settings read lands, useJobaSettings reports the built-in
+    // defaults (60), and this effect then celebrated 60 while the live bonus was
+    // 25 — the popup promised a number the balance did not contain. The slot is
+    // claimed only once the real settings are known.
+    if (settingsLoading) return;
     if (giftAmount <= 0) return;
     // Claim the slot now — no cleanup, so a balance change cannot cancel it.
     giftScheduledRef.current = true;
@@ -147,7 +153,7 @@ export default function HomeFeed() {
         setShowGiftModal(true);
       }, 800);
     })();
-  }, [me?.id, me?.worker_credits, giftAmount]);
+  }, [me?.id, me?.worker_credits, giftAmount, settingsLoading]);
 
 
   // ── My published tasks — the ONE shared list ──────────────────────────────

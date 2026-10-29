@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, ListChecks, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store, Filter } from 'lucide-react';
+import { Users, ClipboardList, ListChecks, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store, Filter, MapPin } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import NotificationManagerTab from '@/components/NotificationManagerTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
@@ -27,6 +27,7 @@ import AssignAgentModal from '@/components/AssignAgentModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { adminActionError } from '@/lib/adminActionError';
 import { resolveUserAccess } from '@/lib/userAccess';
+import { isDormant, DORMANT_DAYS } from '@/lib/userActivity';
 
 // Tabs grouped by what they are for, so the dashboard reads as sections instead
 // of one long undifferentiated row. `desc` is shown as the tab's own header.
@@ -123,7 +124,7 @@ export default function AdminDashboard() {
   const [taskSearch, setTaskSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [taskStatusFilter, setTaskStatusFilter] = useState('');
-  const [userFilters, setUserFilters] = useState({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '' });
+  const [userFilters, setUserFilters] = useState({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '', push: false, location: false, dormant: false });
   const [userDateFilter, setUserDateFilter] = useState('all');
 
   const { data: allTasks = [], isLoading: loadingTasks, refetch: refetchTasks } = useQuery({
@@ -479,6 +480,9 @@ export default function AdminDashboard() {
     if (userFilters.profileFilled && !(u.phone && u.preferred_categories?.length > 0)) return false;
     if (userFilters.viaAgent && !u.referred_by_agent_code) return false;
     if (userFilters.noAgent && u.referred_by_agent_code) return false;
+    if (userFilters.push && u.push_permission !== 'granted') return false;
+    if (userFilters.location && u.location_permission !== 'granted') return false;
+    if (userFilters.dormant && !isDormant(u)) return false;
     if (userFilters.platform) {
       const plat = u.registration_platform || (u.registration_source === 'native' ? 'native' : 'web');
       if (plat !== userFilters.platform) return false;
@@ -506,6 +510,15 @@ export default function AdminDashboard() {
 
   const verifiedCount = allUsers.filter(u => isUserVerified(u)).length;
   const goldCount = allUsers.filter(u => isUserVerified(u) && hasSocialVerified(u)).length;
+  // How many can actually be REACHED, and how many have gone quiet.
+  const pushGrantedCount = allUsers.filter(u => u.push_permission === 'granted').length;
+  const locationGrantedCount = allUsers.filter(u => u.location_permission === 'granted').length;
+  const dormantCount = allUsers.filter(isDormant).length;
+  // Registered, but the account never completed a single app session — nothing
+  // of theirs was ever written to the record. These are the accounts that show
+  // "no bonus": the bonus is granted on the first signed-in load, so it can
+  // never reach someone who never got in.
+  const neverEnteredCount = allUsers.filter(u => !u.registration_source).length;
 
   const badges = { reports: pendingReports, kyc: kycUsers.length, support: unreadSupportCount };
   const activeTab = TAB_GROUPS.flatMap(g => g.tabs).find(t => t.key === tab);
@@ -662,6 +675,9 @@ export default function AdminDashboard() {
                     { key: 'rating', label: 'דירוג' },
                     { key: 'tasks_completed', label: 'משימות שהושלמו' },
                     { key: 'fcm_tokens', label: 'התראות מופעלות' },
+                    { key: 'push_permission', label: 'הרשאת התראות' },
+                    { key: 'location_permission', label: 'הרשאת מיקום' },
+                    { key: 'last_active_at', label: 'פעיל לאחרונה' },
                     { key: 'created_date', label: 'תאריך הרשמה' },
                   ], 'joba24_users');
                 }}
@@ -671,14 +687,32 @@ export default function AdminDashboard() {
               </button>
             </div>
 
+            {/* Reach + retention at a glance */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 10 }}>
+              {[
+                { label: 'התראות דלוקות', value: pushGrantedCount, color: '#0d9488', title: 'משתמשים שאישרו התראות במכשיר' },
+                { label: 'מיקום מאושר', value: locationGrantedCount, color: '#0ea5e9', title: 'משתמשים שאישרו שיתוף מיקום' },
+                { label: `לא פעילים ${DORMANT_DAYS}+ יום`, value: dormantCount, color: '#64748b', title: 'אין דיווח על הסרת אפליקציה — זה מדד של חוסר פעילות, ולכן סימן אפשרי לכך שהמשתמש ירד מהאפליקציה' },
+                { label: 'לא נכנסו מעולם', value: neverEnteredCount, color: '#b45309', title: 'נרשמו אך מעולם לא השלימו כניסה לאפליקציה — לכן גם לא קיבלו בונוס' },
+              ].map(s => (
+                <div key={s.label} title={s.title} style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 4px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 17, fontWeight: 900, color: s.color, lineHeight: 1.1 }}>{s.value}</div>
+                  <div style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700, marginTop: 2, lineHeight: 1.25 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
             {/* Filter chips */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
               {[
                 { key: 'verified', label: 'מאומתים', icon: ShieldCheck, color: '#16a34a' },
                 { key: 'social', label: 'רשת חברתית', icon: Award, color: '#d97706' },
                 { key: 'profileFilled', label: 'מילאו פרטים', icon: UserCheck, color: '#1a6fd4' },
+                { key: 'push', label: 'התראות דלוקות', icon: Bell, color: '#0d9488' },
+                { key: 'location', label: 'מיקום מאושר', icon: MapPin, color: '#0ea5e9' },
+                { key: 'dormant', label: 'לא פעילים 30+ יום', icon: UserX, color: '#64748b' },
                 { key: 'viaAgent', label: 'הגיעו על ידי סוכן', icon: Users, color: '#7c3aed' },
-                { key: 'noAgent', label: 'ללא סוכן', icon: UserX, color: '#dc2626' },
+                { key: 'noAgent', label: 'ללא סוכן', icon: Award, color: '#dc2626' },
               ].map(f => {
                 const active = userFilters[f.key];
                 return (
@@ -728,8 +762,8 @@ export default function AdminDashboard() {
                 <option value="2weeks">שבועיים אחרונים</option>
                 <option value="month">חודש אחרון</option>
               </select>
-              {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.platform || userDateFilter !== 'all') && (
-                <button onClick={() => { setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '' }); setUserDateFilter('all'); }}
+              {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.noAgent || userFilters.platform || userFilters.push || userFilters.location || userFilters.dormant || userDateFilter !== 'all') && (
+                <button onClick={() => { setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '', push: false, location: false, dormant: false }); setUserDateFilter('all'); }}
                   style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer' }}>
                   נקה פילטרים
                 </button>
