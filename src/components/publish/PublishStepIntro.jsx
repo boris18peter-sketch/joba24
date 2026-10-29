@@ -33,7 +33,7 @@ const ICONS = {
 };
 
 export default function PublishStepIntro({ stepKey, fieldOn }) {
-  const { title, hint } = wizardCopy(stepKey, fieldOn);
+  const { title } = wizardCopy(stepKey, fieldOn);
   if (!title) return null;
 
   const Icon = ICONS[stepKey] || LayoutGrid;
@@ -57,15 +57,6 @@ export default function PublishStepIntro({ stepKey, fieldOn }) {
         }}>
           {title}
         </h2>
-        {hint && (
-          <p style={{
-            margin: '5px 0 0',
-            fontSize: 13, lineHeight: 1.55, fontWeight: 500,
-            color: 'var(--text-2)',
-          }}>
-            {hint}
-          </p>
-        )}
       </div>
     </div>
   );

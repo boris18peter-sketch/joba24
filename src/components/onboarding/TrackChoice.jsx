@@ -62,7 +62,10 @@ export default function TrackChoice({ onChoose }) {
       <div className="j-hero-inner">
         <div className="j-hero-top">
           <div className="j-hero-logo">
-            <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {/* `contain`, never `cover`: the mark is a picture with its own
+                margins, so cropping it to fill the square cut the character's
+                head off. Shown whole, it reads as a logo instead of a mistake. */}
+            <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <span className="j-hero-brand">
             <BrandName />

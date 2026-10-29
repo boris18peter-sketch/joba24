@@ -66,7 +66,7 @@ export default function WorkerJoinStep({ onBack }) {
         <div className="j-onb-body">
           <div className="j-joinstep">
             <div className="j-hero-logo">
-              <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <BrandLogo size={88} radius={0} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <span className="j-hero-brand">
               <BrandName />

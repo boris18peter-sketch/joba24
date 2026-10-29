@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, ChevronRight, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getRequirementCategories, getActiveRequirements } from '@/lib/requirements';
@@ -42,6 +42,7 @@ import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/lib/taskFormFields';
 import PublishWizardNav from '@/components/publish/PublishWizardNav';
 import PublishStepIntro from '@/components/publish/PublishStepIntro';
+import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // The COMPLETE form, stashed the moment a visitor is asked to sign in before
@@ -1535,6 +1536,12 @@ export default function CreateTask() {
               */}
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, flexShrink: 0 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
+            {/* Available professionals for the chosen service and city — it
+                narrows as the publisher picks, and disappears on its own when
+                nobody matches. Only its second line was ever meant to go, so
+                the bar is back and the count stays. */}
+            <WorkerAvailabilityIndicator category={form.category} city={form.city} />
+
             {/* How complete the task is. In the slider this is the ONLY bar on
                 the screen — a single small line, not a step tracker — because a
                 row of pips told the publisher how MANY screens were left and
@@ -2370,12 +2377,35 @@ export default function CreateTask() {
           const isReady = requiredFieldOrder().every(k => values[k]);
           return (
             <div ref={fieldRefs.publishBtn} style={{ marginTop: 8, paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
+              {/* ── THE LAST STEP IS STILL A STEP ──────────────────────────────
+                  Publishing used to be the only thing on this screen, so a
+                  publisher who wanted to change one detail had to leave the
+                  form and start again. The way back now sits beside the publish
+                  button, in the same row and at the same height. */}
+              <div style={{ display: 'flex', alignItems: 'stretch', gap: 10 }}>
+              {isSliderForm && stepIdx > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStepIdx(i => Math.max(0, i - 1))}
+                  aria-label="חזרה"
+                  style={{
+                    width: 60, height: 60, flexShrink: 0, cursor: 'pointer',
+                    borderRadius: 18,
+                    background: 'var(--surface-2)',
+                    border: '1.5px solid var(--border-2)',
+                    color: 'var(--text-2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <ChevronRight size={24} strokeWidth={2.6} />
+                </button>
+              )}
               <button
                 onClick={handleSubmit}
                 disabled={loading || !!checkingModeration || categoriesLoading || (!isEditMode && !brandCategories.length)}
                 className="btn-tap"
                 style={{
-                  width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
+                  flex: 1, minWidth: 0, height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
                   color: 'var(--brand-btn-primary-text, white)', border: 'none',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   background: isReady
@@ -2395,6 +2425,7 @@ export default function CreateTask() {
                     ? (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_now')} ✓</>)
                     : (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_new_task')}</>)}
               </button>
+              </div>
               {!isEditMode && <SocialProofBar />}
             </div>
           );

@@ -52,16 +52,6 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
   // Nothing to announce when nobody is available for this exact service.
   if (count === 0) return null;
 
-  const hint = (() => {
-    if (hasCategory && hasCity) {
-      return t('worker_avail_publish_hint');
-    }
-    if (hasCategory) {
-      return t('worker_avail_select_city');
-    }
-    return t('important_note_body');
-  })();
-
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{
       display: 'flex', alignItems: 'center', gap: 8,
@@ -85,14 +75,9 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
         {displayCount}
       </span>
 
-      {/* Label + hint */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: 'rgba(255,255,255,0.95)', fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>
-          {mainLabel}
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 500, marginTop: 1, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {hint}
-        </div>
+      {/* Label only — the small explanatory line under it is deliberately gone */}
+      <div style={{ flex: 1, minWidth: 0, color: 'rgba(255,255,255,0.95)', fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>
+        {mainLabel}
       </div>
 
       {/* ── THE FACES BEHIND THE COUNT ────────────────────────────────────────
