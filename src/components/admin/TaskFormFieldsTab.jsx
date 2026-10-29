@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { ClipboardList, Save, RotateCcw, Loader2, AlertTriangle, ChevronUp, ChevronDown, MoveVertical } from 'lucide-react';
+import { ClipboardList, Save, RotateCcw, Loader2, AlertTriangle, ChevronUp, ChevronDown, MoveVertical, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -33,6 +33,9 @@ export default function TaskFormFieldsTab() {
   const [hasChanges, setHasChanges] = useState(false);
   const [draft, setDraft] = useState({ ...DEFAULT_TASK_FORM_FIELDS });
   const [order, setOrder] = useState(taskFormSectionOrder(null));
+  // Which publish form the app shows. Separate from the switches below: the
+  // style changes HOW the questions are presented, not WHICH ones are asked.
+  const [formStyle, setFormStyle] = useState('classic');
 
   const { data: settingsRecord, isLoading } = useQuery({
     queryKey: ['jobaSettings'],
@@ -55,6 +58,7 @@ export default function TaskFormFieldsTab() {
     }
     setDraft(merged);
     setOrder(taskFormSectionOrder(settingsRecord));
+    setFormStyle(settingsRecord.task_form_style === 'slider' ? 'slider' : 'classic');
     setHasChanges(false);
   }, [settingsRecord]);
 
@@ -84,6 +88,7 @@ export default function TaskFormFieldsTab() {
       const payload = {
         task_form_fields: draft,
         task_form_order: order,
+        task_form_style: formStyle,
         updated_by: me?.full_name || 'admin',
       };
       if (settingsRecord?.id) {
@@ -103,6 +108,7 @@ export default function TaskFormFieldsTab() {
   const handleReset = () => {
     setDraft({ ...DEFAULT_TASK_FORM_FIELDS });
     setOrder(taskFormSectionOrder(null));
+    setFormStyle('classic');
     setHasChanges(true);
     toast('כל השדות הוחזרו לפעיל והסדר חזר למקור — לחץ שמור כדי להחיל');
   };
@@ -126,6 +132,45 @@ export default function TaskFormFieldsTab() {
           מהדרישות לפרסום, והחצים <MoveVertical size={12} style={{ display: 'inline', verticalAlign: -2 }} /> מזיזים
           סעיף <strong>למעלה או למטה</strong> — כך קובעים באיזה סדר המשתמש ממלא את הטופס. הכל בתוקף
           <strong> מיידי</strong> וללא צורך בפרסום מחדש.
+        </div>
+      </div>
+
+      {/* ── FORM STYLE ───────────────────────────────────────────────────────
+          Which publish form the whole app shows. Both styles ask exactly the
+          same questions, in exactly the same order — the switches and arrows
+          below therefore apply to both, and nothing has to be configured twice. */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', marginBottom: 3 }}>סוג הטופס</div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.55, marginBottom: 8 }}>
+          שני הסוגים שואלים בדיוק את אותן שאלות. ההבדל היחיד הוא איך הן מוצגות למפרסם.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {[
+            { key: 'classic', label: 'טופס רגיל', desc: 'כל השאלות בטופס אחד ארוך' },
+            { key: 'slider', label: 'טופס סליידר', desc: 'שלב אחרי שלב, שאלה-שאלה' },
+          ].map(opt => {
+            const active = formStyle === opt.key;
+            const Icon = opt.key === 'slider' ? Layers : ClipboardList;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => { setFormStyle(opt.key); setHasChanges(true); }}
+                style={{
+                  textAlign: 'right', padding: '11px 12px', borderRadius: 14, cursor: 'pointer',
+                  background: active ? 'linear-gradient(135deg,#eff6ff,#dbeafe)' : 'var(--surface-2)',
+                  border: `1.5px solid ${active ? '#1a6fd4' : 'var(--border-1)'}`,
+                  display: 'flex', flexDirection: 'column', gap: 3,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon size={14} color={active ? '#1a6fd4' : 'var(--text-3)'} />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: active ? '#1e40af' : 'var(--text-1)' }}>{opt.label}</span>
+                </div>
+                <span style={{ fontSize: 10.5, color: active ? '#1e40af' : 'var(--text-3)', lineHeight: 1.4 }}>{opt.desc}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

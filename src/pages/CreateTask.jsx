@@ -39,7 +39,8 @@ import { usePublishFunnel } from '@/hooks/usePublishFunnel';
 import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
-import { isTaskFormFieldOn, taskFormSectionOrder } from '@/lib/taskFormFields';
+import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/lib/taskFormFields';
+import PublishWizardNav from '@/components/publish/PublishWizardNav';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // The COMPLETE form, stashed the moment a visitor is asked to sign in before
@@ -574,6 +575,41 @@ export default function CreateTask() {
   const sections = {};
   const sectionOrder = taskFormSectionOrder(jobaSettings);
 
+  // ── FORM STYLE — chosen by the admin in the dashboard ────────────────────
+  // 'slider' shows the SAME form one section at a time; 'classic' keeps the
+  // single long form. Both render the same blocks, in the same admin order,
+  // with the same switches — so flipping the style can never change which
+  // questions are asked, only how they are presented.
+  const isSliderForm = jobaSettings?.task_form_style === 'slider';
+  const [stepIdx, setStepIdx] = useState(0);
+
+  // A step per section the admin left switched ON. The 'schedule' card holds
+  // three separate questions, so it stands as long as ANY of them is on —
+  // exactly the rule the card itself follows, which is what stops the slider
+  // from ever showing an empty step.
+  const STEP_CONTAINERS = { schedule: ['expiry', 'urgency', 'exact_datetime'] };
+  const wizardSectionKeys = sectionOrder.filter(key =>
+    (STEP_CONTAINERS[key] || [key]).some(fieldOn));
+  // Step 0 is the service choice — its own card, outside the section list.
+  const wizardTotal = 1 + wizardSectionKeys.length;
+  const wizardKey = stepIdx > 0 ? wizardSectionKeys[stepIdx - 1] : null;
+  const wizardTitle = stepIdx === 0
+    ? t('ct_category')
+    : (TASK_FORM_SECTIONS.find(s => s.key === wizardKey)?.label || '');
+
+  const wizardScrollRef = useRef(null);
+  // A new step starts at the top: the previous step's scroll position would
+  // otherwise leave the new question cut in half.
+  useEffect(() => {
+    if (isSliderForm) wizardScrollRef.current?.scrollTo({ top: 0 });
+  }, [stepIdx, isSliderForm]);
+
+  // The admin can turn a section off while a publisher is mid-form; the step
+  // list shrinks under them, so the index is pulled back to a real step.
+  useEffect(() => {
+    if (stepIdx > wizardTotal - 1) setStepIdx(Math.max(0, wizardTotal - 1));
+  }, [wizardTotal, stepIdx]);
+
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [moderationErrors, setModerationErrors] = useState({});
@@ -801,6 +837,17 @@ export default function CreateTask() {
     contactPhone: (form.contactPhone || '').replace(/\D/g, '').length >= 9,
   });
 
+  // ── Can the slider move on? ───────────────────────────────────────────────
+  // Only the fields that already block publishing can block a step, so the
+  // slider never invents a rule the classic form does not have: everything the
+  // admin marked optional stays optional, and every step is still reachable.
+  const wizardCanAdvance = (() => {
+    if (stepIdx === 0) return !!form.category;
+    if (!wizardKey) return false;
+    if (requiredFieldOrder().includes(wizardKey)) return !!requiredValues()[wizardKey];
+    return true;
+  })();
+
   const collectRequiredErrors = () => {
     const errs = {};
     const values = requiredValues();
@@ -875,11 +922,23 @@ export default function CreateTask() {
   const showRequiredErrors = (errs) => {
     setErrors(errs);
     setShowErrorBanner(true);
+    // In the slider the missing field is usually on another step, so scrolling
+    // would land on a step the publisher cannot see. Jumping to the step that
+    // holds it is the same behaviour, expressed in the form's own terms.
+    if (isSliderForm) {
+      const first = requiredFieldOrder().find(k => errs[k]);
+      const target = wizardSectionKeys.indexOf(first);
+      if (target >= 0) { setStepIdx(target + 1); return; }
+    }
     focusFirstMissingField(errs);
   };
   const scrollToCategoryForm = () => {
     setErrors({ categoryForm: true });
     setShowErrorBanner(true);
+    if (isSliderForm) {
+      const target = wizardSectionKeys.indexOf('category_form');
+      if (target >= 0) { setStepIdx(target + 1); return; }
+    }
     fieldRefs.categoryForm.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
@@ -1489,7 +1548,7 @@ export default function CreateTask() {
         );
       })()}
 
-      <div className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+      <div ref={wizardScrollRef} className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
         {/* Draft restore indicator */}
         {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1518,7 +1577,8 @@ export default function CreateTask() {
           </div>
         )}
 
-        {/* Category */}
+        {/* Category — the slider's first step; always on screen in classic mode */}
+        {(!isSliderForm || stepIdx === 0) && (<>
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
           <div ref={fieldRefs.categoryPicker}>
@@ -1543,6 +1603,7 @@ export default function CreateTask() {
             <p style={{ fontSize: 13, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>{moderationErrors.categoryMismatch}</p>
           </div>
         )}
+        </>)}
 
         {/* Worker count hint — removed per design decision */}
 
@@ -2280,10 +2341,15 @@ export default function CreateTask() {
         {/* The form, in the order the admin set it (Dashboard → Task Form).
             Every section registered itself above; this is what actually renders
             them, so moving a section in the dashboard moves it here. */}
-        {sectionOrder.map(key => (sections[key] ? <React.Fragment key={key}>{sections[key]}</React.Fragment> : null))}
+        {isSliderForm
+          ? (() => {
+              const node = wizardKey ? sections[wizardKey] : null;
+              return node ? <React.Fragment key={wizardKey}>{node}</React.Fragment> : null;
+            })()
+          : sectionOrder.map(key => (sections[key] ? <React.Fragment key={key}>{sections[key]}</React.Fragment> : null))}
 
-        {/* Submit */}
-        {(() => {
+        {/* Submit — the slider's last step, the end of the form otherwise */}
+        {(!isSliderForm || stepIdx === wizardTotal - 1) && (() => {
           // Ready means every remaining required field is filled — the same list
           // the validation uses, so the green button can never lie.
           const values = requiredValues();
@@ -2320,6 +2386,20 @@ export default function CreateTask() {
           );
         })()}
       </div>
+
+      {/* The slider's motion through the form. Publishing itself stays the same
+          button at the end of the last step — this bar only moves between steps. */}
+      {isSliderForm && (
+        <PublishWizardNav
+          step={stepIdx}
+          total={wizardTotal}
+          title={wizardTitle}
+          canNext={wizardCanAdvance}
+          isLast={stepIdx === wizardTotal - 1}
+          onBack={() => setStepIdx(i => Math.max(0, i - 1))}
+          onNext={() => setStepIdx(i => Math.min(wizardTotal - 1, i + 1))}
+        />
+      )}
     </div>
   );
 }
