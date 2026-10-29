@@ -41,6 +41,8 @@ import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicato
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/lib/taskFormFields';
 import PublishWizardNav from '@/components/publish/PublishWizardNav';
+import PublishWizardHeader from '@/components/publish/PublishWizardHeader';
+import PublishStepIntro from '@/components/publish/PublishStepIntro';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // The COMPLETE form, stashed the moment a visitor is asked to sign in before
@@ -593,9 +595,6 @@ export default function CreateTask() {
   // Step 0 is the service choice — its own card, outside the section list.
   const wizardTotal = 1 + wizardSectionKeys.length;
   const wizardKey = stepIdx > 0 ? wizardSectionKeys[stepIdx - 1] : null;
-  const wizardTitle = stepIdx === 0
-    ? t('ct_category')
-    : (TASK_FORM_SECTIONS.find(s => s.key === wizardKey)?.label || '');
 
   const wizardScrollRef = useRef(null);
   // A new step starts at the top: the previous step's scroll position would
@@ -841,12 +840,17 @@ export default function CreateTask() {
   // Only the fields that already block publishing can block a step, so the
   // slider never invents a rule the classic form does not have: everything the
   // admin marked optional stays optional, and every step is still reachable.
-  const wizardCanAdvance = (() => {
-    if (stepIdx === 0) return !!form.category;
-    if (!wizardKey) return false;
-    if (requiredFieldOrder().includes(wizardKey)) return !!requiredValues()[wizardKey];
-    return true;
+  // What still holds this step, written the way the bar shows it. An empty
+  // string means the step is done and the bar may move on — so the button's
+  // disabled state and the sentence under it can never disagree.
+  const wizardMissing = (() => {
+    if (stepIdx === 0) return form.category ? '' : 'בחירת סוג השירות';
+    if (!wizardKey) return '';
+    if (!requiredFieldOrder().includes(wizardKey)) return '';
+    if (requiredValues()[wizardKey]) return '';
+    return TASK_FORM_SECTIONS.find(s => s.key === wizardKey)?.label || 'מילוי השדה';
   })();
+  const wizardCanAdvance = !wizardMissing;
 
   const collectRequiredErrors = () => {
     const errs = {};
@@ -1534,7 +1538,10 @@ export default function CreateTask() {
             </div>
             {/* Worker availability — unified into header */}
             <WorkerAvailabilityIndicator category={form.category} city={form.city} />
-            {/* Progress bar */}
+            {/* Field-completion bar — classic mode only. In slider mode the step
+            bar above already shows where you are, and two progress numbers on
+            one screen answer the same question twice. */}
+        {!isSliderForm && (
             <div style={{ padding: '0 16px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                 <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{t('form_progress')}</span>
@@ -1544,11 +1551,34 @@ export default function CreateTask() {
                 <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
               </div>
             </div>
+        )}
           </div>
         );
       })()}
 
+      {/* ── THE STEP BAR ────────────────────────────────────────────────────
+          Under the brand header and above the step itself, exactly where the
+          Welcome flow puts it: back, one pip per step, and the position. This
+          is what makes the slider readable at a glance — how far in you are and
+          how much is left — which a percentage of filled fields cannot say. */}
+      {isSliderForm && (
+        <PublishWizardHeader
+          index={stepIdx}
+          total={wizardTotal}
+          onBack={() => setStepIdx(i => Math.max(0, i - 1))}
+        />
+      )}
+
       <div ref={wizardScrollRef} className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+        {/* What THIS step is asking, in the publisher's own question — not the
+            field's internal name. Re-keyed on the step so it animates in with
+            the content it belongs to. */}
+        {isSliderForm && (
+          <div key={stepIdx} className="j-step-in">
+            <PublishStepIntro stepKey={stepIdx === 0 ? 'category' : wizardKey} />
+          </div>
+        )}
+
         {/* Draft restore indicator */}
         {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1578,7 +1608,8 @@ export default function CreateTask() {
         )}
 
         {/* Category — the slider's first step; always on screen in classic mode */}
-        {(!isSliderForm || stepIdx === 0) && (<>
+        {(!isSliderForm || stepIdx === 0) && (
+        <div className="j-step-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
           <div ref={fieldRefs.categoryPicker}>
@@ -1603,7 +1634,8 @@ export default function CreateTask() {
             <p style={{ fontSize: 13, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>{moderationErrors.categoryMismatch}</p>
           </div>
         )}
-        </>)}
+        </div>
+        )}
 
         {/* Worker count hint — removed per design decision */}
 
@@ -2344,7 +2376,7 @@ export default function CreateTask() {
         {isSliderForm
           ? (() => {
               const node = wizardKey ? sections[wizardKey] : null;
-              return node ? <React.Fragment key={wizardKey}>{node}</React.Fragment> : null;
+              return node ? <div key={wizardKey} className="j-step-in">{node}</div> : null;
             })()
           : sectionOrder.map(key => (sections[key] ? <React.Fragment key={key}>{sections[key]}</React.Fragment> : null))}
 
@@ -2393,8 +2425,8 @@ export default function CreateTask() {
         <PublishWizardNav
           step={stepIdx}
           total={wizardTotal}
-          title={wizardTitle}
           canNext={wizardCanAdvance}
+          missing={wizardMissing}
           isLast={stepIdx === wizardTotal - 1}
           onBack={() => setStepIdx(i => Math.max(0, i - 1))}
           onNext={() => setStepIdx(i => Math.min(wizardTotal - 1, i + 1))}

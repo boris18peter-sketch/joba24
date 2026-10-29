@@ -791,6 +791,17 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   min-height: unset;
 }
 
+/* ── One step of the publish slider ────────────────────────────────────────
+   The step arrives from just below its own resting place: enough movement to
+   read as a new screen, never enough to make the form feel like it jumped. The
+   global reduced-motion rule freezes it, and because it is a CSS animation it
+   costs nothing on the main thread when it does not run. */
+@keyframes jStepIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.j-step-in { animation: jStepIn 0.24s cubic-bezier(0.32, 0.72, 0, 1) both; }
+
 /* ── Slide: a fixed header band, then the illustration takes the rest ──
    The header band has a fixed minimum height, so the illustration starts at
    the same Y on every slide no matter how long the copy is. That — plus the
