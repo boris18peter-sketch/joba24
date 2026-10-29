@@ -135,9 +135,10 @@ const ResetPassword = lazyRetry(() => import('@/pages/ResetPassword'));
 // asked to choose one. The parameter was being ignored at "/" though, which is
 // why the link "went nowhere at all" — the visitor landed on the feed with the
 // track silently dropped. Here the parameter becomes the destination it always
-// meant: the publish form for ?track=publish, the worker flow for ?track=worker.
-// The query string is carried over untouched, because the publish funnel reads
-// its campaign parameters (track, utm_*, gclid) straight from the URL.
+// meant: the chosen track's own flow, which then carries the visitor on to the
+// publish form or the worker signup. The query string is carried over
+// untouched, because the funnel reads its campaign parameters (track, utm_*,
+// gclid) straight from the URL.
 function CampaignTrackEntry() {
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
@@ -147,7 +148,7 @@ function CampaignTrackEntry() {
     const track = new URLSearchParams(search).get('track');
     if (track !== TRACKS.PUBLISH && track !== TRACKS.WORKER) return;
     setOnboardingTrack(track);
-    navigate(`${track === TRACKS.PUBLISH ? '/create-task' : '/welcome'}${search}`, { replace: true });
+    navigate(`/welcome${search}`, { replace: true });
   }, [pathname, search, navigate]);
 
   return null;
