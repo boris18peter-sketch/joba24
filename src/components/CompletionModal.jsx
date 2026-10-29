@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Star, Loader2, X, CheckCircle } from 'lucide-react';
+import { Star, Loader2, CheckCircle } from 'lucide-react';
+import PopupClose from '@/components/ui/PopupClose';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -77,10 +78,7 @@ export default function CompletionModal({ task, me, onClose }) {
         {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
 
-        {/* Close */}
-        <button onClick={onClose} style={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 12, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}>
-          <X size={18} color="#6b7280" />
-        </button>
+        <PopupClose onClick={onClose} label={t('close')} />
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>

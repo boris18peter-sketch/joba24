@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
-import { X, FileText, Loader2, CheckCircle } from 'lucide-react';
+import { FileText, Loader2, CheckCircle } from 'lucide-react';
+import PopupClose from '@/components/ui/PopupClose';
 import { toast } from 'sonner';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -85,13 +86,12 @@ export default function InvoiceModal({ task, me, onClose }) {
       onPointerDown={e => e.stopPropagation()}
       onTouchStart={e => e.stopPropagation()}
     >
-      <div dir={isRTL ? 'rtl' : 'ltr'} onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)', maxHeight: '92dvh', overflowY: 'auto' }}>
+      {/* `position: relative` keeps the close button inside the sheet instead of
+          pinning it to the corner of the full-screen overlay. */}
+      <div dir={isRTL ? 'rtl' : 'ltr'} onClick={e => e.stopPropagation()} style={{ position: 'relative', background: 'var(--sheet-bg)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)', maxHeight: '92dvh', overflowY: 'auto' }}>
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
 
-        {/* Close */}
-        <button onClick={onClose} style={{ position: 'absolute', top: 16, left: 20, width: 36, height: 36, borderRadius: 12, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <X size={18} color="#6b7280" />
-        </button>
+        <PopupClose onClick={onClose} label={t('close')} />
 
         {done ? (
           <div style={{ textAlign: 'center', padding: '20px 0 30px' }}>

@@ -259,6 +259,43 @@ export default function TaskApplicants({ task, onApprove }) {
         document.body
       )}
 
+      {/* ── WHAT THIS BLOCK IS ASKING FOR ────────────────────────────────────
+          Publishers read the row as a list of names, saw two buttons of nearly
+          equal weight on each one, and never worked out that the job does not
+          start until one of them is confirmed. The section now says that first,
+          in one sentence, and keeps a confirmed state that explains what has
+          already happened — instead of leaving a card whose only meaning was a
+          green tint. */}
+      {approvedApp ? (
+        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', background: 'var(--color-success-bg)', border: '1.5px solid var(--color-success-border)', borderRadius: 16, padding: '12px 14px' }}>
+          <div style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(5,150,105,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <CheckCircle2 size={18} color="var(--color-success)" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: '#065f46' }}>
+              {t('ta_approved_title', { name: applicantProfiles[approvedApp.worker_id]?.full_name || approvedApp.worker_name || '' })}
+            </div>
+            <div style={{ fontSize: 12, color: '#047857', lineHeight: 1.55, marginTop: 3 }}>
+              {t('ta_approved_body')}
+            </div>
+          </div>
+        </div>
+      ) : pending.length > 0 ? (
+        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', background: 'var(--brand-primary-light)', border: '1.5px solid var(--border-2)', borderRadius: 16, padding: '12px 14px' }}>
+          <div style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(26,111,212,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <CheckCircle2 size={18} color="var(--brand-primary)" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>
+              {t('ta_pick_title')}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.55, marginTop: 3 }}>
+              {t('ta_pick_body')}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('ta_applicants_count', { n: visibleApps.length })}</span>
       </div>
@@ -294,6 +331,14 @@ export default function TaskApplicants({ task, onApprove }) {
               pointerEvents: isFading ? 'none' : 'auto',
             }}
           >
+            {/* ── Status of THIS request, on the card itself ── */}
+            {!isApproved && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-warning)', flexShrink: 0 }} />
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#b45309', letterSpacing: 0.2 }}>{t('ta_pending_your_approval')}</span>
+              </div>
+            )}
+
             {/* ── Top section: avatar + info + actions ── */}
             <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               {/* Avatar — circular with photo or gradient fallback */}
@@ -424,34 +469,43 @@ export default function TaskApplicants({ task, onApprove }) {
                 )
               ) : !approvedApp ? (
                 <>
-                  <button
-                    onClick={() => handleDecline(app)}
-                    disabled={isBeingDeclined}
-                    style={{
-                      flex: 1, height: 40, borderRadius: 11,
-                      background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-                      color: isBeingDeclined ? 'var(--text-3)' : 'var(--text-2)',
-                      fontWeight: 700, fontSize: 13,
-                      cursor: isBeingDeclined ? 'not-allowed' : 'pointer',
-                      opacity: isBeingDeclined ? 0.6 : 1,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    }}
-                  >
-                    {isBeingDeclined ? <Loader2 size={15} className="animate-spin" /> : <><X size={15} /> {t('ta_decline_btn')}</>}
-                  </button>
+                  {/* ── ONE primary action, named ──────────────────────────────
+                      "אשר עובד" next to an almost-identical "דחה" made the two
+                      look like a symmetrical pair, and publishers could not tell
+                      which one was the required step. Approval is now the only
+                      solid button, it carries the person's name so it is obvious
+                      WHO it approves, and declining steps back to a quiet text
+                      action underneath — it is the exception, not the choice. */}
                   <button
                     onClick={() => approveMutation.mutate(app)}
                     disabled={approvingId === app.id}
                     style={{
-                      flex: 1.5, height: 40, borderRadius: 11,
+                      flex: 1, height: 46, borderRadius: 12,
                       background: approvingId === app.id ? '#86efac' : 'linear-gradient(135deg,#059669,#047857)',
-                      border: 'none', color: 'white', fontWeight: 800, fontSize: 13,
-                      cursor: 'pointer', opacity: approvingId === app.id ? 0.7 : 1,
-                      boxShadow: '0 2px 10px rgba(5,150,105,0.3)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      border: 'none', color: 'white', fontWeight: 900, fontSize: 14.5,
+                      cursor: 'pointer', opacity: approvingId === app.id ? 0.75 : 1,
+                      boxShadow: '0 4px 14px rgba(5,150,105,0.32)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                     }}
                   >
-                    {approvingId === app.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> {t('ta_approve_worker_btn')}</>}
+                    {approvingId === app.id
+                      ? <Loader2 size={17} className="animate-spin" />
+                      : <><CheckCircle2 size={17} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('ta_approve_named', { name: currentName })}</span></>}
+                  </button>
+                  <button
+                    onClick={() => handleDecline(app)}
+                    disabled={isBeingDeclined}
+                    style={{
+                      flexShrink: 0, height: 46, padding: '0 12px', borderRadius: 12,
+                      background: 'transparent', border: 'none',
+                      color: isBeingDeclined ? 'var(--text-3)' : 'var(--text-2)',
+                      fontWeight: 700, fontSize: 12,
+                      cursor: isBeingDeclined ? 'not-allowed' : 'pointer',
+                      opacity: isBeingDeclined ? 0.6 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    }}
+                  >
+                    {isBeingDeclined ? <Loader2 size={14} className="animate-spin" /> : <><X size={14} /> {t('ta_decline_btn')}</>}
                   </button>
                 </>
               ) : null}

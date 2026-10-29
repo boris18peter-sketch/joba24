@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { fetchPublicTasks } from '@/lib/publicTasks';
-import { X, Lock, Loader2, RotateCcw } from 'lucide-react';
+import { Lock, Loader2, RotateCcw } from 'lucide-react';
+import PopupClose from '@/components/ui/PopupClose';
 import CreditIcon from '@/components/CreditIcon';
 import TaskCard from '@/components/TaskCard';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -21,6 +22,22 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
   const [cancellingId, setCancellingId] = useState(null);
 
   const pendingApps = (applications || []).filter(a => a.status === 'pending');
+
+  // ── The popup lives and dies with what it shows ──────────────────────────
+  // Cancelling the LAST commitment left the sheet open on an empty state with
+  // nothing to act on, so the visitor had to dismiss a popup that no longer had
+  // a reason to exist. Once there is nothing held any more, it closes itself.
+  // The short delay absorbs the refetch that follows a cancel (a list that is
+  // momentarily empty between two renders must not shut the sheet).
+  const hadItemsRef = useRef(false);
+  const countRef = useRef(pendingApps.length);
+  countRef.current = pendingApps.length;
+  useEffect(() => {
+    if (pendingApps.length > 0) { hadItemsRef.current = true; return; }
+    if (!hadItemsRef.current) return;
+    const timer = setTimeout(() => { if (countRef.current === 0) onClose?.(); }, 400);
+    return () => clearTimeout(timer);
+  }, [pendingApps.length, onClose]);
 
   // Fetch the full task data for each pending application so we can render the
   // real TaskCard (the application record only carries a denormalized task_title).
@@ -69,6 +86,10 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
     >
       <div
         style={{
+          // `relative` is what keeps the close button INSIDE the sheet — without
+          // it the absolutely-positioned X anchored to the full-screen overlay
+          // and appeared in the corner of the screen, detached from the popup.
+          position: 'relative',
           background: 'var(--sheet-bg)',
           borderRadius: '28px 28px 0 0',
           width: '100%', maxWidth: 480,
@@ -81,14 +102,11 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
         {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 18px' }} />
 
-        {/* Close */}
-        <button onClick={onClose} style={{ position: 'absolute', top: 16, left: 16, width: 34, height: 34, borderRadius: 11, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}>
-          <X size={16} color="var(--text-2)" />
-        </button>
+        <PopupClose onClick={onClose} label={t('close')} />
 
         {/* Header */}
         <div style={{ padding: '0 20px 16px', borderBottom: '1px solid var(--border-1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingLeft: 42 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Lock size={20} color="white" strokeWidth={2} />
             </div>

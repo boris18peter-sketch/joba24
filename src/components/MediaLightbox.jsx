@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import PopupClose from '@/components/ui/PopupClose';
 
 export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, onClose }) {
   const [index, setIndex] = useState(initialIndex);
@@ -58,29 +59,15 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
       }}
       onClick={onClose}
     >
-      <button
+      {/* The same close button as every popup in the app, in its dark tone —
+          sized, rounded and inset exactly like the sheet ones so the viewer
+          reads as part of the interface rather than a separate screen. */}
+      <PopupClose
         onClick={onClose}
-        style={{
-          position: 'absolute',
-          top: 'max(54px, env(safe-area-inset-top))',
-          left: 16,
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: 'rgba(15, 23, 42, 0.55)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          color: 'white',
-          filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
-          zIndex: 10,
-        }}
-      >
-        <X size={20} />
-      </button>
+        tone="overlay"
+        size={40}
+        top="max(14px, calc(env(safe-area-inset-top) + 8px))"
+      />
 
       <style>{`@keyframes lightboxSpin { to { transform: rotate(360deg); } }`}</style>
 

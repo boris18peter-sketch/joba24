@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
-import { Loader2, X, Trash2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
+import PopupClose from '@/components/ui/PopupClose';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoading }) {
@@ -34,10 +35,7 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
         {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 20px' }} />
 
-        {/* Close */}
-        <button onClick={onClose} disabled={isLoading} style={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 12, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1, zIndex: 10 }}>
-          <X size={18} color="var(--text-2)" />
-        </button>
+        <PopupClose onClick={isLoading ? undefined : onClose} label={t('close')} />
 
         {/* Icon + Title */}
         <div style={{ textAlign: 'center', marginBottom: 24, marginTop: 8 }}>
