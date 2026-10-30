@@ -59,7 +59,7 @@ import { readPendingTask } from '@/lib/pendingTask';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import AppLoading from '@/components/AppLoading';
-import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack, setOnboardingTrack, campaignTrackFromUrl } from '@/lib/onboardingTrack';
+import { hasSeenFirstRun, getOnboardingTrack, destinationForTrack, setOnboardingTrack, campaignTrackFromUrl, TRACKS } from '@/lib/onboardingTrack';
 import { resolveUserAccess } from '@/lib/userAccess';
 import { bootMark } from '@/lib/bootTrace';
 
@@ -637,7 +637,21 @@ export default function Layout() {
     );
   }
 
-  if (isAuthenticated && me && !isApprovedUser) {
+  // ── THE WAITING PAGE IS THE PROFESSIONALS' ROOM, NOT EVERYONE'S ────────────
+  // It exists to hold people who joined to TAKE work until there is work to
+  // take. A visitor who came in to PUBLISH a task is not waiting for that: he
+  // needs the feed and the publish form, which already work, and holding him on
+  // a "we open soon" screen is exactly what made a publisher who filled the
+  // form, signed in and closed the form land in a dead end.
+  //
+  // The journey is recorded on the account at first sign-in (signup_track); the
+  // device's own choice is the fallback for accounts created before that field
+  // existed. Anyone whose journey is NOT the professional one — a publisher, or
+  // an account whose journey was never recorded — is not held here.
+  const journeyTrack = me?.signup_track || getOnboardingTrack();
+  const isWorkerJourney = journeyTrack === TRACKS.WORKER;
+
+  if (isAuthenticated && me && !isApprovedUser && isWorkerJourney) {
     return <PreLaunchWaitingPage me={me} />;
   }
 

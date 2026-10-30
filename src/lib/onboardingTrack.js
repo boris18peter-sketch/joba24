@@ -59,6 +59,23 @@ export function setOnboardingTrack(track) {
   }
 }
 
+/**
+ * Which journey this visitor is in RIGHT NOW, for recording on their account.
+ *
+ * The stored choice is the truth. A visitor who arrived straight into a
+ * journey's own screen (a shared /join link, a direct /create-task link) never
+ * saw the chooser, so the path they are on names the journey instead of leaving
+ * the answer blank. This is only read once per account, on the first signed-in
+ * load — see AuthContext.
+ */
+export function resolveJourneyTrack(pathname = typeof window !== 'undefined' ? window.location.pathname : '') {
+  const stored = getOnboardingTrack();
+  if (stored) return stored;
+  if (pathname.startsWith('/join')) return TRACKS.WORKER;
+  if (pathname.startsWith('/create-task')) return TRACKS.PUBLISH;
+  return null;
+}
+
 export const explainerKey = (track) => `joba24_onboarding_explainer_${track}`;
 
 export function isExplainerDone(track) {

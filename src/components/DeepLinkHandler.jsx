@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
 import { setPendingTask, readPendingTask, clearPendingTask, PENDING_TASK_EVENT } from '@/lib/pendingTask';
+import { getOnboardingTrack, TRACKS } from '@/lib/onboardingTrack';
 
 // The first-run flow owns the screen until the visitor has been through it.
 // A pending task waits for them to come out the other side.
@@ -46,10 +47,15 @@ export default function DeepLinkHandler() {
     return () => window.removeEventListener(PENDING_TASK_EVENT, onPending);
   }, []);
 
-  // Pre-launch gate: don't open the task sheet for unapproved users.
+  // Pre-launch gate: don't open the task sheet over the waiting page.
   // TaskDetailSheet renders at App level (outside Layout), so it would appear
-  // ON TOP of the waiting page — bypassing the gate. This check prevents that.
+  // ON TOP of that page — bypassing the gate. This check prevents that.
+  //
+  // It is the SAME rule the waiting page itself uses: only an account that
+  // arrived on the professionals' journey is held, so a publisher opening a
+  // shared task link is never silently ignored while the app already lets him in.
   const isApproved = user?.is_approved || user?.role === 'admin';
+  const heldByLaunchGate = !!user && !isApproved && (user?.signup_track || getOnboardingTrack()) === TRACKS.WORKER;
 
   // Capture ?open_task from the URL on first load, store it, clean the URL.
   useEffect(() => {
@@ -77,7 +83,7 @@ export default function DeepLinkHandler() {
     // meant to be opened by someone who has never used the app, so a visitor
     // with no account is allowed through; only a SIGNED-IN user who has not
     // been approved stays on the waiting page.
-    if (user && !isApproved) return;
+    if (heldByLaunchGate) return;
     if (FIRST_RUN_PATHS.includes(location.pathname)) return;
     const pending = readPendingTask();
     if (!pending || openedRef.current === pending) return;
@@ -89,14 +95,14 @@ export default function DeepLinkHandler() {
       if (brandUrl) { window.location.href = brandUrl; return; }
       openTaskSheet(pending);
     });
-  }, [isLoadingAuth, isApproved, user, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand, pendingSignal]);
+  }, [isLoadingAuth, heldByLaunchGate, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand, pendingSignal]);
 
   // Foreground notification click → open the sheet immediately
   useEffect(() => {
     const handler = (event) => {
       if (event.data?.type === 'OPEN_TASK_SHEET' && event.data?.taskId) {
-        // Pre-launch gate: don't open task sheet for unapproved users
-        if (!isApproved) return;
+        // Pre-launch gate: don't open the task sheet over the waiting page
+        if (heldByLaunchGate) return;
         const tid = event.data.taskId;
         resolveTaskBrandUrl(tid, currentBrandId, isPlatformBrand).then((brandUrl) => {
           if (brandUrl) { window.location.href = brandUrl; return; }
@@ -106,7 +112,7 @@ export default function DeepLinkHandler() {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [openTaskSheet, isApproved, currentBrandId, isPlatformBrand]);
+  }, [openTaskSheet, heldByLaunchGate, currentBrandId, isPlatformBrand]);
 
   return null;
 }

@@ -6,6 +6,7 @@ import { isNativeLike } from '@/lib/nativeEnv';
 import { detectMobilePlatform } from '@/lib/utils';
 import { trackEvent, setAnalyticsUser, clearAnalyticsUser } from '@/lib/analytics';
 import { applyDisplayName } from '@/lib/displayName';
+import { resolveJourneyTrack } from '@/lib/onboardingTrack';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -293,6 +294,22 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (srcErr) {
         console.error('[Joba24] Auth: failed to set registration_source:', srcErr?.message);
+      }
+
+      // ── WHICH JOURNEY THEY CAME IN ON — RECORDED ONCE ─────────────────────
+      // The track lived only in this device's browser storage, so the launch
+      // gate could not answer "did this person arrive as a professional?" for
+      // anyone signing in on another device, or after the storage was cleared.
+      // It is written to the account on the FIRST signed-in load and never
+      // changed afterwards, so the answer is a fact about the person rather
+      // than about the device they happen to be holding.
+      try {
+        if (!currentUser.signup_track) {
+          const journey = resolveJourneyTrack();
+          if (journey) await base44.auth.updateMe({ signup_track: journey });
+        }
+      } catch (journeyErr) {
+        console.error('[Joba24] Auth: failed to set signup_track:', journeyErr?.message);
       }
 
       // Update last_active_at (throttled to once per hour — avoids redundant API calls

@@ -19,6 +19,7 @@ import KycImageLightbox from '@/components/admin/KycImageLightbox';
 import AdminCreditsTab from '@/components/admin/AdminCreditsTab';
 import AdminTaskRow, { STATUS_COLORS } from '@/components/admin/AdminTaskRow';
 import AdminUserRow from '@/components/admin/AdminUserRow';
+import UserCategoryFilter from '@/components/admin/UserCategoryFilter';
 import AdminKycTab from '@/components/admin/AdminKycTab';
 import CopyableId from '@/components/CopyableId';
 import { toast } from 'sonner';
@@ -126,6 +127,8 @@ export default function AdminDashboard() {
   const [taskStatusFilter, setTaskStatusFilter] = useState('');
   const [userFilters, setUserFilters] = useState({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '', push: false, location: false, dormant: false });
   const [userDateFilter, setUserDateFilter] = useState('all');
+  // Professional categories the admin is looking at. Empty = every category.
+  const [userCategories, setUserCategories] = useState([]);
 
   const { data: allTasks = [], isLoading: loadingTasks, refetch: refetchTasks } = useQuery({
     queryKey: ['adminTasks'],
@@ -483,6 +486,10 @@ export default function AdminDashboard() {
     if (userFilters.push && u.push_permission !== 'granted') return false;
     if (userFilters.location && u.location_permission !== 'granted') return false;
     if (userFilters.dormant && !isDormant(u)) return false;
+    // Anyone who belongs to AT LEAST ONE of the chosen professional categories —
+    // the categories each person picked on their own profile, so the result
+    // follows the profile the moment it is updated.
+    if (userCategories.length && !(u.preferred_categories || []).some(c => userCategories.includes(c))) return false;
     if (userFilters.platform) {
       const plat = u.registration_platform || (u.registration_source === 'native' ? 'native' : 'web');
       if (plat !== userFilters.platform) return false;
@@ -702,6 +709,10 @@ export default function AdminDashboard() {
               ))}
             </div>
 
+            {/* Who can actually do what — filtered by the categories each user
+                chose on his own profile, so this view follows the live data. */}
+            <UserCategoryFilter users={allUsers} selected={userCategories} onChange={setUserCategories} />
+
             {/* Filter chips */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
               {[
@@ -762,8 +773,8 @@ export default function AdminDashboard() {
                 <option value="2weeks">שבועיים אחרונים</option>
                 <option value="month">חודש אחרון</option>
               </select>
-              {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.noAgent || userFilters.platform || userFilters.push || userFilters.location || userFilters.dormant || userDateFilter !== 'all') && (
-                <button onClick={() => { setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '', push: false, location: false, dormant: false }); setUserDateFilter('all'); }}
+              {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.noAgent || userFilters.platform || userFilters.push || userFilters.location || userFilters.dormant || userDateFilter !== 'all' || userCategories.length > 0) && (
+                <button onClick={() => { setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '', push: false, location: false, dormant: false }); setUserDateFilter('all'); setUserCategories([]); }}
                   style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer' }}>
                   נקה פילטרים
                 </button>

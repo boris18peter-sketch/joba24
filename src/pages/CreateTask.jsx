@@ -42,6 +42,7 @@ import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/lib/taskFormFields';
 import PublishWizardNav from '@/components/publish/PublishWizardNav';
 import PublishStepIntro from '@/components/publish/PublishStepIntro';
+import PublishHelpVideo from '@/components/publish/PublishHelpVideo';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
@@ -1408,6 +1409,18 @@ export default function CreateTask() {
     }
   };
 
+  // ── LEAVING THE FORM puts the publisher back where he was ────────────────
+  // The guest flag comes first (the feed refuses to render without it, and the
+  // guest gate would bounce him straight back into this form), then the history
+  // is walked back one step. `idx` is 0 on the first entry of the session, which
+  // is the case where "back" would leave the app entirely.
+  const closeForm = () => {
+    if (!isAuthenticated && !isGuest) enterGuestMode();
+    const idx = window.history.state?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate('/');
+  };
+
   // Chat mode rendering — available in all modes (create, edit, repost)
   if (chatMode) {
     return createPortal(
@@ -1499,33 +1512,29 @@ export default function CreateTask() {
           <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--brand-hero-bg, #0f2b6b), var(--brand-hero-bg, var(--brand-primary)))', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px' }}>
-              {/* CLOSE, not back. A visitor who decides not to publish is not
-                  stepping back through the form — they are leaving it, and they
-                  must land in the app's own feed, never back in the first-run
-                  flow they just walked through.
+              {/* CLOSE MEANS GO BACK, NOT START OVER.
 
-                  ── ROOT CAUSE OF "X opens a login popup" ────────────────────
-                  This button used to call login('/') whenever the visitor had
-                  no account and was not already in guest mode. That treated
-                  CLOSING A FORM as a protected action, which it is not — so a
-                  brand-new visitor could not leave the form without being asked
-                  to sign in, and could not reach the feed at all.
+                  Closing the form returns the publisher to the screen he was
+                  actually on — the feed, a task he opened, wherever he came
+                  from — instead of always dumping him on the home feed. A
+                  visitor who had two screens open in the app lost his place
+                  every time.
 
-                  Closing the form is not a request to publish and not a request
-                  to authenticate. It now simply ends the visit: the visitor
-                  becomes a guest — which is exactly what browsing the feed
-                  requires — and lands on the feed. No popup, ever.
+                  Two things make that safe, and both are required:
+                    • A visitor with no account becomes a GUEST first. Without
+                      the guest flag the feed shows a spinner and the guest gate
+                      pushes him straight back into this form, so the X would
+                      look dead.
+                    • The history stack is only walked when there is something
+                      to walk back TO (`history.state.idx`). A visitor who landed
+                      here from a link has nothing behind him, and going "back"
+                      would leave the app — he goes to the feed instead.
 
-                  The guest flag is set FIRST and the navigation second, because
-                  the feed refuses to render for a visitor with no guest flag:
-                  without it, '/' shows a spinner and the guest gate bounces them
-                  straight back to this form. */}
+                  Closing is still not a protected action: no sign-in prompt is
+                  ever raised from this button. */}
               <button
                 type="button"
-                onClick={() => {
-                  if (!isAuthenticated && !isGuest) enterGuestMode();
-                  navigate('/');
-                }}
+                onClick={closeForm}
                 aria-label="סגירה"
                 style={{
                   width: 34, height: 34, borderRadius: 11, flexShrink: 0, cursor: 'pointer',
@@ -2470,6 +2479,9 @@ export default function CreateTask() {
           onNext={() => setStepIdx(i => Math.min(wizardTotal - 1, i + 1))}
         />
       )}
+
+      {/* The explainer video — an icon-sized pill that never opens by itself. */}
+      <PublishHelpVideo />
     </div>
   );
 }
