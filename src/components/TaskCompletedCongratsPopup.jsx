@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { PartyPopper, X } from 'lucide-react';
+import { PartyPopper, Check, ChevronLeft } from 'lucide-react';
+import PopupClose from '@/components/ui/PopupClose';
 import { useLanguage } from '@/lib/LanguageContext';
 
 /**
@@ -14,23 +15,31 @@ import { useLanguage } from '@/lib/LanguageContext';
  *   2. the rating sheet — the ASK, given while the job is still fresh;
  *   3. this — the THANKS, once the ask is behind them.
  *
- * Asking for a rating and then thanking them is a conversation. Thanking them
- * and then asking is a transaction. This component exists so the thank-you
- * comes last, where it lands.
+ * ── WHY IT IS A BOTTOM SHEET ────────────────────────────────────────────────
+ * It used to be a small card floating in the middle of the screen, sharing no
+ * geometry with anything else in the app. It is now the same sheet as every
+ * other popup here: it rises from the bottom, carries the same drag handle and
+ * the same close button, and follows the same surface tokens — so it reads as
+ * part of the product rather than as a browser dialog.
  *
- * It carries the same destination the completion notification used to: a worker
- * to their earnings, a publisher back to their task. That is why it replaced
- * that notification rather than being added next to it — one message, one
- * action, no second banner saying the same thing underneath.
+ * ── ONE POPUP, TWO PEOPLE ───────────────────────────────────────────────────
+ * Both sides of the job see it, and neither is told the other's news: a worker
+ * is congratulated and sent to their earnings; a publisher is told the job is
+ * done and simply closes the note. Its copy is role-aware for exactly that
+ * reason, and the keys are their own (never shared with the cancel sheet, which
+ * is where the wrong title came from).
  */
 export default function TaskCompletedCongratsPopup({ task, role, onClose }) {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
 
+  const isWorker = role === 'worker';
+
   const handleContinue = () => {
     onClose?.();
-    if (role === 'worker') navigate('/earnings');
-    else if (task?.id) navigate(`/task/${task.id}`);
+    // Only the worker has somewhere to go. The publisher's button is a plain
+    // acknowledgement, so it closes the sheet and leaves them where they were.
+    if (isWorker) navigate('/earnings');
   };
 
   return createPortal(
@@ -39,66 +48,70 @@ export default function TaskCompletedCongratsPopup({ task, role, onClose }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 2000000,
         background: 'var(--overlay-bg)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 20,
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
       <div
         className="j-modal-surface"
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
-          width: '100%', maxWidth: 380,
-          borderRadius: 26,
-          padding: '26px 22px 20px',
-          textAlign: 'center',
+          width: '100%', maxWidth: 480,
+          maxHeight: '90dvh', overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
+          padding: '12px 20px',
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
           boxShadow: 'var(--shadow-xl)',
-          animation: 'successPop 0.32s cubic-bezier(0.34,1.4,0.64,1) both',
+          animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1)',
         }}
       >
-        <button
-          onClick={onClose}
-          aria-label={t('close')}
-          className="j-icon-btn"
-          style={{
-            position: 'absolute', top: 12, insetInlineEnd: 12,
-            width: 30, height: 30, borderRadius: 10,
-            background: 'var(--surface-3)', border: 'none', cursor: 'pointer',
+        <div className="j-sheet-handle" style={{ margin: '0 auto 18px' }} />
+
+        <PopupClose onClick={onClose} label={t('close')} />
+
+        {/* Icon — the same green circle the completion uses everywhere else */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 4, marginBottom: 16 }}>
+          <div style={{
+            width: 76, height: 76, borderRadius: '50%',
+            background: 'linear-gradient(135deg,#10b981,#059669)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <X size={14} color="var(--text-3)" />
-        </button>
-
-        <div style={{
-          width: 68, height: 68, borderRadius: '50%', margin: '0 auto 16px',
-          background: 'linear-gradient(135deg, #10b981, #059669)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 8px 26px rgba(16,185,129,0.32)',
-        }}>
-          <PartyPopper size={32} color="white" strokeWidth={1.9} />
+            boxShadow: '0 8px 26px rgba(16,185,129,0.32)',
+          }}>
+            {isWorker
+              ? <PartyPopper size={34} color="white" strokeWidth={1.9} />
+              : <Check size={38} color="white" strokeWidth={2.6} />}
+          </div>
         </div>
 
-        <div className="j-modal-title" style={{ fontSize: 21, fontWeight: 900, letterSpacing: -0.4, marginBottom: 8 }}>
-          {t('tcc_title')}
-        </div>
-        <div className="j-modal-text" style={{ fontSize: 14.5, lineHeight: 1.6, marginBottom: 22 }}>
-          {t('tcc_body')}
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div className="j-modal-title" style={{ fontSize: 21, fontWeight: 900, letterSpacing: -0.4, marginBottom: 8 }}>
+            {isWorker ? t('completion_worker_title') : t('completion_client_title')}
+          </div>
+          <div className="j-modal-text" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
+            {isWorker ? t('completion_worker_body') : t('completion_client_body')}
+          </div>
         </div>
 
         <button
           onClick={handleContinue}
           style={{
             width: '100%', height: 52, borderRadius: 16, border: 'none', cursor: 'pointer',
-            background: 'linear-gradient(135deg, var(--brand-modal-cta-bg, var(--brand-primary)), var(--brand-modal-cta-bg, var(--brand-primary-dark)))',
-            color: 'var(--brand-modal-cta-text, #ffffff)',
+            background: isWorker
+              ? 'linear-gradient(135deg, var(--brand-modal-cta-bg, var(--brand-primary)), var(--brand-modal-cta-bg, var(--brand-primary-dark)))'
+              : 'var(--surface-3)',
+            color: isWorker ? 'var(--brand-modal-cta-text, #ffffff)' : 'var(--text-1)',
             fontSize: 15.5, fontWeight: 900,
-            boxShadow: '0 4px 16px rgba(26,111,212,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            boxShadow: isWorker ? '0 4px 16px rgba(26,111,212,0.3)' : 'none',
           }}
         >
-          {role === 'worker' ? t('tcc_cta_worker') : t('tcc_cta_client')}
+          {isWorker
+            ? <>{t('completion_worker_cta')} <ChevronLeft size={17} strokeWidth={2.4} /></>
+            : <><Check size={17} strokeWidth={2.6} /> {t('completion_client_cta')}</>}
         </button>
       </div>
     </div>,

@@ -8,7 +8,6 @@ import SignupGiftModal from '@/components/SignupGiftModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import VerificationApprovedPopup from '@/components/VerificationApprovedPopup';
-import ApprovedPopup from '@/components/ApprovedPopup';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
@@ -910,7 +909,6 @@ export default function SimulatorPanel() {
           { key: 'gift', label: '🎁 מתנת הצטרפות', color: '#d97706', desc: 'כניסה ראשונה' },
           { key: 'buyCredits', label: '🪙 טעינת יתרה', color: '#1a6fd4', desc: 'חסר ג\'ובות' },
           { key: 'login', label: '🔐 כניסה / הרשמה', color: '#6366f1', desc: 'גולש לא מחובר' },
-          { key: 'approved', label: '🎉 עובד אושר', color: '#059669', desc: 'קיבלת אישור' },
           { key: 'workerCancelled', label: '😔 עובד בוטל', color: '#dc2626', desc: 'המשימה בוטלה' },
           { key: 'approvalRevoked', label: '⚠️ אישור בוטל', color: '#f97316', desc: 'לקוח חזר בו' },
           { key: 'cancelSuccess', label: '✅ ביטול הצליח', color: '#7c3aed', desc: 'הלקוח ביטל' },
@@ -1118,7 +1116,6 @@ export default function SimulatorPanel() {
       {popup === 'gift' && <SignupGiftModal onClose={closePopup} />}
       {popup === 'buyCredits' && <BuyCreditsModal onClose={closePopup} creditsNeeded={3} />}
       {popup === 'login' && <LoginPromptModal onClose={closePopup} onLogin={closePopup} />}
-      {popup === 'approved' && <ApprovedPopup task={{ ...mockTask, status: 'TAKEN', worker_id: me?.id, worker_name: me?.full_name }} onClose={closePopup} />}
       {popup === 'workerCancelled' && <WorkerCancelledPopup task={mockTask} onClose={closePopup} />}
       {popup === 'approvalRevoked' && <ApprovalRevokedPopup task={mockTask} onClose={closePopup} />}
       {popup === 'cancelSuccess' && <CancelSuccessPopup task={mockTask} onClose={closePopup} />}

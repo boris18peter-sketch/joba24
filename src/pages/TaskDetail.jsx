@@ -17,7 +17,6 @@ import BoostOverlay from '@/components/BoostOverlay';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
 import TaskApplicants from '@/components/TaskApplicants';
-import ApprovedPopup from '@/components/ApprovedPopup';
 import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import TaskImage from '@/components/TaskImage';
@@ -158,7 +157,6 @@ export default function TaskDetail(props) {
   const [taskTaken, setTaskTaken] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [showRating, setShowRating] = useState(false); // kept for manual trigger only
-  const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
 
 
@@ -320,7 +318,10 @@ export default function TaskDetail(props) {
     if (!myApp) return;
     const prev = prevWorkerIdRef.current;
     if (prev === 'pending' && myApp.status === 'approved') {
-      setShowApprovedPopup(true);
+      // The celebration popup that used to open here is gone: it was a second
+      // "צא לדרך" dialogue competing with the one this sheet already shows, with
+      // its own copy of the start action. The sheet's own green CTA is the
+      // single way to depart, so an approval now just adds the confetti.
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
     }
@@ -787,10 +788,6 @@ export default function TaskDetail(props) {
 
         document.body
       )}
-      {showApprovedPopup && createPortal(
-        <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />,
-        document.body
-      )}
 
 
 
@@ -1087,8 +1084,21 @@ export default function TaskDetail(props) {
           {/* ══ NEXT STEP — the only emphasised thing on the screen ══ */}
           {(isApproved && !isWorker && task.status === 'OPEN') || (canApplyManual && !showApplyForm) || (hasPendingApp && !isOwner) || (isOwner && task.status === 'OPEN') ? (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-1)' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4, marginBottom: 8 }}>
-                {isOwner ? t('applications') : t('next_step')}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4 }}>
+                  {isOwner ? t('applications') : t('next_step')}
+                </div>
+                {/* An approved worker may still want to reach the publisher before
+                    setting off — the same compact control, in the same place. */}
+                {!isOwner && isApproved && !isWorker && task.status === 'OPEN' && (
+                  <button
+                    onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } openChatWithCounterpart(); }}
+                    aria-label={t('message_to_publisher')}
+                    className="j-icon-btn"
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                    <MessageCircle size={14} />
+                  </button>
+                )}
               </div>
 
               {/* Approved → go */}
@@ -1132,6 +1142,15 @@ export default function TaskDetail(props) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 14, padding: '12px 14px' }}>
                   <Clock size={16} color="var(--color-warning)" style={{ flexShrink: 0 }} />
                   <div style={{ flex: 1, fontSize: 13, fontWeight: 800, color: 'var(--color-warning)' }}>{t('your_app_pending')}</div>
+                  {/* Talking to the publisher belongs to THIS state, so it sits
+                      in the state's own bar — one compact icon, no extra row. */}
+                  <button
+                    onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } openChatWithCounterpart(); }}
+                    aria-label={t('message_to_publisher')}
+                    className="j-icon-btn"
+                    style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--color-warning-border)', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                    <MessageCircle size={15} />
+                  </button>
                   <button
                     onClick={() => cancelApplicationMutation.mutate()}
                     disabled={cancelApplicationMutation.isPending}
@@ -1172,15 +1191,14 @@ export default function TaskDetail(props) {
           ) : null}
 
           {/* ── Quiet secondaries — never competing with the action above ── */}
+          {/* ── One quiet, CENTRED line ─────────────────────────────────────
+              This row used to exist only to carry a chat button, with the report
+              link pushed to the opposite edge — two unrelated controls at two
+              ends of the card, which is what broke its symmetry. The chat action
+              now lives inside the status bar it belongs to, and the single
+              secondary left here is the report link, centred under the card. */}
           {!isOwner && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 10 }}>
-              {(hasPendingApp || isApproved) ? (
-                <button
-                  onClick={openChatWithCounterpart}
-                  style={{ height: 36, padding: '0 14px', borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <MessageCircle size={13} /> {t('message_to_publisher')}
-                </button>
-              ) : <span />}
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
               <button
                 onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;}setShowReport(true);}}
                 style={{ height: 32, padding: '0 8px', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 11.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>

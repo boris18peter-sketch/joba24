@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap, ShieldCheck, X } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap, X } from 'lucide-react';
 import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
 import TaskImage from '@/components/TaskImage';
@@ -320,6 +320,17 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   // Sync logic with TaskDetail: card pill counts from createdDate when never boosted (same as detail)
   const boostAvailableCard = isMyPublished && task.status === 'OPEN' && !task.worker_id;
 
+  // ── THE CARD'S OWN STATE, NOT THE APPLICATION'S ─────────────────────────
+  // `isApproved` describes an application; it says nothing about whether the
+  // job has been started. A worker who was already on the way — or already
+  // there — still saw "צא לדרך" on every card of that task, including inside
+  // the locked-credits list, and the button dropped them back at the start of
+  // a job in progress. Once a step has been reported, the card shows that step
+  // instead, named by the category's own status flow.
+  const myActiveStep = assignedToMe && task.status === 'TAKEN' && task.worker_status
+    ? statusLabel(resolveStatusFlow(task.category, catRows), task.worker_status, 'worker')
+    : null;
+
 
 
   // ── THE CARD'S TAGS — ONE ORDERED LIST, NEVER MORE THAN TWO ─────────────
@@ -502,8 +513,9 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           </div>
         )}
 
-        {/* Approved banner */}
-        {isApproved && (
+        {/* Approved banner — an INVITATION, so only while the job is still to be
+            started. See myActiveStep above. */}
+        {isApproved && !myActiveStep && (task.status === 'OPEN' || task.status === 'TAKEN') && (
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--r-sm)',
             padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10,
@@ -523,6 +535,28 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
              </button>
            </div>
          )}
+
+        {/* On the job — the live step, not a start button. One accent icon, the
+            step's own name, and the way back into the task. */}
+        {myActiveStep && (
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', borderRadius: 'var(--r-sm)',
+            padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'cardFadeIn 0.3s ease',
+          }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Navigation size={15} color="var(--brand-primary)" strokeWidth={2.2} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-primary)' }}>{myActiveStep}</div>
+            </div>
+            <button onClick={e => { e.stopPropagation(); openTaskSheet(task.id, task); }}
+              className="btn-tap"
+              style={{ background: 'var(--brand-primary)', color: 'var(--brand-btn-primary-text, #ffffff)', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent' }}>
+              {t('card_open_task', 'פתח משימה')}
+            </button>
+          </div>
+        )}
 
          {/* Pending banner */}
          {isPending && (
@@ -585,11 +619,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               task.created_date && getRelativeTime(task.created_date, t) ? (
                 <span>{getRelativeTime(task.created_date, t)}</span>
               ) : null,
-              task.client_verified ? (
-                <span title={t('verified_badge_short', 'מאומת')} style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--color-success)' }}>
-                  <ShieldCheck size={12} strokeWidth={2.2} />
-                </span>
-              ) : null,
+              // The SAME round green badge the task sheet shows beside the
+              // publisher's name. The card drew its own shield icon here, so the
+              // one signal a visitor looks for — "is this person verified?" —
+              // had two different shapes depending on where they were looking.
+              task.client_verified ? <VerifiedBadge size="sm" /> : null,
               Number(task.client_rating) > 0 ? (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--text-2)', fontWeight: 700 }}>
                   <Star size={11} fill="#fbbf24" color="#fbbf24" />

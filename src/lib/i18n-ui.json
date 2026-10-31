@@ -1,5 +1,12 @@
 {
   "en": {
+    "completion_worker_title": "You're done! 🎉",
+    "completion_worker_body": "Your report went to the publisher. Once the completion is approved, the payment lands in your balance.",
+    "completion_worker_cta": "Go to earnings",
+    "completion_client_title": "Task completed! ✅",
+    "completion_client_body": "The worker reported the job is done. All that is left is to close the task.",
+    "completion_client_cta": "Great, thanks",
+    "card_open_task": "Open task",
     "sched_title": "Work calendar",
     "sched_sub": "What you post and what you carry out",
     "sched_today": "Today",

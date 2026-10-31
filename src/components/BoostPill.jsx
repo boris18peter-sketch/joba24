@@ -135,11 +135,15 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
   const radius = size === 'md' ? 14 : 10;
   const iconSize = size === 'md' ? 16 : 14;
   const textSize = size === 'md' ? 9 : 8;
-  const iconColor = pct > 50 ? 'white' : (size === 'md' ? 'rgba(255,255,255,0.9)' : '#7c3aed');
-  const borderColor = charged
-    ? (size === 'md' ? 'rgba(192,132,252,0.9)' : '#7c3aed')
-    : (size === 'md' ? 'rgba(192,132,252,0.45)' : '#c4b5fd');
-  const bg = size === 'md' ? 'rgba(255,255,255,0.07)' : '#f5f3ff';
+  // ── ONE palette for both sizes ──────────────────────────────────────────
+  // The medium size was drawn for the old purple banner it used to sit on:
+  // a near-white icon inside a near-white tile. On the task sheet that is a
+  // light surface, so the pill was effectively invisible. Every surface the
+  // pill appears on today is light, so both sizes use the card's palette and
+  // differ only in size.
+  const iconColor = pct > 50 ? 'white' : '#7c3aed';
+  const borderColor = charged ? '#7c3aed' : '#c4b5fd';
+  const bg = '#f5f3ff';
 
   return (
     <>
@@ -163,12 +167,8 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
           position: 'absolute', bottom: 0, left: 0, right: 0,
           height: `${pct}%`,
           background: charged
-            ? (size === 'md'
-                ? 'linear-gradient(180deg,rgba(168,85,247,0.85),rgba(124,58,237,0.9))'
-                : 'linear-gradient(180deg,#a855f7,#7c3aed)')
-            : (size === 'md'
-                ? 'linear-gradient(180deg,rgba(192,132,252,0.65),rgba(168,85,247,0.75))'
-                : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))'),
+            ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
+            : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))',
           borderRadius: pct >= 98 ? radius : `0 0 ${radius}px ${radius}px`,
           transition: 'height 0.9s linear',
           overflow: 'hidden',
