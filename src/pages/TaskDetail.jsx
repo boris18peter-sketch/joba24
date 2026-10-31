@@ -57,8 +57,6 @@ import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 import BoostPill from '@/components/BoostPill';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import ActiveTaskBannerFromCache from '@/components/ActiveTaskBannerFromCache';
-import TaskChip from '@/components/task/TaskChip';
-import TaskActionButton from '@/components/task/TaskActionButton';
 import ScheduleChangeCard from '@/components/schedule/ScheduleChangeCard';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
@@ -86,10 +84,10 @@ function ScanningLabelDetail({ t }) {
 
   return (
     <div>
-      <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-1)', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-btn-primary-text, white)', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
         {scanningTexts[textIdx]}
       </div>
-      <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
     </div>
   );
 }
@@ -118,16 +116,12 @@ const getStatusLabel = (status, isOwner, t) => {
   if (status === 'EXPIRED') return t('task_expired_title');
   return status;
 };
-// (The old per-status colour tables lived here. Status colour is now ONE
-// mapping — `statusTone` below — rendered through the shared TaskChip, so the
-// header and the active task panel can never disagree about what a state is.)
-
-// The header's own icon buttons — one geometry for menu, share and close.
-const HEADER_ICON_BTN = {
-  width: 30, height: 30, borderRadius: 9,
-  background: 'var(--surface-3)', border: 'none',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  cursor: 'pointer', color: 'var(--text-2)', flexShrink: 0,
+const statusConfig = {
+  OPEN: { label: 'פתוח', color: 'text-blue-700 bg-blue-100' },
+  TAKEN: { label: 'בביצוע', color: 'text-indigo-700 bg-indigo-100' },
+  COMPLETED: { label: 'הושלם', color: 'text-gray-700 bg-gray-100' },
+  CANCELLED: { label: 'בוטל', color: 'text-red-700 bg-red-100' },
+  EXPIRED: { label: 'פג תוקף', color: 'text-orange-700 bg-orange-100' }
 };
 
 function getRelativeTime(date, t) {
@@ -718,6 +712,22 @@ export default function TaskDetail(props) {
   }
   if (!task) return <div className="p-8 text-center text-muted-foreground">{t('task_not_found')}</div>;
 
+  const STATUS_GRADIENT = {
+    OPEN: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
+    TAKEN: task.worker_status === 'done' ? 'linear-gradient(135deg, var(--color-success) 0%, #10b981 100%)' : 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
+    COMPLETED: 'linear-gradient(135deg, var(--color-success) 0%, #10b981 100%)',
+    CANCELLED: 'linear-gradient(135deg, var(--text-2) 0%, var(--text-3) 100%)',
+    EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
+  };
+  const STATUS_PILL = {
+    OPEN: { background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', border: '1px solid var(--border-2)' },
+    TAKEN: { background: '#fffbeb', color: 'var(--color-warning)', border: '1px solid #fcd34d' },
+    COMPLETED: { background: '#f0fdf4', color: 'var(--color-success)', border: '1px solid #86efac' },
+    CANCELLED: { background: '#fef2f2', color: 'var(--color-danger)', border: '1px solid #fca5a5' },
+    EXPIRED: { background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }
+  };
+  const taskGradient = STATUS_GRADIENT[task.status] || STATUS_GRADIENT.OPEN;
+
   const distKm = (() => {
     if (!userLocation || !task.lat || !task.lng) return null;
     const R = 6371;
@@ -755,23 +765,7 @@ export default function TaskDetail(props) {
   // hasApplied (local state) + myApp (server state) — both prevent showing the apply button
   const alreadyApplied = hasApplied || !!myApp;
   const canApplyManual = task.status === 'OPEN' && !isOwner && !hasWorker && !hasPendingApp && !isApproved && !alreadyApplied;
-
-  // ── ONE status → tone mapping ─────────────────────────────────────────────
-  // Every surface that shows this task (header chip, panel chip) reads the same
-  // mapping, so a job can never look "in progress" in one place and "done" in
-  // another. States and their meanings are unchanged — only their colour is.
-  const statusTone =
-    task.status === 'COMPLETED' ? 'success'
-    : task.status === 'CANCELLED' ? 'danger'
-    : task.status === 'EXPIRED' ? 'warning'
-    : task.status === 'TAKEN' ? (task.worker_status === 'done' ? 'success' : 'brand')
-    : 'brand';
-  const StatusIcon =
-    task.status === 'COMPLETED' ? CheckCircle2
-    : task.status === 'CANCELLED' ? X
-    : task.status === 'EXPIRED' ? AlertTriangle
-    : task.status === 'TAKEN' ? Clock
-    : null;
+  const status = statusConfig[task.status] || statusConfig.OPEN;
 
   // Native share sheet (Apple on iOS, Android/Google on Android). Falls back to
   // copying the link when the Web Share API is unavailable. The link opens the
@@ -857,361 +851,394 @@ export default function TaskDetail(props) {
       {!sheetMode && <PageHeader title={translatedTask.title} right={null} />}
       
 
+      {/* ActiveTaskBanner — reads from the shared activeWorkerTask/activeClientTask cache
+          (same source as HomeFeed) so status updates are always in sync */}
+      {task.status === 'TAKEN' && (isOwner || me?.id === task.worker_id) && (
+        <ActiveTaskBannerFromCache
+          taskId={id}
+          isWorker={me?.id === task.worker_id}
+          extraInfo={{
+            clientName: task.client_name,
+            clientId: task.client_id,
+            clientRating: task.client_rating,
+            clientVerified: task.client_verified,
+            workerUser: workerUser,
+            locationName: task.location_name,
+            createdDate: task.created_date,
+            viewsCount: task.views_count,
+            clicksCount: task.clicks_count,
+            applicationCount,
+            contactPhone: task.contactPhone,
+            isOwner,
+            onOwnerMenu: () => setShowOwnerMenu(v => !v),
+            onQuickChat: openChatWithCounterpart,
+            onSheetClose,
+          }}
+        />
+      )}
+
+      {/* בקשת שינוי מועד — זמינה לשני הצדדים לאחר שנקבעה עבודה */}
+      {task.status === 'TAKEN' && (isOwner || me?.id === task.worker_id) && (
+        <div style={{ padding: '8px 12px 0' }}>
+          <ScheduleChangeCard task={task} me={me} />
+        </div>
+      )}
+
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
-        {/* ══ HEADER — one hierarchy for every status and every role ═════════
-            Status → title → facts → publisher → price. This is a surface like
-            every other card in the app, not a coloured hero: brand colour is
-            spent only on the status chip, the progress and the primary action.
-
-            It is ALWAYS on screen — including for a job in progress. That is
-            what lets the active task panel below drop the title, the price and
-            the publisher: the header says them once, the panel says only what
-            it alone can say. */}
-        <div style={{
-          background: 'var(--brand-card-bg, var(--surface-2))',
-          border: '1px solid var(--border-1)',
-          borderRadius: 'var(--r-lg)',
-          boxShadow: 'var(--shadow-xs)',
-          padding: '12px 14px 14px',
-        }}>
-          {/* Status + the task's own actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 9 }}>
-            <TaskChip tone={statusTone} icon={StatusIcon ? <StatusIcon size={11} strokeWidth={2.4} /> : null}>
-              {statusLabel}
-            </TaskChip>
-            {isOwner && task.status === 'OPEN' && (
-              <TaskChip tone="neutral">{applicationCount} {t('applications')}</TaskChip>
-            )}
-            <div style={{ flex: 1 }} />
-            {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
-              <button
-                className="j-icon-btn"
-                onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
-                aria-label="More"
-                style={HEADER_ICON_BTN}
-              >
-                <MoreVertical size={15} />
-              </button>
-            )}
-            <button className="j-icon-btn" onClick={handleShare} aria-label={t('share_task')} style={HEADER_ICON_BTN}>
-              <Share size={15} />
-            </button>
-            {sheetMode && (
-              <button className="j-icon-btn" onClick={onSheetClose} aria-label="Close" style={HEADER_ICON_BTN}>
-                <X size={15} />
-              </button>
-            )}
-          </div>
-
-          {/* Title */}
-          <div style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.3, letterSpacing: -0.3 }}>
-            {translatedTask.title}
-            {isTranslating && <Loader2 size={13} className="animate-spin" style={{ display: 'inline-block', marginInlineStart: 6, verticalAlign: 'middle', opacity: 0.6 }} />}
-          </div>
-          {isTranslated && (
-            <div style={{ marginTop: 6 }}>
-              <TaskChip tone="brand">{t('translated_badge')}</TaskChip>
+        {/* Expired banner */}
+        {isExpired &&
+        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 20, padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <AlertTriangle size={20} color="#f97316" />
+              <div>
+                <div style={{ fontWeight: 800, color: '#c2410c', fontSize: 14 }}>{t('task_expired_title')}</div>
+                <div style={{ fontSize: 12, color: '#ea580c', marginTop: 2 }}>{t('task_was_open_sub')}</div>
+              </div>
             </div>
-          )}
-
-          {/* Where, how far, how fresh */}
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8, fontSize: 11.5, fontWeight: 600, color: 'var(--text-3)' }}>
-            {translatedTask.location_name && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--text-2)' }}>
-                <MapPin size={11} strokeWidth={2} />
-                {translatedTask.location_name}
-                {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}${t('meters_short')}` : `${distKm.toFixed(1)}${t('km_short')}`}`}
-              </span>
-            )}
-            {task.created_date && getRelativeTime(task.created_date, t) && (
-              <span>· {getRelativeTime(task.created_date, t)}</span>
-            )}
+            {isOwner &&
+          <Button
+            onClick={() => {
+              if (task.payment_status === 'funded') {
+                window.dispatchEvent(new CustomEvent('hide_task_sheet'));
+                navigate(`/create-task?editId=${id}&repost=1`);
+              } else {
+                reopenMutation.mutate();
+              }
+            }}
+            disabled={reopenMutation.isPending}
+            className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11">
+            
+                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />{t('reopen_task_btn')}</>}
+              </Button>
+          }
+            {!isOwner && !signalSent &&
+          <Button onClick={() => gateAuth(handleSignalReopen)} variant="outline"
+          className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11">
+            
+                <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> {t('send_signal_owner')}
+              </Button>
+          }
+            {!isOwner && signalSent &&
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px' }}>
+                <div style={{ fontWeight: 800, color: '#166534', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} color="#16a34a" /> {t('signal_sent_ok')}</div>
+                <div style={{ fontSize: 12, color: '#15803d', marginTop: 3 }}>{t('awaiting_reopen_label')}</div>
+              </div>
+          }
           </div>
+        }
 
-          {/* Publisher — the worker needs to know who they are dealing with;
-              the publisher does not need to be shown their own name. */}
-          {task.client_name && !isOwner && (
-            <div style={{ marginTop: 10 }}>
+
+
+        {/* Main Task Banner — hidden when task is TAKEN and user is owner/worker (ActiveTaskBanner shown instead) */}
+        <div style={{ background: taskGradient, borderRadius: 22, color: 'var(--brand-btn-primary-text, white)', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', display: (task.status === 'TAKEN' && (isOwner || isWorker)) ? 'none' : 'block' }}>
+          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+
+
+
+          <div style={{ padding: '16px 18px 18px' }}>
+            {/* Non-owner status pill */}
+            {!isOwner && task.status !== 'OPEN' && (
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
+              </div>
+            )}
+
+            {/* Title row — with 3-dot on left for owner */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+              {translatedTask.title && (
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1.25 }}>
+                    {translatedTask.title}
+                    {isTranslating && <Loader2 size={13} className="animate-spin" style={{ display: 'inline-block', marginRight: 6, verticalAlign: 'middle', opacity: 0.7 }} />}
+                  </div>
+                  {isTranslated && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, background: 'rgba(255,255,255,0.18)', borderRadius: 99, padding: '2px 9px', border: '1px solid rgba(255,255,255,0.25)' }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{t('translated_badge')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginTop: 2 }}>
+                {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
+                  <button
+                    className="j-icon-btn"
+                    onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
+                    aria-label="More"
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--brand-btn-primary-text, white)', flexShrink: 0 }}>
+                    <MoreVertical size={15} />
+                  </button>
+                )}
+                <button
+                  className="j-icon-btn"
+                  onClick={handleShare}
+                  aria-label={t('share_task')}
+                  style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--brand-btn-primary-text, white)', flexShrink: 0 }}>
+                  <Share size={15} />
+                </button>
+                {sheetMode && (
+                  <button
+                    className="j-icon-btn"
+                    onClick={onSheetClose}
+                    aria-label="Close"
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--brand-btn-primary-text, white)', flexShrink: 0 }}>
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Price + Media row — on same line */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+              {/* Price */}
+              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
+                <div style={{ color: 'var(--brand-btn-primary-text, white)', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
+                {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, marginTop: 3 }}>{sub}</div> : null; })()}
+                {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</div>}
+              </div>
+              <div style={{ flex: 1 }} />
+
+              {/* Media tile */}
+              {(() => {
+                const allMedia = [
+                  ...(task.images || []).map(url => ({ type: 'image', url })),
+                  ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
+                ];
+                if (allMedia.length === 0) return null;
+                const cur = allMedia[mediaIdx] || allMedia[0];
+                return (
+                  <div style={{ flexShrink: 0, position: 'relative', width: 88, height: 72 }}>
+                    <button onClick={() => { setLightboxIndex(mediaIdx); setLightboxOpen(true); }}
+                      // Was `background: '#000'` — the same black square, here in the
+                      // sheet. This tile is on screen the moment the sheet opens, so
+                      // its photo is fetched with priority.
+                      style={{ width: 88, height: 72, borderRadius: 14, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.35)', background: 'var(--surface-3)', padding: 0, cursor: 'pointer', display: 'block' }}>
+                      {cur.type === 'image' ? (
+                        <TaskImage src={cur.url} priority />
+                      ) : (
+                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                          <video src={cur.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
+                            <Play size={18} color="white" fill="white" />
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                    {/* Dots or counter */}
+                    {allMedia.length > 1 && (
+                      <div style={{ position: 'absolute', bottom: 4, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 3, pointerEvents: 'none' }}>
+                        {allMedia.length <= 5 ? allMedia.map((_, i) => (
+                          <span key={i} style={{ width: i === mediaIdx ? 10 : 5, height: 5, borderRadius: 3, background: i === mediaIdx ? 'white' : 'rgba(255,255,255,0.5)', transition: 'width 0.2s' }} />
+                        )) : (
+                          <span style={{ fontSize: 9, color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, background: 'rgba(0,0,0,0.4)', borderRadius: 6, padding: '1px 5px' }}>{mediaIdx + 1}/{allMedia.length}</span>
+                        )}
+                      </div>
+                    )}
+                    {/* Prev arrow */}
+                    {allMedia.length > 1 && (
+                      <button className="j-icon-btn" onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i - 1 + allMedia.length) % allMedia.length); }}
+                        style={{ position: 'absolute', top: '50%', right: -6, transform: 'translateY(-50%)', width: 16, height: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', padding: 0, zIndex: 2 }}>
+                        <ChevronRight size={9} color="#1a1a1a" strokeWidth={2.5} />
+                      </button>
+                    )}
+                    {/* Next arrow */}
+                    {allMedia.length > 1 && (
+                      <button className="j-icon-btn" onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i + 1) % allMedia.length); }}
+                        style={{ position: 'absolute', top: '50%', left: -6, transform: 'translateY(-50%)', width: 16, height: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', padding: 0, zIndex: 2 }}>
+                        <ChevronLeft size={9} color="#1a1a1a" strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Description */}
+            {mainDescription &&
+            <div className="selectable-text" style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 10 }}>
+                {mainDescription.length > 180 ? mainDescription.slice(0, 180) + '…' : mainDescription}
+              </div>
+            }
+
+            {/* Publisher + location + published time */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+              {task.client_name &&
               <UserBadge
                 name={task.client_name}
                 userId={task.client_id}
                 verified={isUserVerified(clientUser) || task.client_verified}
                 gold={hasSocialVerified(clientUser)}
                 rating={task.client_rating}
+                dark
                 size="md"
               />
-            </div>
-          )}
-
-          {/* Price — the number the task is really about */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, marginTop: 12, paddingTop: 11, borderTop: '1px solid var(--border-1)' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap', minWidth: 0 }}>
-              <span style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1, letterSpacing: -0.6 }}>₪{Math.round(calculateCurrentPrice(task))}</span>
-              {task.payment_method && (
-                <span style={{ fontSize: 11.5, color: 'var(--text-3)', fontWeight: 600 }}>
-                  {task.payment_method === 'Cash' ? t('cash') : task.payment_method}
+            }
+              {translatedTask.location_name && (
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <MapPin size={10} strokeWidth={2} />
+                  {translatedTask.location_name}
+                  {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}${t('meters_short')}` : `${distKm.toFixed(1)}${t('km_short')}`}`}
                 </span>
               )}
-              {(() => { const sub = formatHourlySublabel(task); return sub ? <span style={{ fontSize: 10.5, color: 'var(--text-2)', fontWeight: 600 }}>{sub}</span> : null; })()}
-            </div>
-
-            {/* Media — opens the lightbox, same tile the card shows */}
-            {(() => {
-              const allMedia = [
-                ...(task.images || []).map(url => ({ type: 'image', url })),
-                ...(task.video_url ? [{ type: 'video', url: task.video_url }] : []),
-              ];
-              if (!allMedia.length) return null;
-              const cur = allMedia[mediaIdx] || allMedia[0];
-              return (
-                <div style={{ flexShrink: 0, position: 'relative', width: 84, height: 68 }}>
-                  <button
-                    onClick={() => { setLightboxIndex(mediaIdx); setLightboxOpen(true); }}
-                    style={{ width: 84, height: 68, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', background: 'var(--surface-3)', padding: 0, cursor: 'pointer', display: 'block' }}
-                  >
-                    {cur.type === 'image' ? (
-                      <TaskImage src={cur.url} priority />
-                    ) : (
-                      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                        <video src={cur.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
-                          <Play size={16} color="white" fill="white" />
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                  {allMedia.length > 1 && (
-                    <div style={{ position: 'absolute', bottom: 4, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 3, pointerEvents: 'none' }}>
-                      {allMedia.length <= 5 ? allMedia.map((_, i) => (
-                        <span key={i} style={{ width: i === mediaIdx ? 9 : 4, height: 4, borderRadius: 3, background: i === mediaIdx ? 'var(--brand-primary)' : 'var(--border-2)' }} />
-                      )) : (
-                        <span style={{ fontSize: 9, color: 'var(--text-2)', fontWeight: 700, background: 'var(--surface-2)', borderRadius: 6, padding: '1px 5px' }}>{mediaIdx + 1}/{allMedia.length}</span>
-                      )}
-                    </div>
-                  )}
-                  {allMedia.length > 1 && (
-                    <>
-                      <button className="j-icon-btn" onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i - 1 + allMedia.length) % allMedia.length); }}
-                        style={{ position: 'absolute', top: '50%', insetInlineStart: -6, transform: 'translateY(-50%)', width: 18, height: 18, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, zIndex: 2 }}>
-                        <ChevronLeft size={10} color="var(--text-2)" strokeWidth={2.5} />
-                      </button>
-                      <button className="j-icon-btn" onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i + 1) % allMedia.length); }}
-                        style={{ position: 'absolute', top: '50%', insetInlineEnd: -6, transform: 'translateY(-50%)', width: 18, height: 18, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, zIndex: 2 }}>
-                        <ChevronRight size={10} color="var(--text-2)" strokeWidth={2.5} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Publisher's own numbers — quiet, one line */}
-          {isOwner && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 11, paddingTop: 10, borderTop: '1px solid var(--border-1)' }}>
-              {[
-                { val: task.views_count || 0, label: t('views') },
-                { val: task.clicks_count || 0, label: t('clicks') || t('entries') },
-                { val: applicationCount, label: t('applications') },
-              ].map(({ val, label }, i) => (
-                <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4, minWidth: 0 }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 900, color: 'var(--text-1)' }}>{val}</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* A task whose time ran out — one clear way forward for each side */}
-        {isExpired && (
-          <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-lg)', padding: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <AlertTriangle size={18} color="var(--color-warning)" />
-              <div>
-                <div style={{ fontWeight: 800, color: 'var(--color-warning)', fontSize: 13.5 }}>{t('task_expired_title')}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 2 }}>{t('task_was_open_sub')}</div>
-              </div>
-            </div>
-            {isOwner && (
-              <Button
-                onClick={() => {
-                  if (task.payment_status === 'funded') {
-                    window.dispatchEvent(new CustomEvent('hide_task_sheet'));
-                    navigate(`/create-task?editId=${id}&repost=1`);
-                  } else {
-                    reopenMutation.mutate();
-                  }
-                }}
-                disabled={reopenMutation.isPending}
-                className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11"
-              >
-                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />{t('reopen_task_btn')}</>}
-              </Button>
-            )}
-            {!isOwner && !signalSent && (
-              <Button onClick={() => gateAuth(handleSignalReopen)} variant="outline" className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11">
-                <Send size={15} strokeWidth={1.8} style={{ marginInlineEnd: 6 }} /> {t('send_signal_owner')}
-              </Button>
-            )}
-            {!isOwner && signalSent && (
-              <div style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--r-md)', padding: '11px 14px' }}>
-                <div style={{ fontWeight: 800, color: 'var(--color-success)', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} /> {t('signal_sent_ok')}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 3 }}>{t('awaiting_reopen_label')}</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ══ ACTIVE TASK PANEL — status, progress and the next action ══════
-            Reads the shared activeWorkerTask/activeClientTask cache, exactly like
-            the feed does, so both sides stay in sync. `inSheet` tells it the
-            header above already prints the title, the price and the publisher. */}
-        {task.status === 'TAKEN' && (isOwner || me?.id === task.worker_id) && (
-          <ActiveTaskBannerFromCache
-            taskId={id}
-            isWorker={me?.id === task.worker_id}
-            extraInfo={{
-              inSheet: true,
-              clientName: task.client_name,
-              clientId: task.client_id,
-              clientRating: task.client_rating,
-              clientVerified: task.client_verified,
-              workerUser: workerUser,
-              locationName: task.location_name,
-              createdDate: task.created_date,
-              viewsCount: task.views_count,
-              clicksCount: task.clicks_count,
-              applicationCount,
-              contactPhone: task.contactPhone,
-              isOwner,
-              onOwnerMenu: () => setShowOwnerMenu(v => !v),
-              onQuickChat: openChatWithCounterpart,
-              onSheetClose,
-            }}
-          />
-        )}
-
-        {/* מועד חדש — זמין לשני הצדדים לאחר שנקבעה עבודה */}
-        {task.status === 'TAKEN' && (isOwner || me?.id === task.worker_id) && (
-          <ScheduleChangeCard task={task} me={me} />
-        )}
-
-        {/* ══ DYNAMIC ACTION ZONE — one primary action for this role and state ══ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-          {/* Worker approved for an open task — go now, or step back */}
-          {isApproved && !isWorker && task.status === 'OPEN' && (
-            <div style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--r-md)', padding: '11px 12px' }}>
-              <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--color-success)', marginBottom: 8 }}>{t('your_app_approved')}</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <TaskActionButton variant="success" height={44} loading={takeMutation.isPending} onClick={() => takeMutation.mutate()}>
-                    {t('go_now_action')}
-                  </TaskActionButton>
-                </div>
-                <button
-                  onClick={() => cancelApplicationMutation.mutate()}
-                  disabled={cancelApplicationMutation.isPending}
-                  style={{ height: 44, padding: '0 14px', borderRadius: 'var(--r-md)', background: 'transparent', border: '1px solid var(--color-success-border)', color: 'var(--text-2)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-                >
-                  {t('cancel')}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Apply — the worker's one action on an open task */}
-          {canApplyManual && !showApplyForm && (
-            <>
-              <TaskActionButton
-                icon={<Send size={15} strokeWidth={2} />}
-                onClick={() => {
-                  if (!isAuthenticated) { setShowLoginPrompt(true); return; }
-                  if (task.verification_required && !isUserVerified(verifyUser)) {
-                    if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); }
-                    return;
-                  }
-                  setShowApplyForm(true);
-                }}
-              >
-                {t('apply_to_task')} · {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={14} />
-              </TaskActionButton>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'center', fontWeight: 600, lineHeight: 1.4 }}>
-                {t('td_apply_return_note')}
-              </div>
-            </>
-          )}
-
-          {/* Pending application */}
-          {hasPendingApp && !isOwner && (
-            <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-md)', padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-warning)', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-warning)' }}>{t('your_app_pending')}</span>
-            </div>
-          )}
-
-          {/* Talking to the publisher before the job starts */}
-          {!isOwner && (hasPendingApp || isApproved) && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <TaskActionButton variant="secondary" height={40} icon={<MessageCircle size={14} />} onClick={openChatWithCounterpart}>
-                {t('message_to_publisher')}
-              </TaskActionButton>
-              {hasPendingApp && (
-                <button
-                  onClick={() => cancelApplicationMutation.mutate()}
-                  disabled={cancelApplicationMutation.isPending}
-                  style={{ height: 40, padding: '0 12px', borderRadius: 'var(--r-md)', background: 'transparent', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}
-                >
-                  {cancelApplicationMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <X size={12} />} {t('cancel_application_btn')}
-                </button>
+              {task.created_date && getRelativeTime(task.created_date, t) && (
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                {t('posted_in_time')} {getRelativeTime(task.created_date, t)}
+              </span>
               )}
             </div>
-          )}
 
-          {/* Publisher, task still open — scanning, then the applicants */}
-          {isOwner && task.status === 'OPEN' && (
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, height: 54 }}>
-              {applicationCount === 0 ? (
-                <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 'var(--r-md)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px' }}>
-                  <span style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid var(--border-2)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(var(--brand-primary) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
-                    <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--brand-primary)' }} />
-                  </span>
-                  <ScanningLabelDetail t={t} />
-                </div>
-              ) : (
-                <button
-                  onClick={() => document.getElementById('task-applicants-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  style={{ flex: 1, background: 'linear-gradient(135deg,#f59e0b,var(--color-warning))', borderRadius: 'var(--r-md)', border: 'none', color: '#ffffff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', cursor: 'pointer', textAlign: 'start', boxShadow: '0 4px 14px rgba(245,158,11,0.28)' }}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', flexShrink: 0 }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800 }}>{applicationCount} {t('applications')}</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', marginTop: 1 }}>{t('click_to_view_approve')}</div>
+
+
+
+
+            {/* Owner scanning/applicants bar + boost button — always same height, symmetric */}
+            {isOwner && task.status === 'OPEN' && (
+              <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginBottom: 4, height: 54 }}>
+                {/* Bar — scanning or applicants */}
+                {applicationCount === 0 ? (
+                  <div style={{
+                    flex: 1,
+                    background: 'rgba(255,255,255,0.15)',
+                    borderRadius: 14,
+                    border: '1.5px solid rgba(255,255,255,0.25)',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '0 14px',
+                  }}>
+                    <span style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
+                      <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
+                    </span>
+                    <ScanningLabelDetail t={t} />
                   </div>
-                </button>
-              )}
-              {boostAvailable && (
-                <div style={{ width: 54, flexShrink: 0 }}>
-                  <BoostPill task={task} size="md" onSheetClose={onSheetClose} onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['task', id] }); }} />
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <button
+                    onClick={() => document.getElementById('task-applicants-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(135deg,#f59e0b,var(--color-warning))',
+                      borderRadius: 14,
+                      border: 'none',
+                      color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 13,
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '0 14px',
+                      cursor: 'pointer',
+                      textAlign: 'right',
+                      boxShadow: '0 4px 14px rgba(245,158,11,0.35)',
+                    }}
+                  >
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>🟠</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-btn-primary-text, white)' }}>{applicationCount} {t('applications')}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', marginTop: 1 }}>{t('click_to_view_approve')}</div>
+                    </div>
+                  </button>
+                )}
+                {/* Boost button — symmetric fixed width */}
+                {boostAvailable && (
+                  <div style={{ width: 54, flexShrink: 0 }}>
+                    <BoostPill task={task} size="md" onSheetClose={onSheetClose} onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['task', id] }); }} />
+                  </div>
+                )}
+              </div>
+            )}
 
-          {/* Report — the exception, kept quiet */}
-          {!isOwner && (
+            {/* Owner Analytics — views & clicks (no emojis) */}
+            {isOwner && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1 }}>{task.views_count || 0}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('views')}</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1 }}>{task.clicks_count || 0}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('clicks') || t('entries')}</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-btn-primary-text, white)', lineHeight: 1 }}>{applicationCount}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('applications')}</div>
+                </div>
+              </div>
+            )}
+
+
+
+
+
+            {/* Approved CTA */}
+            {isApproved && !isWorker && task.status === 'OPEN' &&
+            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
+                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{t('your_app_approved')}</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
+                style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  
+                    {takeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : t('go_now_action')}
+                  </button>
+                  <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
+                style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                  {t('cancel')}</button>
+                </div>
+              </div>
+            }
+
+            {/* Apply button */}
+            {canApplyManual && !showApplyForm &&
             <button
-              onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } setShowReport(true); }}
-              style={{ width: '100%', height: 30, background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-            >
-              <Flag size={10} /> {t('report_task_btn')}
-            </button>
-          )}
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); } return; } setShowApplyForm(true);}}
+              style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
+              
+                <Send size={15} strokeWidth={1.8} />
+                {t('apply_to_task')} — {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={14} />
+                </button>
+                }
+                {canApplyManual && !showApplyForm && (
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 4, fontWeight: 600, lineHeight: 1.4 }}>
+                 {t('td_apply_return_note')}
+                </div>
+                )}
+
+            {/* Pending pill */}
+            {hasPendingApp && !isOwner &&
+            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={12} />
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{t('your_app_pending')}</span>
+              </div>
+            }
+
+            {/* Secondary actions: chat + cancel — inside banner */}
+            {!isOwner && (hasPendingApp || isApproved) &&
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                <button
+                onClick={openChatWithCounterpart}
+                style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'var(--brand-btn-primary-text, white)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                
+                  <MessageCircle size={13} /> {t('message_to_publisher')}
+                </button>
+                {hasPendingApp &&
+              <button
+                onClick={() => cancelApplicationMutation.mutate()}
+                disabled={cancelApplicationMutation.isPending}
+                style={{ height: 34, padding: '0 14px', borderRadius: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                
+                    {cancelApplicationMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <><X size={11} /> {t('cancel_application_btn')}</>}
+                  </button>
+              }
+              </div>
+            }
+
+            {/* Report — tiny, inside banner */}
+            {!isOwner &&
+            <button
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;}setShowReport(true);}}
+              style={{ width: '100%', height: 26, background: 'none', border: 'none', color: 'rgba(255,255,255,0.38)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2 }}>
+              
+                <Flag size={10} /> {t('report_task_btn')}
+              </button>
+            }
+          </div>
+          <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
-        <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
 
         {/* Applicants for owner — show when OPEN or TAKEN before worker started */}
         {isOwner && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) &&
@@ -1222,7 +1249,7 @@ export default function TaskDetail(props) {
 
         {/* Invoice section — visible to both client and worker when invoice exists */}
         {task.status === 'COMPLETED' && task.invoice_html && (isOwner || isWorker) && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-1)', boxShadow: 'var(--shadow-xs)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: 'linear-gradient(135deg,#faf5ff,#f3e8ff)', borderRadius: 20, border: '1.5px solid #e9d5ff', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
               <FileText size={22} color="white" />
             </div>
@@ -1261,7 +1288,7 @@ export default function TaskDetail(props) {
           task.requirements ||
           task.category_details ||
           (isOwner && task.auto_bump_enabled && task.base_price && task.max_price)) && (
-          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-1)', boxShadow: 'var(--shadow-xs)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {/* Auto-bump — owner only, at top */}
             {isOwner && task.auto_bump_enabled && task.base_price && task.max_price && (
@@ -1325,23 +1352,24 @@ export default function TaskDetail(props) {
               style={{ textDecoration: 'none', display: 'block' }}
             >
               <div style={{
-                background: 'var(--brand-card-bg, var(--surface-2))',
-                border: `1px solid var(--color-success-border)`,
-                borderRadius: 'var(--r-lg)',
-                padding: '12px 14px',
+                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                border: '2px solid #16a34a',
+                borderRadius: 20,
+                padding: '16px 18px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
-                boxShadow: 'var(--shadow-xs)',
+                gap: 14,
+                boxShadow: '0 4px 18px rgba(22,163,74,0.18)',
               }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--color-success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--color-success-border)' }}>
-                  <Phone size={19} color="var(--color-success)" />
+                <div style={{ width: 48, height: 48, borderRadius: 15, background: 'linear-gradient(135deg,#16a34a,#15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(22,163,74,0.35)' }}>
+                  <Phone size={22} color="white" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginBottom: 2 }}>{label}</div>
-                  <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', letterSpacing: 0.3, direction: 'ltr', textAlign: 'start' }}>{phone}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', fontFamily: 'monospace', letterSpacing: 0.5, direction: 'ltr', textAlign: 'right' }}>{phone}</div>
+                  <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2, fontWeight: 600 }}>{t('td_click_to_call')}</div>
                 </div>
-                <div style={{ height: 40, padding: '0 14px', borderRadius: 'var(--r-md)', background: 'var(--color-success)', color: '#ffffff', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <div style={{ height: 42, padding: '0 16px', borderRadius: 12, background: '#16a34a', color: 'var(--brand-btn-primary-text, white)', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 10px rgba(22,163,74,0.35)' }}>
                   <Phone size={14} /> {t('td_call_btn')}
                 </div>
               </div>

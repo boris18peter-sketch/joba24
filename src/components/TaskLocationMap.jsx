@@ -234,16 +234,14 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
 
   return (
     <>
-      {/* Compact inline map. Deliberately short: it is a reference, not the
-          subject of the sheet. Its own controls (expand / navigate / invoice)
-          sit on top of it untouched, and the expanded view is still full screen. */}
-      <div style={{ borderRadius: 'var(--r-lg)', overflow: 'hidden', border: '1px solid var(--border-1)' }}>
+      {/* Compact inline map */}
+      <div style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
         {mapToken ? (
           <MapView
             mapToken={mapToken}
             task={enrichedTask}
             userLocation={userLocation}
-            height={(enrichedTask.invoice_html || onGenerateInvoice) ? 206 : 178}
+            height={(enrichedTask.invoice_html || onGenerateInvoice) ? 258 : 220}
             onExpand={() => setExpanded(true)}
             onCollapse={() => setExpanded(false)}
             isExpanded={false}
@@ -252,7 +250,7 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
             t={t}
           />
         ) : (
-          <div style={{ height: 178, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ height: 220, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
           </div>
         )}

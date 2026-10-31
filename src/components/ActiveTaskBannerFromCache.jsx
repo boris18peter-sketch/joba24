@@ -44,9 +44,7 @@ export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo 
   if (!liveTask || liveTask.id !== taskId) return null;
 
   return (
-    // Inside the task detail sheet the panel sits in the sheet's own padded
-    // column, so it must not add a second inset of its own.
-    <div style={{ padding: extraInfo?.inSheet ? 0 : '0 12px', paddingTop: extraInfo?.inSheet ? 0 : 8 }}>
+    <div style={{ padding: '0 12px', paddingTop: 8 }}>
       <ActiveTaskBanner
         tasks={[{ ...liveTask, _roleHint: isWorker ? 'worker' : 'client' }]}
         roleHint={isWorker ? 'worker' : 'client'}
