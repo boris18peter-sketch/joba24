@@ -362,8 +362,16 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                       ₪{task.price}
                     </span>
                   )}
-                  {/* No close button here: inside the sheet the header already
-                      has one, and outside it the card opens the sheet. */}
+                  {extraInfo?.onSheetClose && (
+                    <button
+                      onClick={e => { e.stopPropagation(); extraInfo.onSheetClose(); }}
+                      aria-label="Close"
+                      className="j-icon-btn"
+                      style={{ width: 28, height: 28, borderRadius: 9, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-3)', flexShrink: 0 }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
 
                 {/* ── B. CURRENT STEP — what is happening right now ── */}
@@ -396,11 +404,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                   />
                 )}
 
-                {/* The other side of the deal. Inside the sheet the header shows
-                    the PUBLISHER, so the worker's view has nothing to add there —
-                    but the publisher's view still has to name the person they
-                    hired, and no other zone does. */}
-                {(!inSheet || (tIsOwner && !extraInfo?.hideCounterpart)) && personName && (
+                {/* The other side of the deal — only where no header shows it */}
+                {!inSheet && personName && (
                   <div
                     onClick={e => { e.stopPropagation(); if (personId) navigate(`/public-profile?id=${personId}`); }}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 10, padding: '4px 9px', borderRadius: 'var(--r-full)', background: 'var(--surface-3)', border: '1px solid var(--border-1)', cursor: personId ? 'pointer' : 'default', maxWidth: '100%' }}
@@ -526,9 +531,21 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                   )}
                 </div>
 
-                {/* Views / clicks / applications are NOT repeated here: the
-                    sheet's summary card is the one place they live, and the
-                    applicants section already states how many there are. */}
+                {/* Publisher's own numbers — quiet, inside the sheet only */}
+                {extraInfo?.isOwner && (
+                  <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, paddingTop: 9, borderTop: '1px solid var(--border-1)' }}>
+                    {[
+                      { val: extraInfo.viewsCount || 0, label: t('views') },
+                      { val: extraInfo.clicksCount || 0, label: t('clicks') },
+                      { val: extraInfo.applicationCount || 0, label: t('applications_count') },
+                    ].map(({ val, label }, i) => (
+                      <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4, minWidth: 0 }}>
+                        <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-1)' }}>{val}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );

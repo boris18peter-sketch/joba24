@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { isRecordId } from '../../shared/recordIds.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -9,36 +8,6 @@ Deno.serve(async (req) => {
     // Only trigger on TAKEN → OPEN transition with worker leaving
     if (old_data?.status !== 'TAKEN' || data?.status !== 'OPEN') {
       return Response.json({ sent: 0, reason: 'Not a worker leave transition' });
-    }
-
-    // ── TAKEN → OPEN IS NOT ALWAYS "THE WORKER LEFT" ─────────────────────────
-    // The same transition also happens when the PUBLISHER removes the approved
-    // worker before they set off (cancelApprovedWorker). That path used to send
-    // the publisher a push saying "{worker} ביטל את הקבלת המשימה" — a message
-    // written for the opposite case, delivered to the person who had just done
-    // the cancelling. The two cases are distinguishable in the data: a worker
-    // who leaves writes their own application as `cancelled`, while a worker
-    // the publisher removed is `rejected`. Only a genuine leave is announced
-    // here; the removal is announced by the function that performed it.
-    const formerWorkerId = old_data?.worker_id || null;
-    const formerTaskId = data.id || event?.entity_id;
-    if (formerWorkerId) {
-      // A demo/legacy id cannot be queried at all (the entity layer rejects the
-      // whole query), and without the application we cannot tell a genuine leave
-      // from a removal — so nothing is announced rather than the wrong thing.
-      if (!isRecordId(formerTaskId) || !isRecordId(formerWorkerId)) {
-        return Response.json({ sent: 0, reason: 'Unverifiable ids — not announcing' });
-      }
-      const apps = await base44.asServiceRole.entities.TaskApplication.filter({
-        task_id: formerTaskId,
-        worker_id: formerWorkerId,
-      });
-      const latest = (apps || []).sort((a: any, b: any) =>
-        String(b?.created_date || '').localeCompare(String(a?.created_date || ''))
-      )[0];
-      if (latest && latest.status !== 'cancelled') {
-        return Response.json({ sent: 0, reason: `Application is ${latest.status} — not a voluntary leave` });
-      }
     }
 
     // Get client

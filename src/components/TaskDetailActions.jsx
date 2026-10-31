@@ -80,7 +80,7 @@ export default function TaskDetailActions({
         {isCompleted && me?.id === task?.worker_id && !(task?.lat && task?.lng) && (
           <button
             onClick={() => setShowInvoice(true)}
-            style={{ width: '100%', height: 46, borderRadius: 'var(--r-md)', background: task?.requires_invoice ? 'var(--brand-btn-primary-bg, var(--brand-primary))' : 'transparent', border: `1px solid ${task?.requires_invoice ? 'transparent' : 'var(--border-2)'}`, color: task?.requires_invoice ? 'var(--brand-btn-primary-text, #ffffff)' : 'var(--brand-primary)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
+            style={{ width: '100%', height: 48, borderRadius: 14, background: task?.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#faf5ff', border: task?.requires_invoice ? 'none' : '1.5px solid #e9d5ff', color: task?.requires_invoice ? 'white' : '#7c3aed', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: task?.requires_invoice ? '0 4px 14px rgba(124,58,237,0.3)' : 'none' }}>
             <FileText size={16} />
             {task?.requires_invoice ? t('generate_tax_invoice_required') : t('generate_tax_invoice_btn')}
           </button>
