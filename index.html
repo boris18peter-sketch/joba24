@@ -75,6 +75,22 @@
         }
       } catch (e) { /* storage unavailable — the defaults above still apply */ }
 
+      /* ── CONSENT-MODE PASSTHROUGH (Google Ads attribution) ────────────────
+         While ad_storage is denied — the default until the visitor accepts —
+         Google may not write the _gcl_aw cookie that carries the ad click id,
+         so the click is lost the moment the visitor leaves the landing URL,
+         and any conversion that happens later (after navigating, or after the
+         login round-trip) can never be credited to the ad.
+
+         url_passthrough carries the click id on the URL itself across those
+         navigations, and ads_data_redaction keeps measurement cookieless while
+         consent is denied. These are Google's documented Consent Mode settings:
+         they grant nothing the visitor has not chosen, and they are the reason
+         a click can still be attributed once consent is granted afterwards.
+         Both MUST be set before the config command below. */
+      gtag('set', 'url_passthrough', true);
+      gtag('set', 'ads_data_redaction', true);
+
       gtag('js', new Date());
       gtag('config', 'AW-18513050750');
     </script>

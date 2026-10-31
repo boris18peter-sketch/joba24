@@ -12,7 +12,7 @@ import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { resolveStatusFlow, statusLabel } from '@/lib/taskStatusFlow';
 import { trackEvent } from '@/lib/analytics';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import UserBadge from '@/components/UserBadge';
+
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -24,7 +24,6 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import VerifyModal from '@/components/VerifyModal';
 import VerificationRequiredModal from '@/components/VerificationRequiredModal';
-import { parseDescription } from '@/lib/descriptionParser';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
 import ApplicantsGoldButton from '@/components/ApplicantsGoldButton';
@@ -57,6 +56,38 @@ function getRelativeTime(date, t) {
   const days = Math.floor(hours / 24);
   if (days < 30) return t('days_ago').replace('{n}', days);
   return null;
+}
+
+/**
+ * The card's one-line facts row: location · distance · age · verification ·
+ * rating · applicants.
+ *
+ * Only facts that actually exist are rendered, separated by a hairline dot that
+ * is drawn BETWEEN two facts rather than after each one — so a task with two
+ * facts has one separator and one with five has four, and the line never ends on
+ * a dangling dot or leaves a gap where a missing fact used to be.
+ */
+function FactsRow({ items }) {
+  const shown = items.filter(Boolean);
+  if (!shown.length) return null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6,
+      marginTop: 7, fontSize: 11.5, fontWeight: 600, color: 'var(--text-3)',
+    }}>
+      {shown.map((node, i) => (
+        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          {i > 0 && (
+            <span style={{
+              width: 3, height: 3, borderRadius: 99, flexShrink: 0,
+              background: 'var(--border-2)', display: 'inline-block',
+            }} />
+          )}
+          {node}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 const URGENCY_TAG_CONFIG = {
@@ -518,258 +549,262 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           ))}
         </div>
 
-        {/* Card Body: title + description + meta + media */}
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                {displayTask.title}
-                {isTranslated && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', borderRadius: 6, padding: '1px 5px', marginRight: 4, verticalAlign: 'middle', whiteSpace: 'nowrap', border: '1px solid var(--border-2)' }}>
-                    {t('translated_badge')}
-                  </span>
-                )}
-                {isTranslating && (
-                  <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', marginRight: 4, verticalAlign: 'middle' }}>…</span>
-                )}
-              </h3>
-              {displayTask.description && (
-                <p style={{ color: 'var(--text-3)', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-                  {parseDescription(displayTask.description).mainDescription}
-                </p>
+        {/* ── WHAT THE JOB IS, THEN WHAT DECIDES IT ────────────────────────
+            Title, and ONE compact line of facts: where, how far, how fresh,
+            whether the publisher is verified, their rating, how many have
+            already applied. The full description is gone from the card — it was
+            prose repeated on every card in the feed, which is what made the
+            board heavy to scan; it is one tap away under "פרטים נוספים". */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 title={displayTask.title} style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 16, lineHeight: 1.3, letterSpacing: -0.2, margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              {displayTask.title}
+              {isTranslated && (
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', borderRadius: 6, padding: '1px 5px', marginRight: 4, verticalAlign: 'middle', whiteSpace: 'nowrap', border: '1px solid var(--border-2)' }}>
+                  {t('translated_badge')}
+                </span>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-3)', flexWrap: 'wrap' }}>
-                {displayTask.location_name && (
-                  <><MapPin size={10} strokeWidth={1.8} />
-                  <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTask.location_name}</span></>
+              {isTranslating && (
+                <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-3)', marginRight: 4, verticalAlign: 'middle' }}>…</span>
+              )}
+            </h3>
+
+            <FactsRow items={[
+              displayTask.location_name ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, maxWidth: 150, color: 'var(--text-2)' }}>
+                  <MapPin size={11} strokeWidth={2} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTask.location_name}</span>
+                </span>
+              ) : null,
+              dist != null && !isNaN(dist) ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand-primary)', fontWeight: 700 }}>
+                  <Navigation size={10} strokeWidth={2.2} />
+                  {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
+                </span>
+              ) : null,
+              task.created_date && getRelativeTime(task.created_date, t) ? (
+                <span>{getRelativeTime(task.created_date, t)}</span>
+              ) : null,
+              task.client_verified ? (
+                <span title={t('verified_badge_short', 'מאומת')} style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--color-success)' }}>
+                  <ShieldCheck size={12} strokeWidth={2.2} />
+                </span>
+              ) : null,
+              Number(task.client_rating) > 0 ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--text-2)', fontWeight: 700 }}>
+                  <Star size={11} fill="#fbbf24" color="#fbbf24" />
+                  {Number(task.client_rating).toFixed(1)}
+                </span>
+              ) : null,
+              task.status === 'OPEN' && liveApplicantCount > 0 ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#92400e', fontWeight: 700 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
+                  {liveApplicantCount} {t('applications_count')}
+                </span>
+              ) : null,
+            ]} />
+          </div>
+
+          {/* Media thumbnail — opens the lightbox */}
+          {(() => {
+            const allMedia = [
+              ...(task.images || []).map(url => ({ type: 'image', url })),
+              ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
+            ];
+            if (!allMedia.length) return null;
+            const cur = allMedia[0];
+            return (
+              <div
+                onClick={e => { e.stopPropagation(); setLightboxIndex(0); setLightboxOpen(true); }}
+                style={{ width: 62, height: 62, flexShrink: 0, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--brand-card-border, var(--border-1))', position: 'relative', background: 'var(--surface-3)', cursor: 'pointer' }}
+              >
+                {cur.type === 'image' ? (
+                  // `priority` only for the first card — the thumbnail that is on
+                  // screen the moment the feed opens. Every other card stays lazy,
+                  // so a long feed still fetches only what is near the viewport.
+                  <TaskImage src={cur.url} priority={!!task._isFirstCard} />
+                ) : (
+                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <video src={cur.url} preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
+                      <Play size={16} color="white" fill="white" />
+                    </div>
+                  </div>
                 )}
-                {task.client_name && (
-                  task.client_id === currentUserId ? (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', borderRadius: 20, padding: '1px 6px' }}>{t('me_pill')}</span>
-                  ) : (
-                    <UserBadge
-                      name={task.client_name}
-                      userId={task.client_id}
-                      verified={task.client_verified}
-                      rating={task.client_rating}
-                    />
-                  )
-                )}
-                {/* Moved here from the tag row, which could no longer hold it
-                    without overflowing the card. It reads better among the other
-                    facts anyway — it is a count, not a signal. */}
-                {task.status === 'OPEN' && liveApplicantCount > 0 && (
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
-                    {liveApplicantCount} {t('applications_count')}
-                  </span>
+                {allMedia.length > 1 && (
+                  <div style={{ position: 'absolute', bottom: 3, right: 3, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '1px 5px', fontSize: 9, color: 'white', fontWeight: 700 }}>
+                    +{allMedia.length - 1}
+                  </div>
                 )}
               </div>
-              {task.created_date && getRelativeTime(task.created_date, t) && (
-                <div style={{ fontSize: 10, color: '#b0bac8', marginTop: 4 }}>
-                  {t('posted')} {getRelativeTime(task.created_date, t)}
-                </div>
-              )}
-            </div>
-            {/* Media thumbnail — opens lightbox */}
-            {(() => {
-              const allMedia = [
-                ...(task.images || []).map(url => ({ type: 'image', url })),
-                ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
-              ];
-              if (!allMedia.length) return null;
-              const cur = allMedia[0];
-              return (
-                <div
-                  onClick={e => { e.stopPropagation(); setLightboxIndex(0); setLightboxOpen(true); }}
-                  // Was `background: '#000'` — the black square in the feed was this
-                  // box waiting for its photo, not a slow image. The design's own
-                  // surface colour shows through the placeholder instead.
-                  style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--brand-card-border, var(--border-1))', position: 'relative', background: 'var(--surface-3)', cursor: 'pointer' }}
-                >
-                  {cur.type === 'image' ? (
-                    // `priority` only for the first card — the thumbnail that is on
-                    // screen the moment the feed opens. Every other card stays lazy,
-                    // so a long feed still fetches only what is near the viewport.
-                    <TaskImage src={cur.url} priority={!!task._isFirstCard} />
-                  ) : (
-                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                      <video src={cur.url} preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
-                        <Play size={16} color="white" fill="white" />
-                      </div>
-                    </div>
-                  )}
-                  {allMedia.length > 1 && (
-                    <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '1px 5px', fontSize: 9, color: 'white', fontWeight: 700 }}>
-                      +{allMedia.length - 1}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+            );
+          })()}
+        </div>
+
+        {/* ── PRICE — the one number the card is really about ─────────────
+            It sits on its own line, directly above the action it belongs to,
+            instead of sharing a row with a column of controls. Payment method
+            and the hourly figure stay secondary, in the same line and muted. */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-1)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+            <span style={{ fontSize: 23, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1, letterSpacing: -0.6, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
+            {task.payment_method && (
+              <span style={{ fontSize: 11.5, color: 'var(--text-3)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {task.payment_method === 'Cash' ? t('cash') : task.payment_method}
+              </span>
+            )}
+            {hourlyBreakdown && (
+              <span style={{ fontSize: 10.5, color: 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatHourlySublabel(task)}</span>
+            )}
+          </div>
+
+          {/* Views & entries — present on every card, kept deliberately quiet so
+              they never compete with the price or the action. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+            <span>{task.views_count || 0} {t('views')}</span>
+            <span style={{ width: 3, height: 3, borderRadius: 99, background: 'var(--border-2)', display: 'inline-block' }} />
+            <span>{task.clicks_count || 0} {t('clicks')}</span>
           </div>
         </div>
 
-        {/* Card Footer: price + apply */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border-1)' }}>
-          {/* Price + payment + distance */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap' }}>
-              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
-              {task.payment_method && <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</span>}
-            </div>
-            {hourlyBreakdown && (
-              <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatHourlySublabel(task)}</span>
-            )}
-            {dist != null && !isNaN(dist) && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-primary)', display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--brand-primary-light)', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
-                <Navigation size={9} strokeWidth={2} color="var(--brand-primary)" />
-                {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
-              </span>
-            )}
-            <div style={{ display: 'none' }}>
-            </div>
-            {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
-             <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? 'var(--color-success)' : '#b45309', fontWeight: 600 }}>
-               📈 ₪{task.base_price} {isRTL ? '←' : '→'} ₪{task.max_price}{liveApplicantCount > 0 ? ` · ${t('auto_bump_active')}` : ` · ${t('auto_bump_desc')}`}
-             </span>
-             )}
+        {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
+          <span style={{ display: 'inline-block', marginTop: 6, fontSize: 10.5, color: liveApplicantCount > 0 ? 'var(--color-success)' : '#b45309', fontWeight: 600 }}>
+            📈 ₪{task.base_price} {isRTL ? '←' : '→'} ₪{task.max_price}{liveApplicantCount > 0 ? ` · ${t('auto_bump_active')}` : ` · ${t('auto_bump_desc')}`}
+          </span>
+        )}
 
-          </div>
-          {/* Right: owner controls or apply button */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-            {isMyPublished ? (
-              // Owner management controls — boost pill inline with button
-              task.status === 'OPEN' ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />}
+        {/* ── ONE DOMINANT ACTION ──────────────────────────────────────────
+            The whole width belongs to the single next step: apply (with the
+            Joba cost beside the label), or — on a task of his own — the
+            applicants. Owner management stays exactly as it was, only moved
+            here so every card ends with one button in the same place. */}
+        <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
+          {isMyPublished ? (
+            task.status === 'OPEN' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {boostAvailableCard && (
+                  <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <ApplicantsGoldButton
                     count={liveApplicantCount}
                     label={t('view_applicants')}
                     onClick={e => { e.stopPropagation(); openTaskSheet(task.id, task); }}
                     scanning={<ScanningLabel taskId={task.id} />}
+                    fullWidth
                   />
                 </div>
-              ) : task.status === 'TAKEN' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {/* The viewer here is the PUBLISHER (this whole branch is
-                          `isMyPublished`), so the label must be the OWNER's.
-                          It was hardcoded to 'worker', so a publisher watching
-                          their job progress was shown the worker's own
-                          first-person wording — "יצאתי לדרך" — a sentence that
-                          only makes sense coming from the person doing the
-                          work. The owner now reads the owner's line. */}
-                      {statusLabel(resolveStatusFlow(task.category, catRows), task.worker_status, 'owner') || t('in_progress')}
-                    </span>
-                  </div>
-              ) : (
-                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${categoryKeyForTask(task)}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid var(--border-2)', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
-                   <RefreshCw size={11} /> {t('repost')}
-                 </button>
-              )
-            ) : null}
+              </div>
+            ) : task.status === 'TAKEN' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '9px 12px', fontSize: 12, fontWeight: 700, color: '#b45309' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {/* The viewer here is the PUBLISHER (this whole branch is
+                      `isMyPublished`), so the label must be the OWNER's. */}
+                  {statusLabel(resolveStatusFlow(task.category, catRows), task.worker_status, 'owner') || t('in_progress')}
+                </span>
+              </div>
+            ) : (
+              <button
+                onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${categoryKeyForTask(task)}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }}
+                style={{ width: '100%', height: 46, borderRadius: 14, background: 'var(--brand-primary-light)', border: '1.5px solid var(--border-2)', color: 'var(--brand-primary)', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, WebkitTapHighlightColor: 'transparent' }}
+              >
+                <RefreshCw size={14} /> {t('repost')}
+              </button>
+            )
+          ) : (
+            <>
+              {task.created_by === currentUserId && (
+                <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+                  <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
+                  {showMenu && (
+                    <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }} style={{ position: 'absolute', bottom: 34, right: 0, background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 10, boxShadow: 'var(--shadow-md)', zIndex: 1000, minWidth: 140, overflow: 'hidden' }}>
+                      <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }} style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 8 }}><Trash2 size={14} /> {t('delete_task')}</button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {!isMyPublished && (
-              <>
-                {task.created_by === currentUserId && (
-                  <div style={{ position: 'relative' }}>
-                    <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
-                    {showMenu && (
-                      <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }} style={{ position: 'absolute', bottom: 32, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 1000, minWidth: 140, overflow: 'hidden' }}>
-                        <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }} style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 8 }}><Trash2 size={14} /> {t('delete_task')}</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!viewOnly && !hasActiveApp && task.created_by !== currentUserId && (
-                  <button
-                    id={task._isFirstCard ? 'onboarding-apply-btn' : undefined}
-                    onPointerDown={e => { e.stopPropagation(); setApplyPressed(true); }}
-                    onPointerUp={e => { e.stopPropagation(); setApplyPressed(false); }}
-                    onPointerLeave={() => setApplyPressed(false)}
-                    onClick={e => {
-                      e.stopPropagation();
-                      const r = e.currentTarget.getBoundingClientRect();
-                      setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
-                      if (!currentUserId) { setShowLoginPrompt(true); return; }
-                      if (applyLocked) return;
-                      // Verification gate: if task requires verified workers and user isn't verified,
-                      // show the VerificationRequiredModal first (with a button to open the full KYC flow)
-                      if (task.verification_required && !isUserVerified(me)) {
-                        setShowVerificationRequired(true);
-                        return;
-                      }
-                      setApplyLocked(true);
-                      setShowApplyModal(true);
-                      setTimeout(() => setApplyLocked(false), 600);
-                    }}
-                    disabled={applyLocked}
-                    style={{ height: 36, padding: '0 14px', borderRadius: 'var(--r-sm)', background: 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : 'var(--shadow-sm)' }}
-                  >
-                    {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
-                      // The Joba cost of applying belongs to the live card only.
-                      // The onboarding illustration passes hideApplyCost so the
-                      // worker's first screen shows the ACTION, not a price list.
-                      hideApplyCost ? (
+              {!viewOnly && !hasActiveApp && task.created_by !== currentUserId && (
+                <button
+                  id={task._isFirstCard ? 'onboarding-apply-btn' : undefined}
+                  onPointerDown={e => { e.stopPropagation(); setApplyPressed(true); }}
+                  onPointerUp={e => { e.stopPropagation(); setApplyPressed(false); }}
+                  onPointerLeave={() => setApplyPressed(false)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                    if (!currentUserId) { setShowLoginPrompt(true); return; }
+                    if (applyLocked) return;
+                    // Verification gate: if task requires verified workers and user isn't verified,
+                    // show the VerificationRequiredModal first (with a button to open the full KYC flow)
+                    if (task.verification_required && !isUserVerified(me)) {
+                      setShowVerificationRequired(true);
+                      return;
+                    }
+                    setApplyLocked(true);
+                    setShowApplyModal(true);
+                    setTimeout(() => setApplyLocked(false), 600);
+                  }}
+                  disabled={applyLocked}
+                  style={{
+                    width: '100%', height: 46, borderRadius: 14,
+                    background: 'var(--brand-btn-primary-bg, var(--brand-primary))',
+                    color: 'var(--brand-btn-primary-text, #ffffff)',
+                    border: 'none', fontSize: 14.5, fontWeight: 800,
+                    cursor: applyLocked ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    opacity: applyLocked ? 0.65 : 1,
+                    whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent',
+                    transform: applyPressed ? 'scale(0.98)' : 'scale(1)',
+                    transition: 'transform 0.1s ease, opacity 0.15s',
+                    boxShadow: applyPressed ? 'none' : '0 4px 14px rgba(26,111,212,0.24)',
+                  }}
+                >
+                  {applyLocked ? <Loader2 size={16} className="animate-spin" /> : (
+                    // The Joba cost of applying belongs to the live card only.
+                    // The onboarding illustration passes hideApplyCost so the
+                    // worker's first screen shows the ACTION, not a price list.
+                    hideApplyCost ? (
+                      <span>{t('apply')}</span>
+                    ) : (
+                      <>
+                        <Send size={15} strokeWidth={2.2} />
                         <span>{t('apply')}</span>
-                      ) : (
-                        <><span>{t('apply')}</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>
-                      )
-                    )}
-                  </button>
-                )}
-              </>
-            )}
-
-            {/* Views & entries — on EVERY card, for everyone.
-                These were the publisher's private numbers, so the only activity
-                a visitor ever saw on a card was its price. Showing the same two
-                figures on every card is what makes the board read as busy.
-
-                Placed AFTER the action above it, never before: the card is read
-                top-down, so the button a visitor came for comes first and these
-                two quiet figures close the block — the same position on an
-                owner's card and on a worker's card. */}
-            <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', paddingTop: 2 }}>
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.views_count || 0}</strong>
-                  <span>{t('views')}</span>
-                </span>
-                <span style={{ color: '#e2e8f0' }}>|</span>
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <strong style={{ color: 'var(--text-2)', fontSize: 12 }}>{task.clicks_count || 0}</strong>
-                  <span>{t('clicks')}</span>
-                </span>
-            </div>
-          </div>
+                        <span style={{ fontSize: 11.5, fontWeight: 800, background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          {Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} />
+                        </span>
+                      </>
+                    )
+                  )}
+                </button>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Details toggle — clean, natural footer */}
-        <div style={{ paddingBottom: 10 }} onClick={e => e.stopPropagation()}>
+        {/* ── SECONDARY ACTION: the details, one quiet line at the bottom ──── */}
+        <div style={{ paddingTop: 2, paddingBottom: 10 }} onClick={e => e.stopPropagation()}>
           <button
             onClick={e => { e.stopPropagation(); setShowDetails(v => !v); }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              width: '100%', height: 30, background: 'none', border: 'none',
+              width: '100%', height: 34, background: 'none', border: 'none',
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
-              {showDetails ? t('less') : t('details')}
+            <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 700 }}>
+              {showDetails ? t('less') : t('more_details')}
             </span>
             {showDetails
-              ? <ChevronUp size={12} color="var(--text-3)" />
-              : <ChevronDown size={12} color="var(--text-3)" />}
+              ? <ChevronUp size={13} color="var(--text-3)" />
+              : <ChevronDown size={13} color="var(--text-3)" />}
           </button>
         </div>
         {showDetails && (
           <div style={{ borderTop: '1px solid var(--border-1)', paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
             <TaskDetailsRows task={displayTask} compact={true} />
-
-
           </div>
         )}
       </div>

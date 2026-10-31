@@ -10,7 +10,7 @@
  * `inert` renders exactly the same control with no handler and out of the tab
  * order, for the illustration only.
  */
-export default function ApplicantsGoldButton({ count = 0, label, onClick, scanning = null, inert = false }) {
+export default function ApplicantsGoldButton({ count = 0, label, onClick, scanning = null, inert = false, fullWidth = false }) {
   const hasApplicants = count > 0;
 
   return (
@@ -21,6 +21,9 @@ export default function ApplicantsGoldButton({ count = 0, label, onClick, scanni
       aria-hidden={inert || undefined}
       style={{
         minWidth: 110, height: 42, padding: '0 14px',
+        // On the task card the button IS the action row's whole width, so it
+        // lines up with the apply button every other card ends with.
+        width: fullWidth ? '100%' : undefined,
         borderRadius: 'var(--r-sm)',
         background: hasApplicants
           ? 'linear-gradient(135deg,#f59e0b,var(--color-warning))'

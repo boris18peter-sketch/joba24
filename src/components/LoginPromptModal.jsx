@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
+import { readCampaign } from '@/lib/analytics/campaign';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useBrandIdentity } from '@/components/BrandIdentity';
@@ -386,6 +387,30 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply', tit
     if (refCode && !url.includes('ref=')) {
       url += (url.includes('?') ? '&' : '?') + `ref=${refCode}`;
     }
+
+    // ── GOOGLE ADS CLICK ID MUST SURVIVE THE LOGIN ROUND-TRIP ─────────────
+    // A paid click arrives with its click id in the URL, but the app has already
+    // navigated away from that URL (and the publish flow's own redirect drops
+    // the query string), so by the time a visitor signs in the click id is only
+    // in our own first-party campaign record. The browser comes back to `url`
+    // above, so putting the click id back on it is what lets Google attribute
+    // the conversion that follows the login to the click that paid for it —
+    // without it, every ad-clicked publisher publishes as "direct".
+    try {
+      if (!/[?&](gclid|wbraid|gbraid)=/.test(url)) {
+        const campaign = readCampaign();
+        const clickParam = campaign?.gclid ? 'gclid'
+          : campaign?.wbraid ? 'wbraid'
+          : campaign?.gbraid ? 'gbraid'
+          : null;
+        if (clickParam) {
+          url += (url.includes('?') ? '&' : '?') + `${clickParam}=${encodeURIComponent(campaign[clickParam])}`;
+        }
+      }
+    } catch {
+      // Storage unavailable — the login proceeds exactly as before.
+    }
+
     return url;
   };
 
