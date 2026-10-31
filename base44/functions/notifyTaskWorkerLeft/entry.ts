@@ -15,6 +15,35 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No client' });
     }
 
+    // ── WHO ENDED IT ────────────────────────────────────────────────────────
+    // TAKEN → OPEN does not mean the worker left. The PUBLISHER reopening the
+    // task (cancelApprovedWorker / a no-show report) produces the very same
+    // transition — and the publisher was then told "the worker cancelled the
+    // task" about their own action.
+    //
+    // The application record already carries the answer, written before the task
+    // itself is updated: a worker who walks away marks their own application
+    // 'cancelled', while the publisher removing them marks it 'rejected'. So the
+    // notification is sent only for a genuine walk-away.
+    const previousWorkerId = old_data?.worker_id;
+    if (previousWorkerId) {
+      const apps = await base44.asServiceRole.entities.TaskApplication.filter({
+        task_id: data.id,
+        worker_id: previousWorkerId,
+      });
+      const latest = apps.sort(
+        (a, b) => new Date(b.updated_date || 0).getTime() - new Date(a.updated_date || 0).getTime()
+      )[0];
+      // Only an application touched in the same breath as this transition can
+      // describe it — an old record must never decide today's notification.
+      const REMOVAL_WINDOW_MS = 3 * 60 * 1000;
+      const appliedJustNow = latest?.updated_date &&
+        (Date.now() - new Date(latest.updated_date).getTime()) < REMOVAL_WINDOW_MS;
+      if (appliedJustNow && latest.status === 'rejected') {
+        return Response.json({ sent: 0, reason: 'removed_by_publisher' });
+      }
+    }
+
     // Get client's tokens
     const users = await base44.asServiceRole.entities.User.filter({ id: data.client_id });
     const client = users[0];

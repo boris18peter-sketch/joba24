@@ -248,8 +248,6 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           const quickAction = tIsWorker && isTaskActive && !isUpcoming ? getQuickAction(flow, task.worker_status) : null;
           const QuickActionIcon = quickAction ? (ICON_MAP[quickAction.icon] || Navigation) : null;
 
-          const gradient = 'linear-gradient(135deg, var(--brand-banner-bg, var(--brand-primary)) 0%, var(--brand-banner-bg-2, var(--brand-primary-dark)) 100%)';
-
           // ── Category-aware status hero (coordinated for worker & owner) ──
           // The status is the LARGEST, most prominent element on the banner.
           // Texts adapt to the task's category (statusMap labels) and the worker
@@ -317,17 +315,17 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           return (
             <div
               key={task.id}
-              style={{ flex: '0 0 100%', background: gradient, borderRadius: 20, padding: '14px 16px 16px', boxShadow: '0 6px 24px rgba(26,111,212,0.28)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+              // Same surface, border, radius and shadow as the feed card, so the
+              // active task reads as the SAME task the user tapped — not as a
+              // different, colour-blocked screen.
+              style={{ flex: '0 0 100%', background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-1)', padding: 14, boxShadow: 'var(--shadow-xs)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
               onClick={() => openTaskSheet(task.id)}
             >
-              {/* Decorative blobs */}
-              <div style={{ position: 'absolute', bottom: -30, left: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
 
               {/* Close — persistent at the top of the active banner (sheet context only) */}
               {extraInfo?.onSheetClose && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => extraInfo.onSheetClose()} aria-label="Close" className="j-icon-btn" style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                  <button onClick={() => extraInfo.onSheetClose()} aria-label="Close" className="j-icon-btn" style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)', flexShrink: 0 }}>
                     <X size={15} />
                   </button>
                 </div>
@@ -335,30 +333,30 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
 
               {/* ── Status hero — the most prominent element ── */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <HeroIcon size={22} color="white" />
+                <div style={{ width: 44, height: 44, borderRadius: 14, background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <HeroIcon size={22} color="var(--brand-primary)" strokeWidth={2} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1.2 }}>{hero}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', marginTop: 2, fontWeight: 500 }}>{heroSub}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.2, letterSpacing: -0.3 }}>{hero}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2, fontWeight: 600 }}>{heroSub}</div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 12, padding: '6px 12px', flexShrink: 0 }}>
-                  <span style={{ color: 'white', fontWeight: 900, fontSize: 19 }}>₪{task.price}</span>
+                <div style={{ background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '6px 12px', flexShrink: 0 }}>
+                  <span style={{ color: 'var(--text-1)', fontWeight: 900, fontSize: 19 }}>₪{task.price}</span>
                 </div>
               </div>
 
               {/* ── Title ── */}
-              <div style={{ color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: 15, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 12 }}>{task.title}</div>
+              <div style={{ color: 'var(--text-2)', fontWeight: 700, fontSize: 14, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 12 }}>{task.title}</div>
 
               {/* ── Row 3: Person pill ── */}
               {personName && (
                 <div
                   onClick={e => { e.stopPropagation(); if (personId) navigate(`/public-profile?id=${personId}`); }}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.13)', borderRadius: 20, padding: '5px 12px', marginBottom: 12, cursor: 'pointer', maxWidth: '100%' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 20, padding: '5px 12px', marginBottom: 12, cursor: 'pointer', maxWidth: '100%' }}
                 >
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>{personLabel}:</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>{personName}</span>
-                  {personRating > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.85)', flexShrink: 0 }}>⭐ {personRating.toFixed(1)}</span>}
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{personLabel}:</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>{personName}</span>
+                  {personRating > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-2)', flexShrink: 0 }}>⭐ {personRating.toFixed(1)}</span>}
                   {personVerified && (
                     tIsOwner && extraInfo?.workerUser && hasSocialVerified(extraInfo.workerUser)
                       ? <GoldBadge size="sm" />
@@ -371,11 +369,11 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
 
               {/* ── Row 5: 3-step progress ── */}
               <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: 14, padding: '0 4px' }}>
-                <div style={{ position: 'absolute', top: 15, right: 4, left: 4, height: 2, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }} />
+                <div style={{ position: 'absolute', top: 15, right: 4, left: 4, height: 2, background: 'var(--border-2)', borderRadius: 2 }} />
                 <div style={{
                   position: 'absolute', top: 15, right: 4, height: 2,
                   width: tStepIdx < 0 ? '0%' : tStepIdx === 0 ? '16%' : tStepIdx === 1 ? '50%' : '84%',
-                  background: 'rgba(255,255,255,0.85)', borderRadius: 2,
+                  background: 'var(--brand-primary)', borderRadius: 2,
                   transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
                 }} />
                 {flow.steps.map((step, stepIdx) => {
@@ -387,15 +385,15 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                     <div key={stepIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
                       <div style={{
                         width: 30, height: 30, borderRadius: '50%',
-                        background: done ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.12)',
-                        border: `2px solid ${done ? 'white' : 'rgba(255,255,255,0.28)'}`,
+                        background: done ? 'var(--brand-primary)' : 'var(--surface-2)',
+                        border: `2px solid ${done ? 'var(--brand-primary)' : 'var(--border-1)'}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.18)' : 'none',
+                        boxShadow: active ? '0 0 0 4px var(--brand-primary-light)' : 'none',
                         transition: 'all 0.3s',
                       }}>
-                        <Icon size={13} color={done ? 'var(--brand-banner-bg, var(--brand-primary))' : 'rgba(255,255,255,0.55)'} strokeWidth={active ? 2.5 : 1.8} />
+                        <Icon size={13} color={done ? '#ffffff' : 'var(--text-3)'} strokeWidth={active ? 2.5 : 1.8} />
                       </div>
-                      <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.45)', marginTop: 4 }}>{label}</div>
+                      <div style={{ fontSize: 9.5, fontWeight: active ? 800 : 600, color: done ? 'var(--text-1)' : 'var(--text-3)', marginTop: 4 }}>{label}</div>
                     </div>
                   );
                 })}
@@ -408,11 +406,11 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                   ...(task.completion_video_url ? [{ type: 'video', url: task.completion_video_url }] : []),
                 ];
                 return (
-                <div style={{ marginTop: 6, marginBottom: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.18)' }} onClick={e => e.stopPropagation()}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>{t('proof_from_worker')}</div>
+                <div style={{ marginTop: 6, marginBottom: 10, background: 'var(--surface-3)', borderRadius: 14, padding: '10px 12px', border: '1px solid var(--border-1)' }} onClick={e => e.stopPropagation()}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)', marginBottom: 6 }}>{t('proof_from_worker')}</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {proofItems.map((item, i) => (
-                      <button key={i} onClick={() => setProofLightbox({ open: true, items: proofItems, index: i })} style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', display: 'block', padding: 0, cursor: 'pointer', position: 'relative', background: item.type === 'video' ? '#000' : 'transparent' }}>
+                      <button key={i} onClick={() => setProofLightbox({ open: true, items: proofItems, index: i })} style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-1)', display: 'block', padding: 0, cursor: 'pointer', position: 'relative', background: item.type === 'video' ? '#000' : 'transparent' }}>
                         {item.type === 'video' ? (<>
                           <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.7 }} />
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Camera size={18} color="white" /></div>
@@ -427,14 +425,17 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
               })()}
 
               {/* ── Row 6: Primary action buttons ── */}
-              <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+              {/* The next step takes its own full-width line above the quiet
+                  secondary actions — the same one-dominant-action rule the feed
+                  card follows. */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
 
                 {/* Owner: confirm completion */}
                 {tIsOwner && task.worker_status === 'done' && (
                   <button
                     onClick={() => handleOwnerConfirmComplete(task)}
                     disabled={completingTaskId === task.id}
-                    style={{ flex: 2, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 2px 10px rgba(5,150,105,0.4)' }}
+                    style={{ flex: '1 0 100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 18px rgba(5,150,105,0.3)' }}
                   >
                     {completingTaskId === task.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> {t('confirm_done_work') || 'אשר סיום'}</>}
                   </button>
@@ -444,7 +445,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 {tIsWorker && quickAction && (
                   <button
                     onClick={() => setPendingAction({ task, action: { ...quickAction } })}
-                    style={{ flex: 2, height: 44, borderRadius: 12, background: quickAction.color, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.18)' }}
+                    style={{ flex: '1 0 100%', height: 52, borderRadius: 14, background: quickAction.color, border: 'none', color: 'white', fontWeight: 900, fontSize: 15.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}
                   >
                     {QuickActionIcon && <QuickActionIcon size={15} />}
                     {quickAction.label}
@@ -464,7 +465,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                       // location.href triggers the universal link → opens Waze/Maps natively.
                       window.location.href = choice ? wazeUrl : mapsUrl;
                     }}
-                    style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                    style={{ flex: 1, height: 38, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
                     <Navigation size={14} /> {t('navigate') || 'נווט'}
                   </button>
@@ -479,7 +480,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                       const otherId = me?.id === task.client_id ? task.worker_id : task.client_id;
                       if (otherId) navigate(`/chat/${task.id}?with=${otherId}`);
                     }}
-                    style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                    style={{ flex: 1, height: 38, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
                     <MessageCircle size={14} /> {t('chat') || 'צ׳אט'}
                   </button>
@@ -489,7 +490,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                     HTML and makes tel: links fire unreliably in iOS WKWebView) */}
                 {phoneNumber && (
                   <a href={`tel:${phoneNumber}`} onClick={e => e.stopPropagation()}
-                    style={{ textDecoration: 'none', flex: 1, height: 44, borderRadius: 12, background: 'rgba(34,197,94,0.25)', border: '1.5px solid rgba(34,197,94,0.5)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
+                    style={{ textDecoration: 'none', flex: 1, height: 38, borderRadius: 11, background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', color: 'var(--color-success)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
                     <Phone size={14} /> {phoneNumber}
                   </a>
                 )}
@@ -498,7 +499,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 {extraInfo?.isOwner && extraInfo?.onOwnerMenu && (
                   <button
                     onClick={e => { e.stopPropagation(); extraInfo.onOwnerMenu(); }}
-                    style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    style={{ width: 38, height: 38, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                   >
                     <MoreVertical size={16} />
                   </button>
@@ -508,7 +509,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 {!extraInfo && (
                   <button
                     onClick={() => openTaskSheet(task.id)}
-                    style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ flex: 1, height: 38, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     {t('details') || 'פרטים'}
                   </button>
@@ -517,17 +518,17 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
 
               {/* ── Row 7: Stats (owner only, TaskDetail context) ── */}
               {extraInfo?.isOwner && (
-                <div onClick={e => e.stopPropagation()} style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 10 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5, marginBottom: 6, textAlign: 'center' }}>{t('task_publish_stats')}</div>
+                <div onClick={e => e.stopPropagation()} style={{ marginTop: 10, borderTop: '1px solid var(--border-1)', paddingTop: 10 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4, marginBottom: 6, textAlign: 'center' }}>{t('task_publish_stats')}</div>
                    <div style={{ display: 'flex', gap: 6 }}>
                      {[
                        { val: extraInfo.viewsCount || 0, label: t('views') },
                        { val: extraInfo.clicksCount || 0, label: t('clicks') },
                        { val: extraInfo.applicationCount || 0, label: t('applications_count') },
                      ].map(({ val, label }, i) => (
-                      <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: '7px 6px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 17, fontWeight: 900, color: 'white', lineHeight: 1 }}>{val}</div>
-                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: 600 }}>{label}</div>
+                      <div key={i} style={{ flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 10, padding: '7px 6px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1 }}>{val}</div>
+                        <div style={{ fontSize: 9.5, color: 'var(--text-3)', marginTop: 3, fontWeight: 600 }}>{label}</div>
                       </div>
                     ))}
                   </div>
@@ -539,14 +540,14 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => { setMediaTask(task); setMediaPhotos([...(task.completion_photos || [])]); setMediaVideo(task.completion_video_url || ''); }}
-                    style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                    style={{ flex: 1, height: 36, borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, fontSize: 11.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
                     <Camera size={12} /> {proofCopy(flow).label} {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
                   </button>
                   {task.requires_invoice && (
                     <button
                       onClick={() => setInvoiceTask(task)}
-                      style={{ flex: 1, height: 36, borderRadius: 10, background: task.invoice_html ? 'rgba(124,58,237,0.3)' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                      style={{ flex: 1, height: 36, borderRadius: 10, background: task.invoice_html ? '#f3e8ff' : 'var(--surface-3)', border: `1px solid ${task.invoice_html ? '#e9d5ff' : 'var(--border-1)'}`, color: task.invoice_html ? '#6d28d9' : 'var(--text-2)', fontWeight: 700, fontSize: 11.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                     >
                       <FileText size={12} /> {t('invoice_btn')} {task.invoice_html ? '✓' : ''}
                     </button>

@@ -394,6 +394,7 @@ export const en = {
     your_app_approved: '🎉 Your application approved!',
     go_now_action: '🚀 Go now',
     apply_to_task: 'Apply to task',
+    next_step: 'Next step',
     your_app_pending: 'Your application is pending',
     message_to_publisher: 'Message to publisher',
     cancel_application_btn: 'Cancel application',

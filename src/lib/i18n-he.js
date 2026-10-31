@@ -391,6 +391,7 @@ export const he = {
     your_app_approved: '🎉 בקשתך אושרה!',
     go_now_action: '🚀 צא עכשיו',
     apply_to_task: 'הגש מועמדות למשימה',
+    next_step: 'הצעד הבא',
     your_app_pending: 'בקשתך ממתינה לאישור',
     message_to_publisher: 'הודעה למפרסם',
     cancel_application_btn: 'בטל בקשה',
