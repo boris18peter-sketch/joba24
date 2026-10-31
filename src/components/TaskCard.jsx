@@ -27,6 +27,7 @@ import VerificationRequiredModal from '@/components/VerificationRequiredModal';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
 import ApplicantsGoldButton from '@/components/ApplicantsGoldButton';
+import TaskChip from '@/components/task/TaskChip';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { raiseAppOffer } from '@/lib/appOffer';
@@ -336,27 +337,16 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
 
   if (isForYou) {
     headerTags.push(
-      <span style={{
-        fontSize: 10, fontWeight: 800,
-        padding: '2px 8px', borderRadius: 6,
-        background: 'linear-gradient(135deg,#f59e0b,var(--color-warning))',
-        color: 'white',
-        display: 'inline-flex', alignItems: 'center', gap: 3,
-        boxShadow: '0 2px 6px rgba(245,158,11,0.45)',
-        whiteSpace: 'nowrap', letterSpacing: 0.1,
-        border: '1px solid rgba(255,255,255,0.25)',
-      }}>
-        ✦ {t('for_you_badge')}
-      </span>
+      <TaskChip tone="warning">✦ {t('for_you_badge')}</TaskChip>
     );
   }
 
   if (task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag]) {
     const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
     headerTags.push(
-      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`, whiteSpace: 'nowrap' }}>
+      <TaskChip tone={task.urgency_tag === 'immediate' ? 'danger' : 'neutral'}>
         {tag.emoji} {t(tag.label)}
-      </span>
+      </TaskChip>
     );
   }
 
@@ -376,9 +366,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       else label = sDate.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) + ' ' + timeStr;
       const slotCount = Array.isArray(task.category_details?.schedule) ? task.category_details.schedule.length : 0;
       headerTags.push(
-        <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-          📅 {label}{slotCount > 1 ? ` · ${slotCount} ${t('slots')}` : ''}
-        </span>
+        <TaskChip tone="brand">📅 {label}{slotCount > 1 ? ` · ${slotCount} ${t('slots')}` : ''}</TaskChip>
       );
     }
   }
@@ -390,9 +378,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       : null;
     if (softLabel) {
       headerTags.push(
-        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: 'var(--text-2)', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          {softLabel}
-        </span>
+        <TaskChip tone="neutral">{softLabel}</TaskChip>
       );
     }
   }
