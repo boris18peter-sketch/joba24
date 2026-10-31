@@ -712,22 +712,6 @@ export default function TaskDetail(props) {
   }
   if (!task) return <div className="p-8 text-center text-muted-foreground">{t('task_not_found')}</div>;
 
-  const STATUS_GRADIENT = {
-    OPEN: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
-    TAKEN: task.worker_status === 'done' ? 'linear-gradient(135deg, var(--color-success) 0%, #10b981 100%)' : 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)',
-    COMPLETED: 'linear-gradient(135deg, var(--color-success) 0%, #10b981 100%)',
-    CANCELLED: 'linear-gradient(135deg, var(--text-2) 0%, var(--text-3) 100%)',
-    EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
-  };
-  const STATUS_PILL = {
-    OPEN: { background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', border: '1px solid var(--border-2)' },
-    TAKEN: { background: '#fffbeb', color: 'var(--color-warning)', border: '1px solid #fcd34d' },
-    COMPLETED: { background: '#f0fdf4', color: 'var(--color-success)', border: '1px solid #86efac' },
-    CANCELLED: { background: '#fef2f2', color: 'var(--color-danger)', border: '1px solid #fca5a5' },
-    EXPIRED: { background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }
-  };
-  const taskGradient = STATUS_GRADIENT[task.status] || STATUS_GRADIENT.OPEN;
-
   const distKm = (() => {
     if (!userLocation || !task.lat || !task.lng) return null;
     const R = 6371;
