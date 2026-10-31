@@ -142,15 +142,19 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
         display: 'flex', flexDirection: 'column', gap: 6,
       }}>
         <div style={{ display: 'flex', gap: 8 }}>
+          {/* Navigation is a QUIET secondary here — two brand-coloured slabs
+              under the map pulled the eye away from the task itself, so these
+              wear the same neutral surface every other secondary uses. */}
           <a
             href={`https://waze.com/ul?ll=${task.lat},${task.lng}&navigate=yes`}
             target="_blank" rel="noopener noreferrer"
             style={{
               flex: 1, height: 38, borderRadius: 12,
-              background: 'linear-gradient(135deg,#33ccff,#00b2d9)',
-              color: 'white', fontWeight: 800, fontSize: 13,
+              background: 'var(--surface-3)',
+              border: '1px solid var(--border-1)',
+              color: 'var(--text-2)', fontWeight: 700, fontSize: 13,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,178,217,0.3)',
+              textDecoration: 'none',
             }}
           >
             Waze
@@ -160,10 +164,11 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
             target="_blank" rel="noopener noreferrer"
             style={{
               flex: 1, height: 38, borderRadius: 12,
-              background: 'linear-gradient(135deg,#4285f4,#1967d2)',
-              color: 'white', fontWeight: 800, fontSize: 13,
+              background: 'var(--surface-3)',
+              border: '1px solid var(--border-1)',
+              color: 'var(--text-2)', fontWeight: 700, fontSize: 13,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)',
+              textDecoration: 'none',
             }}
           >
             GPS

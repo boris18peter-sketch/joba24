@@ -378,7 +378,10 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 }} />
                 {flow.steps.map((step, stepIdx) => {
                   const Icon = ICON_MAP[step.icon] || Navigation;
-                  const label = step.label;
+                  // The publisher reads THEIR wording for every step — a first
+                  // person label ("יצאתי לדרך") belongs only to the worker who
+                  // reported it, never to the person waiting for them.
+                  const label = tIsOwner ? (step.owner_label || step.label) : step.label;
                   const done   = tStepIdx >= 0 && stepIdx <= tStepIdx;
                   const active = tStepIdx >= 0 && stepIdx === tStepIdx;
                   return (

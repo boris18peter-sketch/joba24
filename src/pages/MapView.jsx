@@ -621,33 +621,46 @@ export default function MapView() {
         {selectedTask && !navMode && (
           <div style={{
             position: 'absolute', bottom: 24, left: 16, right: 16, zIndex: 20,
-            background: 'var(--card-bg)', borderRadius: 24,
-            boxShadow: '0 10px 50px rgba(15,43,107,0.22)',
-            padding: '18px 18px 16px', border: '1px solid var(--border-1)',
+            // The SAME card the feed uses — surface, radius, border and the
+            // title-then-price hierarchy — so a pinned task reads as the task
+            // the visitor already knows, only with navigation on it.
+            background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 'var(--r-lg)',
+            boxShadow: 'var(--shadow-lg)',
+            padding: '14px 14px 12px', border: '1px solid var(--border-1)',
             animation: 'slideUpCard 0.25s cubic-bezier(0.34,1.3,0.64,1)',
           }} dir={isRTL ? 'rtl' : 'ltr'}>
-            <button onClick={() => setSelectedTask(null)} style={{
-              position: 'absolute', top: 14, left: 14, width: 30, height: 30,
-              borderRadius: 9, background: 'var(--surface-3)', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            }}>
-              <X size={15} color="#6b7280" />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+              <h3 style={{ flex: 1, minWidth: 0, fontWeight: 800, color: 'var(--text-1)', fontSize: 16, lineHeight: 1.3, letterSpacing: -0.2, margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {translatedSelectedTask?.title || selectedTask.title}
+              </h3>
+              <span style={{ fontSize: 23, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1, letterSpacing: -0.6, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                ₪{Math.round(selectedTask.price || 0)}
+              </span>
+              <button onClick={() => setSelectedTask(null)} aria-label="Close" className="j-icon-btn" style={{
+                width: 28, height: 28, borderRadius: 9, background: 'var(--surface-3)',
+                border: '1px solid var(--border-1)', color: 'var(--text-3)', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}>
+                <X size={14} />
+              </button>
+            </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-              <div style={{ background: 'linear-gradient(135deg,var(--brand-hero-bg, #0f2b6b),var(--brand-primary))', borderRadius: 14, padding: '10px 15px', flexShrink: 0 }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -1 }}>₪{selectedTask.price}</div>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-1)', marginBottom: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                  {translatedSelectedTask?.title || selectedTask.title}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                  {selectedTask.location_name && <><MapPin size={10} /><span>{translatedSelectedTask?.location_name || selectedTask.location_name}</span></>}
-                  {selectedTask.estimated_time && <><Clock size={10} /><span>{selectedTask.estimated_time}</span></>}
-                  <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{localizedCategoryLabel(categoryKeyForTask(selectedTask), categoryMap[categoryKeyForTask(selectedTask)], lang, t)}</span>
-                </div>
-              </div>
+            {/* The card's one facts line: where, how long, what kind of job */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-2)', marginBottom: 10 }}>
+              {selectedTask.location_name && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, maxWidth: 160 }}>
+                  <MapPin size={11} strokeWidth={2} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{translatedSelectedTask?.location_name || selectedTask.location_name}</span>
+                </span>
+              )}
+              {selectedTask.estimated_time && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  <Clock size={11} strokeWidth={2} />{selectedTask.estimated_time}
+                </span>
+              )}
+              <span style={{ background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', color: 'var(--brand-primary)', borderRadius: 20, padding: '2px 8px', fontSize: 10.5, fontWeight: 700 }}>
+                {localizedCategoryLabel(categoryKeyForTask(selectedTask), categoryMap[categoryKeyForTask(selectedTask)], lang, t)}
+              </span>
             </div>
 
             {/* Route info (Mapbox Directions only) */}
@@ -659,18 +672,18 @@ export default function MapView() {
             )}
             {!navLoading && routeMeta && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <div style={{ flex: 1, background: 'var(--brand-primary-light)', border: '1px solid #bfdbfe', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Navigation size={13} color="var(--brand-primary)" />
+                <div style={{ flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Navigation size={13} color="var(--text-2)" strokeWidth={2} />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-primary-dark)' }}>{formatDist(routeMeta.totalDist, t)}</div>
-                    <div style={{ fontSize: 10, color: '#60a5fa' }}>{t('road_distance')}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{formatDist(routeMeta.totalDist, t)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{t('road_distance')}</div>
                   </div>
                 </div>
-                <div style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Clock size={13} color="#16a34a" />
+                <div style={{ flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Clock size={13} color="var(--text-2)" strokeWidth={2} />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#15803d' }}>{formatTime(routeMeta.totalTime, t)}</div>
-                    <div style={{ fontSize: 10, color: '#4ade80' }}>{t('travel_time')}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{formatTime(routeMeta.totalTime, t)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{t('travel_time')}</div>
                   </div>
                 </div>
               </div>

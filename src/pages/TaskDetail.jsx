@@ -1190,23 +1190,6 @@ export default function TaskDetail(props) {
             </div>
           ) : null}
 
-          {/* ── Quiet secondaries — never competing with the action above ── */}
-          {/* ── One quiet, CENTRED line ─────────────────────────────────────
-              This row used to exist only to carry a chat button, with the report
-              link pushed to the opposite edge — two unrelated controls at two
-              ends of the card, which is what broke its symmetry. The chat action
-              now lives inside the status bar it belongs to, and the single
-              secondary left here is the report link, centred under the card. */}
-          {!isOwner && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-              <button
-                onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;}setShowReport(true);}}
-                style={{ height: 32, padding: '0 8px', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 11.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                <Flag size={11} /> {t('report_task_btn')}
-              </button>
-            </div>
-          )}
-
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
 
@@ -1360,6 +1343,19 @@ export default function TaskDetail(props) {
             onSetShowApplyForm={setShowApplyForm}
             showApplyForm={showApplyForm}
           />
+        )}
+
+        {/* ── Report — the sheet's quiet LAST line ─────────────────────────
+            Reporting is the exception, so it closes the sheet instead of
+            sitting between the task and the actions it exists for. */}
+        {!isOwner && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+            <button
+              onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } setShowReport(true); }}
+              style={{ height: 34, padding: '0 8px', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 11.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+              <Flag size={11} /> {t('report_task_btn')}
+            </button>
+          </div>
         )}
       </div>
 
