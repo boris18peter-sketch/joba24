@@ -82,6 +82,46 @@ Deno.serve(async (req) => {
 
     // Pending applications are NOT touched — they remain valid for re-approval.
 
+    // ── TELL THE WORKER, AND TELL THEM THE TRUTH ───────────────────────────
+    // Two notifications come out of this action, and each has to go to the
+    // person it concerns:
+    //
+    // 1. The removed worker must hear that the PUBLISHER revoked the approval.
+    //    The approval rows above were written with bulkUpdate, which skips
+    //    per-record triggers, so the "application revoked" workflow never fired
+    //    for them — the worker was told nothing at all.
+    // 2. The publisher must NOT hear it. Resetting the task to OPEN fires the
+    //    Task trigger whose copy is written for the opposite case ("the worker
+    //    cancelled"), which is what sent the publisher a notification about
+    //    their own action. notifyTaskWorkerLeft now checks the application
+    //    status and stays silent for this path, so the notice is only sent here
+    //    — once, to the right person.
+    for (const app of approvedApps) {
+      if (!app.worker_id) continue;
+      await base44.asServiceRole.functions.invoke('notificationManager', {
+        event_key: 'application_revoked',
+        user_ids: [app.worker_id],
+        task_id: taskId,
+        variables: {
+          task_title: task.title || '',
+          task_id: taskId,
+          worker_id: app.worker_id,
+        },
+      }).catch((e) => console.error('notify revoked failed', e?.message));
+
+      // …and an in-app record in the conversation they already share, so the
+      // worker sees the reason next to the refund rather than only as a push.
+      await base44.asServiceRole.entities.ChatMessage.create({
+        task_id: taskId,
+        sender_id: user.id,
+        sender_name: user.full_name,
+        content: `המפרסם ביטל את בחירתך למשימה "${task.title}". הג'ובות שהיו נעולות הוחזרו ליתרה שלך, והמשימה מחפשת עובד אחר.`,
+        thread_key: [user.id, app.worker_id].sort().join('__'),
+        recipient_id: app.worker_id,
+        surface_brand_id: task.origin_brand_id || null,
+      }).catch((e) => console.error('chat notice failed', e?.message));
+    }
+
     // Rebuild applicants array from actual TaskApplication records (single source of truth)
     // `apps` was fetched above; after rejecting approved apps, only pending remain active
     const activeAppsAfter = apps.filter(a => a.status === 'pending');

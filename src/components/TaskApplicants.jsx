@@ -196,12 +196,13 @@ export default function TaskApplicants({ task, onApprove }) {
 
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
+  // Nothing yet — one quiet line. No explaining card: the publisher already
+  // knows what a job posting is, and the panel above already says it waits.
   if (applications.filter(a => a.status !== 'rejected' && a.status !== 'cancelled').length === 0) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
-        <div className="text-2xl mb-2">✋</div>
-        <p className="text-sm font-semibold text-blue-800">{t('ta_waiting_requests')}</p>
-        <p className="text-xs text-blue-600 mt-1">{t('ta_no_requests_yet')}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 2px', fontSize: 12, fontWeight: 600, color: 'var(--text-3)' }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--border-2)', flexShrink: 0 }} />
+        {t('ta_no_requests_yet')}
       </div>
     );
   }
@@ -259,45 +260,21 @@ export default function TaskApplicants({ task, onApprove }) {
         document.body
       )}
 
-      {/* ── WHAT THIS BLOCK IS ASKING FOR ────────────────────────────────────
-          Publishers read the row as a list of names, saw two buttons of nearly
-          equal weight on each one, and never worked out that the job does not
-          start until one of them is confirmed. The section now says that first,
-          in one sentence, and keeps a confirmed state that explains what has
-          already happened — instead of leaving a card whose only meaning was a
-          green tint. */}
-      {approvedApp ? (
-        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', background: 'var(--color-success-bg)', border: '1.5px solid var(--color-success-border)', borderRadius: 16, padding: '12px 14px' }}>
-          <div style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(5,150,105,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <CheckCircle2 size={18} color="var(--color-success)" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#065f46' }}>
-              {t('ta_approved_title', { name: applicantProfiles[approvedApp.worker_id]?.full_name || approvedApp.worker_name || '' })}
-            </div>
-            <div style={{ fontSize: 12, color: '#047857', lineHeight: 1.55, marginTop: 3 }}>
-              {t('ta_approved_body')}
-            </div>
-          </div>
-        </div>
-      ) : pending.length > 0 ? (
-        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', background: 'var(--brand-primary-light)', border: '1.5px solid var(--border-2)', borderRadius: 16, padding: '12px 14px' }}>
-          <div style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(26,111,212,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <CheckCircle2 size={18} color="var(--brand-primary)" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>
-              {t('ta_pick_title')}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.55, marginTop: 3 }}>
-              {t('ta_pick_body')}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('ta_applicants_count', { n: visibleApps.length })}</span>
+      {/* ── THE SECTION, AND NOTHING ELSE ────────────────────────────────────
+          A heading, then the applicants themselves. The banner above it and the
+          explaining card below it used to say the same thing twice, in two
+          different colours, and pushed the actual people off the screen. The
+          row of each applicant already carries its own "ממתין לאישורך" state,
+          so the section needs no separate explanation. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-2)' }}>
+          {t('ta_applicants_count', { n: visibleApps.length })}
+        </span>
+        {approvedApp && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: 'var(--color-success)' }}>
+            <CheckCircle2 size={10} /> {t('ta_approved_badge')}
+          </span>
+        )}
       </div>
 
       {visibleApps.map(app => {
@@ -315,6 +292,34 @@ export default function TaskApplicants({ task, onApprove }) {
         const isGold = hasSocialVerified(profile);
         const tasksCompleted = profile?.tasks_completed ?? app.worker_tasks_count ?? 0;
         const phone = isApproved ? profile?.phone : null;
+        const openProfile = () => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`); };
+
+        // ── THE CHOSEN WORKER — one row, never a second card ────────────────
+        // Their phone and the chat are in the action panel above, and the status
+        // is in the sheet's header. What is left that only this row can do is
+        // replace them before they set off — so that is all it shows.
+        if (isApproved) {
+          return (
+            <div
+              key={app.id}
+              style={{ opacity: isFading ? 0 : 1, transition: 'opacity 0.35s ease', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--r-md)', padding: '9px 12px' }}
+            >
+              <CheckCircle2 size={15} color="var(--color-success)" style={{ flexShrink: 0 }} />
+              <button onClick={openProfile} style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, textAlign: 'start', cursor: 'pointer' }}>
+                <span style={{ display: 'block', fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentName}</span>
+                <span style={{ display: 'block', fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>{t('ta_approved_badge')}</span>
+              </button>
+              {!workerStarted && (
+                <button
+                  onClick={() => setShowCancelWorkerConfirm(true)}
+                  style={{ height: 32, padding: '0 10px', borderRadius: 9, background: 'transparent', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}
+                >
+                  {t('ta_cancel_worker_btn')}
+                </button>
+              )}
+            </div>
+          );
+        }
 
         return (
           <div
