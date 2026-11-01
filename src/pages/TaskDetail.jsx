@@ -6,7 +6,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
@@ -31,6 +31,7 @@ import { isUserVerified, hasSocialVerified, copyToClipboard } from '@/lib/utils'
 import { raiseAppOffer } from '@/lib/appOffer';
 import { selectTask, patchTaskCache } from '@/lib/taskCache';
 import { creditsShortfall } from '@/lib/jobaBalance';
+import { formatDistance } from '@/lib/distance';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹', car: '🚗',
@@ -999,7 +1000,14 @@ export default function TaskDetail(props) {
                   <span style={{ fontSize: 11.5, color: 'var(--text-2)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                     <MapPin size={11} strokeWidth={2} />
                     {translatedTask.location_name}
-                    {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}${t('meters_short')}` : `${distKm.toFixed(1)}${t('km_short')}`}`}
+                  </span>
+                )}
+                {/* Distance is its OWN fact, immediately after the place and in
+                    the same position the feed card uses — one order, one look. */}
+                {distKm != null && !isNaN(distKm) && (
+                  <span style={{ fontSize: 11.5, color: 'var(--brand-primary)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    <Navigation size={11} strokeWidth={2.2} />
+                    {formatDistance(distKm, t)}
                   </span>
                 )}
                 {task.created_date && getRelativeTime(task.created_date, t) && (
@@ -1081,6 +1089,19 @@ export default function TaskDetail(props) {
             )}
           </div>
 
+          {/* ── WHAT THE JOB IS, IN THE PUBLISHER'S OWN WORDS ───────────────
+              The description used to be the last row of "פרטי המשימה", far
+              below the fold. It is what a worker actually reads before deciding,
+              so it now sits at the top of the sheet, directly under the title,
+              the place, the price — the full text, with its line breaks kept. */}
+          {mainDescription && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-1)' }}>
+              <p dir="auto" className="selectable-text" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', whiteSpace: 'pre-line' }}>
+                {mainDescription}
+              </p>
+            </div>
+          )}
+
           {/* ══ NEXT STEP — the only emphasised thing on the screen ══ */}
           {(isApproved && !isWorker && task.status === 'OPEN') || (canApplyManual && !showApplyForm) || (hasPendingApp && !isOwner) || (isOwner && task.status === 'OPEN') ? (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-1)' }}>
@@ -1131,8 +1152,11 @@ export default function TaskDetail(props) {
                       {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={11} />
                     </span>
                   </button>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 6, fontWeight: 600, lineHeight: 1.4 }}>
-                    {t('td_apply_return_note')}
+                  {/* The SAME sentence the apply popup prints — one promise,
+                      worded once, wherever it appears. */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 6, fontWeight: 600, lineHeight: 1.4 }}>
+                    <Lightbulb size={11} style={{ flexShrink: 0 }} />
+                    <span>{t('application_commitment_note')}</span>
                   </div>
                 </>
               )}
@@ -1284,7 +1308,7 @@ export default function TaskDetail(props) {
                 the shared component the card dropdown uses, so the two can
                 never disagree again. The heading above stays (it carries the
                 copyable id), so the component's own heading is suppressed. */}
-            <TaskDetailsRows task={task} showTaskDetailsLabel={false} />
+            <TaskDetailsRows task={task} showTaskDetailsLabel={false} showDescription={false} />
           </div>
         )}
 

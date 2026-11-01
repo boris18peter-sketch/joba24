@@ -11,6 +11,7 @@ import { useBrand } from '@/lib/brand/BrandProvider';
 import { useQuery } from '@tanstack/react-query';
 import { myApplicationsQuery } from '@/lib/queries';
 import { useLanguage } from '@/lib/LanguageContext';
+import { formatDistance } from '@/lib/distance';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 
 function getDistanceKm(lat1, lng1, lat2, lng2) {
@@ -304,7 +305,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
               {dist !== null && (
                 <span style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 3 }}>
                   <MapPin size={11} />
-                  {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
+                  {formatDistance(dist, t)}
                 </span>
               )}
               {task.category && (

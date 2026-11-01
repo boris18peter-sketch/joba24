@@ -258,6 +258,7 @@ export const en = {
     travel_time: 'Travel time',
     computing_route: 'Computing route',
     road_distance: 'Road distance',
+    distance_label: 'Distance',
     stop: 'Stop',
     me: 'Me',
     delayed: 'Delayed',

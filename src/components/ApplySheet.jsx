@@ -19,6 +19,9 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
   const [message, setMessage] = useState('');
   const [msgBlocked, setMsgBlocked] = useState(false);
   const submittedRef = useRef(false);
+  // The Joba cost of applying — the same figure the task detail sheet prints on
+  // its own apply button, computed the same way.
+  const jobaCost = Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05));
 
   const handleSubmit = async () => {
     if (loading || submittedRef.current) return;
@@ -80,7 +83,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
             <span>{t('application_fee')}</span>
             <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
-              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} /> {t('credits')}
+              {jobaCost} <CreditIcon size={12} /> {t('credits')}
             </span>
           </div>
           <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task?.title}</div>
@@ -119,28 +122,40 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
           )}
         </div>
 
-        {/* Actions */}
+        {/* Actions — the SAME submission button the task detail sheet uses:
+            one brand-coloured bar with the paper plane, the label and the Joba
+            cost pill. It used to be a second, differently-shaped button, so the
+            same action looked like two different actions. */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={onClose}
-            style={{ height: 52, padding: '0 18px', borderRadius: 'var(--r-md)', background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
+            style={{ height: 52, padding: '0 18px', borderRadius: 14, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
           >{t('cancel_btn')}</button>
           <button
             onClick={handleSubmit}
             disabled={loading}
             style={{
-              flex: 1, height: 52, borderRadius: 'var(--r-md)',
-              background: loading ? '#93b4d8' : 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))',
-              border: 'none', fontSize: 15, fontWeight: 900, color: 'var(--brand-modal-cta-text, white)',
+              flex: 1, height: 52, borderRadius: 14,
+              background: 'var(--brand-btn-primary-bg, var(--brand-primary))',
+              border: 'none', fontSize: 15.5, fontWeight: 900,
+              color: 'var(--brand-modal-cta-text, #ffffff)',
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: loading ? 'none' : 'var(--shadow-md)',
-              transition: 'background 0.2s, transform 0.1s',
+              boxShadow: loading ? 'none' : '0 6px 18px rgba(26,111,212,0.26)',
+              opacity: loading ? 0.75 : 1,
+              transition: 'opacity 0.2s, transform 0.1s',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {loading ? <Loader2 size={20} className="animate-spin" /> :
-             <><Send size={16} strokeWidth={1.8} /> {t('send_application')}</>}
+            {loading ? <Loader2 size={18} className="animate-spin" /> : (
+              <>
+                <Send size={16} strokeWidth={2.2} />
+                <span>{t('send_application')}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  {jobaCost} <CreditIcon size={11} />
+                </span>
+              </>
+            )}
           </button>
         </div>
       </div>

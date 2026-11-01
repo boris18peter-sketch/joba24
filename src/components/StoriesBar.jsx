@@ -11,6 +11,7 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import { parseDescription } from '@/lib/descriptionParser';
 import { useLanguage } from '@/lib/LanguageContext';
+import { formatDistance } from '@/lib/distance';
 import { useBrand } from '@/lib/brand/BrandProvider';
 
 function calcDistKm(userLoc, task) {
@@ -320,7 +321,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
               {distKm != null && !isNaN(distKm) && (
                 <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
                   <Navigation size={10} />
-                  {distKm < 1 ? `${Math.round(distKm * 1000)}${t('meters_short')}` : `${distKm.toFixed(1)}${t('km_short')}`}
+                  {formatDistance(distKm, t)}
                 </span>
               )}
             </div>

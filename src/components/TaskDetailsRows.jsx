@@ -35,7 +35,12 @@ function getUrgencyConfig(urgency_tag, t) {
   return configs[urgency_tag];
 }
 
-export default function TaskDetailsRows({ task, compact = false, showTaskDetailsLabel = true }) {
+/**
+ * `showDescription={false}` is for a host that prints the description itself —
+ * the task detail sheet shows it at the top of the screen, under the title, so
+ * repeating it down here as one more row would show the same text twice.
+ */
+export default function TaskDetailsRows({ task, compact = false, showTaskDetailsLabel = true, showDescription = true }) {
   const { t, lang } = useLanguage();
   const { map: categoryMap } = useGlobalCategories();
   if (!task) return null;
@@ -107,7 +112,7 @@ export default function TaskDetailsRows({ task, compact = false, showTaskDetails
   }
 
   // Full description (the card body shows 1-line clamp; here show full)
-  if (task.description) {
+  if (showDescription && task.description) {
     const desc = parseDescription(task.description).mainDescription;
     if (desc) extraRows.push({ label: t('tdr_full_description'), value: desc });
   }

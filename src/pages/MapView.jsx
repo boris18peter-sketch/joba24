@@ -7,7 +7,9 @@ import { base44 } from '@/api/base44Client';
 import { openTasksQuery } from '@/lib/queries';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Navigation, X, MapPin, Clock, Star, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import { haversineKm, formatDistance, formatTravelTime } from '@/lib/distance';
 import { getCategoryLabel } from '@/lib/categories';
 import MarketServiceFilter from '@/components/MarketServiceFilter';
 import { categoryKeyForTask, categoryMatches } from '@/lib/brand/categoryTree';
@@ -134,6 +136,12 @@ export default function MapView() {
 
   // Auto-translate the selected task bubble to the user's UI language
   const { translatedTask: translatedSelectedTask } = useTaskTranslation(selectedTask);
+
+  // The pinned task's distance — one geometry for the whole interface, so the
+  // popup, the feed card and the task sheet always print the same number.
+  const popupKm = selectedTask && userLocation
+    ? haversineKm(userLocation.lat, userLocation.lng, selectedTask.lat, selectedTask.lng)
+    : null;
 
   const [viewState, setViewState] = useState({
     longitude: CENTER.longitude, latitude: CENTER.latitude,
@@ -645,17 +653,29 @@ export default function MapView() {
               </button>
             </div>
 
-            {/* The card's one facts line: where, how long, what kind of job */}
+            {/* The card's one facts line — the SAME order as the feed card and
+                the task sheet: verification, rating, place, distance, kind of
+                job. The task's own duration used to sit here too, next to a
+                travel time it has nothing to do with, which is what made the
+                two times look like a contradiction. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-2)', marginBottom: 10 }}>
+              {selectedTask.client_verified ? <VerifiedBadge size="sm" /> : null}
+              {Number(selectedTask.client_rating) > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--text-2)', fontWeight: 700 }}>
+                  <Star size={11} fill="#fbbf24" color="#fbbf24" />
+                  {Number(selectedTask.client_rating).toFixed(1)}
+                </span>
+              )}
               {selectedTask.location_name && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, maxWidth: 160 }}>
                   <MapPin size={11} strokeWidth={2} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{translatedSelectedTask?.location_name || selectedTask.location_name}</span>
                 </span>
               )}
-              {selectedTask.estimated_time && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                  <Clock size={11} strokeWidth={2} />{selectedTask.estimated_time}
+              {popupKm != null && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand-primary)', fontWeight: 700 }}>
+                  <Navigation size={11} strokeWidth={2.2} />
+                  {formatDistance(popupKm, t)}
                 </span>
               )}
               <span style={{ background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', color: 'var(--brand-primary)', borderRadius: 20, padding: '2px 8px', fontSize: 10.5, fontWeight: 700 }}>
@@ -663,32 +683,28 @@ export default function MapView() {
               </span>
             </div>
 
-            {/* Route info (Mapbox Directions only) */}
-            {navLoading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8faff', border: '1px solid #dce8f5', borderRadius: 12, padding: '9px 12px', marginBottom: 12 }}>
-                <div className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
-                <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{t('computing_route')}</span>
-              </div>
-            )}
-            {!navLoading && routeMeta && (
+            {/* Distance and travel time — the SAME figure and the SAME wording
+                the card, the sheet and its map bubble show. Both are derived
+                from one distance, so they can never disagree; the driving route
+                behind "start navigation" still measures the road itself. */}
+            {popupKm != null ? (
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <div style={{ flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Navigation size={13} color="var(--text-2)" strokeWidth={2} />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{formatDist(routeMeta.totalDist, t)}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{t('road_distance')}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{formatDistance(popupKm, t)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{t('distance_label')}</div>
                   </div>
                 </div>
                 <div style={{ flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Clock size={13} color="var(--text-2)" strokeWidth={2} />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{formatTime(routeMeta.totalTime, t)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{formatTravelTime(popupKm, t)}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{t('travel_time')}</div>
                   </div>
                 </div>
               </div>
-            )}
-            {!navLoading && !routeMeta && !userLocation && (
+            ) : (
               <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '8px 12px', marginBottom: 12, fontSize: 12, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MapPin size={13} /> {t('enable_location') || 'Allow location access to see distance and navigate'}
               </div>

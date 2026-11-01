@@ -7,25 +7,12 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { getMapToken } from '@/lib/mapToken';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
 import { useLanguage } from '@/lib/LanguageContext';
+import { haversineKm, formatDistance, formatTravelTime } from '@/lib/distance';
 
-function calcDistKm(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function formatDist(km) {
-  if (km < 1) return `${Math.round(km * 1000)} מ'`;
-  return `${km.toFixed(1)} ק"מ`;
-}
-function formatTime(km) {
-  const mins = Math.max(1, Math.round(km / 40 * 60));
-  if (mins < 60) return `~${mins} דק'`;
-  return `~${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')} ש'`;
-}
+// Distance and travel time come from @/lib/distance — this file used to carry
+// its own copy of both, with a different unit format ("9.7 ק"מ") and its own
+// 40 km/h estimate, so its bubble disagreed with the map popup for the same
+// task. One contract now, shared by every surface.
 
 function UserDot() {
   return (
@@ -65,7 +52,7 @@ function TaskPin({ task, onClick }) {
 
 function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, isExpanded, onInvoiceClick, onGenerateInvoice, t }) {
   const distKm = (userLocation && task.lat && task.lng)
-    ? calcDistKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
+    ? haversineKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
     : null;
 
   const [pinInfoVisible, setPinInfoVisible] = useState(false);
@@ -125,8 +112,8 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <Navigation size={13} color="var(--brand-primary)" />
             <div>
-              <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--brand-primary)', lineHeight: 1 }}>{formatDist(distKm)}</div>
-              <div style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>{formatTime(distKm)}</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--brand-primary)', lineHeight: 1 }}>{formatDistance(distKm, t)}</div>
+              <div style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>{formatTravelTime(distKm, t)}</div>
             </div>
           </div>
         </div>

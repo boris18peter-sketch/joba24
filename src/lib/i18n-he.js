@@ -366,6 +366,7 @@ export const he = {
     travel_time: 'זמן נסיעה',
     stop: 'עצור',
     road_distance: 'מרחק בכביש',
+    distance_label: 'מרחק',
     computing_route: 'מחשב מסלול...',
     start_nav: 'התחל ניווט',
     no_location_short: 'ללא מיקום',

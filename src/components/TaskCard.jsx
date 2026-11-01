@@ -35,6 +35,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import { creditsShortfall } from '@/lib/jobaBalance';
 import { invalidateTaskCaches } from '@/lib/taskSync';
+import { formatDistance } from '@/lib/distance';
 
 
 function normalizeDate(d) {
@@ -59,8 +60,8 @@ function getRelativeTime(date, t) {
 }
 
 /**
- * The card's one-line facts row: location · distance · age · verification ·
- * rating · applicants.
+ * The card's one-line facts row — the app's ONE fact order:
+ * verification · rating · location · distance · age · applicants.
  *
  * Only facts that actually exist are rendered, separated by a hairline dot that
  * is drawn BETWEEN two facts rather than after each one — so a task with two
@@ -603,22 +604,12 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               )}
             </h3>
 
+            {/* ONE ORDER, EVERY SURFACE. Verification and rating lead, then
+                where and how far, then how fresh — exactly the order the task
+                detail sheet and the map popup use. The card used to open with
+                the location and put the rating last, so the same publisher's
+                rating sat on the left here and on the right in the sheet. */}
             <FactsRow items={[
-              displayTask.location_name ? (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, maxWidth: 150, color: 'var(--text-2)' }}>
-                  <MapPin size={11} strokeWidth={2} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTask.location_name}</span>
-                </span>
-              ) : null,
-              dist != null && !isNaN(dist) ? (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand-primary)', fontWeight: 700 }}>
-                  <Navigation size={10} strokeWidth={2.2} />
-                  {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
-                </span>
-              ) : null,
-              task.created_date && getRelativeTime(task.created_date, t) ? (
-                <span>{getRelativeTime(task.created_date, t)}</span>
-              ) : null,
               // The SAME round green badge the task sheet shows beside the
               // publisher's name. The card drew its own shield icon here, so the
               // one signal a visitor looks for — "is this person verified?" —
@@ -629,6 +620,21 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   <Star size={11} fill="#fbbf24" color="#fbbf24" />
                   {Number(task.client_rating).toFixed(1)}
                 </span>
+              ) : null,
+              displayTask.location_name ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, maxWidth: 150, color: 'var(--text-2)' }}>
+                  <MapPin size={11} strokeWidth={2} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTask.location_name}</span>
+                </span>
+              ) : null,
+              dist != null && !isNaN(dist) ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand-primary)', fontWeight: 700 }}>
+                  <Navigation size={10} strokeWidth={2.2} />
+                  {formatDistance(dist, t)}
+                </span>
+              ) : null,
+              task.created_date && getRelativeTime(task.created_date, t) ? (
+                <span>{getRelativeTime(task.created_date, t)}</span>
               ) : null,
               task.status === 'OPEN' && liveApplicantCount > 0 ? (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#92400e', fontWeight: 700 }}>
