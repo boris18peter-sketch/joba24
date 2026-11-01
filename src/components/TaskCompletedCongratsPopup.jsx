@@ -87,12 +87,12 @@ export default function TaskCompletedCongratsPopup({ task, role, onClose }) {
           </div>
         </div>
 
+        {/* The headline, and nothing under it: the sheet already said what
+            happened on the card the user was looking at, so a paragraph here
+            only repeated it. */}
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <div className="j-modal-title" style={{ fontSize: 21, fontWeight: 900, letterSpacing: -0.4, marginBottom: 8 }}>
+          <div className="j-modal-title" style={{ fontSize: 21, fontWeight: 900, letterSpacing: -0.4 }}>
             {isWorker ? t('completion_worker_title') : t('completion_client_title')}
-          </div>
-          <div className="j-modal-text" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
-            {isWorker ? t('completion_worker_body') : t('completion_client_body')}
           </div>
         </div>
 

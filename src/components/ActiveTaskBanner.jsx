@@ -4,7 +4,7 @@ import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen, Calendar, X } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen, Calendar, X, Send } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { resolveStatusFlow, stepIndexOf, nextCta, proofCopy } from '@/lib/taskStatusFlow';
@@ -611,7 +611,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
               disabled={savingMedia}
               style={{ marginTop: 14, width: '100%', height: 50, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              {savingMedia ? <Loader2 size={18} className="animate-spin" /> : t('save_btn')}
+              {savingMedia ? <Loader2 size={18} className="animate-spin" /> : <><Send size={16} strokeWidth={2.2} /> {t('proof_send_btn')}</>}
             </button>
           </div>
         </div>,

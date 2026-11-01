@@ -18,6 +18,8 @@ export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
+  // Declining is irreversible — like cancelling or deleting a task, it asks first.
+  const [declineTarget, setDeclineTarget] = useState(null);
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -144,6 +146,7 @@ export default function TaskApplicants({ task, onApprove }) {
   });
 
   const handleDecline = async (app) => {
+    setDeclineTarget(null);
     if (decliningRef.current.has(app.id)) return;
     decliningRef.current.add(app.id);
     setDecliningIds(new Set(decliningRef.current));
@@ -254,6 +257,47 @@ export default function TaskApplicants({ task, onApprove }) {
                 {cancelWorkerMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><UserX size={16} /> {t('ta_yes_cancel_worker')}</>}
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Decline Confirmation — the same warning sheet a task cancellation or
+          deletion raises, so an irreversible action never happens on one tap. */}
+      {declineTarget && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 2000000, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', touchAction: 'none' }}
+          onClick={() => setDeclineTarget(null)}
+        >
+          <div
+            dir={isRTL ? 'rtl' : 'ltr'}
+            className="mobile-sheet"
+            style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 16px' }} />
+            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>
+              {t('ta_decline_confirm_title')}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 18 }}>
+              {t('ta_decline_confirm_body', { name: applicantProfiles[declineTarget.worker_id]?.full_name || declineTarget.worker_name || '' })}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => handleDecline(declineTarget)}
+                disabled={decliningIds.has(declineTarget.id)}
+                style={{ width: '100%', height: 48, borderRadius: 14, background: 'var(--color-danger)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                {decliningIds.has(declineTarget.id) ? <Loader2 size={18} className="animate-spin" /> : <><UserX size={16} /> {t('ta_decline_confirm_btn')}</>}
+              </button>
+              <button
+                onClick={() => setDeclineTarget(null)}
+                style={{ width: '100%', height: 44, borderRadius: 14, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+              >
+                {t('ta_decline_confirm_keep')}
+              </button>
+            </div>
+            <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
           </div>
         </div>,
         document.body
@@ -493,7 +537,7 @@ export default function TaskApplicants({ task, onApprove }) {
                       : <><CheckCircle2 size={17} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('ta_approve_named', { name: currentName })}</span></>}
                   </button>
                   <button
-                    onClick={() => handleDecline(app)}
+                    onClick={() => setDeclineTarget(app)}
                     disabled={isBeingDeclined}
                     style={{
                       flexShrink: 0, height: 46, padding: '0 12px', borderRadius: 12,

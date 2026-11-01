@@ -7,7 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { openTasksQuery } from '@/lib/queries';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { Navigation, X, MapPin, Clock, Star, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Navigation, X, MapPin, Clock, Star, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { haversineKm, formatDistance, formatTravelTime } from '@/lib/distance';
 import { getCategoryLabel } from '@/lib/categories';
@@ -729,7 +729,7 @@ export default function MapView() {
                 border: '1.5px solid var(--border-1)', color: 'var(--brand-primary)', fontWeight: 800, fontSize: 13, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               }}>
-                {t('details')} <ChevronRight size={14} />
+                {t('details')}
               </button>
             </div>
           </div>

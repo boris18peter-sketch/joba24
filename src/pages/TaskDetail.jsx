@@ -6,7 +6,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users, Lightbulb } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
@@ -1067,6 +1067,19 @@ export default function TaskDetail(props) {
             })()}
           </div>
 
+          {/* ── WHAT THE JOB IS, IN THE PUBLISHER'S OWN WORDS ───────────────
+              Above the price, directly under the title and the facts: what a
+              worker reads first, before the number. The full text, with its
+              line breaks kept. It is also listed once more as a row inside
+              "פרטי המשימה" further down, where every other detail lives. */}
+          {mainDescription && (
+            <div style={{ marginTop: 10 }}>
+              <p dir="auto" className="selectable-text" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', whiteSpace: 'pre-line' }}>
+                {mainDescription}
+              </p>
+            </div>
+          )}
+
           {/* ── The one number the screen is about ── */}
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-1)' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
@@ -1088,19 +1101,6 @@ export default function TaskDetail(props) {
               </div>
             )}
           </div>
-
-          {/* ── WHAT THE JOB IS, IN THE PUBLISHER'S OWN WORDS ───────────────
-              The description used to be the last row of "פרטי המשימה", far
-              below the fold. It is what a worker actually reads before deciding,
-              so it now sits at the top of the sheet, directly under the title,
-              the place, the price — the full text, with its line breaks kept. */}
-          {mainDescription && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-1)' }}>
-              <p dir="auto" className="selectable-text" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', whiteSpace: 'pre-line' }}>
-                {mainDescription}
-              </p>
-            </div>
-          )}
 
           {/* ══ NEXT STEP — the only emphasised thing on the screen ══ */}
           {(isApproved && !isWorker && task.status === 'OPEN') || (canApplyManual && !showApplyForm) || (hasPendingApp && !isOwner) || (isOwner && task.status === 'OPEN') ? (
@@ -1147,16 +1147,21 @@ export default function TaskDetail(props) {
                     onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); } return; } setShowApplyForm(true);}}
                     style={{ width: '100%', height: 52, borderRadius: 14, background: 'var(--brand-btn-primary-bg, var(--brand-primary))', color: 'var(--brand-btn-primary-text, #ffffff)', border: 'none', fontSize: 15.5, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 18px rgba(26,111,212,0.26)' }}>
                     <Send size={16} strokeWidth={2.2} />
-                    <span>{t('apply_to_task')}</span>
+                    {/* The apply popup's own label — the same words on the same
+                        action, so the step cannot read as two different steps. */}
+                    <span>{t('send_application')}</span>
                     <span style={{ fontSize: 12, fontWeight: 800, background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={11} />
                     </span>
                   </button>
-                  {/* The SAME sentence the apply popup prints — one promise,
-                      worded once, wherever it appears. */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 6, fontWeight: 600, lineHeight: 1.4 }}>
-                    <Lightbulb size={11} style={{ flexShrink: 0 }} />
-                    <span>{t('application_commitment_note')}</span>
+                  {/* The SAME sentence the apply popup prints, in the SAME green
+                      box, under the same button — one promise, one design,
+                      wherever it appears. */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 12, padding: '10px 12px', marginTop: 8 }}>
+                    <ShieldCheck size={16} color="var(--color-success)" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: 'var(--color-success)', fontWeight: 600, lineHeight: 1.4 }}>
+                      {t('application_commitment_note')}
+                    </span>
                   </div>
                 </>
               )}
@@ -1308,7 +1313,7 @@ export default function TaskDetail(props) {
                 the shared component the card dropdown uses, so the two can
                 never disagree again. The heading above stays (it carries the
                 copyable id), so the component's own heading is suppressed. */}
-            <TaskDetailsRows task={task} showTaskDetailsLabel={false} showDescription={false} />
+            <TaskDetailsRows task={task} showTaskDetailsLabel={false} />
           </div>
         )}
 
