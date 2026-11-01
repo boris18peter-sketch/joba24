@@ -10,6 +10,14 @@ import { useLanguage } from '@/lib/LanguageContext';
  * task-detail sheet both render exactly this component, so the experience is
  * identical no matter where the worker taps "apply".
  *
+ * ── ONE DESIGN WITH THE TASK SHEET ──────────────────────────────────────────
+ * This popup opens FROM the task detail sheet, so it is built from the same
+ * pieces: the sheet's own page surface behind, one task card carrying the title
+ * and the price row, one card for the message, then the sheet's own primary
+ * action bar — with the commitment note underneath it, in the same green box
+ * the sheet shows. Nothing here is a second, differently-shaped version of
+ * something the sheet already renders.
+ *
  * The popup owns the message + moderation UX; the actual submission is
  * delegated to `onApply(message, images)` so each caller keeps its own
  * post-apply cache/notification logic.
@@ -63,73 +71,91 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
         className="j-modal-surface"
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'var(--sheet-bg)',
+          // The sheet's own surface + CTA contract, so the popup's buttons and
+          // text resolve to exactly the same Brand tokens as the sheet behind it.
+          background: 'var(--brand-modal-bg, var(--surface-1))',
           border: '1px solid var(--brand-modal-border, var(--border-1))',
-          borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
+          borderRadius: 'var(--brand-modal-radius, 24px) var(--brand-modal-radius, 24px) 0 0',
+          '--brand-btn-primary-bg': 'var(--brand-modal-cta-bg)',
+          '--brand-btn-primary-text': 'var(--brand-modal-cta-text)',
           width: '100%', maxWidth: 480,
           boxShadow: 'var(--shadow-xl)',
-          padding: '12px 20px',
-          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+          padding: '12px 16px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1)',
           maxHeight: '90dvh',
           overflowY: 'auto',
           overscrollBehavior: 'contain',
         }}
       >
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 18px' }} />
 
-        {/* Task + commitment header */}
-        <div style={{ background: 'linear-gradient(135deg, var(--brand-modal-title, #0f2b6b), var(--brand-modal-cta-bg, var(--brand-primary)))', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'var(--brand-modal-cta-text, white)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
-            <span>{t('application_fee')}</span>
-            <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
-              {jobaCost} <CreditIcon size={12} /> {t('credits')}
-            </span>
+        {/* ── The task, in the sheet's own card ── */}
+        <div style={{
+          background: 'var(--brand-card-bg, var(--surface-2))',
+          borderRadius: 'var(--r-lg)',
+          border: '1px solid var(--border-1)',
+          boxShadow: 'var(--shadow-xs)',
+          padding: 14,
+        }}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.28, letterSpacing: -0.3 }}>
+            {task?.title}
           </div>
-          <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task?.title}</div>
-          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{Math.round(calculateCurrentPrice(task) || 0)}</div>
-          {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{sub}</div> : null; })()}
+
+          {/* The one number the screen is about — the sheet's price row */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-1)' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+              <span style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1, letterSpacing: -0.8, whiteSpace: 'nowrap' }}>
+                ₪{Math.round(calculateCurrentPrice(task) || 0)}
+              </span>
+              {(() => { const sub = formatHourlySublabel(task); return sub ? <span style={{ fontSize: 10.5, color: 'var(--text-2)', fontWeight: 600 }}>{sub}</span> : null; })()}
+            </div>
+          </div>
         </div>
 
-        {/* Commitment reassurance */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', marginBottom: 14 }}>
-          <ShieldCheck size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.4 }}>
-            {t('application_commitment_note')}
-          </span>
-        </div>
-
-        {/* Message */}
-        <div style={{ background: 'var(--brand-primary-light)', borderRadius: 16, padding: 14, border: '1px solid var(--border-2)', marginBottom: 14 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-modal-title, #0f2b6b)', margin: '0 0 8px' }}>{t('add_message')}</p>
+        {/* ── The message — one card, one field, like every input in the sheet ── */}
+        <div style={{
+          background: 'var(--brand-card-bg, var(--surface-2))',
+          borderRadius: 'var(--r-lg)',
+          border: '1px solid var(--border-1)',
+          boxShadow: 'var(--shadow-xs)',
+          padding: 14,
+          marginTop: 10,
+        }}>
+          <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4, margin: '0 0 8px' }}>{t('add_message')}</p>
           <textarea
             value={message}
             onChange={e => { setMessage(e.target.value); setMsgBlocked(false); }}
             placeholder={t('message_placeholder')}
             rows={3}
             style={{
-              width: '100%', borderRadius: 10, border: `1px solid ${msgBlocked ? '#fca5a5' : 'var(--border-2)'}`,
+              width: '100%',
+              borderRadius: 'var(--brand-input-radius, var(--r-md))',
+              border: `1px solid ${msgBlocked ? 'var(--color-danger-border)' : 'var(--brand-input-border, var(--border-1))'}`,
               padding: '10px 12px', fontSize: 16, fontFamily: 'inherit', resize: 'none',
-              outline: 'none', color: '#1a2540', background: 'white', boxSizing: 'border-box',
-              lineHeight: 1.5,
+              outline: 'none', color: 'var(--text-1)',
+              background: 'var(--brand-input-bg, var(--input-bg))',
+              boxSizing: 'border-box', lineHeight: 1.5,
             }}
           />
           {msgBlocked && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '7px 10px' }}>
-              <span style={{ fontSize: 13 }}>🛡️</span>
-              <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{t('message_blocked')}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: 10, padding: '7px 10px' }}>
+              <span style={{ fontSize: 12, color: 'var(--color-danger)', fontWeight: 600 }}>{t('message_blocked')}</span>
             </div>
           )}
         </div>
 
-        {/* Actions — the SAME submission button the task detail sheet uses:
-            one brand-coloured bar with the paper plane, the label and the Joba
-            cost pill. It used to be a second, differently-shaped button, so the
-            same action looked like two different actions. */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        {/* ── The submission — the sheet's own primary bar: one brand-coloured
+            button with the paper plane, the label and the Joba cost pill. ── */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <button
             onClick={onClose}
-            style={{ height: 52, padding: '0 18px', borderRadius: 14, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
+            style={{
+              height: 52, padding: '0 18px', borderRadius: 14, flexShrink: 0,
+              background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+              color: 'var(--text-2)', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            }}
           >{t('cancel_btn')}</button>
           <button
             onClick={handleSubmit}
@@ -138,7 +164,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
               flex: 1, height: 52, borderRadius: 14,
               background: 'var(--brand-btn-primary-bg, var(--brand-primary))',
               border: 'none', fontSize: 15.5, fontWeight: 900,
-              color: 'var(--brand-modal-cta-text, #ffffff)',
+              color: 'var(--brand-btn-primary-text, #ffffff)',
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: loading ? 'none' : '0 6px 18px rgba(26,111,212,0.26)',
@@ -157,6 +183,20 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
               </>
             )}
           </button>
+        </div>
+
+        {/* ── The commitment — UNDER the button, in the sheet's own green box,
+            worded once and shown identically in both places. ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: 'var(--color-success-bg)',
+          border: '1px solid var(--color-success-border)',
+          borderRadius: 12, padding: '10px 12px', marginTop: 10,
+        }}>
+          <ShieldCheck size={16} color="var(--color-success)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: 'var(--color-success)', fontWeight: 600, lineHeight: 1.4 }}>
+            {t('application_commitment_note')}
+          </span>
         </div>
       </div>
 
