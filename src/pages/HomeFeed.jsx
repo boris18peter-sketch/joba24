@@ -23,7 +23,7 @@ import { categoryKeyForTask, categoryMatches } from '@/lib/brand/categoryTree';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { useNavigate, useLocation } from 'react-router-dom';
-import EmptyMyTasksState from '@/components/EmptyMyTasksState';
+import PublishedTasksEmptyState from '@/components/empty/PublishedTasksEmptyState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import { releaseFirstTaskFlow } from '@/lib/firstTaskFlow';
@@ -31,7 +31,7 @@ import { isPublisherContext } from '@/lib/publisherContext';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import {
   myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery,
-  openTasksQuery, pendingApplicationsQuery,
+  openTasksQuery,
   selectActiveWorkerTask, selectActiveClientTask,
 } from '@/lib/queries';
 
@@ -902,7 +902,7 @@ export default function HomeFeed() {
 
         {/* ── My Published Tasks Tab ───────────────────────────── */}
         {activeTab === 'my_published' && myTasks.length === 0 && (
-          <EmptyMyTasksState />
+          <PublishedTasksEmptyState />
         )}
         {activeTab === 'my_published' && myTasks.length > 0 && (() => {
           const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
@@ -935,7 +935,7 @@ export default function HomeFeed() {
               </div>
 
               {filteredPub.length === 0 && myPubTab === 'active' && myTasks.length > 0 ? (
-                <EmptyMyTasksState />
+                <PublishedTasksEmptyState />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
