@@ -1,23 +1,35 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Star, Check, User, MessageCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Loader2, Check, MessageCircle, ChevronLeft, User, Star } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 import { invalidateTaskCaches } from '@/lib/taskSync';
+import { isUserVerified } from '@/lib/utils';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import GoldBadge from '@/components/GoldBadge';
+import StarRating from '@/components/profile/StarRating';
 
 /**
- * NewApplicantPopup — a candidate just applied to one of MY tasks, so he is
- * offered right here: photo, rating and one tap to approve, instead of the
- * publisher having to open the task, find the applicants panel and pick him.
+ * NewApplicantPopup — a candidate just applied to one of MY tasks.
  *
- * It carries exactly the facts that decide an approval — who he is, how he is
- * rated, and what he wrote — and nothing else.
+ * ── THE SAME HERO AS THE PROFILE PAGE ───────────────────────────────────────
+ * A candidate is a person you are being asked to trust with a job, so he is
+ * introduced exactly the way his own profile introduces him: the brand gradient,
+ * the big round photo, the name with its verification badge and the rating
+ * underneath. The publisher recognises the person, not a row of data.
+ *
+ * Tapping the photo (or the pill under it) opens his full profile. The alert is
+ * deliberately NOT cleared on the way out — the sheet is simply hidden while the
+ * profile is on screen, so going back re-opens it exactly where he left it.
  */
 export default function NewApplicantPopup({ task, application, onClose }) {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [approving, setApproving] = useState(false);
 
   const { data: profile } = useQuery({
@@ -35,6 +47,19 @@ export default function NewApplicantPopup({ task, application, onClose }) {
 
   const name = profile?.full_name || application?.worker_name || '';
   const rating = Number(profile?.rating || 0);
+  const reviewCount = Number(profile?.rating_count || 0);
+  const completed = Number(profile?.tasks_completed || 0);
+  const verified = profile ? isUserVerified(profile) : false;
+  const socialVerified = !!(profile?.instagram_verified || profile?.facebook_verified || profile?.tiktok_verified);
+
+  // The profile is a full screen of its own: hide the sheet while it is open, and
+  // it comes straight back when the visitor returns to this page.
+  if (location.pathname.startsWith('/public-profile')) return null;
+
+  const openProfile = () => {
+    if (!application?.worker_id) return;
+    navigate(`/public-profile?id=${application.worker_id}`);
+  };
 
   const approve = async () => {
     if (approving) return;
@@ -56,6 +81,8 @@ export default function NewApplicantPopup({ task, application, onClose }) {
       toast.error(err?.message || t('generic_error') || 'משהו השתבש, נסה שוב');
     }
   };
+
+  const heroText = 'var(--brand-hero-text, #ffffff)';
 
   return createPortal(
     <div
@@ -79,69 +106,126 @@ export default function NewApplicantPopup({ task, application, onClose }) {
           padding: '12px 16px',
           paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1)',
+          maxHeight: '92dvh',
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
         }}
       >
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 16px' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 14px' }} />
 
-        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-2)', marginBottom: 10 }}>
-          {t('applicant_popup_title') || 'מועמד חדש למשימה שלך'}
+        {/* ── THE CANDIDATE — the profile page's own hero ── */}
+        <div style={{
+          position: 'relative', overflow: 'hidden',
+          borderRadius: 20,
+          background: 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, #2563eb 100%)',
+          padding: '16px 14px 14px',
+          textAlign: 'center',
+        }}>
+          <div style={{ position: 'absolute', top: -34, left: -18, width: 96, height: 96, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
+          <div style={{ position: 'absolute', bottom: -40, right: -12, width: 86, height: 86, borderRadius: '50%', background: 'rgba(251,191,36,0.12)' }} />
+
+          <div style={{ position: 'relative', fontSize: 12, fontWeight: 800, color: heroText, opacity: 0.85, marginBottom: 10 }}>
+            {t('applicant_popup_title') || 'מועמד חדש למשימה שלך'}
+          </div>
+
+          {/* Photo — one tap opens the full profile */}
+          <button
+            onClick={openProfile}
+            aria-label={t('applicant_popup_view_profile') || 'לפרופיל המלא'}
+            style={{
+              position: 'relative', display: 'block', margin: '0 auto',
+              width: 96, height: 96, borderRadius: '50%', padding: 0,
+              border: '3px solid rgba(255,255,255,0.55)',
+              background: 'rgba(255,255,255,0.18)',
+              overflow: 'hidden', cursor: 'pointer',
+              boxShadow: '0 8px 22px rgba(3,20,60,0.28)',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {profile?.profile_photo ? (
+              <img src={profile.profile_photo} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <User size={38} color="rgba(255,255,255,0.85)" />
+              </span>
+            )}
+          </button>
+
+          {/* Name + verification */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 9 }}>
+            <span style={{ fontSize: 19, fontWeight: 900, color: heroText, letterSpacing: -0.3 }}>{name}</span>
+            {verified && (socialVerified ? <GoldBadge size="md" /> : <VerifiedBadge size="md" />)}
+          </div>
+
+          {/* Rating — the stars, the score and how many people gave it */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 6 }}>
+            <StarRating value={rating} size={15} gap={2} />
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: heroText }}>
+              {rating > 0 ? rating.toFixed(1) : (t('applicant_no_rating') || 'מועמד חדש')}
+            </span>
+            {reviewCount > 0 && (
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: heroText, opacity: 0.8 }}>
+                ({reviewCount})
+              </span>
+            )}
+          </div>
+
+          {/* What he has actually done — the same figure his profile leads with */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 10 }}>
+            {[
+              { value: completed, label: t('pr_tasks_done_long') || 'משימות שהושלמו' },
+            ].filter((m) => m.value > 0).map((m) => (
+              <div key={m.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Star size={12} color="#fbbf24" fill="#fbbf24" />
+                <span style={{ fontSize: 12.5, fontWeight: 900, color: heroText }}>{m.value}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: heroText, opacity: 0.8 }}>{m.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* The way into the profile — under the photo, where the eye stops */}
+          <button
+            onClick={openProfile}
+            style={{
+              position: 'relative',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              marginTop: 12, padding: '6px 12px', borderRadius: 99,
+              background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.28)',
+              color: heroText, fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              minHeight: 'unset', minWidth: 'unset',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <span>{t('applicant_popup_view_profile') || 'לפרופיל המלא'}</span>
+            <ChevronLeft size={13} strokeWidth={2.4} style={{ transform: isRTL ? 'none' : 'rotate(180deg)' }} />
+          </button>
         </div>
 
-        {/* The candidate — photo, name, rating, message */}
+        {/* ── His message, in the task's own card ── */}
         <div style={{
           background: 'var(--brand-card-bg, var(--surface-2))',
           borderRadius: 'var(--r-lg)',
           border: '1px solid var(--border-1)',
           boxShadow: 'var(--shadow-xs)',
           padding: 14,
+          marginTop: 10,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: '50%', flexShrink: 0, overflow: 'hidden',
-              background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {profile?.profile_photo ? (
-                <img src={profile.profile_photo} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <User size={22} color="var(--text-3)" />
-              )}
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {name}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 3 }}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star
-                    key={n}
-                    size={13}
-                    strokeWidth={1.6}
-                    style={{ fill: n <= Math.round(rating) ? '#fbbf24' : 'transparent', color: n <= Math.round(rating) ? '#fbbf24' : 'var(--border-2)' }}
-                  />
-                ))}
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-3)', marginInlineStart: 4 }}>
-                  {rating > 0 ? rating.toFixed(1) : (t('applicant_no_rating') || 'מועמד חדש')}
-                </span>
-              </div>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>
+              {t('applicant_popup_applied_to') || 'הגיש בקשה ל'}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>₪{Math.round(task?.price || 0)}</span>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.3, marginTop: 3 }}>
+            {task?.title}
           </div>
 
           {application?.message && (
-            <div style={{
-              display: 'flex', gap: 7, marginTop: 10, paddingTop: 10,
-              borderTop: '1px solid var(--border-1)',
-            }}>
-              <MessageCircle size={13} style={{ flexShrink: 0, marginTop: 2, color: 'var(--text-3)' }} />
-              <span style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-2)' }}>{application.message}</span>
+            <div style={{ display: 'flex', gap: 7, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-1)' }}>
+              <MessageCircle size={13} style={{ flexShrink: 0, marginTop: 3, color: 'var(--text-3)' }} />
+              <span style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-2)' }}>{application.message}</span>
             </div>
           )}
-        </div>
-
-        {/* Which task he applied to */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 10, fontSize: 12, color: 'var(--text-3)' }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task?.title}</span>
-          <span style={{ fontWeight: 800, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>₪{Math.round(task?.price || 0)}</span>
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>

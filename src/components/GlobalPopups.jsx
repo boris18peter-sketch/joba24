@@ -16,6 +16,7 @@ import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import LoyaltyBonusPopup from '@/components/LoyaltyBonusPopup';
 import ApprovedDeparturePopup from '@/components/ApprovedDeparturePopup';
 import NewApplicantPopup from '@/components/NewApplicantPopup';
+import CompletionApprovalPopup from '@/components/CompletionApprovalPopup';
 
 /**
  * GlobalPopups — renders the live notification stack AND the full-screen task
@@ -120,6 +121,11 @@ export default function GlobalPopups() {
           application={taskAlert.task?.application}
           onClose={() => taskAlertStore.clear()}
         />
+      )}
+
+      {/* The worker marked my task done → approve the completion from here */}
+      {taskAlert?.kind === 'completion_ready' && (
+        <CompletionApprovalPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />
       )}
 
       {notifications.length > 0 && createPortal(
