@@ -80,7 +80,7 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
             onClick={() => handleSelect(key)}
             title={label}
             style={{
-              flex: '0 0 auto', width: 76, minWidth: 76,
+              flex: '0 0 auto', width: 80, minWidth: 80,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
               padding: 0, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
@@ -98,16 +98,23 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
               <Icon size={21} strokeWidth={1.9} />
             </span>
             {/* A long category name is never renamed and never cut to "אסלה /
-                ניאג…": it is allowed TWO centred lines, after which it is
-                clamped. The full name stays available as the button's title. */}
+                ניאג…": it takes up to TWO centred lines, and every item reserves
+                the SAME height whether it uses one line or two — so a two-line
+                name can never make its tile taller than its neighbours, and the
+                whole rail stays on one rhythm. The full name stays available as
+                the button's title. */}
             <span style={{
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-              overflow: 'hidden', wordBreak: 'break-word',
-              fontSize: 11, fontWeight: 700, lineHeight: 1.25,
-              color: 'var(--text-2)', textAlign: 'center',
-              width: '100%', minHeight: 28, maxWidth: '100%',
+              height: 32, width: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {label}
+              <span style={{
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                overflow: 'hidden', wordBreak: 'break-word',
+                fontSize: 11.5, fontWeight: 700, lineHeight: 1.28,
+                color: 'var(--text-2)', textAlign: 'center', maxWidth: '100%',
+              }}>
+                {label}
+              </span>
             </span>
           </button>
         ))}

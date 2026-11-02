@@ -45,8 +45,8 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
         type="button"
         onClick={() => setOpen(true)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-          padding: '10px 12px', borderRadius: 18,
+          display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+          padding: '8px 10px', borderRadius: 16,
           background: 'var(--surface-2)',
           border: '1px solid var(--border-1)',
           boxShadow: 'var(--shadow-xs)',
@@ -56,7 +56,7 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
       >
         {/* Preview frame — a dark tile with the play mark on top of it */}
         <span style={{
-          position: 'relative', width: 62, height: 62, borderRadius: 14,
+          position: 'relative', width: 52, height: 52, borderRadius: 13,
           overflow: 'hidden', flexShrink: 0, background: '#0b1220',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -71,30 +71,30 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
             />
           )}
           <span style={{
-            position: 'relative', width: 30, height: 30, borderRadius: '50%',
+            position: 'relative', width: 26, height: 26, borderRadius: '50%',
             background: 'rgba(255,255,255,0.94)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
           }}>
-            <Play size={13} color="#0b1220" fill="#0b1220" style={{ marginLeft: 1 }} />
+            <Play size={11} color="#0b1220" fill="#0b1220" style={{ marginLeft: 1 }} />
           </span>
         </span>
 
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{
-            display: 'block', fontSize: 14, fontWeight: 800, color: 'var(--text-1)',
+            display: 'block', fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)',
             letterSpacing: -0.2, marginBottom: 2,
           }}>
             {title}
           </span>
           <span style={{
-            display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text-2)', lineHeight: 1.4,
+            display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--text-2)', lineHeight: 1.4,
           }}>
             {subtitle}
           </span>
         </span>
 
-        <ChevronLeft size={17} color="var(--text-3)" style={{ flexShrink: 0 }} />
+        <ChevronLeft size={16} color="var(--text-3)" style={{ flexShrink: 0 }} />
       </button>
 
       {open && createPortal(

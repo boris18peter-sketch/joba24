@@ -95,6 +95,35 @@ export function deriveRoots(globals, brand) {
 }
 
 /**
+ * The MAIN categories a browsing surface offers — one tile per category a
+ * person would name, never one per single job.
+ *
+ * A "main" category is any actionable node that is not buried under a trade:
+ * a node with no parent, or one whose parent is a VISUAL group. That is what
+ * makes the list complete as well as short: most sections hang their roots off
+ * a group (Home → Plumbing, Cleaning …), but a section can also hold its
+ * actionable categories directly (רכב, משלוח, הסעות, קניות). Reading the
+ * structure instead of one node_type means neither shape is silently dropped.
+ *
+ * Order follows the catalogue: a node sits where its GROUP sits, then by its
+ * own sort_order — so the sections keep their sequence even though their
+ * members' sort_order values are only meaningful inside a section.
+ */
+export function deriveMainCategories(globals) {
+  const map = Object.fromEntries((globals || []).map((g) => [g.category_key, g]));
+  const orderKey = (n) => {
+    const parent = n.group_key ? map[n.group_key] : (n.parent_key ? map[n.parent_key] : null);
+    return (parent && isGroupNode(parent) ? parent.sort_order : null) ?? n.sort_order ?? 999;
+  };
+  return (globals || [])
+    .filter((n) =>
+      isActive(n) && !isGroupNode(n) &&
+      (!n.parent_key || isGroupNode(map[n.parent_key])))
+    .sort((a, b) =>
+      (orderKey(a) - orderKey(b)) || ((a.sort_order || 0) - (b.sort_order || 0)));
+}
+
+/**
  * The actionable categories a Brand offers.
  * Legacy (non model-2) Brands keep their explicit BrandCategory rows.
  */

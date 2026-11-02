@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
-import { BrandLogo } from '@/components/BrandIdentity';
+import { deriveMainCategories } from '@/lib/brand/categoryTree';
 import { categoryIcon } from '@/components/empty/categoryIcons';
 import CategoryCarousel from '@/components/empty/CategoryCarousel';
 import EmptyStateVideoCard from '@/components/empty/EmptyStateVideoCard';
@@ -16,31 +16,30 @@ import EmptyStateVideoCard from '@/components/empty/EmptyStateVideoCard';
  * finished, succeeded, and returned nothing active, so it can never appear while
  * tasks are loading or when a task exists.
  *
- * Three things, in this order: one headline with one line under it, the publish
- * button, and the way in from a category. Nothing else — no steps, no second
- * title, no explanation blocks.
+ * The content sits at the TOP of the space under the header, never centred in
+ * it: a vertically centred block opens with a band of empty background, which
+ * reads as a loading gap rather than as a designed screen.
  *
  * ── WHICH CATEGORIES ──────────────────────────────────────────────────────
- * MAIN categories only. On the platform Brand that is the top-level taxonomy
- * (a trade a person chooses: plumbing, moving, cleaning) — not the dozens of
- * single jobs beneath it, which belong to the task form. A Brand scoped to its
- * own niche shows ITS categories instead, derived from its own assignment, so a
- * sub-brand reads as that brand rather than as the whole marketplace.
+ * The catalogue's own MAIN categories, read from data (deriveMainCategories) —
+ * every pickable category that is not a single job hidden under a trade. That
+ * is the top-level taxonomy as the catalogue defines it, which includes the
+ * categories that hang directly off a section (רכב, משלוח, הסעות, קניות) and
+ * not only the nodes typed as a root. Nothing is listed, ordered or renamed
+ * here: re-ordering the catalogue re-orders this rail.
  *
- * Both lists come from the same hook the task creation form reads, so no list,
- * order or name is written here: re-ordering the catalogue re-orders this rail.
- * A category opens that same form on that category (`/create-task?category=`),
- * which the form already understands — including a main category, which opens
- * the picker on it.
+ * A Brand scoped to its own niche shows ITS categories instead, derived from
+ * its own assignment, so a sub-brand reads as that brand rather than as the
+ * whole marketplace.
  */
 export default function PublishedTasksEmptyState() {
   const navigate = useNavigate();
   const { t, lang, isRTL } = useLanguage();
-  const { roots, categories, globalMap, isPlatformBrand } = useBrandCategories();
+  const { categories, globalMap, globalRows, isPlatformBrand } = useBrandCategories();
 
   const items = useMemo(() => {
     const source = isPlatformBrand
-      ? (roots || []).map((r) => ({ key: r.category_key, row: r }))
+      ? deriveMainCategories(globalRows || []).map((r) => ({ key: r.category_key, row: r }))
       : (categories || []).map((c) => ({ key: c.value, row: globalMap?.[c.value] }));
     const seen = new Set();
     return source
@@ -52,47 +51,35 @@ export default function PublishedTasksEmptyState() {
         const label = raw.replace(/^[^\p{L}\p{N}]+/u, '').trim() || raw;
         return { key, label, Icon: categoryIcon(key, globalMap) };
       });
-  }, [isPlatformBrand, roots, categories, globalMap, lang, t]);
+  }, [isPlatformBrand, categories, globalRows, globalMap, lang, t]);
 
   const publish = (key) => {
     try { navigator.vibrate?.(12); } catch {}
     navigate(key ? `/create-task?category=${encodeURIComponent(key)}` : '/create-task');
   };
 
-  // The block is centred in the space the screen leaves it, so the screen ends
-  // on content instead of on a band of empty background under the last row.
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', justifyContent: 'center',
-      minHeight: 'calc(100dvh - 210px)', paddingBottom: 4,
-    }}>
-      {/* A. One headline, one line — with the Brand's own mark beside it */}
-      <div style={{ textAlign: 'center' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}>
-          <BrandLogo size={26} radius={9} alt="" />
-          <h2 style={{
-            margin: 0, fontSize: 21, fontWeight: 900, lineHeight: 1.26,
-            letterSpacing: -0.4, color: 'var(--text-1)', textAlign: 'start',
-          }}>
-            {t('mtempty_title')}
-          </h2>
-        </div>
-        <p style={{
-          margin: '6px 0 0', fontSize: 13.5, lineHeight: 1.5,
-          fontWeight: 500, color: 'var(--text-2)',
-        }}>
-          {t('mtempty_sub')}
-        </p>
-      </div>
+    <div style={{ paddingTop: 26 }}>
+      {/* A. One headline, one line — the screen's own words, no mark beside them */}
+      <h2 style={{
+        margin: 0, fontSize: 22, fontWeight: 900, lineHeight: 1.26,
+        letterSpacing: -0.4, color: 'var(--text-1)', textAlign: 'center',
+      }}>
+        {t('mtempty_title')}
+      </h2>
+      <p style={{
+        margin: '6px 0 0', fontSize: 14, lineHeight: 1.5,
+        fontWeight: 500, color: 'var(--text-2)', textAlign: 'center',
+      }}>
+        {t('mtempty_sub')}
+      </p>
 
       {/* B. The one action this screen exists for — the only filled element */}
       <button
         type="button"
         onClick={() => publish()}
         style={{
-          marginTop: 12, width: '100%', height: 50, borderRadius: 14, border: 'none',
+          marginTop: 16, width: '100%', height: 50, borderRadius: 14, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
           color: 'var(--brand-btn-primary-text, #ffffff)',
@@ -107,7 +94,7 @@ export default function PublishedTasksEmptyState() {
 
       {/* C. The main categories — one consistent icon per category */}
       {items.length > 0 && (
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 16 }}>
           <div style={{
             marginBottom: 8, fontSize: 12.5, fontWeight: 800,
             color: 'var(--text-3)', letterSpacing: 0.2,
@@ -119,7 +106,7 @@ export default function PublishedTasksEmptyState() {
       )}
 
       {/* D. The explainer video that already exists in the app */}
-      <div style={{ marginTop: 12 }}>
+      <div style={{ marginTop: 8 }}>
         <EmptyStateVideoCard
           title={t('mtempty_video_title')}
           subtitle={t('mtempty_video_sub')}
