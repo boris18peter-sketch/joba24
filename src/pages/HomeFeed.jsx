@@ -24,6 +24,7 @@ import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { useNavigate, useLocation } from 'react-router-dom';
 import PublishedTasksEmptyState from '@/components/empty/PublishedTasksEmptyState';
+import PublishedTasksHeader from '@/components/myTasks/PublishedTasksHeader';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import { releaseFirstTaskFlow } from '@/lib/firstTaskFlow';
@@ -166,13 +167,23 @@ export default function HomeFeed() {
   // Joba24 (the platform Brand) is the marketplace-wide surface: it aggregates
   // Tasks from every Brand. Any other Brand shows only its own Tasks — applied
   // in memory below, so the shared list stays a single request.
-  const { data: allMyPublishedTasks = [], isLoading: myTasksLoading } = useQuery(myPublishedTasksQuery(me?.id));
+  const {
+    data: allMyPublishedTasks = [],
+    isLoading: myTasksLoading,
+    isError: myTasksError,
+    refetch: refetchMyTasks,
+  } = useQuery(myPublishedTasksQuery(me?.id));
   const myTasks = useMemo(
     () => (isPlatformBrand
       ? allMyPublishedTasks
       : allMyPublishedTasks.filter(t => !t.origin_brand_id || t.origin_brand_id === brandId)),
     [allMyPublishedTasks, isPlatformBrand, brandId]
   );
+
+  // A failed request may only ever REPLACE the screen when there is nothing to
+  // show. A failed background refresh leaves the tasks already on screen — and
+  // the empty state — exactly where they are.
+  const myTasksLoadFailed = myTasksError && myTasks.length === 0;
 
   // ── Active tasks are DERIVED, never fetched ───────────────────────────────
   // Both used to be their own one-row query — plus a 30-second poll each — for
@@ -901,40 +912,62 @@ export default function HomeFeed() {
         )}
 
         {/* ── My Published Tasks Tab ───────────────────────────── */}
-        {activeTab === 'my_published' && myTasks.length === 0 && (
+        {/* ONE compact header replaces the three status tabs. "היסטוריה" opens
+            the very same completed / archive views the tabs used to switch to,
+            so no status, filter, task or action changed — only how they are
+            reached. */}
+        {activeTab === 'my_published' && (
+          <PublishedTasksHeader
+            view={myPubTab === 'active' || myTasks.length === 0 ? 'active' : 'history'}
+            historyTab={myPubTab === 'other' ? 'other' : 'completed'}
+            showHistory={myTasks.length > 0}
+            counts={{
+              completed: myTasks.filter(x => x.status === 'COMPLETED').length,
+              archive: myTasks.filter(x => x.status === 'CANCELLED' || x.status === 'EXPIRED').length,
+            }}
+            onOpenHistory={() => setMyPubTab('completed')}
+            onBackToActive={() => setMyPubTab('active')}
+            onChangeHistoryTab={setMyPubTab}
+          />
+        )}
+
+        {/* The screen is decided by the DATA, never by a missing list: while the
+            request is still running it shows skeletons, and a failed request
+            shows its own message. Only a request that really came back empty
+            shows the empty state, so it can never flash up while loading. */}
+        {activeTab === 'my_published' && myTasksLoading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <TaskCardSkeleton count={3} />
+          </div>
+        )}
+        {activeTab === 'my_published' && !myTasksLoading && myTasksLoadFailed && (
+          <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, fontWeight: 600, color: 'var(--text-2)' }}>
+              {t('mtempty_load_error')}
+            </p>
+            <button
+              type="button"
+              onClick={() => refetchMyTasks()}
+              style={{
+                marginTop: 10, height: 38, minHeight: 'unset', padding: '0 16px',
+                borderRadius: 999, border: '1px solid var(--border-1)',
+                background: 'var(--surface-2)', color: 'var(--brand-primary)',
+                fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              {t('refresh')}
+            </button>
+          </div>
+        )}
+        {activeTab === 'my_published' && !myTasksLoading && !myTasksLoadFailed && myTasks.length === 0 && (
           <PublishedTasksEmptyState />
         )}
-        {activeTab === 'my_published' && myTasks.length > 0 && (() => {
+        {activeTab === 'my_published' && !myTasksLoading && myTasks.length > 0 && (() => {
           const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
           const filteredPub = myTasks.filter(t => pubTab?.statuses.includes(t.status));
           return (
             <div>
-              {/* Sub-tabs bar — only show tabs that have content (always show 'active') */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 14, position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 8, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
-                {MY_PUB_TABS.filter(t => t.key === 'active' || myTasks.some(x => t.statuses.includes(x.status))).map(t => {
-                  const count = myTasks.filter(x => t.statuses.includes(x.status)).length;
-                  const active = myPubTab === t.key;
-                  return (
-                    <button key={t.key} onClick={() => setMyPubTab(t.key)}
-                      style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
-                        background: active ? 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))' : 'var(--surface-2)',
-                        color: active ? 'white' : 'var(--text-2)',
-                        borderColor: active ? 'var(--brand-primary)' : 'var(--border-1)',
-                        boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : 'none',
-                      }}
-                    >
-                      {t.label}
-                      {count > 0 && (
-                        <span style={{ marginRight: 4, fontSize: 10, background: active ? 'rgba(255,255,255,0.25)' : '#e8edf5', color: active ? 'white' : 'var(--text-2)', padding: '1px 5px', borderRadius: 8 }}>
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {filteredPub.length === 0 && myPubTab === 'active' && myTasks.length > 0 ? (
+              {filteredPub.length === 0 && myPubTab === 'active' ? (
                 <PublishedTasksEmptyState />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
