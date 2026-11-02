@@ -185,6 +185,12 @@ export default function HomeFeed() {
   // the empty state — exactly where they are.
   const myTasksLoadFailed = myTasksError && myTasks.length === 0;
 
+  // Active = the same two statuses the "פעילות" view shows. When there are none,
+  // the screen is the empty state, which carries its own headline — so the header
+  // drops its title and leaves only the small history button.
+  const ACTIVE_PUB_STATUSES = ['OPEN', 'TAKEN'];
+  const hasActivePublished = myTasks.some(x => ACTIVE_PUB_STATUSES.includes(x.status));
+
   // ── Active tasks are DERIVED, never fetched ───────────────────────────────
   // Both used to be their own one-row query — plus a 30-second poll each — for
   // data already sitting in the two lists above. They are now read straight out
@@ -921,6 +927,7 @@ export default function HomeFeed() {
             view={myPubTab === 'active' || myTasks.length === 0 ? 'active' : 'history'}
             historyTab={myPubTab === 'other' ? 'other' : 'completed'}
             showHistory={myTasks.length > 0}
+            hideTitle={!myTasksLoading && !myTasksLoadFailed && !hasActivePublished}
             counts={{
               completed: myTasks.filter(x => x.status === 'COMPLETED').length,
               archive: myTasks.filter(x => x.status === 'CANCELLED' || x.status === 'EXPIRED').length,

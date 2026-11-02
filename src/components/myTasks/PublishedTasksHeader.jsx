@@ -15,6 +15,7 @@ export default function PublishedTasksHeader({
   historyTab = 'completed',
   counts = {},
   showHistory = true,
+  hideTitle = false,
   onOpenHistory,
   onBackToActive,
   onChangeHistoryTab,
@@ -37,23 +38,33 @@ export default function PublishedTasksHeader({
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: 10, marginTop: 6, marginBottom: 14,
+      display: 'flex', alignItems: 'center', gap: 10,
+      justifyContent: hideTitle ? 'flex-end' : 'space-between',
+      marginTop: 6, marginBottom: hideTitle ? 8 : 14,
     }}>
       {view === 'active' ? (
         <>
-          <div style={{
-            fontSize: 19, fontWeight: 900, letterSpacing: -0.4,
-            color: 'var(--text-1)', whiteSpace: 'nowrap',
-          }}>
-            {t('mypub_header_title')}
-          </div>
+          {/* With no active tasks the screen is the empty state, and the empty
+              state carries its own headline — a second title above it would only
+              repeat where the user already is. */}
+          {!hideTitle && (
+            <div style={{
+              fontSize: 19, fontWeight: 900, letterSpacing: -0.4,
+              color: 'var(--text-1)', whiteSpace: 'nowrap',
+            }}>
+              {t('mypub_header_title')}
+            </div>
+          )}
           {/* Only when there is a history to open — with no tasks at all the
               empty state below is the whole screen, and a button into two empty
               lists would be a dead end. */}
           {showHistory && (
-            <button type="button" onClick={onOpenHistory} style={pill}>
-              <History size={14} strokeWidth={2.2} />
+            <button
+              type="button"
+              onClick={onOpenHistory}
+              style={hideTitle ? { ...pill, height: 32, fontSize: 12, background: 'transparent', color: 'var(--text-3)' } : pill}
+            >
+              <History size={hideTitle ? 13 : 14} strokeWidth={2.2} />
               {t('mypub_history')}
             </button>
           )}
