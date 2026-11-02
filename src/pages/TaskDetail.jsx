@@ -1171,7 +1171,25 @@ export default function TaskDetail(props) {
               {canApplyManual && !showApplyForm && (
                 <>
                   <button
-                    onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); } return; } setShowApplyForm(true);}}
+                    onClick={() => {
+                      if (!isAuthenticated) { setShowLoginPrompt(true); return; }
+                      if (task.verification_required && !isUserVerified(verifyUser)) {
+                        if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); }
+                        return;
+                      }
+                      // ── NOT ENOUGH JOBAS → STRAIGHT TO BUYING THEM ────────
+                      // The cost is already printed on this button, so a worker
+                      // who cannot cover it is sent to the purchase popup instead
+                      // of writing an application that can only be rejected.
+                      const applyCost = Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05));
+                      const jobaBalance = Number(me?.worker_credits ?? authUser?.worker_credits ?? 0);
+                      if (applyCost > jobaBalance) {
+                        setCreditsNeeded(Math.max(1, applyCost - jobaBalance));
+                        setShowBuyCredits(true);
+                        return;
+                      }
+                      setShowApplyForm(true);
+                    }}
                     style={{ width: '100%', height: 52, borderRadius: 14, background: 'var(--brand-btn-primary-bg, var(--brand-primary))', color: 'var(--brand-btn-primary-text, #ffffff)', border: 'none', fontSize: 15.5, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 18px rgba(26,111,212,0.26)' }}>
                     <Send size={16} strokeWidth={2.2} />
                     {/* The apply popup's own label — the same words on the same

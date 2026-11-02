@@ -40,8 +40,23 @@ export default function ApprovedDeparturePopup({ task, onClose }) {
       : null;
 
     try {
+      // ── THE STATUS MUST NOT CHANGE HERE ────────────────────────────────────
+      // This used to write `status: 'ON_THE_WAY'` as well, and that is what made
+      // the task vanish: the active-task queries (and the banner, and the whole
+      // feed) look for `status: 'TAKEN'`, so the job disappeared from every
+      // screen the moment the worker set off.
+      //
+      // Departure is a WORKER STEP, not a new task status: the canonical flow
+      // stores it in `worker_status` ('on_the_way' → 'arrived' → 'done') while
+      // the task itself stays TAKEN until the publisher approves completion.
+      // This is exactly what the banner's own quick action writes.
+      if (task.status !== 'TAKEN') {
+        setSaving(false);
+        toast.error(t('generic_error') || 'משהו השתבש, נסה שוב');
+        onClose();
+        return;
+      }
       await base44.entities.Task.update(task.id, {
-        status: 'ON_THE_WAY',
         worker_status: 'on_the_way',
         on_the_way_at: new Date().toISOString(),
         ...(coords ? { worker_lat: coords.lat, worker_lng: coords.lng } : {}),

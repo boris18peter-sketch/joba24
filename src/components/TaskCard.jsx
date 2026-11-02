@@ -790,6 +790,18 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                       setShowVerificationRequired(true);
                       return;
                     }
+                    // ── NOT ENOUGH JOBAS → STRAIGHT TO BUYING THEM ──────────
+                    // Asking for a message first only to reject it afterwards is
+                    // a dead end: the worker learns the cost, writes the message
+                    // and is told he cannot send it. The cost is already printed
+                    // on this very button, so the check belongs here.
+                    const applyCost = Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05));
+                    const jobaBalance = Number(me?.worker_credits ?? 0);
+                    if (applyCost > jobaBalance) {
+                      setNeededCredits(Math.max(1, applyCost - jobaBalance));
+                      setShowBuyCredits(true);
+                      return;
+                    }
                     setApplyLocked(true);
                     setShowApplyModal(true);
                     setTimeout(() => setApplyLocked(false), 600);
