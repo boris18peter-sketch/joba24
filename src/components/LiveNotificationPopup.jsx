@@ -44,6 +44,9 @@ export default function LiveNotificationPopup({ notification, onClose }) {
   const { openTaskSheet } = useTaskSheet();
   const { t } = useLanguage();
   const [progress, setProgress] = useState(100);
+  // True from the first pixel of a drag until a beat after it ends, so the tap
+  // that closes a swipe can never also fire the banner's navigation.
+  const draggedRef = useRef(false);
 
   // ── THE TIMER MUST NOT RESTART WHEN A NEIGHBOUR ARRIVES ───────────────────
   // onClose is built fresh by GlobalPopups on every render, so putting it in the
@@ -102,13 +105,23 @@ export default function LiveNotificationPopup({ notification, onClose }) {
 
   return (
     <motion.div
-      // Swipe up to dismiss, tap to open. framer-motion tells the two apart on
-      // its own, so a swipe never also fires the tap underneath it.
+      // ── SWIPE CLOSES, TAP OPENS ─────────────────────────────────────────────
+      // A swipe in EITHER direction dismisses the banner and goes nowhere: the
+      // gesture is "get this off my screen", and it used to be able to run the
+      // banner's own navigation as a side effect. Only a deliberate tap opens
+      // where the notification points. `draggedRef` is the guard that keeps a
+      // swipe's release from ever being read as that tap — the reason
+      // onDragEnd clears it on a delay rather than immediately.
       drag="y"
       dragConstraints={{ top: 0, bottom: 0 }}
-      dragElastic={{ top: 0.55, bottom: 0 }}
-      onDragEnd={(e, info) => { if (info.offset.y < -48) onClose?.(); }}
-      onTap={() => { if (link) handleClick(); }}
+      dragElastic={{ top: 0.75, bottom: 0.45 }}
+      onDragStart={() => { draggedRef.current = true; }}
+      onDragEnd={(e, info) => {
+        const swiped = Math.abs(info.offset.y) > 44 || Math.abs(info.velocity.y) > 340;
+        if (swiped) onClose?.();
+        setTimeout(() => { draggedRef.current = false; }, 240);
+      }}
+      onTap={() => { if (draggedRef.current) return; if (link) handleClick(); }}
       whileTap={link ? { scale: 0.985 } : undefined}
       style={{
         position: 'relative',

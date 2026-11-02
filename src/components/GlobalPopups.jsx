@@ -48,21 +48,24 @@ const HEADER_H = 60;
 
 function NotifItem({ notif, index, onClose }) {
   return (
+    // ── IT GLIDES DOWN FROM THE TOP EDGE ──────────────────────────────────
+    // Notifications used to pop in from just above their own place and sit in a
+    // scaled, negatively-spaced pile, which read as cards floating over the
+    // screen. They now travel the whole way from above the top edge and out
+    // again the same way — one motion, in and out — and each one keeps its full
+    // size and its own spacing, so the stack reads as a clean list arriving
+    // from the top of the screen rather than a pile hovering in it. `layout`
+    // still lifts the rest up smoothly when one is dismissed.
     <motion.div
       layout
-      initial={{ opacity: 0, y: -30, scale: 0.94 }}
-      animate={{
-        opacity: index === 0 ? 1 : index === 1 ? 0.95 : 0.86,
-        scale: index === 0 ? 1 : index === 1 ? 0.975 : 0.95,
-      }}
-      exit={{ opacity: 0, y: -22, scale: 0.92, transition: { duration: 0.22, ease: 'easeIn' } }}
-      transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.9 }}
+      initial={{ opacity: 0, y: -76 }}
+      animate={{ opacity: index === 0 ? 1 : 0.96, y: 0 }}
+      exit={{ opacity: 0, y: -88, transition: { duration: 0.24, ease: [0.32, 0.72, 0, 1] } }}
+      transition={{ type: 'spring', stiffness: 360, damping: 32, mass: 0.9 }}
       style={{
         width: '100%',
         maxWidth: 480,
-        // A small tuck so the pile reads as a pile; the top banner keeps its
-        // full height and everything below it slides under that edge.
-        marginTop: index === 0 ? 0 : -8,
+        marginTop: index === 0 ? 0 : 8,
         zIndex: 10 - index,
         pointerEvents: 'auto',
       }}

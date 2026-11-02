@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Play, X } from 'lucide-react';
+import { EXPLAINER_VIDEO_URL } from '@/lib/explainerVideo';
 
 /**
  * The publisher's own explainer video, on the publish form.
@@ -13,7 +14,7 @@ import { Play, X } from 'lucide-react';
  * behind the form.
  */
 
-const VIDEO_URL = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/58a0739c9_joba24-center.mp4';
+const VIDEO_URL = EXPLAINER_VIDEO_URL;
 
 export default function PublishHelpVideo() {
   const [open, setOpen] = useState(false);

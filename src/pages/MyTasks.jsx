@@ -4,14 +4,11 @@ import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MessageCircle, X, RefreshCw, Loader2 } from 'lucide-react';
-import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
-import { getCategoryLabel } from '@/lib/categories';
-import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
-import EmptyMyTasksState from '@/components/EmptyMyTasksState';
+import PublishedTasksEmptyState from '@/components/empty/PublishedTasksEmptyState';
 import { STATUS_GRADIENT, STATUS_LABEL, buildRepostUrl } from '@/lib/taskUtils';
 import { invalidateTaskCaches } from '@/lib/taskSync';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -39,7 +36,7 @@ export default function MyTasks() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading, isError } = useQuery({
     queryKey: ['myTasksPage', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id, ...brandScope }, '-created_date', 100),
     enabled: !!me?.id && !!currentBrandId,
@@ -175,7 +172,15 @@ export default function MyTasks() {
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} className="animate-spin text-primary mx-auto" /></div>
         ) : filtered.length === 0 && activeTab === 'active' ? (
-          <EmptyMyTasksState />
+          // A failed load is NOT an empty list: showing the onboarding here
+          // would tell a publisher with active tasks that he has none.
+          isError ? (
+            <p style={{ textAlign: 'center', padding: '40px 16px', margin: 0, fontWeight: 700, color: 'var(--text-2)' }}>
+              {t('mtempty_load_error')}
+            </p>
+          ) : (
+            <PublishedTasksEmptyState />
+          )
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
