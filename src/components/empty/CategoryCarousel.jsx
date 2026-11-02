@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tag } from 'lucide-react';
 
 /**
  * CategoryCarousel — the "או התחל מקטגוריה" rail of the published-tasks empty state.
@@ -8,9 +7,12 @@ import { Tag } from 'lucide-react';
  * over. This component never sorts, filters or renames anything: the order is
  * whatever the task creation form uses, so the two can never drift apart.
  *
- * One round icon and one short label per category, scrolling horizontally. In
- * RTL the FIRST category sits at the right edge and the rail scrolls leftwards,
- * which the browser does natively once `dir="rtl"` is in effect.
+ * One icon tile and one short label per category, scrolling horizontally. Every
+ * tile is identical — same size, same radius, same stroke weight, same colour —
+ * because the icons come from one line-icon set rather than from the catalogue's
+ * emoji, which the device draws differently on every phone. In RTL the FIRST
+ * category sits at the right edge and the rail scrolls leftwards, which the
+ * browser does natively once `dir="rtl"` is in effect.
  */
 export default function CategoryCarousel({ items = [], onSelect, isRTL = true }) {
   const railRef = useRef(null);
@@ -61,7 +63,7 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         style={{
-          display: 'flex', alignItems: 'flex-start', gap: 10,
+          display: 'flex', alignItems: 'flex-start', gap: 8,
           overflowX: 'auto', overflowY: 'hidden',
           overscrollBehaviorX: 'contain',
           WebkitOverflowScrolling: 'touch',
@@ -71,30 +73,39 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
           WebkitMaskImage: fade,
         }}
       >
-        {items.map(({ key, label, emoji }) => (
+        {items.map(({ key, label, Icon }) => (
           <button
             key={key}
             type="button"
             onClick={() => handleSelect(key)}
+            title={label}
             style={{
-              flex: '0 0 auto', width: 72, minWidth: 72,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+              flex: '0 0 auto', width: 76, minWidth: 76,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
               padding: 0, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
             <span style={{
-              width: 44, height: 44, borderRadius: '50%',
+              width: 46, height: 46, borderRadius: 15, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--surface-2)', border: '1px solid var(--border-1)',
-              fontSize: 20, lineHeight: 1, flexShrink: 0,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-1)',
+              boxShadow: 'var(--shadow-xs)',
+              color: 'var(--brand-primary)',
             }}>
-              {emoji || <Tag size={17} strokeWidth={2} color="var(--brand-primary)" />}
+              <Icon size={21} strokeWidth={1.9} />
             </span>
+            {/* A long category name is never renamed and never cut to "אסלה /
+                ניאג…": it is allowed TWO centred lines, after which it is
+                clamped. The full name stays available as the button's title. */}
             <span style={{
-              fontSize: 11, fontWeight: 700, lineHeight: 1.2, color: 'var(--text-2)',
-              maxWidth: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+              overflow: 'hidden', wordBreak: 'break-word',
+              fontSize: 11, fontWeight: 700, lineHeight: 1.25,
+              color: 'var(--text-2)', textAlign: 'center',
+              width: '100%', minHeight: 28, maxWidth: '100%',
             }}>
               {label}
             </span>

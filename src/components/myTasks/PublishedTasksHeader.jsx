@@ -22,11 +22,15 @@ export default function PublishedTasksHeader({
 }) {
   const { t, isRTL } = useLanguage();
 
+  // Secondary, but never disabled-looking: a real surface, a visible border and
+  // primary-weight text. The faint transparent version read as an unavailable
+  // control rather than as the way into the history.
   const pill = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-    height: 36, minHeight: 'unset', padding: '0 13px', borderRadius: 999,
-    background: 'var(--surface-2)', border: '1px solid var(--border-1)',
-    color: 'var(--text-2)', fontSize: 12.5, fontWeight: 800,
+    height: 34, minHeight: 'unset', padding: '0 13px', borderRadius: 999,
+    background: 'var(--surface-2)', border: '1px solid var(--border-2)',
+    color: 'var(--text-1)', fontSize: 12.5, fontWeight: 800,
+    boxShadow: 'var(--shadow-xs)',
     cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
     transition: 'transform 0.12s ease, background 0.15s ease',
   };
@@ -62,7 +66,7 @@ export default function PublishedTasksHeader({
             <button
               type="button"
               onClick={onOpenHistory}
-              style={hideTitle ? { ...pill, height: 32, fontSize: 12, background: 'transparent', color: 'var(--text-3)' } : pill}
+              style={hideTitle ? { ...pill, height: 32, padding: '0 11px', fontSize: 12 } : pill}
             >
               <History size={hideTitle ? 13 : 14} strokeWidth={2.2} />
               {t('mypub_history')}
@@ -71,24 +75,28 @@ export default function PublishedTasksHeader({
         </>
       ) : (
         <>
-          {/* The way back is the title itself — one tap, always in the same place */}
+          {/* The way back is the arrow alone — one tap, always in the same
+              place, and it no longer repeats the screen's name beside the two
+              status tabs it is sitting next to. */}
           <button
             type="button"
             onClick={onBackToActive}
+            aria-label="חזרה"
             style={{
-              ...pill,
-              color: 'var(--brand-primary)',
+              width: 36, height: 36, minWidth: 'unset', minHeight: 'unset',
+              flexShrink: 0, borderRadius: 999, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'var(--brand-primary-light)',
-              borderColor: 'var(--border-2)',
+              border: '1px solid var(--border-2)',
+              color: 'var(--brand-primary)',
             }}
           >
-            {isRTL ? <ChevronRight size={15} strokeWidth={2.6} /> : <ChevronLeft size={15} strokeWidth={2.6} />}
-            {t('mypub_header_title')}
+            {isRTL ? <ChevronRight size={18} strokeWidth={2.8} /> : <ChevronLeft size={18} strokeWidth={2.8} />}
           </button>
 
           {/* The two history views the tabs used to hold */}
           <div style={{
-            display: 'flex', gap: 4, padding: 3, borderRadius: 999,
+            display: 'flex', flex: 1, gap: 4, padding: 3, borderRadius: 999,
             background: 'var(--surface-3)', border: '1px solid var(--border-1)',
           }}>
             {segments.map((s) => {
@@ -99,9 +107,9 @@ export default function PublishedTasksHeader({
                   type="button"
                   onClick={() => onChangeHistoryTab(s.key)}
                   style={{
-                    height: 32, minHeight: 'unset', minWidth: 'unset', padding: '0 11px',
+                    flex: 1, height: 32, minHeight: 'unset', minWidth: 'unset', padding: '0 9px',
                     borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                     fontSize: 12.5, fontWeight: 800, whiteSpace: 'nowrap',
                     background: on ? 'var(--surface-2)' : 'transparent',
                     color: on ? 'var(--text-1)' : 'var(--text-3)',

@@ -123,9 +123,13 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
                 <X size={18} color="#fff" />
               </button>
             </div>
+            {/* Plays the moment it is opened, exactly like the explainer on the
+                publish form — tapping the card IS the play action, so a second
+                tap on a play button would be one tap too many. */}
             <video
               src={EXPLAINER_VIDEO_URL}
               controls
+              autoPlay
               playsInline
               preload="metadata"
               style={{ display: 'block', width: '100%', maxHeight: '72vh', borderRadius: 16, background: '#000', objectFit: 'contain' }}
