@@ -120,6 +120,16 @@ export const he = {
     my_tasks_worker: 'המשימות שלי (כעובד)',
     already_applied: 'כבר שלחת בקשה למשימה זו',
     apply_blocked_not_approved: 'החשבון שלך עדיין ממתין לאישור — ברגע שיאושר תוכל להגיש בקשות',
+    // ── הפופאפ האוטומטי לעובד שאושר ──
+    approved_popup_sub: 'המפרסם אישר אותך. אפשר לעדכן שיצאת לדרך.',
+    leave_now_btn: 'יצאתי לדרך',
+    later_btn: 'אחר כך',
+    on_way_toast: 'יצאת לדרך! המפרסם קיבל עדכון',
+    // ── הפופאפ האוטומטי למפרסם על מועמד חדש ──
+    applicant_popup_title: 'מועמד חדש למשימה שלך',
+    applicant_popup_approve: 'אישור מיידי',
+    applicant_no_rating: 'מועמד חדש',
+    applicant_approved_toast: 'המועמד אושר',
     you_rated_label: 'דירגת:',
     your_rating_label: 'הדירוג שנתת',
     error_sending_app: 'שגיאה בשליחת הבקשה, נסה שוב',

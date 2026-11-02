@@ -14,6 +14,8 @@ import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import LoyaltyBonusPopup from '@/components/LoyaltyBonusPopup';
+import ApprovedDeparturePopup from '@/components/ApprovedDeparturePopup';
+import NewApplicantPopup from '@/components/NewApplicantPopup';
 
 /**
  * GlobalPopups — renders the live notification stack AND the full-screen task
@@ -104,6 +106,20 @@ export default function GlobalPopups() {
       {taskAlert?.kind === 'cancel_success' && createPortal(
         <CancelSuccessPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />,
         document.body
+      )}
+
+      {/* The worker was approved → the departure sheet opens by itself */}
+      {taskAlert?.kind === 'approved' && (
+        <ApprovedDeparturePopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />
+      )}
+
+      {/* A candidate just applied to my task → approve him from here */}
+      {taskAlert?.kind === 'new_applicant' && (
+        <NewApplicantPopup
+          task={taskAlert.task?.task}
+          application={taskAlert.task?.application}
+          onClose={() => taskAlertStore.clear()}
+        />
       )}
 
       {notifications.length > 0 && createPortal(

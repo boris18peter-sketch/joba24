@@ -654,10 +654,10 @@ export default function MapView() {
             </div>
 
             {/* The card's one facts line — the SAME order as the feed card and
-                the task sheet: verification, rating, place, distance, kind of
-                job. The task's own duration used to sit here too, next to a
-                travel time it has nothing to do with, which is what made the
-                two times look like a contradiction. */}
+                the task sheet: verification, rating, place, kind of job.
+                The distance is NOT repeated here: it has its own box with the
+                travel time right below, and printing it twice on one small card
+                read as two different figures. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--text-2)', marginBottom: 10 }}>
               {selectedTask.client_verified ? <VerifiedBadge size="sm" /> : null}
               {Number(selectedTask.client_rating) > 0 && (
@@ -670,12 +670,6 @@ export default function MapView() {
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, maxWidth: 160 }}>
                   <MapPin size={11} strokeWidth={2} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{translatedSelectedTask?.location_name || selectedTask.location_name}</span>
-                </span>
-              )}
-              {popupKm != null && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--brand-primary)', fontWeight: 700 }}>
-                  <Navigation size={11} strokeWidth={2.2} />
-                  {formatDistance(popupKm, t)}
                 </span>
               )}
               <span style={{ background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', color: 'var(--brand-primary)', borderRadius: 20, padding: '2px 8px', fontSize: 10.5, fontWeight: 700 }}>
