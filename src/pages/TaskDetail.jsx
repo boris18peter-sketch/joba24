@@ -602,9 +602,22 @@ export default function TaskDetail(props) {
       const res = await base44.functions.invoke('applyForTask', { taskId: id, message: messageToSend, images: imagesToSend });
       const data = res.data;
 
-      if (data?.error === 'already_applied') {
+      if (data?.error) {
         setShowApplyForm(false);
-        toast(t('already_applied_toast'));
+        if (data.error === 'insufficient_credits') {
+          // The SHORTFALL, not the full cost — a worker holding 84 jobas on an
+          // 85-joba application is 1 short, not 85 short.
+          setCreditsNeeded(creditsShortfall(data, me?.worker_credits ?? authUser?.worker_credits ?? 0));
+          setShowBuyCredits(true);
+        } else if (data.error === 'already_applied') {
+          toast(t('already_applied'));
+        } else if (data.error === 'not_approved') {
+          // The launch gate answers this for any account that is not approved
+          // yet. It is a state, not a failure — so it is SAID, not swallowed.
+          toast.error(t('apply_blocked_not_approved'));
+        } else {
+          toast.error(t('error_sending_app_toast'));
+        }
         return;
       }
 
@@ -635,15 +648,22 @@ export default function TaskDetail(props) {
       // installed app can deliver. First application only.
       raiseAppOffer('apply');
     } catch (err) {
-      // 403 = insufficient credits
-      const status = err?.response?.status || err?.status;
-      const errData = err?.response?.data || err?.data;
-      if (status === 403 || errData?.error === 'insufficient_credits') {
-        // Show the SHORTFALL, not the task's full cost — a worker holding 84
-        // jobas on an 85-joba application is 1 short, not 85 short.
+      // The reason comes from the answer itself — a 403 is not one single thing
+      // (short balance, an unapproved account, an unverified worker), so it is
+      // read by CODE. Treating every 403 as "not enough jobas" opened the
+      // purchase popup for users whose real problem was something else.
+      const errData = err?.response?.data || err?.data || null;
+      const code = errData?.error;
+      setShowApplyForm(false);
+      if (code === 'insufficient_credits') {
         setCreditsNeeded(creditsShortfall(errData, me?.worker_credits ?? authUser?.worker_credits ?? 0));
-        setShowApplyForm(false);
         setShowBuyCredits(true);
+      } else if (code === 'verification_required') {
+        setShowVerificationRequired(true);
+      } else if (code === 'not_approved') {
+        toast.error(t('apply_blocked_not_approved'));
+      } else if (code === 'already_applied') {
+        toast(t('already_applied'));
       } else {
         toast.error(t('error_sending_app_toast'));
       }
@@ -936,6 +956,15 @@ export default function TaskDetail(props) {
                 : task.status === 'COMPLETED' ? 'j-chip-green'
                   : task.status === 'EXPIRED' ? 'j-chip-amber'
                     : 'j-chip-gray';
+              // Completed is said in one word and ONE green check — the same
+              // check the completed card uses, never doubled by an emoji.
+              if (task.status === 'COMPLETED') {
+                return (
+                  <span className="j-chip j-chip-green" style={{ gap: 4 }}>
+                    <CheckCircle2 size={11} strokeWidth={2.6} /> {t('status_completed')}
+                  </span>
+                );
+              }
               return <span className={`j-chip ${tone}`}>{statusLabel}</span>;
             })()}
             {task.verification_required && (
@@ -982,6 +1011,17 @@ export default function TaskDetail(props) {
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, background: 'var(--brand-primary-light)', borderRadius: 99, padding: '2px 9px', border: '1px solid var(--border-2)' }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-primary)' }}>{t('translated_badge')}</span>
                 </div>
+              )}
+
+              {/* ── WHAT THE JOB IS, IN THE PUBLISHER'S OWN WORDS ───────────────
+                  Immediately under the title, ABOVE the rating / location line:
+                  the first thing a worker reads is the job itself, then who is
+                  asking and where. It is listed once more as a row inside
+                  "פרטי המשימה" further down, where every other detail lives. */}
+              {mainDescription && (
+                <p dir="auto" className="selectable-text" style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', whiteSpace: 'pre-line' }}>
+                  {mainDescription}
+                </p>
               )}
 
               {/* ── Where, who, when — one quiet line, like the card ── */}
@@ -1066,19 +1106,6 @@ export default function TaskDetail(props) {
               );
             })()}
           </div>
-
-          {/* ── WHAT THE JOB IS, IN THE PUBLISHER'S OWN WORDS ───────────────
-              Above the price, directly under the title and the facts: what a
-              worker reads first, before the number. The full text, with its
-              line breaks kept. It is also listed once more as a row inside
-              "פרטי המשימה" further down, where every other detail lives. */}
-          {mainDescription && (
-            <div style={{ marginTop: 10 }}>
-              <p dir="auto" className="selectable-text" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', whiteSpace: 'pre-line' }}>
-                {mainDescription}
-              </p>
-            </div>
-          )}
 
           {/* ── The one number the screen is about ── */}
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-1)' }}>

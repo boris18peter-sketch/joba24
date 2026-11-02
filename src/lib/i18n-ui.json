@@ -6,6 +6,7 @@
     "completion_client_title": "Task completed!",
     "completion_client_body": "The worker reported the job is done. All that is left is to close the task.",
     "completion_client_cta": "Great, thanks",
+    "task_completed_badge": "Completed",
     "card_open_task": "Open task",
     "sched_title": "Work calendar",
     "sched_sub": "What you post and what you carry out",

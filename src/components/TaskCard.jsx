@@ -27,6 +27,7 @@ import VerificationRequiredModal from '@/components/VerificationRequiredModal';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
 import ApplicantsGoldButton from '@/components/ApplicantsGoldButton';
+import MyRatingLine from '@/components/MyRatingLine';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { raiseAppOffer } from '@/lib/appOffer';
@@ -245,24 +246,30 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
 
   // Submission for the shared ApplySheet popup (same component the task-detail
   // sheet renders, so both entry points behave identically).
+  // ── EVERY SERVER ANSWER GETS ITS OWN, TRUTHFUL RESPONSE ────────────────────
+  // The tap could end in silence: the sheet closed and nothing else happened,
+  // so applying looked broken. Each answer now has its own outcome — the
+  // purchase prompt for a short balance, the approval notice for an account
+  // that is not approved yet, the verification sheet, or a plain error toast.
+  const handleApplyError = (code, data) => {
+    setShowApplyModal(false);
+    if (code === 'insufficient_credits') {
+      setNeededCredits(creditsShortfall(data, me?.worker_credits ?? 0));
+      setShowBuyCredits(true);
+      return;
+    }
+    if (code === 'verification_required') { setShowVerificationRequired(true); return; }
+    if (code === 'not_approved') { toast.error(t('apply_blocked_not_approved')); return; }
+    if (code === 'already_applied') { toast(t('already_applied')); return; }
+    toast.error(t('error_sending_app'));
+  };
+
   const handleApplySubmit = async (msg) => {
     setApplySubmitting(true);
     try {
       const res = await base44.functions.invoke('applyForTask', { taskId: displayTask.id, message: msg });
-      if (res.data?.error === 'already_applied') {
-        toast(t('already_applied'));
-        setShowApplyModal(false);
-        return;
-      }
-      if (res.data?.error === 'insufficient_credits') {
-        setShowApplyModal(false);
-        setNeededCredits(creditsShortfall(res.data));
-        setShowBuyCredits(true);
-        return;
-      }
-      if (res.data?.error === 'verification_required') {
-        setShowApplyModal(false);
-        setShowVerificationRequired(true);
+      if (res.data?.error) {
+        handleApplyError(res.data.error, res.data);
         return;
       }
       // Worker funnel — deeper quality event. Fires only after the backend
@@ -279,17 +286,8 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       raiseAppOffer('apply');
       setTimeout(() => setShowApplyModal(false), 120);
     } catch (err) {
-      const errData = err?.response?.data;
-      if (errData?.error === 'insufficient_credits') {
-        setShowApplyModal(false);
-        setNeededCredits(creditsShortfall(errData));
-        setShowBuyCredits(true);
-      } else if (errData?.error === 'verification_required') {
-        setShowApplyModal(false);
-        setShowVerificationRequired(true);
-      } else {
-        toast.error(t('error_sending_app'));
-      }
+      const errData = err?.response?.data || err?.data || null;
+      handleApplyError(errData?.error, errData);
     } finally {
       setApplySubmitting(false);
     }
@@ -509,7 +507,10 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               <CheckCircle2 size={16} color="#16a34a" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{t('task_completed_badge')} ✅</div>
+              {/* ONE checkmark, the icon — never a second one in the text. */}
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{t('task_completed_badge')}</div>
+              {/* The score I actually gave the other side, right under the status. */}
+              <MyRatingLine taskId={task.id} userId={currentUserId} />
             </div>
           </div>
         )}
@@ -721,10 +722,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
           {isMyPublished ? (
             task.status === 'OPEN' ? (
+              // The boost pill sits where the task-detail sheet puts it — at the
+              // END of the row (the left edge in Hebrew), same 54px column and
+              // same size — so the two screens are the same control in the same
+              // place.
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {boostAvailableCard && (
-                  <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />
-                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <ApplicantsGoldButton
                     count={liveApplicantCount}
@@ -734,6 +736,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     fullWidth
                   />
                 </div>
+                {boostAvailableCard && (
+                  <div style={{ width: 54, flexShrink: 0 }}>
+                    <BoostPill task={task} size="md" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />
+                  </div>
+                )}
               </div>
             ) : task.status === 'TAKEN' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '9px 12px', fontSize: 12, fontWeight: 700, color: '#b45309' }}>

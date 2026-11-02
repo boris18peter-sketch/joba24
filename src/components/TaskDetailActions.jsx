@@ -94,10 +94,29 @@ export default function TaskDetailActions({
             <Star size={16} style={{ fill: 'white' }} /> {t('tda_rate_person', { name: resolveName(counterpartId, counterpartFallback) })}
           </button>
         )}
+        {/* The rating I gave, stated exactly: the label, all five stars with the
+            empty ones visible, and the number. "Your rating was saved" told the
+            user nothing about the score itself. */}
         {isCompleted && isParticipant && myReview && (
-          <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-md)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
-            <Star size={15} style={{ fill: '#fbbf24', color: '#fbbf24' }} />
-            {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} {t('tda_rating_saved')}
+          <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-md)', padding: '12px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: '#92400e' }}>
+                {t('your_rating_label')} · {resolveName(counterpartId, counterpartFallback)}
+              </span>
+              <span style={{ flex: 1 }} />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    size={15}
+                    strokeWidth={1.6}
+                    style={{ fill: n <= myReview.rating ? '#fbbf24' : 'transparent', color: n <= myReview.rating ? '#fbbf24' : '#d6c39a' }}
+                  />
+                ))}
+              </span>
+              <span style={{ fontSize: 15, fontWeight: 900, color: '#92400e' }}>{myReview.rating}</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#b45309', marginTop: 4, fontWeight: 600 }}>{t('tda_rating_saved')}</div>
           </div>
         )}
 
