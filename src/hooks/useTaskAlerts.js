@@ -132,7 +132,7 @@ export default function useTaskAlerts(meId) {
       .catch(() => {});
 
     // ── An approval that happened while the app was closed ──────────────────
-    (async () => {
+    const seekApproved = async () => {
       try {
         const apps = await base44.entities.TaskApplication.filter(
           { worker_id: meId, status: 'approved' }, '-created_date', 10
@@ -148,10 +148,10 @@ export default function useTaskAlerts(meId) {
           break;
         }
       } catch { /* a missed nudge is never worth breaking the app for */ }
-    })();
+    };
 
     // ── A job of mine whose worker already marked it done ───────────────────
-    (async () => {
+    const seekCompletion = async () => {
       try {
         const tasks = await base44.entities.Task.filter({ client_id: meId }, '-updated_date', 20);
         if (stopped) return;
@@ -164,7 +164,20 @@ export default function useTaskAlerts(meId) {
         markSeen(completionSeenKey(done.id));
         taskAlertStore.raise('completion_ready', done);
       } catch { /* ignore */ }
-    })();
+    };
+
+    const seek = () => { seekApproved(); seekCompletion(); };
+    seek();
+
+    // ── AND WHENEVER THE VISITOR COMES BACK ─────────────────────────────────
+    // A phone that was asleep, or an app left in the background, missed every
+    // realtime event there was. Both moments are re-checked on wake, so the
+    // sheet is already waiting instead of never appearing.
+    const onWake = () => {
+      if (document.visibilityState === 'visible') seek();
+    };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('focus', onWake);
 
     const unsubTask = base44.entities.Task.subscribe((event) => {
       const patch = event.data;
@@ -234,6 +247,8 @@ export default function useTaskAlerts(meId) {
     return () => {
       stopped = true;
       timers.forEach(clearTimeout);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('focus', onWake);
       unsubTask();
       unsubApps();
     };
