@@ -32,6 +32,24 @@ export default function NewApplicantPopup({ task, application, onClose }) {
   const location = useLocation();
   const [approving, setApproving] = useState(false);
 
+  // ── THE CANDIDATE'S FACE SHOULD BE THERE AT ONCE ──────────────────────────
+  // The photo used to arrive only after this popup had waited for the profile
+  // request to come back: the sheet opened on an empty circle and filled in a
+  // second later, which read as "loading, probably slow". Two changes fix that
+  // without touching what is fetched:
+  //   • the last known profile for this worker is kept on the device, so the
+  //     SECOND (and every later) time his popup opens, his photo and name paint
+  //     on the very first frame while the request refreshes them in place;
+  //   • a photo that still has to travel shows the app's own shimmer inside the
+  //     circle and fades in when it lands, so the wait looks deliberate instead
+  //     of broken.
+  const cacheKey = application?.worker_id ? `joba_applicant_${application.worker_id}` : null;
+  const cachedProfile = (() => {
+    if (!cacheKey) return null;
+    try { return JSON.parse(localStorage.getItem(cacheKey) || 'null'); } catch { return null; }
+  })();
+  const [photoLoaded, setPhotoLoaded] = useState(false);
+
   const { data: profile } = useQuery({
     queryKey: ['applicantProfile', application?.worker_id],
     queryFn: async () => {
@@ -39,10 +57,15 @@ export default function NewApplicantPopup({ task, application, onClose }) {
         userId: application.worker_id,
         taskId: task.id,
       });
-      return res.data?.user || null;
+      const fetched = res.data?.user || null;
+      if (fetched && cacheKey) {
+        try { localStorage.setItem(cacheKey, JSON.stringify(fetched)); } catch { /* storage full — never break the popup */ }
+      }
+      return fetched;
     },
     enabled: !!application?.worker_id,
     staleTime: 120000,
+    placeholderData: cachedProfile,
   });
 
   const name = profile?.full_name || application?.worker_name || '';
@@ -142,8 +165,28 @@ export default function NewApplicantPopup({ task, application, onClose }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {profile?.profile_photo ? (
-              <img src={profile.profile_photo} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            {!profile ? (
+              /* The profile is still on its way and nothing is cached yet — the
+                 shimmer says "arriving" instead of an empty grey circle. */
+              <span className="j-img-skeleton" style={{ borderRadius: '50%' }} />
+            ) : profile.profile_photo ? (
+              <>
+                {!photoLoaded && <span className="j-img-skeleton" style={{ borderRadius: '50%' }} />}
+                <img
+                  src={profile.profile_photo}
+                  alt={name}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  onLoad={() => setPhotoLoaded(true)}
+                  onError={() => setPhotoLoaded(true)}
+                  style={{
+                    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                    opacity: photoLoaded ? 1 : 0,
+                    transition: 'opacity 0.22s ease',
+                  }}
+                />
+              </>
             ) : (
               <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <User size={38} color="rgba(255,255,255,0.85)" />

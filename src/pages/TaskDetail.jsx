@@ -1182,9 +1182,10 @@ export default function TaskDetail(props) {
                       // who cannot cover it is sent to the purchase popup instead
                       // of writing an application that can only be rejected.
                       const applyCost = Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05));
-                      const jobaBalance = Number(me?.worker_credits ?? authUser?.worker_credits ?? 0);
-                      if (applyCost > jobaBalance) {
-                        setCreditsNeeded(Math.max(1, applyCost - jobaBalance));
+                      // Gate only on a KNOWN balance — an unknown one is not zero.
+                      const knownBalance = me?.worker_credits ?? authUser?.worker_credits;
+                      if (knownBalance != null && applyCost > Number(knownBalance)) {
+                        setCreditsNeeded(Math.max(1, applyCost - Number(knownBalance)));
                         setShowBuyCredits(true);
                         return;
                       }

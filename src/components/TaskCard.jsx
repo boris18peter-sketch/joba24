@@ -796,9 +796,13 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     // and is told he cannot send it. The cost is already printed
                     // on this very button, so the check belongs here.
                     const applyCost = Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05));
-                    const jobaBalance = Number(me?.worker_credits ?? 0);
-                    if (applyCost > jobaBalance) {
-                      setNeededCredits(Math.max(1, applyCost - jobaBalance));
+                    // Only gate on a balance we actually know. An unknown balance
+                    // (a brand-new user before the signup bonus lands) must never
+                    // read as zero — the server is the authority there and its own
+                    // insufficient_credits answer opens the same purchase sheet.
+                    const knownBalance = me?.worker_credits;
+                    if (knownBalance != null && applyCost > Number(knownBalance)) {
+                      setNeededCredits(Math.max(1, applyCost - Number(knownBalance)));
                       setShowBuyCredits(true);
                       return;
                     }

@@ -18,6 +18,7 @@ import { hasSocialVerified } from '@/lib/utils';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 import InvoiceModal from '@/components/InvoiceModal';
 import MediaLightbox from '@/components/MediaLightbox';
+import StatusConfirmSheet from '@/components/StatusConfirmSheet';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 import { patchTaskCache } from '@/lib/taskCache';
@@ -59,53 +60,6 @@ function getQuickAction(flow, workerStatus) {
     confirmTitle: cta.confirm_title,
     confirmSub: cta.confirm_sub,
   };
-}
-
-// ── Confirm Bottom Sheet ────────────────────────────────────────────────────────
-function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
-  const { t, isRTL } = useLanguage();
-  if (!action) return null;
-  return createPortal(
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 2000000, background: 'rgba(5,15,40,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-      onClick={onCancel}
-    >
-      <div
-        dir={isRTL ? 'rtl' : 'ltr'}
-        style={{ background: 'white', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 40px', boxShadow: '0 -16px 60px rgba(0,0,0,0.2)' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>
-            {action.emoji}
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 6 }}>
-            {action.confirmTitle}
-          </div>
-          <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-            {action.confirmSub}
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-           <button
-             onClick={onConfirm}
-             disabled={loading}
-             style={{ width: '100%', height: 52, borderRadius: 16, background: action.color, border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
-           >
-             {loading ? <Loader2 size={18} className="animate-spin" /> : action.label}
-           </button>
-           <button
-             onClick={onCancel}
-             style={{ width: '100%', height: 44, borderRadius: 14, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-           >
-             {t('cancel_btn')}
-             </button>
-             </div>
-             </div>
-             </div>,
-             document.body
-             );
 }
 
 export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
@@ -562,13 +516,19 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
         })}
       </div>
 
-      {/* Confirm sheet */}
-      <ConfirmSheet
-        action={pendingAction?.action}
-        onConfirm={handleQuickAction}
-        onCancel={() => setPendingAction(null)}
-        loading={updating}
-      />
+      {/* Confirm sheet — the app's one shared confirmation sheet */}
+      {pendingAction?.action && (
+        <StatusConfirmSheet
+          emoji={pendingAction.action.emoji}
+          title={pendingAction.action.confirmTitle}
+          sub={pendingAction.action.confirmSub}
+          confirmLabel={pendingAction.action.label}
+          confirmColor={pendingAction.action.color}
+          onConfirm={handleQuickAction}
+          onCancel={() => setPendingAction(null)}
+          loading={updating}
+        />
+      )}
 
       {/* Media upload sheet */}
       {mediaTask && createPortal(

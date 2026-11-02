@@ -723,7 +723,15 @@ export default function Layout() {
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
-      <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
+      {/* ── THE PUBLISH FORM OWNS THE WHOLE SCREEN ────────────────────────────
+          The goal of that screen is one thing: the visitor finishes the form and
+          publishes. The app header above it (logo, balance, menu) is not part of
+          that job — it is one more thing competing for attention, and it also
+          costs the form the top ~60px. The form carries its own close button and
+          its own progress bar, so nothing is lost by not drawing the header on
+          this one route. This is the same full-screen surface a guest already
+          gets when he arrives at the form from the welcome flow. */}
+      {location.pathname !== '/create-task' && <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />}
       {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
