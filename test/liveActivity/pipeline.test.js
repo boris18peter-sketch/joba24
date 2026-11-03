@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import {
-  mkdtempSync, copyFileSync, readFileSync, writeFileSync, existsSync, readdirSync,
+  mkdtempSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync, readdirSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
@@ -380,16 +380,16 @@ function workflowStep(name) {
 /** A directory that looks like the repository to the step script. */
 function workspace() {
   const dir = mkdtempSync(join(tmpdir(), 'joba-step-'));
-  execFileSync('mkdir', ['-p',
-    join(dir, 'scripts'),
-    join(dir, 'ios/App/App.xcodeproj'),
-    join(dir, 'ios/App/App'),
-    join(dir, 'ios/App/JobaActivityWidget'),
-    join(dir, 'build'),
-  ]);
+  for (const sub of ['scripts', 'ios/App/App.xcodeproj', 'ios/App/App', 'ios/App/JobaActivityWidget', 'build']) {
+    mkdirSync(join(dir, sub), { recursive: true });
+  }
   copyFileSync(PATCHER, join(dir, 'scripts/patch-ios-live-activity.py'));
   copyFileSync(PROJECT, join(dir, 'ios/App/App.xcodeproj/project.pbxproj'));
   copyFileSync(APP_INFO, join(dir, 'ios/App/App/Info.plist'));
+  // The step asserts these exist before it patches anything (cap sync can
+  // regenerate the native scaffolding), so the workspace must contain them.
+  copyFileSync(join(ROOT, 'ios/App/App/LiveActivityPlugin.swift'),
+    join(dir, 'ios/App/App/LiveActivityPlugin.swift'));
   for (const name of ['JobaActivityWidgetBundle.swift', 'JobaTaskActivityAttributes.swift', 'Info.plist']) {
     copyFileSync(join(ROOT, 'ios/App/JobaActivityWidget', name), join(dir, 'ios/App/JobaActivityWidget', name));
   }

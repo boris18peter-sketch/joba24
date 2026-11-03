@@ -239,6 +239,28 @@ This executes the real scripts (flag resolver, project generator, report
 consumer, export-options builder) — no mocks. What it cannot do is compile Swift
 or run `xcodebuild`: that needs macOS and only happens on Codemagic.
 
+## 5h. The workflow step itself is executed by the tests
+
+The JSON fix is only proved if the step that failed is actually run, so
+`test/liveActivity/pipeline.test.js` reads the `script:` block of *Wire the Live
+Activity widget extension* out of `codemagic.yaml` and executes it with
+`bash` under `set -e`, in a throwaway copy of the project:
+
+| mode | asserted |
+| --- | --- |
+| `ENABLE_LIVE_ACTIVITY_WIDGET=true` | patches, writes the report, the next step's `json.load` succeeds, the widget bundle id matches `WIDGET_BUNDLE_ID` |
+| `ENABLE_LIVE_ACTIVITY_WIDGET=false` | prints `SKIPPED`, exits 0, **and leaves `project.pbxproj` and `Info.plist` byte-identical** |
+
+The step's final `PlistBuddy` block is skipped in the test because
+`/usr/libexec/PlistBuddy` exists only on macOS; a separate assertion fails if
+that block is ever deleted from the workflow, so skipping it cannot hide a
+removed check.
+
+Local preflight result (2026-11-03): **11 test files, 272 tests, all passing**;
+`npx vite build` succeeds; `codemagic.yaml` parses with a YAML parser and has no
+tabs. Reproducing the original failure by hand — `--check --require > out.json`
+then `json.load` — now succeeds, which it did not before the fix.
+
 ## 6. Residual risk, stated plainly
 
 The Swift was written and reviewed here, but this environment has no Swift
