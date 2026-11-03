@@ -926,7 +926,7 @@ export default function HomeFeed() {
           <PublishedTasksHeader
             view={myPubTab === 'active' || myTasks.length === 0 ? 'active' : 'history'}
             historyTab={myPubTab === 'other' ? 'other' : 'completed'}
-            showHistory={myTasks.length > 0}
+            showHistory={hasActivePublished}
             hideTitle={!myTasksLoading && !myTasksLoadFailed && !hasActivePublished}
             counts={{
               completed: myTasks.filter(x => x.status === 'COMPLETED').length,
@@ -967,7 +967,10 @@ export default function HomeFeed() {
           </div>
         )}
         {activeTab === 'my_published' && !myTasksLoading && !myTasksLoadFailed && myTasks.length === 0 && (
-          <PublishedTasksEmptyState />
+          <PublishedTasksEmptyState
+            hasHistory={false}
+            onOpenHistory={() => setMyPubTab('completed')}
+          />
         )}
         {activeTab === 'my_published' && !myTasksLoading && myTasks.length > 0 && (() => {
           const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
@@ -975,7 +978,10 @@ export default function HomeFeed() {
           return (
             <div>
               {filteredPub.length === 0 && myPubTab === 'active' ? (
-                <PublishedTasksEmptyState />
+                <PublishedTasksEmptyState
+                  hasHistory={myTasks.some(x => x.status === 'COMPLETED' || x.status === 'CANCELLED' || x.status === 'EXPIRED')}
+                  onOpenHistory={() => setMyPubTab('completed')}
+                />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>

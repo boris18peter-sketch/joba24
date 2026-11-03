@@ -14,7 +14,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import CreditIcon from '@/components/CreditIcon';
-import { Lock, PlusCircle } from 'lucide-react';
+import { Lock, Plus } from 'lucide-react';
 
 function useAnimatedCount(value, duration = 700) {
   const [display, setDisplay] = useState(value);
@@ -61,7 +61,7 @@ export default function CreditBalancePill({ credits, locked = 0, onClick, onLock
   // A large balance must never push the header's own controls out of the row:
   // the step down is on the number alone, and the pill keeps its size.
   const digits = String(display ?? 0).length;
-  const numberSize = digits > 5 ? 12 : digits > 4 ? 13 : 14.5;
+  const numberSize = digits > 5 ? 13.5 : digits > 4 ? 15 : 17;
 
   return (
     <div data-credit-pill="true" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -100,8 +100,8 @@ export default function CreditBalancePill({ credits, locked = 0, onClick, onLock
             minWidth: 16,
             textAlign: 'center',
             fontSize: numberSize,
-            fontWeight: 600,
-            letterSpacing: -0.1,
+            fontWeight: 900,
+            letterSpacing: -0.4,
             color: 'var(--j-credit-text)',
             fontVariantNumeric: 'tabular-nums',
             lineHeight: 1,
@@ -122,22 +122,21 @@ export default function CreditBalancePill({ credits, locked = 0, onClick, onLock
             if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); onClick?.(); }
           }}
           style={{
-            width: 28,
-            height: 28,
+            width: 22,
+            height: 22,
             minHeight: 'unset',
             minWidth: 'unset',
             flexShrink: 0,
-            borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'var(--brand-primary-light)',
-            border: '1px solid var(--border-2)',
+            background: 'transparent',
+            border: 'none',
             cursor: 'pointer',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <PlusCircle size={17} strokeWidth={2} color="var(--brand-primary)" />
+          <Plus size={19} strokeWidth={3.4} color="var(--j-credit-text)" />
         </span>
       </button>
 

@@ -40,6 +40,11 @@ export default function PublishedTasksHeader({
     { key: 'other', label: t('archive'), count: counts.archive || 0 },
   ];
 
+  // Nothing to say on the empty screen: the banner is the hero there and it
+  // already carries the headline, while the history link sits beneath the
+  // publish button. An empty row would only push the hero down.
+  if (view === 'active' && hideTitle && !showHistory) return null;
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
