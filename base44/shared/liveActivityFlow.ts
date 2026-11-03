@@ -317,15 +317,37 @@ function zonedParts(date, timeZone) {
 
 const pad = (n) => String(n).padStart(2, '0');
 
-/** 'היום, 14:00' · 'מחר, 09:30' · 'שלישי, 6 באוק׳, 14:00' — in `timeZone`. */
+/**
+ * 'היום, 14:00' · 'מחר, 09:30' · 'שלישי, 6 באוק׳, 14:00' — in `timeZone`.
+ *
+ * ── TWO KINDS OF OCCURRENCE, TWO KINDS OF TIME ─────────────────────────────
+ * A publisher's SLOT (`category_details.schedule`) is a wall-clock entry: the
+ * date and the clock the publisher typed. It must be shown exactly as typed,
+ * never shifted into another zone, or a 09:30 slot becomes 11:30.
+ * `scheduled_time` is the opposite — a true UTC instant, which must be converted
+ * into the recipient's zone to read correctly.
+ */
 export function formatOccurrence(occurrence, timeZone = DEFAULT_TIMEZONE, now = Date.now()) {
   if (!occurrence || !occurrence.start) return '';
   const zone = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIMEZONE;
-  const start = occurrence.start instanceof Date ? occurrence.start : parseTime(occurrence.start);
-  if (!start || isNaN(start.getTime())) return '';
 
-  const p = zonedParts(start, zone);
-  const clock = `${pad(p.H)}:${pad(p.M)}`;
+  const isSlot = occurrence.source === 'slot' && /^\d{4}-\d{2}-\d{2}$/.test(String(occurrence.date || '')) && occurrence.startClock;
+  let p;
+  let clock;
+  let endClock;
+
+  if (isSlot) {
+    const [y, m, d] = String(occurrence.date).split('-').map(Number);
+    p = { y, m, d };
+    clock = String(occurrence.startClock);
+    endClock = occurrence.endClock ? String(occurrence.endClock) : '';
+  } else {
+    const start = occurrence.start instanceof Date ? occurrence.start : parseTime(occurrence.start);
+    if (!start || isNaN(start.getTime())) return '';
+    p = zonedParts(start, zone);
+    clock = `${pad(p.H)}:${pad(p.M)}`;
+    endClock = occurrence.endClock ? String(occurrence.endClock) : (occurrence.end ? zonedClock(occurrence.end, zone) : '');
+  }
 
   const nowParts = zonedParts(new Date(now), zone);
   const midnightUTC = (parts) => Date.UTC(parts.y, parts.m - 1, parts.d);
@@ -335,9 +357,6 @@ export function formatOccurrence(occurrence, timeZone = DEFAULT_TIMEZONE, now = 
   if (dayDiff === 1) return `מחר, ${clock}`;
 
   const dow = new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
-  const endClock = occurrence.endClock
-    ? String(occurrence.endClock)
-    : (occurrence.end ? zonedClock(occurrence.end, zone) : '');
   const base = `${WEEKDAYS_HE[dow]}, ${p.d} ב${MONTHS_HE_SHORT[p.m - 1]}, ${clock}`;
   return endClock ? `${base}–${endClock}` : base;
 }

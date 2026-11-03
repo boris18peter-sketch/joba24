@@ -91,16 +91,24 @@ export function planLiveActivityDispatch(input) {
   if (config?.enabled !== true) return skip('disabled');
 
   if (!task || !task.id) return skip('task_missing');
-  const auth = authorizeActivity(task, role, userId);
-  if (!auth.ok) return skip('unauthorized', { reason: auth.reason });
 
   const base = { userId, taskId: task.id, role, at: iso(now) };
 
   // 2. A terminal event is the highest priority state a recipient can reach.
+  //    `authorizeActivity` only authorizes LIVE tracking, so ownership is
+  //    verified directly against the record here — a stranger can never close
+  //    somebody else's activity.
   if (TERMINAL_TASK_STATUSES.includes(task.status)) {
+    const owns = role === 'worker' ? task.worker_id === userId : task.client_id === userId;
+    if (!owns) {
+      return { ...base, ...skip('unauthorized', { reason: role === 'worker' ? 'not_assigned' : 'not_owner' }) };
+    }
     if (state?.terminal) return { ...base, ...skip('terminal_already_sent') };
     return { ...base, kind: 'end', decision: 'terminal', revision: nextRevision(state) };
   }
+
+  const auth = authorizeActivity(task, role, userId);
+  if (!auth.ok) return { ...base, ...skip('unauthorized', { reason: auth.reason }) };
 
   // 3. Refuse an event that is not newer than what was already committed.
   if (eventRevision != null && state) {
