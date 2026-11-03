@@ -1,0 +1,82 @@
+{
+  "name": "LiveActivityContentVersion",
+  "type": "object",
+  "properties": {
+    "category_key": {
+      "type": "string",
+      "description": "The GlobalCategory this row versions. The fingerprint is computed from the RESOLVED flow, so a child that inherits its root's wording gets its own row and changes with it."
+    },
+    "fingerprint": {
+      "type": "string",
+      "description": "Hash of everything the Lock Screen can show for this category: resolved step labels, CTA labels, category label, icon, plus PRESENTATION_VERSION. An equal fingerprint means nothing visible changed."
+    },
+    "previous_fingerprint": {
+      "type": "string",
+      "description": "The fingerprint this row held before the last detected change."
+    },
+    "pending": {
+      "type": "boolean",
+      "default": false,
+      "description": "True while running cards for this category still need a refresh. Cleared once the dispatch pass finished without failures, or when the attempts ceiling is reached."
+    },
+    "attempts": {
+      "type": "number",
+      "default": 0,
+      "description": "Failed dispatch passes for the current change. Bounded, so a broken token can never spin."
+    },
+    "next_attempt_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Backoff gate for the next retry of this change."
+    },
+    "changed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the wording change was detected."
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time the fingerprint was recomputed."
+    },
+    "last_dispatch_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time a refresh pass ran for this change (dry run included \u2014 it is recorded, never hidden)."
+    },
+    "last_result": {
+      "type": "string",
+      "description": "Short machine outcome of the last pass: refreshed, dry_run, no_recipients, duplicate_only, unauthorized_recipients, retry_scheduled, gave_up."
+    },
+    "last_error": {
+      "type": "string",
+      "description": "Classified failure of the last pass, without any token or payload content."
+    }
+  },
+  "required": [
+    "category_key",
+    "fingerprint"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

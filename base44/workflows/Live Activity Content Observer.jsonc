@@ -1,0 +1,44 @@
+{
+  "name": "Live Activity Content Observer",
+  "description": "When a category's wording is edited (step labels, CTA labels, category label, icon, translations), refresh the Live Activities already showing it. The function decides what actually changed by comparing fingerprints, so an edit that changes nothing visible costs nothing.",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "GlobalCategory",
+      "events": [
+        "create",
+        "update"
+      ]
+    },
+    "condition": "${ .trigger.event_type == \"create\" or ((.trigger.changed_fields // []) | index(\"status_flow\") != null) or ((.trigger.changed_fields // []) | index(\"label\") != null) or ((.trigger.changed_fields // []) | index(\"icon\") != null) or ((.trigger.changed_fields // []) | index(\"translations\") != null) or ((.trigger.changed_fields // []) | index(\"parent_key\") != null) or ((.trigger.changed_fields // []) | index(\"active\") != null) }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "live_activity_content_observer",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "refresh_wording": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "liveActivityContentRefresh",
+            "args": {
+              "mode": "refresh",
+              "category_keys": [
+                "${ .trigger.data.category_key // \"\" }"
+              ]
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "\u05e8\u05e2\u05e0\u05d5\u05df \u05e0\u05d9\u05e1\u05d5\u05d7 \u05d1\u05db\u05e8\u05d8\u05d9\u05e1 \u05d4\u05e4\u05e2\u05d9\u05dc",
+            "description": "\u05e8\u05e7 \u05d0\u05dd \u05d4\u05e0\u05d5\u05e1\u05d7 \u05d4\u05e0\u05e8\u05d0\u05d4 \u05d4\u05e9\u05ea\u05e0\u05d4"
+          }
+        }
+      }
+    ]
+  }
+}

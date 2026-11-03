@@ -1,0 +1,48 @@
+{
+  "name": "Live Activity Content Reconcile",
+  "description": "Versioned reconciliation for Live Activity wording: re-fingerprints every active category so a change that fired no entity event (a code deployment, a version bump of the presentation contract, a bulk write) still reaches running cards, and drains any pending retries. Entirely inert while LiveActivityConfig.enabled is false.",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "live_activity_content_reconcile",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "reconcile_wording": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "liveActivityContentRefresh",
+            "args": {
+              "mode": "refresh",
+              "limit": 12
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "\u05d4\u05e9\u05dc\u05de\u05ea \u05e8\u05e2\u05e0\u05d5\u05df \u05e0\u05d9\u05e1\u05d5\u05d7",
+            "description": "\u05e1\u05d5\u05e8\u05e7, \u05de\u05e8\u05e2\u05e0\u05df, \u05d5\u05de\u05e9\u05dc\u05d9\u05dd \u05e0\u05d9\u05e1\u05d9\u05d5\u05e0\u05d5\u05ea \u05d7\u05d5\u05d6\u05e8\u05d9\u05dd"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/30 * * * *",
+      "one_time_date": null,
+      "timezone": "Asia/Jerusalem",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}
