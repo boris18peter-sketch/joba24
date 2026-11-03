@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { normalizeConfig } from '../../shared/liveActivityConfig.ts';
 import { planObservation, retentionCutoffMs, recipientKey, OBSERVED_EVENTS } from '../../shared/liveActivityObserve.ts';
+import { requireInternalOperator } from '../../shared/internalAuth.ts';
 
 /**
  * liveActivityObserve — Stage 2's only entry point.
@@ -26,11 +27,14 @@ import { planObservation, retentionCutoffMs, recipientKey, OBSERVED_EVENTS } fro
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Called by the workflow as its creator (an app admin); its URL is public,
-    // so the same admin gate applies as any workflow-only function.
+    // ── WHO MAY TRIGGER AN OBSERVATION ──────────────────────────────────────
+    // The workflow invokes this as the platform's own service caller, while a
+    // human hitting the URL is a signed-in user. The app's existing rule
+    // (shared with Market Maker) allows exactly those two and nothing else — so
+    // the workflow's call is accepted, and an ordinary app user is refused.
     const user = await base44.auth.me().catch((e) => (e.status === 401 ? null : Promise.reject(e)));
-    if (!user) return Response.json({ error: 'unauthenticated' }, { status: 401 });
-    if (user.role !== 'admin') return Response.json({ error: 'forbidden' }, { status: 403 });
+    const denied = await requireInternalOperator(base44, req, user ?? null);
+    if (denied) return denied;
 
     const body = await req.json().catch(() => ({}));
     const taskId = typeof body?.task_id === 'string' ? body.task_id.trim() : '';
