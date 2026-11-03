@@ -68,6 +68,15 @@ through `$CM_ENV` for that build only — the workflow file is never edited and 
 production default stays off. `BUNDLE_ID` and the `ios_signing` group are
 untouched.
 
+Codemagic hands a `type: boolean` input over as **`True` / `False`** (capitalised,
+Python style), while every gate in the workflow reads lowercase `true` / `false`.
+That mismatch stopped the first widget-enabled build at this step. The value is
+now handed to `scripts/resolve-live-activity-flag.sh`, which case-folds and trims
+it, so both formats work; anything that is not a real boolean (empty, missing, an
+unresolved placeholder, `maybe`, `1`) exits non-zero and writes nothing to
+`$CM_ENV`, so a half-resolved flag can never arm the widget. Covered by
+`test/liveActivity/buildFlag.test.js`.
+
 > The signing step fetches a second provisioning profile for the widget and the
 > export step adds it to `provisioningProfiles`. Both are skipped unless
 > `ENABLE_LIVE_ACTIVITY_WIDGET=true`, so today's release path is unchanged.

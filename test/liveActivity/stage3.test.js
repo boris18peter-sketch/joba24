@@ -313,8 +313,10 @@ describe('codemagic pipeline', () => {
     expect(yaml).toContain('default: false');
     expect(yaml).not.toMatch(/^\s*ENABLE_LIVE_ACTIVITY_WIDGET:\s*"true"/m);
     // One step turns that input into the variable every gate below reads, and it
-    // runs before the project can be patched.
-    expect(yaml).toContain('echo "ENABLE_LIVE_ACTIVITY_WIDGET=true" >> "$CM_ENV"');
+    // runs before the project can be patched. The value itself is normalised by
+    // scripts/resolve-live-activity-flag.sh (covered in buildFlag.test.js),
+    // because Codemagic delivers a boolean as "True"/"False".
+    expect(yaml).toContain('scripts/resolve-live-activity-flag.sh');
     expect(yaml.indexOf('Resolve build flags'))
       .toBeLessThan(yaml.indexOf('python3 scripts/patch-ios-live-activity.py'));
     expect(yaml).toContain('WIDGET_BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app.JobaActivityWidget"');
@@ -361,13 +363,17 @@ describe('codemagic pipeline', () => {
   });
 
   it('refuses to build when the flag could not be resolved', () => {
-    // A build whose input resolved to anything but a clean true/false used to
-    // fall through to the "disabled" branch, so a ticked box could produce a
-    // SHIPPING build that looked like a widget build. It now stops.
-    expect(yaml).toContain("WANT=\"${{ inputs.liveActivityWidget }}\"");
-    expect(yaml).toContain('case "$WANT" in');
-    expect(yaml).toContain('expected true or false');
-    expect(yaml).toContain('Refusing to build');
+    // A build whose input resolved to anything but a clean boolean used to fall
+    // through to the "disabled" branch, so a ticked box could produce a SHIPPING
+    // build that looked like a widget build. The resolver now stops instead —
+    // and, crucially, it accepts Codemagic's capitalised "True"/"False", which
+    // is what failed the first widget-enabled build at this step.
+    const resolver = read(join(ROOT, 'scripts/resolve-live-activity-flag.sh'));
+    expect(yaml).toContain('bash scripts/resolve-live-activity-flag.sh');
+    expect(resolver).toContain('tr \'[:upper:]\' \'[:lower:]\'');
+    expect(resolver).toContain('expected true or false');
+    expect(resolver).toContain('Refusing to build');
+    expect(resolver).toContain('exit 1');
   });
 });
 
