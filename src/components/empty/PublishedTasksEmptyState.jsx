@@ -61,7 +61,7 @@ export default function PublishedTasksEmptyState() {
         type="button"
         onClick={() => publish()}
         style={{
-          marginTop: 10, width: '100%', height: 50, borderRadius: 14, border: 'none',
+          marginTop: 14, width: '100%', height: 48, borderRadius: 14, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
           color: 'var(--brand-btn-primary-text, #ffffff)',
@@ -74,24 +74,19 @@ export default function PublishedTasksEmptyState() {
         {t('post_task_btn')}
       </button>
 
-      {/* 3. The categories, with the one line that explains what the row is.
-          The block gets real air above AND below it, so the rail reads as its own
-          section instead of being squeezed between two buttons. */}
+      {/* 3. The categories — no heading: the icons speak for themselves. The
+          room the heading used to take is given back as air around the rail, so
+          the row reads as its own section instead of being squeezed between the
+          button above it and the video below. */}
       {items.length > 0 && (
-        <div style={{ marginTop: 26, marginBottom: 22 }}>
-          <div style={{
-            marginBottom: 10, fontSize: 13, fontWeight: 800,
-            letterSpacing: '-0.1px', color: 'var(--text-2)',
-          }}>
-            {t('empty_cats_heading')}
-          </div>
+        <div style={{ marginTop: 34, marginBottom: 22 }}>
           <CategoryCarousel items={items} onSelect={publish} isRTL={isRTL} />
         </div>
       )}
 
       {/* 4. The explainer video — pushed further down: it is the last, optional
           item on the screen, so it must not sit on the heels of the catalogue. */}
-      <div style={{ marginTop: 40 }}>
+      <div style={{ marginTop: 46 }}>
         <EmptyStateVideoCard
           title={t('mtempty_video_title')}
           subtitle={t('mtempty_video_sub')}
