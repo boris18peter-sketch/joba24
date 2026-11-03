@@ -179,33 +179,60 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve(["ended": false, "reason": "unsupported_ios"])
             return
         }
-        guard let taskId = call.getString("taskId"), !taskId.isEmpty else {
-            call.reject("taskId is required")
+        let endsEverything = call.getBool("all") ?? false
+        let taskId = call.getString("taskId") ?? ""
+        if !endsEverything && taskId.isEmpty {
+            call.reject("taskId is required (or pass all=true)")
             return
         }
         let role = call.getString("role") ?? "publisher"
         let finalState = Self.decodeState(call.getObject("state"))
+        // ── HOW LONG THE CARD LINGERS ────────────────────────────────────────
+        // This was hardcoded to 60 seconds whenever a farewell state was given,
+        // so pressing "end" left the Lock Screen card up for a full minute and
+        // looked as if nothing had happened. The default is now IMMEDIATE, and a
+        // caller that genuinely wants a calm farewell asks for it explicitly.
+        let dismissAfter = max(0, call.getInt("dismissAfter") ?? 0)
 
         Task { @MainActor in
             let targets = Activity<JobaTaskActivity>.activities.filter {
-                $0.attributes.taskId == taskId && $0.attributes.role == role
+                endsEverything || ($0.attributes.taskId == taskId && $0.attributes.role == role)
             }
+            let policy: ActivityUIDismissalPolicy = dismissAfter > 0
+                ? .after(Date().addingTimeInterval(Double(dismissAfter)))
+                : .immediate
+            let farewell = finalState.map { ActivityContent(state: $0, staleDate: nil) }
+
+            var endedIds: [String] = []
             for activity in targets {
-                if let finalState = finalState {
-                    // A finished task keeps a short, calm farewell on the Lock
-                    // Screen instead of vanishing mid-glance.
-                    await activity.end(
-                        ActivityContent(state: finalState, staleDate: nil),
-                        dismissalPolicy: .after(Date().addingTimeInterval(60))
-                    )
-                } else {
-                    await activity.end(nil, dismissalPolicy: .immediate)
-                }
+                await activity.end(farewell, dismissalPolicy: policy)
+                endedIds.append(activity.id)
+                self.cancelTokenListener(taskId: activity.attributes.taskId, role: activity.attributes.role)
             }
-            self.tokenListeners[self.listenerKey(taskId, role)]?.cancel()
-            self.tokenListeners.removeValue(forKey: self.listenerKey(taskId, role))
-            call.resolve(["ended": true, "count": targets.count])
+
+            // ── REPORT WHAT iOS DID, NOT WHAT WAS INTENDED ────────────────────
+            // `ended` used to be `true` even when nothing matched, so a no-op was
+            // indistinguishable from a real close. It now means "this call ended
+            // at least one activity"; `count` says how many, `remaining` re-reads
+            // ActivityKit afterwards so a caller can prove no orphan survived,
+            // and `reason` explains a no-op instead of leaving it blank.
+            let remaining = Activity<JobaTaskActivity>.activities.count
+            call.resolve([
+                "ended": !endedIds.isEmpty,
+                "count": endedIds.count,
+                "activityIds": endedIds,
+                "dismissAfter": dismissAfter,
+                "remaining": remaining,
+                "reason": endedIds.isEmpty ? "no_activity" : "",
+            ])
         }
+    }
+
+    /// Stop observing a pair's push token — called when its activity ends.
+    private func cancelTokenListener(taskId: String, role: String) {
+        let key = listenerKey(taskId, role)
+        tokenListeners[key]?.cancel()
+        tokenListeners.removeValue(forKey: key)
     }
 
     // MARK: - Push token
@@ -248,6 +275,18 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     // MARK: - Contract
+
+    /// The ActivityKit lifecycle value as a string the web layer can display.
+    @available(iOS 16.2, *)
+    private static func describe(_ state: ActivityState) -> String {
+        switch state {
+        case .active: return "active"
+        case .stale: return "stale"
+        case .ended: return "ended"
+        case .dismissed: return "dismissed"
+        @unknown default: return "unknown"
+        }
+    }
 
     @available(iOS 16.2, *)
     private static func staleDate(from state: JobaTaskActivity.ContentState) -> Date? {

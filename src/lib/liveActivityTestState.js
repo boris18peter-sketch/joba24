@@ -1,58 +1,149 @@
 /**
- * liveActivityTestState — the fixture a LOCAL Live Activity test renders.
+ * liveActivityTestState — the fixture the LOCAL Live Activity test renders.
  *
- * ── WHY A FIXTURE AND NOT A REAL TASK ──────────────────────────────────────
- * The bridge is deliberately not wired to any screen yet, so this is the only
- * way to see the widget on a device before activation. It is a fixed,
- * hand-written snapshot that mirrors the contract EXACTLY (the keys the Swift
- * `ContentState` decodes, including `progress`), so what appears on the Lock
- * Screen is proof that the contract, the widget and the bridge agree.
+ * ── WHY IT IS BUILT BY THE CONTRACT, NOT HAND-WRITTEN ───────────────────────
+ * This used to be a hand-written object with its own invented Hebrew
+ * ("העובד בדרך אליך", "העבודה הסתיימה", "בדיקה מקומית"). It proved the bridge
+ * worked and proved nothing about what a real task shows, because the words did
+ * not come from the app at all.
  *
- * It never reads a task, never calls the server and never triggers a push: the
- * activity it starts is a purely local one, created by the device itself.
+ * Every snapshot here is now produced by the app's presentation contract over a
+ * REAL GlobalCategory flow and the app's own translator — exactly as
+ * ActiveTaskBanner and the dispatch layer resolve them. The stage list is the
+ * canonical lifecycle (OPEN → TAKEN → on_the_way → arrived → done), not a new
+ * one.
+ *
+ * ── IT CANNOT TOUCH A REAL TASK ────────────────────────────────────────────
+ * The task is an in-memory object with a literal id. It is never created, read
+ * or written on the server; the activity it drives is created by the device.
  */
-export const TEST_TASK_ID = 'joba-live-activity-local-test';
+import { buildTaskActivitySnapshot } from '@/lib/liveActivityContract';
+import { resolveStatusFlow } from '@/lib/taskStatusFlow';
+import { isEngagement, primaryOccurrence, formatOccurrence, scheduleWindows } from '@/lib/scheduling';
 
-/** The three worker flow steps, labelled as the real flow labels them. */
-const STEPS = [
-  { key: 'on_the_way', label: 'בדרך אליך', icon: 'navigation' },
-  { key: 'arrived', label: 'הגעתי למקום', icon: 'map-pin' },
-  { key: 'done', label: 'סיימתי את העבודה', icon: 'check' },
+/** A literal id, never an existing task's. */
+export const TEST_TASK_ID = 'joba-local-live-activity-test';
+const TEST_CLIENT_ID = 'local-test-publisher';
+const TEST_WORKER_ID = 'local-test-worker';
+
+/**
+ * The real lifecycle, in the order a worker walks it. `roles` mirrors
+ * `authorizeActivity`: an OPEN task only ever belongs to its publisher.
+ * The labels are this admin screen's own navigation tags — the status text the
+ * user sees always comes from the snapshot, never from here.
+ */
+export const TEST_STAGES = [
+  { key: 'open', label: 'OPEN', status: 'OPEN', workerStatus: null, roles: ['publisher'], scheduled: false },
+  { key: 'scheduled', label: 'מתוכנן', status: 'TAKEN', workerStatus: null, roles: ['publisher', 'worker'], scheduled: true },
+  { key: 'awaiting_start', label: 'טרם התחיל', status: 'TAKEN', workerStatus: null, roles: ['publisher', 'worker'], scheduled: false },
+  { key: 'on_the_way', label: 'בדרך', status: 'TAKEN', workerStatus: 'on_the_way', roles: ['publisher', 'worker'], scheduled: false },
+  { key: 'arrived', label: 'בעבודה', status: 'TAKEN', workerStatus: 'arrived', roles: ['publisher', 'worker'], scheduled: false },
+  { key: 'done', label: 'סיום', status: 'TAKEN', workerStatus: 'done', roles: ['publisher', 'worker'], scheduled: false },
 ];
 
-const PHASES = [
-  { step: 0, phase: 'on_the_way', title: 'העובד בדרך אליך', subtitle: 'אפשר לעקוב אחרי ההתקדמות כאן' },
-  { step: 1, phase: 'arrived', title: 'העובד הגיע', subtitle: 'העבודה מתחילה עכשיו' },
-  { step: 2, phase: 'done', title: 'העבודה הסתיימה', subtitle: 'ממתין לאישור שלך' },
-];
-
-/** One snapshot for the given step (0..2), shaped exactly like the contract. */
-export function testSnapshot(step = 0, revision = 1) {
-  const safe = PHASES[Math.min(Math.max(step, 0), PHASES.length - 1)];
-  return {
-    contractVersion: 1,
-    id: TEST_TASK_ID,
-    role: 'worker',
-    phase: safe.phase,
-    title: safe.title,
-    subtitle: safe.subtitle,
-    categoryLabel: 'בדיקה מקומית',
-    categoryKey: 'local_test',
-    progress: {
-      step: safe.step,
-      total: STEPS.length,
-      steps: STEPS,
-    },
-    counters: { applicants: 2, views: null, clicks: null },
-    iconKey: 'wrench',
-    colorKey: 'brand',
-    deepLink: '',
-    endsAt: null,
-    revision,
-    updatedAt: new Date().toISOString(),
-    generatedAt: new Date().toISOString(),
-  };
+/** The stages a given role can actually be authorized for, in lifecycle order. */
+export function stagesForRole(role) {
+  const wanted = role === 'worker' ? 'worker' : 'publisher';
+  return TEST_STAGES.filter((stage) => stage.roles.includes(wanted));
 }
 
-/** The last step, so the test can show that the rail completes before it ends. */
-export const LAST_TEST_STEP = PHASES.length - 1;
+/** The reset point after an end: the first stage that is not publisher-only. */
+export function firstAssignedStage(role) {
+  const stages = stagesForRole(role);
+  return (stages.find((s) => s.key === 'awaiting_start') || stages[0]).key;
+}
+
+/** The first real service category the catalogue offers — for real flow wording. */
+export function pickTestCategory(catRows) {
+  const rows = Array.isArray(catRows) ? catRows : [];
+  return rows.find((row) => row && row.node_type === 'service' && row.active !== false)
+    || rows.find((row) => row && row.category_key)
+    || null;
+}
+
+/**
+ * The in-memory task a stage describes. Identity fields are swapped so the
+ * viewer is authorized as themselves: the publisher owns `client_id`, the worker
+ * owns `worker_id` — the same rule the server enforces.
+ */
+export function buildTestTask({ stage, role, userId, categoryKey, now = Date.now() }) {
+  const meta = TEST_STAGES.find((s) => s.key === stage) || TEST_STAGES[2];
+  const isPublisher = role !== 'worker';
+
+  const task = {
+    id: TEST_TASK_ID,
+    title: 'משימת בדיקה מקומית',
+    category: categoryKey || '',
+    status: meta.status,
+    worker_status: meta.workerStatus,
+    price: 250,
+    client_id: isPublisher ? userId : TEST_CLIENT_ID,
+    client_name: 'מפרסם לדוגמה',
+    worker_id: isPublisher ? TEST_WORKER_ID : userId,
+    worker_name: 'עובד לדוגמה',
+    applicants: [],
+    updated_date: new Date(now).toISOString(),
+  };
+
+  if (meta.status === 'OPEN') {
+    task.expires_at = new Date(now + 24 * 3600 * 1000).toISOString();
+    task.views_count = 18;
+    task.clicks_count = 4;
+    task.applicants = [
+      { worker_id: 'local-applicant-1', worker_name: 'מועמד לדוגמה', applied_at: task.updated_date },
+      { worker_id: 'local-applicant-2', worker_name: 'מועמדת לדוגמה', applied_at: task.updated_date },
+    ];
+  }
+
+  if (meta.scheduled) {
+    // Two days out: the real `isEngagement()` classifies it exactly as it
+    // classifies an agreed future booking.
+    task.scheduled_time = new Date(now + 48 * 3600 * 1000).toISOString();
+    task.schedule_agreed_at = new Date(now - 3600 * 1000).toISOString();
+  }
+
+  return task;
+}
+
+/**
+ * Build the snapshot for one stage, role and revision.
+ *
+ * Returns null when the stage does not apply to that role (an OPEN task for a
+ * worker) or when the catalogue is not loaded yet — the panel then shows nothing
+ * rather than inventing a state.
+ */
+export function buildTestSnapshot({
+  stage,
+  role,
+  revision = 1,
+  userId,
+  t,
+  catRows,
+  settings,
+  now = Date.now(),
+}) {
+  if (!userId || typeof t !== 'function') return null;
+  const category = pickTestCategory(catRows);
+  if (!category) return null;
+
+  const task = buildTestTask({ stage, role, userId, categoryKey: category.category_key, now });
+  const flow = resolveStatusFlow(task.category, catRows);
+  const windows = scheduleWindows(settings || {});
+  const engagement = isEngagement(task, now, windows);
+  const occurrence = engagement ? primaryOccurrence(task, now) : null;
+
+  return buildTaskActivitySnapshot({
+    task,
+    role: role === 'worker' ? 'worker' : 'publisher',
+    userId,
+    flow,
+    schedule: {
+      isEngagement: engagement,
+      occurrenceLabel: occurrence ? formatOccurrence(occurrence) : '',
+    },
+    t,
+    categoryLabel: category.label || '',
+    now,
+    revision,
+  });
+}

@@ -80,22 +80,55 @@ export async function updateTaskActivity({ taskId, role, state } = {}) {
   if (!taskId || !state) return { updated: false, reason: 'missing_input' };
   try {
     const result = await JobaActivity.update({ taskId, role: role || 'publisher', state });
-    return { updated: result?.updated === true, reason: result?.reason || '' };
+    return {
+      updated: result?.updated === true,
+      count: Number(result?.count) || 0,
+      skipped: Number(result?.skipped) || 0,
+      reason: result?.reason || '',
+    };
   } catch {
     return { updated: false, reason: 'plugin_error' };
   }
 }
 
-/** Close the activity. `state` is optional; when given it is the farewell shown. */
-export async function endTaskActivity({ taskId, role, state = null } = {}) {
+/**
+ * Close the activity.
+ *
+ * `dismissAfter` is how long the Lock Screen card may linger AFTER it ends:
+ * 0 (the default) dismisses it immediately. `all: true` closes every activity on
+ * this device — the deliberate cleanup for a leftover from an older test run,
+ * never something a task action does implicitly.
+ *
+ * `state` is optional; when given it becomes the farewell the card shows while
+ * it is still visible.
+ */
+export async function endTaskActivity({ taskId, role, state = null, dismissAfter = 0, all = false } = {}) {
   if (!isLiveActivityNative()) return { ended: false, reason: 'not_native' };
-  if (!taskId) return { ended: false, reason: 'missing_input' };
+  if (!all && !taskId) return { ended: false, reason: 'missing_input' };
   try {
-    const result = await JobaActivity.end({ taskId, role: role || 'publisher', state });
-    return { ended: result?.ended === true, reason: result?.reason || '' };
+    const result = await JobaActivity.end({
+      taskId,
+      role: role || 'publisher',
+      state,
+      dismissAfter: Math.max(0, Number(dismissAfter) || 0),
+      all,
+    });
+    return {
+      ended: result?.ended === true,
+      count: Number(result?.count) || 0,
+      activityIds: Array.isArray(result?.activityIds) ? result.activityIds : [],
+      dismissAfter: Number(result?.dismissAfter) || 0,
+      remaining: Number(result?.remaining) || 0,
+      reason: result?.reason || '',
+    };
   } catch {
     return { ended: false, reason: 'plugin_error' };
   }
+}
+
+/** Close every activity on this device (used only by the local test screen). */
+export function endAllActivities() {
+  return endTaskActivity({ all: true, dismissAfter: 0 });
 }
 
 /** Every activity currently showing on this device. */

@@ -11,7 +11,7 @@ import LiveActivityTestPanel from '@/components/liveActivity/LiveActivityTestPan
 export default function LiveActivityTest() {
   return (
     <div style={{ background: 'var(--surface-1)', minHeight: '100%' }}>
-      <PageHeader title="Live Activity (local test)" backTo="/admin" />
+      <PageHeader title="Live Activity — בדיקה מקומית" backTo="/admin" />
       <LiveActivityTestPanel />
     </div>
   );
