@@ -110,6 +110,7 @@ const Notifications = lazyRetry(() => import('@/pages/Notifications'));
 const AgentDashboard = lazyRetry(() => import('@/pages/AgentDashboard'));
 const AgentReferralsReport = lazyRetry(() => import('@/pages/AgentReferralsReport'));
 const QADashboard = lazyRetry(() => import('@/pages/QADashboard'));
+const LiveActivityTest = lazyRetry(() => import('@/pages/LiveActivityTest'));
 const Terms = lazyRetry(() => import('@/pages/Terms'));
 const Privacy = lazyRetry(() => import('@/pages/Privacy'));
 const ReferralRedirect = lazyRetry(() => import('@/pages/ReferralRedirect'));
@@ -364,6 +365,8 @@ const AuthenticatedApp = () => {
                 {/* Internal QA tooling — admin-only, same role check used elsewhere in Joba24 */}
                 <Route element={<AdminRoute />}>
                   <Route path="/simulator" element={<SimulatorPanel />} />
+                  {/* Local, on-device check for the native Live Activity widget */}
+                  <Route path="/live-activity-test" element={<LiveActivityTest />} />
                 </Route>
                 <Route path="/my-tasks" element={<MyTasks />} />
                 <Route path="/schedule" element={<MySchedule />} />

@@ -378,7 +378,22 @@ workflows:
           echo "=== Adding the widget target to project.pbxproj ==="
           python3 scripts/patch-ios-live-activity.py
           echo "=== Verifying the patched project, structurally ==="
-          python3 scripts/patch-ios-live-activity.py --check --require
+          python3 scripts/patch-ios-live-activity.py --check --require > "$CM_BUILD_DIR/widget-check.json"
+          cat "$CM_BUILD_DIR/widget-check.json"
+          # The profile downloaded later is looked up BY BUNDLE ID. If the project
+          # was patched with a different id than WIDGET_BUNDLE_ID, signing fails
+          # minutes later with a message that never mentions the mismatch, so it
+          # is compared here, before anything is fetched or archived.
+          python3 - "$CM_BUILD_DIR/widget-check.json" <<'PYEOF'
+          import json, os, sys
+          report = json.load(open(sys.argv[1]))
+          got = (report.get("widget") or {}).get("bundle_id") or ""
+          want = os.environ.get("WIDGET_BUNDLE_ID", "")
+          if got != want:
+              print("ERROR: project widget bundle id is %r but WIDGET_BUNDLE_ID is %r" % (got, want))
+              sys.exit(1)
+          print("OK: project widget bundle id matches WIDGET_BUNDLE_ID")
+          PYEOF
           echo "=== Confirming the app is allowed to show Live Activities ==="
           if ! /usr/libexec/PlistBuddy -c "Print :NSSupportsLiveActivities" ios/App/App/Info.plist | grep -qi true; then
             echo "ERROR: NSSupportsLiveActivities is missing from ios/App/App/Info.plist."
@@ -429,6 +444,59 @@ workflows:
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles --verbose
+      - name: Verify BOTH targets are signed (iOS)
+        script: |
+          # An extension is signed with a profile for ITS OWN bundle id. If
+          # use-profiles did not resolve one for the widget, Xcode only says so
+          # at the end of a long archive. This checks the written project up
+          # front and names exactly which target/configuration is unresolved.
+          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" != "true" ]; then
+            echo "SKIPPED: widget target not enabled - single-target signing, unchanged."
+            exit 0
+          fi
+          ruby - "${XCODE_PROJECT:-ios/App/App.xcodeproj}" <<'RB'
+          require "xcodeproj"
+
+          project = Xcodeproj::Project.open(ARGV[0])
+          wanted = {
+            "App" => ENV["BUNDLE_ID"],
+            "JobaActivityWidgetExtension" => ENV["WIDGET_BUNDLE_ID"],
+          }
+
+          failures = []
+          wanted.each do |name, expected_bundle|
+            target = project.targets.find { |t| t.name == name }
+            if target.nil?
+              failures << "#{name}: target not found in the project"
+              next
+            end
+            target.build_configurations.each do |config|
+              s = config.build_settings
+              bundle = s["PRODUCT_BUNDLE_IDENTIFIER"].to_s
+              profile = s["PROVISIONING_PROFILE_SPECIFIER"].to_s
+              team = s["DEVELOPMENT_TEAM"].to_s
+              puts format(
+                "%-30s %-8s bundle=%-52s profile=%s team=%s",
+                name, config.name, bundle,
+                profile.empty? ? "MISSING" : profile,
+                team.empty? ? "(from xcodebuild override)" : team
+              )
+              if expected_bundle && bundle != expected_bundle
+                failures << "#{name} #{config.name}: bundle id #{bundle.inspect} != #{expected_bundle.inspect}"
+              end
+              if profile.empty?
+                failures << "#{name} #{config.name}: no provisioning profile was applied"
+              end
+            end
+          end
+
+          unless failures.empty?
+            puts "ERROR: signing is incomplete:"
+            failures.each { |f| puts "  - #{f}" }
+            exit 1
+          end
+          puts "OK: app + widget extension are both signed, each with its own profile"
+          RB
       - name: Verify FACEBOOK_CLIENT_TOKEN is available (iOS)
         script: |
           if [ -z "${FACEBOOK_CLIENT_TOKEN:-}" ]; then

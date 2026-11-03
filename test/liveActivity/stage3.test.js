@@ -256,12 +256,26 @@ describe('production stays inert', () => {
     return found;
   }
 
-  it('no screen imports the web bridge yet', () => {
+  it('only the admin test panel imports the web bridge', () => {
+    // The bridge must not be reachable from any user-facing screen yet. The one
+    // permitted importer is the local test panel, which starts a fixture
+    // activity and touches no task.
     const importers = sourceFiles().filter((file) => {
       if (file === BRIDGE) return false;
       return read(file).includes('liveActivityNative');
     });
-    expect(importers).toEqual([]);
+    expect(importers).toEqual([join(ROOT, 'src/components/liveActivity/LiveActivityTestPanel.jsx')]);
+  });
+
+  it('reaches the local test surface only behind the admin guard', () => {
+    const app = read(join(ROOT, 'src/App.jsx'));
+    const guard = app.indexOf('<Route element={<AdminRoute />}>');
+    expect(guard).toBeGreaterThan(-1);
+    // The only declaration of the route sits inside that guarded block, which
+    // closes at the first `</Route>` group after it.
+    const guardedBlock = app.slice(guard, app.indexOf('</Route>\n                </Route>', guard));
+    expect(guardedBlock).toContain('path="/live-activity-test"');
+    expect(app.split('path="/live-activity-test"').length - 1).toBe(1);
   });
 
   it('the delivery locks are still shut', () => {
@@ -311,5 +325,16 @@ describe('codemagic pipeline', () => {
   it('declares the extension checks that prove a real build', () => {
     expect(yaml).toContain('JobaActivityWidgetExtension.appex embedded');
     expect(yaml).toContain('widgetkit-extension point present');
+  });
+
+  it('proves BOTH targets are signed before archiving', () => {
+    // A profile is looked up BY bundle id, so the patched project and
+    // WIDGET_BUNDLE_ID are compared before anything is fetched...
+    expect(yaml).toContain('project widget bundle id matches WIDGET_BUNDLE_ID');
+    // ...and the project is inspected after use-profiles, so a target left
+    // without a profile fails fast instead of at the end of a long archive.
+    expect(yaml).toContain('Verify BOTH targets are signed (iOS)');
+    expect(yaml).toContain('no provisioning profile was applied');
+    expect(yaml).toContain('"JobaActivityWidgetExtension" => ENV["WIDGET_BUNDLE_ID"]');
   });
 });

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Users, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp, CalendarDays } from 'lucide-react';
+import { X, Home, Map, Plus, User, Users, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp, CalendarDays, Activity } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -164,6 +164,21 @@ export default function SideMenu({ open, onClose }) {
           }}>
               <ShieldCheck size={18} />
               {t('nav_admin')}
+            </Link>
+            {/* On-device check for the Live Activity widget. Admin-only and
+                local: it starts an activity from a fixed example snapshot, so
+                the widget can be seen before the bridge is wired to a screen. */}
+            <Link to="/live-activity-test" onClick={onClose}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
+              background: location.pathname === '/live-activity-test' ? 'rgba(251,191,36,0.15)' : 'transparent',
+              color: '#fbbf24',
+              fontWeight: 700, fontSize: 15, textDecoration: 'none',
+              borderLeft: location.pathname === '/live-activity-test' ? '3px solid #fbbf24' : '3px solid transparent',
+              opacity: 0.85
+            }}>
+              <Activity size={18} />
+              Live Activity test
             </Link>
             <div onClick={onClose}>
               <NewUserSimulator />

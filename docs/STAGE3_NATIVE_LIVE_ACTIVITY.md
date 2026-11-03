@@ -112,6 +112,24 @@ Two changes, both small and reversible:
   that is intended (Live Activities exist from 16.1) and is not an error.
 * The shipping workflow builds the widget **only** when the flag is set.
 
+## 5b. Seeing it on a device before activation
+
+`/live-activity-test` (admin only, linked at the bottom of the side menu as
+"Live Activity test") starts a **local** activity from a fixed example snapshot.
+It reads no task, writes no task and triggers no push — the device creates the
+activity itself — so the Lock Screen card can be verified while production
+delivery stays off. The same screen can optionally listen for the ActivityKit
+push token, which exercises the existing registration function.
+
+## 5c. The two signing gates in CI
+
+1. Before anything is fetched, the patched project's widget bundle id is compared
+   with `WIDGET_BUNDLE_ID`. A profile is looked up *by bundle id*, so a mismatch
+   would otherwise surface late and vaguely.
+2. After `use-profiles`, both targets are inspected: each must carry a bundle id
+   matching its profile request and a `PROVISIONING_PROFILE_SPECIFIER`. A target
+   left unsigned fails here instead of at the end of the archive.
+
 ## 6. Residual risk, stated plainly
 
 The Swift was written and reviewed here, but this environment has no Swift

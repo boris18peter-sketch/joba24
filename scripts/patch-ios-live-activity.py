@@ -45,7 +45,10 @@ APP_TARGET_NAME = "App"
 WIDGET_TARGET_NAME = "JobaActivityWidgetExtension"
 WIDGET_DIR = "JobaActivityWidget"
 APP_BUNDLE_ID = "com.base69e6bdb4986a04a256653a23.app"
-WIDGET_BUNDLE_ID = APP_BUNDLE_ID + "." + WIDGET_DIR
+# One source of truth: CI passes WIDGET_BUNDLE_ID (the App ID registered in
+# Apple), so the project can never be patched with an id that differs from the
+# one a provisioning profile was fetched for. Locally the derived default holds.
+WIDGET_BUNDLE_ID = (os.environ.get("WIDGET_BUNDLE_ID") or "").strip() or (APP_BUNDLE_ID + "." + WIDGET_DIR)
 DEPLOYMENT_TARGET = "16.1"  # ActivityKit + WidgetKit Live Activities
 
 DEFAULT_PROJECT = "ios/App/App.xcodeproj/project.pbxproj"
