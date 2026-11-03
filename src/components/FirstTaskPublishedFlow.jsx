@@ -123,7 +123,7 @@ export default function FirstTaskPublishedFlow() {
                   border: '1px solid var(--border-1)',
                   marginBottom: 18,
                 }}>
-                  <ApplicantsGoldButton count={3} label={t('view_applicants')} inert />
+                  <ApplicantsGoldButton count={3} inert />
                   <span style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-3)', fontWeight: 600, textAlign: 'center' }}>
                     {t('ftp_hint')}
                   </span>

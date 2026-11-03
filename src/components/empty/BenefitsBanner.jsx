@@ -271,10 +271,10 @@ export default function BenefitsBanner() {
         }
         /* The dominant typographic element of the banner. */
         .j-ben-title {
-          font-size: 23px;
+          font-size: 22px;
           font-weight: 900;
-          line-height: 1.14;
-          letter-spacing: -0.7px;
+          line-height: 1.16;
+          letter-spacing: -0.6px;
           color: #0b1b3d;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -282,7 +282,7 @@ export default function BenefitsBanner() {
           overflow: hidden;
         }
         .j-ben-body {
-          margin-top: 5px;
+          margin-top: 8px;
           font-size: 13.5px;
           font-weight: 600;
           line-height: 1.25;
@@ -342,7 +342,7 @@ export default function BenefitsBanner() {
         @media (min-width: 720px) {
           .j-ben { height: 166px; padding: 14px 18px 24px; }
           .j-ben-eyebrow { font-size: 14.5px; }
-          .j-ben-title { font-size: 27px; }
+          .j-ben-title { font-size: 26px; }
           .j-ben-body { font-size: 15px; }
           .j-ben-art { flex-basis: 40%; max-width: 220px; }
         }

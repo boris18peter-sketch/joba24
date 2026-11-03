@@ -61,7 +61,7 @@ export default function PublishedTasksEmptyState({ onOpenHistory, hasHistory = f
         type="button"
         onClick={() => publish()}
         style={{
-          marginTop: 14, width: '100%', height: 50, borderRadius: 14, border: 'none',
+          marginTop: 10, width: '100%', height: 50, borderRadius: 14, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
           color: 'var(--brand-btn-primary-text, #ffffff)',
@@ -80,8 +80,11 @@ export default function PublishedTasksEmptyState({ onOpenHistory, hasHistory = f
           type="button"
           onClick={onOpenHistory}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-            margin: '8px auto 0', height: 34, minHeight: 34, padding: '0 12px',
+            // A quiet SECONDARY action, so it sits at the start of the line (the
+            // right edge in Hebrew) as a small link — centred, it read as the
+            // heading of the category rail below it.
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 5,
+            margin: '4px 0 0', height: 34, minHeight: 34, padding: '0 8px',
             borderRadius: 999, background: 'transparent', border: 'none',
             color: 'var(--text-2)', fontSize: 12.5, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
@@ -95,13 +98,13 @@ export default function PublishedTasksEmptyState({ onOpenHistory, hasHistory = f
 
       {/* 4. The categories — no heading: they speak for themselves */}
       {items.length > 0 && (
-        <div style={{ marginTop: hasHistory && onOpenHistory ? 4 : 12 }}>
+        <div style={{ marginTop: hasHistory && onOpenHistory ? 2 : 8 }}>
           <CategoryCarousel items={items} onSelect={publish} isRTL={isRTL} />
         </div>
       )}
 
       {/* 5. The explainer video that already exists in the app */}
-      <div style={{ marginTop: 10 }}>
+      <div style={{ marginTop: 8 }}>
         <EmptyStateVideoCard
           title={t('mtempty_video_title')}
           subtitle={t('mtempty_video_sub')}

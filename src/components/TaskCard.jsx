@@ -730,7 +730,6 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <ApplicantsGoldButton
                     count={liveApplicantCount}
-                    label={t('view_applicants')}
                     onClick={e => { e.stopPropagation(); openTaskSheet(task.id, task); }}
                     scanning={<ScanningLabel taskId={task.id} />}
                     fullWidth

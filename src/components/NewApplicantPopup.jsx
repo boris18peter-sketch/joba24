@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Loader2, Check, MessageCircle, ChevronLeft, User, Star } from 'lucide-react';
+import { Loader2, Check, MessageCircle, ChevronLeft, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -71,7 +71,6 @@ export default function NewApplicantPopup({ task, application, onClose }) {
   const name = profile?.full_name || application?.worker_name || '';
   const rating = Number(profile?.rating || 0);
   const reviewCount = Number(profile?.rating_count || 0);
-  const completed = Number(profile?.tasks_completed || 0);
   const verified = profile ? isUserVerified(profile) : false;
   const socialVerified = !!(profile?.instagram_verified || profile?.facebook_verified || profile?.tiktok_verified);
 
@@ -213,20 +212,10 @@ export default function NewApplicantPopup({ task, application, onClose }) {
             )}
           </div>
 
-          {/* What he has actually done — the same figure his profile leads with */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 10 }}>
-            {[
-              { value: completed, label: t('pr_tasks_done_long') || 'משימות שהושלמו' },
-            ].filter((m) => m.value > 0).map((m) => (
-              <div key={m.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Star size={12} color="#fbbf24" fill="#fbbf24" />
-                <span style={{ fontSize: 12.5, fontWeight: 900, color: heroText }}>{m.value}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: heroText, opacity: 0.8 }}>{m.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* The way into the profile — under the photo, where the eye stops */}
+          {/* The way into the profile — directly under the rating, where the eye
+              stops. The completed-tasks line that used to sit between the two was
+              removed: it repeated what the rating already says and pushed the
+              profile link away from the person it belongs to. */}
           <button
             onClick={openProfile}
             style={{

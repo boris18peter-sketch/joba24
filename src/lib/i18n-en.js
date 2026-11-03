@@ -531,12 +531,12 @@ export const en = {
     mtempty_cat_label: 'Or start from a category',
     mtempty_video_title: 'How does Joba24 work?',
     mtempty_video_sub: 'Watch a short explainer video',
-    // Benefits banner in the empty state — wording without unverified metrics
+    // Benefits banner in the empty state — the approved copy, numbers included
     ben_fixed_heading: 'Need a hand with something?',
-    ben_s1_title: 'Real professionals',
+    ben_s1_title: '5,000+ professionals',
     ben_s1_body: 'Ready to help you.',
-    ben_s2_title: 'A first offer, fast',
-    ben_s2_body: 'Post it and get offers.',
+    ben_s2_title: '10 minutes on average',
+    ben_s2_body: 'To get your first offer.',
     ben_s3_title: 'Not sure what to offer?',
     ben_s3_body: 'AI helps you set a budget.',
     mtempty_load_error: 'We could not load your tasks. Please try again in a moment.',

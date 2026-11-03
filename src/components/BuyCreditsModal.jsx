@@ -207,68 +207,79 @@ export default function BuyCreditsModal({ onClose, creditsNeeded, initialState }
         {/* Header — browse step. Kept mounted in every step so the packages
             page stays behind the purchase overlay (state + scroll preserved). */}
         <div style={{ flexShrink: 0, background: 'var(--sheet-bg)', position: 'relative', zIndex: 10 }}>
-          {/* Compact header — title + balance inline, close button */}
+          {/* ── THE APP'S OWN BALANCE LANGUAGE ──────────────────────────────
+              This header used to be a blue gradient card with its own invented
+              balance row. It now renders exactly what the main header renders —
+              the quiet surface, the official coin, the number in its own token
+              colour — with this screen's title above it and the close control
+              beside it. The purchase sheet is part of the app, not a different
+              product, so it speaks the same visual language as the balance the
+              visitor was just looking at. */}
           <div style={{
-            background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
-            padding: '12px 18px 14px',
-            borderRadius: '0 0 24px 24px',
-            position: 'relative',
-            overflow: 'hidden',
+            background: 'var(--surface-1)',
+            borderBottom: '1px solid var(--border-1)',
+            padding: '14px 16px 12px',
           }}>
-            <div style={{ position: 'absolute', top: -26, left: -16, width: 110, height: 110, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-            <div style={{ position: 'absolute', bottom: -32, right: -8, width: 70, height: 70, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
-
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: 10,
-                  background: 'rgba(255,255,255,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.2)',
-                }}>
-                  <CreditIcon size={20} />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3, lineHeight: 1.1 }}>
-                    {t('buy_header_title')}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                    <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', letterSpacing: -0.3, lineHeight: 1 }}>
-                      {animatedCredits}
-                    </span>
-                    <CreditIcon size={13} />
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>{t('buy_balance_label')}</span>
-                    {lockedJobas > 0 && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginRight: 4, background: 'rgba(217,119,6,0.25)', borderRadius: 99, padding: '1px 7px', border: '1px solid rgba(217,119,6,0.45)' }}>
-                        <Lock size={10} color="#fbbf24" strokeWidth={2.5} />
-                        <span style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24' }}>{lockedJobas}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <div style={{ minWidth: 0, fontSize: 16, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -0.3, lineHeight: 1.2 }}>
+                {t('buy_header_title')}
               </div>
               <button
                 onClick={handleClose}
+                aria-label="סגירה"
                 style={{
-                  width: 32, height: 32, borderRadius: 10,
-                  background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+                  width: 32, height: 32, minHeight: 32, minWidth: 32, borderRadius: 10,
+                  background: 'var(--surface-2)', border: '1px solid var(--border-1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', flexShrink: 0,
                 }}
               >
-                <X size={15} color="white" />
+                <X size={15} color="var(--text-2)" />
               </button>
+            </div>
+
+            {/* The balance — the same pill the header shows: coin, real number,
+                and what it is. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 42, paddingInlineStart: 11, paddingInlineEnd: 12,
+                borderRadius: 14, background: 'var(--surface-2)',
+                border: '1px solid var(--border-1)', boxShadow: 'var(--shadow-xs)',
+              }}>
+                <CreditIcon size={16} />
+                <span style={{
+                  fontSize: 17, fontWeight: 900, letterSpacing: -0.4, lineHeight: 1,
+                  color: 'var(--j-credit-text)', fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {animatedCredits}
+                </span>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)' }}>
+                  {t('buy_balance_label')}
+                </span>
+              </div>
+
+              {lockedJobas > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  height: 30, padding: '0 9px', borderRadius: 999,
+                  background: 'var(--color-warning-bg)',
+                  border: '1px solid var(--color-warning-border)',
+                }}>
+                  <Lock size={11} color="var(--color-warning)" strokeWidth={2.5} />
+                  <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--color-warning)' }}>{lockedJobas}</span>
+                </span>
+              )}
             </div>
 
             {creditsNeeded && (
               <div style={{
-                marginTop: 10, background: 'rgba(251,191,36,0.15)',
-                border: '1px solid rgba(251,191,36,0.3)', borderRadius: 10,
+                marginTop: 10, background: 'var(--color-warning-bg)',
+                border: '1px solid var(--color-warning-border)', borderRadius: 10,
                 padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
-                position: 'relative',
               }}>
-                <Zap size={13} color="#fbbf24" fill="#fbbf24" />
-                <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Zap size={13} color="var(--color-warning)" fill="var(--color-warning)" />
+                <span style={{ fontSize: 12, color: 'var(--color-warning)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                   {t('buy_credits_needed', { n: creditsNeeded })} <CreditIcon size={12} />
                 </span>
               </div>

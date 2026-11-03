@@ -52,7 +52,9 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
   if (!items.length) return null;
 
   const fade = scrollable
-    ? `linear-gradient(${isRTL ? 'to left' : 'to right'}, #000 84%, transparent 100%)`
+    // The fade starts late (92%) so the deliberate 34px peek of the next tile is
+    // still clearly visible and only its very edge softens.
+    ? `linear-gradient(${isRTL ? 'to left' : 'to right'}, #000 92%, transparent 100%)`
     : undefined;
 
   return (
@@ -79,8 +81,9 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
             type="button"
             onClick={() => handleSelect(key)}
             title={label}
+            className="j-cat-item"
             style={{
-              flex: '0 0 auto', width: 80, minWidth: 80,
+              flex: '0 0 auto',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
               padding: 0, background: 'none', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
@@ -143,7 +146,17 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
         ))}
       </div>
 
-      <style>{`.j-cat-rail::-webkit-scrollbar { display: none; }`}</style>
+      <style>{`
+        .j-cat-rail::-webkit-scrollbar { display: none; }
+        /* ── A DELIBERATE PEEK, NOT AN ACCIDENTAL CUT ──────────────────────────
+           Tiles were a fixed 80px, so however wide the screen was the fifth one
+           was sliced at an arbitrary point and read as a broken layout. The tile
+           width is now derived from the rail itself so that exactly FOUR tiles
+           fit and the fifth always shows the SAME 34px sliver — the same hint on
+           every device, at every width, with the icon still half visible so it is
+           obviously more of the same thing rather than a chopped element. */
+        .j-cat-item { width: calc((100% - 66px) / 4); }
+      `}</style>
     </>
   );
 }
