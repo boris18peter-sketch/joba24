@@ -559,8 +559,8 @@ workflows:
             DEVELOPMENT_TEAM=322DV2PB9V \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            MARKETING_VERSION=2.130299.0 \
-            CURRENT_PROJECT_VERSION=31 \
+            MARKETING_VERSION=2.130299.2 \
+            CURRENT_PROJECT_VERSION=32 \
             FACEBOOK_CLIENT_TOKEN="$FACEBOOK_CLIENT_TOKEN"
       - name: Verify the Live Activity extension in the archive (iOS)
         script: |
