@@ -713,10 +713,19 @@ workflows:
           # instead of hardcoding it, and is covered by
           # test/liveActivity/pipeline.test.js. Its JSON report goes to its own
           # file and its diagnostics go to stderr.
+          # ── AND THE PROFILE MUST CARRY THE APP GROUP ────────────────────────
+          # App Store Connect may hold several profiles for one bundle id: an old
+          # one minted before the App Group existed, and the current one. Both
+          # report the same bundle id, so a bundle-id match alone cannot tell
+          # them apart and the export could be signed with the invalid one. The
+          # App Group entitlement is what distinguishes them, so it is REQUIRED
+          # here for both ids: the step refuses an old profile by name instead of
+          # exporting a build that fails at install or loses its entitlements.
           python3 scripts/ios-export-options.py \
             --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles" \
             --app-bundle-id "$BUNDLE_ID" \
             --widget-bundle-id "$WIDGET_BUNDLE_ID" \
+            --require-app-group "group.$BUNDLE_ID" \
             --require-widget "${ENABLE_LIVE_ACTIVITY_WIDGET:-false}" \
             --out "$CM_BUILD_DIR/export_options.plist" \
             --report "$CM_BUILD_DIR/export-options.json"

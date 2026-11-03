@@ -99,6 +99,9 @@ def describe(path):
         "bundle_id": bundle_id,
         "team_id": team,
         "expires": info.get("ExpirationDate"),
+        # The capability that tells a CURRENT profile from one minted before the
+        # App Group existed. Both carry the same bundle id; only this differs.
+        "groups": list(ent.get("com.apple.security.application-groups") or []),
     }
 
 
@@ -123,8 +126,55 @@ def candidate_files(profiles_dir):
                   if name.endswith(".mobileprovision"))
 
 
-def pick(profiles, bundle_id):
-    return next((p for p in profiles if p["bundle_id"] == bundle_id), None)
+def pick(profiles, bundle_id, required_groups=(), allow_single=False):
+    """Choose THE profile for one bundle id: (profile, error).
+
+    Selection is by BUNDLE ID — never by file name, and never by position in the
+    directory. Among several profiles for the same id it prefers one that
+    actually carries the entitlement this app signs with (the App Group), because
+    a profile minted before that capability existed has the SAME bundle id as the
+    good one: the bundle id alone cannot tell them apart, the entitlement can.
+
+    Remaining ties are broken by expiry (newest first) and then by name, so the
+    same set of files always produces the same choice.
+
+    `allow_single` keeps the legacy single-profile fallback for the shipping
+    build, where the only profile on disk is the app's by definition.
+    """
+    candidates = [p for p in profiles if p["bundle_id"] == bundle_id]
+    if not candidates:
+        if not (allow_single and len(profiles) == 1):
+            return None, None
+        diag("NOTE: no profile matched %r exactly; using the only profile present (%s)"
+             % (bundle_id, profiles[0]["name"]))
+        candidates = list(profiles)
+
+    required = [g for g in required_groups if g]
+    if required:
+        capable = [p for p in candidates if all(g in p["groups"] for g in required)]
+        if not capable:
+            saw = "; ".join("%s [%s]" % (p["name"] or os.path.basename(p["file"]),
+                                         ", ".join(p["groups"]) or "no App Group")
+                            for p in candidates)
+            return None, ("no profile for %r carries %s — regenerate it with that capability. "
+                          "Profiles on disk for this id: %s"
+                          % (bundle_id, ", ".join(required), saw))
+        candidates = capable
+
+    candidates.sort(key=lambda p: (p["expires"] is not None, p["expires"] or 0, p["name"]), reverse=True)
+    chosen = candidates[0]
+
+    # Xcode resolves a profile by NAME. Two valid profiles sharing one name make
+    # the signature a coin flip, so refuse instead of exporting a build whose
+    # entitlements cannot be predicted.
+    clash = [p for p in candidates[1:] if p["name"] and p["name"] == chosen["name"]]
+    if clash:
+        files = sorted(os.path.basename(p["file"]) for p in [chosen] + clash)
+        return None, ("two profiles for %r share the name %r; Xcode picks by name, so the "
+                      "signature would be a coin flip. Keep one and remove the other: %s"
+                      % (bundle_id, chosen["name"], ", ".join(files)))
+
+    return chosen, None
 
 
 def build_options(app, widget, team_id, method, certificate):
@@ -151,6 +201,10 @@ def main():
                         help="true when this build embeds the widget extension")
     parser.add_argument("--team-id", default="", help="defaults to the app profile's own TeamIdentifier")
     parser.add_argument("--method", default=DEFAULT_METHOD)
+    parser.add_argument("--require-app-group", action="append", default=[],
+                        help="an App Group every chosen profile must carry (repeatable). "
+                             "A profile minted before the capability existed has the same "
+                             "bundle id, so this is what rejects it.")
     parser.add_argument("--signing-certificate", default=DEFAULT_SIGNING_CERTIFICATE)
     parser.add_argument("--out", required=True, help="where to write export_options.plist")
     parser.add_argument("--report", default=None, help="machine-readable JSON report")
@@ -175,29 +229,29 @@ def main():
         return 1
 
     profiles = collect(files)
-    report["profiles"] = [{"name": p["name"], "bundle_id": p["bundle_id"]} for p in profiles]
+    required_groups = [g for g in (args.require_app_group or []) if g]
+    report["profiles"] = [{"name": p["name"], "bundle_id": p["bundle_id"],
+                           "file": os.path.basename(p["file"]), "groups": p["groups"]} for p in profiles]
     for profile in profiles:
-        diag("  profile: %-48s bundle=%s" % (profile["name"] or "(unnamed)", profile["bundle_id"] or "(unknown)"))
+        diag("  profile: %-48s bundle=%-52s groups=%s"
+             % (profile["name"] or "(unnamed)", profile["bundle_id"] or "(unknown)",
+                ", ".join(profile["groups"]) or "none"))
 
-    app = pick(profiles, args.app_bundle_id)
+    app, app_error = pick(profiles, args.app_bundle_id, required_groups, allow_single=True)
+    if app_error:
+        report["error"] = app_error
+        emit_report(report, args.report)
+        diag("ERROR: " + app_error)
+        return 1
     if not app:
-        # The single-profile case is today's shipping build: one profile on disk,
-        # and it IS the app's. Keeping that fallback means the widget-disabled
-        # path behaves exactly as it always has. With more than one profile an
-        # unmatched app id is a real error, because picking by position there is
-        # how the app would be exported with the widget's profile.
-        if len(profiles) == 1:
-            app = profiles[0]
-            diag("NOTE: no profile matched %s exactly; using the only profile present (%s)"
-                 % (args.app_bundle_id, app["name"]))
-        else:
-            report["error"] = ("no provisioning profile matches the app bundle id %r "
-                               "(saw: %s)" % (args.app_bundle_id,
-                                              ", ".join(p["bundle_id"] or "?" for p in profiles)))
-            emit_report(report, args.report)
-            diag("ERROR: " + report["error"])
-            return 1
-    report["app"] = {"name": app["name"], "bundle_id": app["bundle_id"], "file": os.path.basename(app["file"])}
+        report["error"] = ("no provisioning profile matches the app bundle id %r "
+                           "(saw: %s)" % (args.app_bundle_id,
+                                          ", ".join(p["bundle_id"] or "?" for p in profiles)))
+        emit_report(report, args.report)
+        diag("ERROR: " + report["error"])
+        return 1
+    report["app"] = {"name": app["name"], "bundle_id": app["bundle_id"],
+                     "file": os.path.basename(app["file"]), "groups": app["groups"]}
 
     widget = None
     if require_widget:
@@ -206,7 +260,12 @@ def main():
             emit_report(report, args.report)
             diag("ERROR: " + report["error"])
             return 1
-        widget = pick(profiles, args.widget_bundle_id)
+        widget, widget_error = pick(profiles, args.widget_bundle_id, required_groups)
+        if widget_error:
+            report["error"] = widget_error
+            emit_report(report, args.report)
+            diag("ERROR: " + widget_error)
+            return 1
         if not widget:
             report["error"] = ("the widget is enabled but no profile matches %r "
                                "(the export would fail)" % args.widget_bundle_id)
@@ -214,7 +273,7 @@ def main():
             diag("ERROR: " + report["error"])
             return 1
         report["widget"] = {"name": widget["name"], "bundle_id": widget["bundle_id"],
-                            "file": os.path.basename(widget["file"])}
+                            "file": os.path.basename(widget["file"]), "groups": widget["groups"]}
 
     team_id = args.team_id or app["team_id"] or (widget or {}).get("team_id", "")
     if not team_id:

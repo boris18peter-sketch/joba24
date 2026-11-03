@@ -257,6 +257,43 @@ function exportOptions(args) {
   return run(EXPORT_OPTIONS, args);
 }
 
+const APP_GROUP = `group.${APP_BUNDLE_ID}`;
+
+/** A profile that also states its App Group and its expiry. */
+function profileXmlFull(name, bundleId, { groups = [], expires = null } = {}) {
+  const groupXml = groups.length
+    ? `\t\t<key>com.apple.security.application-groups</key>\n\t\t<array>\n${groups.map((g) => `\t\t\t<string>${g}</string>`).join('\n')}\n\t\t</array>\n`
+    : '';
+  const expiresXml = expires ? `\t<key>ExpirationDate</key>\n\t<date>${expires}</date>\n` : '';
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+	<key>Name</key>
+	<string>${name}</string>
+	<key>TeamIdentifier</key>
+	<array>
+		<string>${TEAM_ID}</string>
+	</array>
+${expiresXml}	<key>Entitlements</key>
+	<dict>
+		<key>application-identifier</key>
+		<string>${TEAM_ID}.${bundleId}</string>
+${groupXml}	</dict>
+</dict>
+</plist>
+`;
+}
+
+/** A directory of profiles: [{file, name, bundleId, groups, expires}]. */
+function profileFiles(entries) {
+  const dir = mkdtempSync(join(tmpdir(), 'joba-profiles-'));
+  for (const entry of entries) {
+    writeFileSync(join(dir, `${entry.file}.mobileprovision`),
+      profileXmlFull(entry.name, entry.bundleId, entry));
+  }
+  return dir;
+}
+
 describe('export options map one profile per bundle id', () => {
   it('names a profile for the app AND the extension when the widget is on', () => {
     const dir = profileDir([['Joba24 AppStore', APP_BUNDLE_ID], ['Joba24 Widget', WIDGET_BUNDLE_ID]]);
@@ -350,6 +387,113 @@ describe('export options map one profile per bundle id', () => {
     ]);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('no provisioning profiles found');
+  });
+});
+
+/* ── SEVERAL PROFILES FOR ONE BUNDLE ID ─────────────────────────────────────
+   App Store Connect often holds more than one profile for the same bundle id:
+   an old one minted before a capability existed, and the current one. Both
+   report the SAME bundle id, so matching on it alone would be a coin flip and
+   could sign the build with a profile that has no App Group. These tests pin
+   the rule that decides between them. */
+describe('profile selection prefers the profile that carries the App Group', () => {
+  it('skips an older profile for the same bundle id that has no App Group', () => {
+    const dir = profileFiles([
+      { file: 'OLD', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, expires: '2027-06-01T00:00:00Z' },
+      { file: 'NEW', name: 'Joba24 AppStore 2026', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2026-12-01T00:00:00Z' },
+    ]);
+    const out = join(dir, 'eo.plist');
+    const report = join(dir, 'eo.json');
+
+    const result = exportOptions([
+      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
+      '--require-app-group', APP_GROUP, '--out', out, '--report', report,
+    ]);
+
+    expect(result.status).toBe(0);
+    const options = read(out);
+    // The newer NAME is on the older file, so a "pick the newest expiry" rule
+    // alone would get this wrong: the entitlement decides first.
+    expect(options).toContain('Joba24 AppStore 2026');
+    const parsed = JSON.parse(read(report));
+    expect(parsed.app.groups).toEqual([APP_GROUP]);
+    expect(parsed.app.file).toBe('NEW.mobileprovision');
+  });
+
+  it('refuses a bundle id whose only profile lacks the App Group', () => {
+    const dir = profileFiles([
+      { file: 'OLD', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, expires: '2027-06-01T00:00:00Z' },
+    ]);
+    const out = join(dir, 'eo.plist');
+
+    const result = exportOptions([
+      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
+      '--require-app-group', APP_GROUP, '--out', out,
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(existsSync(out)).toBe(false);
+    expect(result.stderr).toContain(APP_GROUP);
+    expect(result.stderr).toContain('no App Group');
+  });
+
+  it('refuses two valid profiles that share a name, because Xcode picks by name', () => {
+    const dir = profileFiles([
+      { file: 'A', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2027-01-01T00:00:00Z' },
+      { file: 'B', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2026-11-01T00:00:00Z' },
+    ]);
+    const out = join(dir, 'eo.plist');
+
+    const result = exportOptions([
+      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
+      '--require-app-group', APP_GROUP, '--out', out,
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(existsSync(out)).toBe(false);
+    expect(result.stderr).toContain('share the name');
+  });
+
+  it('prefers the later expiry when both are equally valid, and deterministically', () => {
+    const dir = profileFiles([
+      { file: 'A', name: 'Joba24 App A', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2026-12-01T00:00:00Z' },
+      { file: 'B', name: 'Joba24 App B', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2027-12-01T00:00:00Z' },
+    ]);
+    const out = join(dir, 'eo.plist');
+
+    const result = exportOptions([
+      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
+      '--require-app-group', APP_GROUP, '--out', out,
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(read(out)).toContain('Joba24 App B');
+  });
+
+  it('applies the same rule to the widget extension', () => {
+    const dir = profileFiles([
+      { file: 'APP', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP] },
+      { file: 'W_OLD', name: 'Joba24 Widget', bundleId: WIDGET_BUNDLE_ID },
+      { file: 'W_NEW', name: 'Joba24 Widget 2026', bundleId: WIDGET_BUNDLE_ID, groups: [APP_GROUP] },
+    ]);
+    const out = join(dir, 'eo.plist');
+
+    const result = exportOptions([
+      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
+      '--widget-bundle-id', WIDGET_BUNDLE_ID, '--require-widget', 'true',
+      '--require-app-group', APP_GROUP, '--out', out,
+    ]);
+
+    expect(result.status).toBe(0);
+    const options = read(out);
+    expect(options).toContain('Joba24 Widget 2026');
+    expect(options).not.toContain('<string>Joba24 Widget</string>');
+  });
+
+  it('is required by the workflow, so a stale profile can never be exported', () => {
+    const workflow = read(CODEMAGIC);
+    const step = workflow.slice(workflow.indexOf('python3 scripts/ios-export-options.py'));
+    expect(step.slice(0, 700)).toContain('--require-app-group "group.$BUNDLE_ID"');
   });
 });
 
