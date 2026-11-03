@@ -1,0 +1,76 @@
+{
+  "name": "LiveActivityConfig",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "MASTER FLAG. false = the entire Live Activity pipeline is inert: no snapshot is built, no dispatch row is written and no network call is made. Shipped false, and must stay false until Stage 2 is separately approved."
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": true,
+      "description": "true = the pipeline computes and records what it WOULD send, but never contacts APNs. Only an explicit false, together with enabled=true, permits a real push."
+    },
+    "track_open_publisher": {
+      "type": "boolean",
+      "default": true,
+      "description": "Allow OPEN tasks to be tracked for their publisher."
+    },
+    "track_taken_publisher": {
+      "type": "boolean",
+      "default": true,
+      "description": "Allow TAKEN tasks to be tracked for their publisher."
+    },
+    "track_taken_worker": {
+      "type": "boolean",
+      "default": true,
+      "description": "Allow TAKEN tasks to be tracked for the assigned worker."
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "development",
+        "production"
+      ],
+      "default": "development",
+      "description": "Which APNs environment dispatches may target. Tokens registered for a different environment are skipped, never cross-sent."
+    },
+    "max_tokens_per_dispatch": {
+      "type": "number",
+      "default": 20,
+      "description": "Safety bound on how many device tokens one dispatch may address."
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "Who last changed the flag."
+    },
+    "note": {
+      "type": "string",
+      "description": "Free-text operator note, e.g. why the flag was flipped."
+    }
+  },
+  "required": [],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

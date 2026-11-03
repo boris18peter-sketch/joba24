@@ -1,0 +1,125 @@
+{
+  "name": "LiveActivityDispatch",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Recipient of this dispatch attempt."
+    },
+    "task_id": {
+      "type": "string",
+      "description": "The task this dispatch was computed for."
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "publisher",
+        "worker"
+      ]
+    },
+    "revision": {
+      "type": "number",
+      "description": "The snapshot revision this attempt carried. Together with user/task/role/event it forms the idempotency key: one revision is never dispatched twice."
+    },
+    "event": {
+      "type": "string",
+      "enum": [
+        "update",
+        "end"
+      ],
+      "description": "update = refresh the Live Activity content-state. end = close it (terminal). Live Activity START is deliberately not supported in this stage."
+    },
+    "phase": {
+      "type": "string",
+      "description": "Contract phase carried by this attempt, for auditing a recipient's history."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "dry_run",
+        "sent",
+        "failed",
+        "skipped",
+        "disabled"
+      ],
+      "default": "planned",
+      "description": "Outcome of the attempt. Nothing is ever written with status 'sent' unless APNs returned 200."
+    },
+    "decision": {
+      "type": "string",
+      "description": "The planner's decision (send, duplicate, stale_revision, disabled, terminal, terminal_already_sent, unauthorized)."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable reason for a skip/failure, without any secret or token content."
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "development",
+        "production"
+      ]
+    },
+    "token_id": {
+      "type": "string",
+      "description": "LiveActivityToken.id targeted by this attempt. The token itself is never copied here."
+    },
+    "apns_status": {
+      "type": "number",
+      "description": "HTTP status returned by APNs (null when nothing was sent)."
+    },
+    "apns_id": {
+      "type": "string",
+      "description": "apns-id response header, for correlating with Apple's delivery logs."
+    },
+    "error_category": {
+      "type": "string",
+      "description": "Classified failure: invalid_token, expired_provider_token, rate_limited, server_error, network_error, timeout, missing_credentials, bad_payload."
+    },
+    "attempts": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of APNs attempts made for this revision."
+    },
+    "dispatched_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "task_id",
+    "role",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

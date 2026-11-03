@@ -1,0 +1,97 @@
+{
+  "name": "LiveActivityState",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Recipient identity: the server-authenticated user whose device shows this activity."
+    },
+    "task_id": {
+      "type": "string",
+      "description": "The Task whose Live Activity this row tracks."
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "publisher",
+        "worker"
+      ],
+      "description": "Which side of the task this recipient sees. The same task produces a different snapshot per role, so revision is tracked per (user, task, role)."
+    },
+    "revision": {
+      "type": "number",
+      "default": 0,
+      "description": "The last revision successfully committed for this recipient. Server-owned and monotonic: it is only ever incremented by the server, and a lower revision is always refused."
+    },
+    "phase": {
+      "type": "string",
+      "description": "The contract phase of the last committed snapshot (open, scheduled, awaiting_start, on_the_way, arrived, done)."
+    },
+    "content_key": {
+      "type": "string",
+      "description": "Canonical string of the last committed snapshot's presentational fields. An identical key means nothing visible changed, so no push is sent (duplicate suppression)."
+    },
+    "task_status": {
+      "type": "string",
+      "description": "The authoritative Task.status observed when the last revision was committed."
+    },
+    "terminal": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once a terminal event (COMPLETED / CANCELLED / EXPIRED) has been committed. Terminal events take priority over any pending content update and are sent at most once."
+    },
+    "terminal_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the terminal event was committed for this recipient."
+    },
+    "last_event_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last revision was committed (source event time or server time)."
+    },
+    "last_pushed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When a dispatch for the last revision was actually accepted by APNs. Null while dispatch is disabled or a dry run."
+    },
+    "last_decision": {
+      "type": "string",
+      "description": "The decision of the last dispatch attempt (sent, duplicate, stale_revision, disabled, dry_run, unauthorized, terminal_already_sent, no_active_tokens)."
+    }
+  },
+  "required": [
+    "user_id",
+    "task_id",
+    "role"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

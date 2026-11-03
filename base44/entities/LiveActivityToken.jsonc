@@ -1,0 +1,100 @@
+{
+  "name": "LiveActivityToken",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "The authenticated Joba24 User.id that owns this device token. Always written from the server's authenticated identity, never from a client-supplied value."
+    },
+    "token": {
+      "type": "string",
+      "description": "The ActivityKit push token (hex) Apple issued for this app's Live Activity. Stored separately from any FCM token and never reused for notifications."
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "development",
+        "production"
+      ],
+      "description": "Which APNs host this token belongs to. Sandbox tokens are rejected by production APNs and must never be mixed."
+    },
+    "bundle_id": {
+      "type": "string",
+      "description": "The app bundle identifier the token was issued for (topic). Sent as apns-topic."
+    },
+    "platform": {
+      "type": "string",
+      "default": "ios",
+      "description": "Device platform. Only 'ios' can produce Live Activity tokens."
+    },
+    "device_id": {
+      "type": "string",
+      "description": "Optional client-generated install identifier, used only to retire superseded tokens for the same install."
+    },
+    "timezone": {
+      "type": "string",
+      "description": "IANA timezone reported by the device (e.g. Asia/Jerusalem). Used so server-side occurrence labels are formatted in the recipient's own local time."
+    },
+    "app_version": {
+      "type": "string",
+      "description": "Client app version at registration, for diagnosing stale builds."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "invalid"
+      ],
+      "default": "active",
+      "description": "active = may receive dispatches. invalid = APNs rejected the token (410 Unregistered / BadDeviceToken) or the device unregistered. Invalid tokens are never deleted automatically and never used again."
+    },
+    "invalidated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "invalidated_reason": {
+      "type": "string",
+      "description": "Why the token was invalidated (e.g. apns_unregistered, device_unregistered, token_rotated)."
+    },
+    "failure_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Consecutive failed dispatch attempts. Informational only; it never affects task operations."
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last successful registration refresh for this token."
+    }
+  },
+  "required": [
+    "user_id",
+    "token",
+    "environment"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
