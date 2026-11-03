@@ -741,9 +741,11 @@ export default function HomeFeed() {
                 style={{
                   flexShrink: 0, width: 36, height: 36, minWidth: 36, minHeight: 36,
                   borderRadius: 12, cursor: 'pointer',
-                  background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+                  /* The ICON alone: a filled, bordered box beside the tab pulled
+                     the eye away from the tab it belongs to. */
+                  background: 'none', border: 'none', padding: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-2)',
+                  color: 'var(--text-3)',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >

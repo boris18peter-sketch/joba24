@@ -529,6 +529,7 @@ export const en = {
     mtempty_step_2: 'Get offers',
     mtempty_step_3: 'Pick a helper',
     mtempty_cat_label: 'Or start from a category',
+    empty_cats_heading: 'Available pros by category',
     mtempty_video_title: 'How does Joba24 work?',
     mtempty_video_sub: 'Watch a short explainer video',
     // Benefits banner in the empty state — the approved copy, numbers included

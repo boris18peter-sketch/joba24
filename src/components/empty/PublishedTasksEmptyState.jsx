@@ -74,16 +74,24 @@ export default function PublishedTasksEmptyState() {
         {t('post_task_btn')}
       </button>
 
-      {/* 3. The categories — no heading: they speak for themselves */}
+      {/* 3. The categories, with the one line that explains what the row is.
+          The block gets real air above AND below it, so the rail reads as its own
+          section instead of being squeezed between two buttons. */}
       {items.length > 0 && (
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 26, marginBottom: 22 }}>
+          <div style={{
+            marginBottom: 10, fontSize: 13, fontWeight: 800,
+            letterSpacing: '-0.1px', color: 'var(--text-2)',
+          }}>
+            {t('empty_cats_heading')}
+          </div>
           <CategoryCarousel items={items} onSelect={publish} isRTL={isRTL} />
         </div>
       )}
 
-      {/* 4. The explainer video. It sits clear of the category rail above it —
-          two tappable rows 8px apart read as one block and invited the wrong tap. */}
-      <div style={{ marginTop: 22 }}>
+      {/* 4. The explainer video — pushed further down: it is the last, optional
+          item on the screen, so it must not sit on the heels of the catalogue. */}
+      <div style={{ marginTop: 40 }}>
         <EmptyStateVideoCard
           title={t('mtempty_video_title')}
           subtitle={t('mtempty_video_sub')}

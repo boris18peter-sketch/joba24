@@ -549,6 +549,7 @@ export const he = {
     mtempty_step_2: 'מקבלים פניות',
     mtempty_step_3: 'בוחרים עובד',
     mtempty_cat_label: 'או התחל מקטגוריה',
+    empty_cats_heading: 'עובדים זמינים לפי קטגוריות',
     mtempty_video_title: 'איך Joba24 עובדת?',
     mtempty_video_sub: 'צפה בסרטון הסבר קצר',
     // באנר היתרונות במסך הריק — הניסוחים המאושרים, כולל שני הנתונים
@@ -557,7 +558,7 @@ export const he = {
     ben_s1_body: 'מוכנים לעזור לך.',
     ben_s2_title: '10 דקות בממוצע',
     ben_s2_body: 'לקבלת פנייה ראשונה.',
-    ben_s3_title: 'לא יודעים כמה להציע?',
+    ben_s3_title: 'לא יודע כמה להציע?',
     ben_s3_body: 'ה־AI עוזר לקבוע תקציב.',
     mtempty_load_error: 'לא הצלחנו לטעון את המשימות. נסו שוב בעוד רגע.',
     application_commitment_note: 'הג\'ובות חוזרות אוטומטית אם לא נבחרת או שהמשימה בוטלה',

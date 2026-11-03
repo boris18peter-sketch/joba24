@@ -347,6 +347,8 @@ export default function BenefitsBanner() {
           user-select: none;
         }
 
+        /* Three dots, centred: the active one is a blue pill, the others are
+           small light circles — the pagination language of the reference. */
         .j-ben-dots {
           position: absolute;
           inset-inline: 0;
@@ -354,23 +356,23 @@ export default function BenefitsBanner() {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 5px;
+          gap: 6px;
         }
         .j-ben-dot {
           position: relative;
-          width: 5px;
-          height: 5px;
+          width: 6px;
+          height: 6px;
           padding: 0;
           min-width: 0;
           min-height: 0;
           border: none;
           border-radius: 999px;
           cursor: pointer;
-          background: rgba(26,111,212,0.22);
+          background: rgba(26,111,212,0.28);
           transition: width 220ms ease, background 220ms ease;
         }
         .j-ben-dot::after { content: ''; position: absolute; inset: -10px; }
-        .j-ben-dot-on { width: 14px; background: #1a6fd4; }
+        .j-ben-dot-on { width: 20px; background: #1a6fd4; }
 
         @media (min-width: 720px) {
           .j-ben { height: 166px; padding: 14px 18px 24px; }
