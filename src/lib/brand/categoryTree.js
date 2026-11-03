@@ -95,32 +95,36 @@ export function deriveRoots(globals, brand) {
 }
 
 /**
- * The MAIN categories a browsing surface offers — one tile per category a
- * person would name, never one per single job.
+ * The Main categories, grouped under their canonical root — the list behind the
+ * publish form's first "בחרו קטגוריה" step.
  *
- * A "main" category is any actionable node that is not buried under a trade:
- * a node with no parent, or one whose parent is a VISUAL group. That is what
- * makes the list complete as well as short: most sections hang their roots off
- * a group (Home → Plumbing, Cleaning …), but a section can also hold its
- * actionable categories directly (רכב, משלוח, הסעות, קניות). Reading the
- * structure instead of one node_type means neither shape is silently dropped.
+ * EVERY consumer of "the main categories" reads this one function: the publish
+ * form's picker and the published-tasks empty state. That is what guarantees the
+ * two can never disagree about which categories exist or what order they are in
+ * — the requirement is literally "exactly the form's list, in the form's order",
+ * and a second copy of this grouping would eventually drift.
  *
- * Order follows the catalogue: a node sits where its GROUP sits, then by its
- * own sort_order — so the sections keep their sequence even though their
- * members' sort_order values are only meaningful inside a section.
+ * Nothing is renamed, filtered or re-sorted by hand: the order is the root's
+ * own sort_order from the catalogue.
  */
-export function deriveMainCategories(globals) {
-  const map = Object.fromEntries((globals || []).map((g) => [g.category_key, g]));
-  const orderKey = (n) => {
-    const parent = n.group_key ? map[n.group_key] : (n.parent_key ? map[n.parent_key] : null);
-    return (parent && isGroupNode(parent) ? parent.sort_order : null) ?? n.sort_order ?? 999;
-  };
-  return (globals || [])
-    .filter((n) =>
-      isActive(n) && !isGroupNode(n) &&
-      (!n.parent_key || isGroupNode(map[n.parent_key])))
-    .sort((a, b) =>
-      (orderKey(a) - orderKey(b)) || ((a.sort_order || 0) - (b.sort_order || 0)));
+export function categoryRootGroups(categories, map) {
+  const byRoot = new Map();
+  for (const s of categories || []) {
+    const row = map?.[s.value];
+    const root = rootOf(row, map) || row;
+    const key = root?.category_key || s.value;
+    if (!byRoot.has(key)) {
+      byRoot.set(key, {
+        key,
+        label: root?.label || s.label,
+        icon: root?.icon || '',
+        sort: root?.sort_order ?? 999,
+        services: [],
+      });
+    }
+    byRoot.get(key).services.push(s);
+  }
+  return [...byRoot.values()].sort((a, b) => (a.sort || 0) - (b.sort || 0));
 }
 
 /**

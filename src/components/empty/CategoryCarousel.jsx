@@ -73,7 +73,7 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
           WebkitMaskImage: fade,
         }}
       >
-        {items.map(({ key, label, Icon }) => (
+        {items.map(({ key, label, Icon, count = 0 }) => (
           <button
             key={key}
             type="button"
@@ -88,6 +88,7 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
             }}
           >
             <span style={{
+              position: 'relative',
               width: 46, height: 46, borderRadius: 15, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'var(--surface-2)',
@@ -96,6 +97,28 @@ export default function CategoryCarousel({ items = [], onSelect, isRTL = true })
               color: 'var(--brand-primary)',
             }}>
               <Icon size={21} strokeWidth={1.9} />
+              {/* How many professionals offer this section right now — the live
+                  dot plus the real count, the same signal the publish form gives
+                  once a category is chosen. Nobody available → no badge at all,
+                  never a "0" sitting on the tile. */}
+              {count > 0 && (
+                <span style={{
+                  position: 'absolute', top: -5, insetInlineStart: -6,
+                  display: 'inline-flex', alignItems: 'center', gap: 3,
+                  height: 16, padding: '0 5px', borderRadius: 999,
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border-1)',
+                  boxShadow: 'var(--shadow-xs)',
+                }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+                  <span style={{
+                    fontSize: 9.5, fontWeight: 800, color: 'var(--text-2)',
+                    lineHeight: 1, fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {count}
+                  </span>
+                </span>
+              )}
             </span>
             {/* A long category name is never renamed and never cut to "אסלה /
                 ניאג…": it takes up to TWO centred lines, and every item reserves

@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { useLanguage } from '@/lib/LanguageContext';
-import { rootOf } from '@/lib/brand/categoryTree';
 
 /**
  * CategoryServiceSelector — the category picker, built from the Brand's ACTUAL
@@ -18,23 +17,11 @@ import { rootOf } from '@/lib/brand/categoryTree';
  * that owns the global task form and its Brand-aware content.
  */
 export default function CategoryServiceSelector({ value, onChange, allowHistorical = false }) {
-  const { categories, globalMap, isLoading } = useBrandCategories();
+  // `rootGroups` is the shared grouping (categoryTree.categoryRootGroups) — the
+  // same list the published-tasks empty state renders, so the picker here and the
+  // category rail there can never diverge in content or order.
+  const { categories, rootGroups: roots, globalMap, isLoading } = useBrandCategories();
   const { t } = useLanguage();
-
-  // Every canonical root the Brand's services belong to, in catalogue order.
-  const roots = useMemo(() => {
-    const byRoot = new Map();
-    for (const s of categories) {
-      const row = globalMap[s.value];
-      const root = rootOf(row, globalMap) || row;
-      const key = root?.category_key || s.value;
-      if (!byRoot.has(key)) {
-        byRoot.set(key, { key, label: root?.label || s.label, icon: root?.icon || '', sort: root?.sort_order ?? 999, services: [] });
-      }
-      byRoot.get(key).services.push(s);
-    }
-    return [...byRoot.values()].sort((a, b) => (a.sort || 0) - (b.sort || 0));
-  }, [categories, globalMap]);
 
   const selectedRoot =
     roots.find((r) => r.key === value || r.services.some((s) => s.value === value))?.key || '';

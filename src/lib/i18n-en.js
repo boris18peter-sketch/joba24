@@ -531,6 +531,13 @@ export const en = {
     mtempty_cat_label: 'Or start from a category',
     mtempty_video_title: 'How does Joba24 work?',
     mtempty_video_sub: 'Watch a short explainer video',
+    // Benefits banner in the empty state — wording without unverified metrics
+    ben_s1_title: 'Need someone to help?',
+    ben_s1_body: 'Post a task and reach people in your area.',
+    ben_s2_title: 'Post easily, get offers',
+    ben_s2_body: 'Every offer for your task in one place.',
+    ben_s3_title: 'Not sure what to offer?',
+    ben_s3_body: 'Joba24 AI helps you choose a fitting price.',
     mtempty_load_error: 'We could not load your tasks. Please try again in a moment.',
     application_commitment_note: 'Your Jobas are automatically returned if you\'re not selected or the task is cancelled',
     verification_required_ribbon: 'Green check+',

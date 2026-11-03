@@ -19,6 +19,12 @@
     --brand-accent:        #fbbf24;
     --brand-accent-dark:   #d97706;
 
+    /* ── Header credit pill ──
+       The balance number: a deep brand blue on the light pill, and a light blue
+       on the dark one, so the figure stays the most legible thing in the pill in
+       BOTH schemes instead of turning dark-on-dark. */
+    --j-credit-text:       #0a52b0;
+
     /* ── Semantic colors ── */
     --color-success:       #059669;
     --color-success-bg:    #f0fdf4;
@@ -194,6 +200,7 @@
       --tag-bg:      #334155;
       --tag-muted:   #475569;
       --white-text:  #f8fafc;
+      --j-credit-text: #9ec5ff;
 
       /* The light brand tint must not survive into dark mode: as #eff6ff it
          painted bright boxes onto a dark screen (badges, hints, chips). */

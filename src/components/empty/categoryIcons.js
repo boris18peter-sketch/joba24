@@ -1,8 +1,7 @@
 import {
-  Baby, Bike, BookOpen, Bus, Car, ClipboardList, Droplets, Dumbbell, Hammer,
-  Handshake, HeartHandshake, Home, KeyRound, Laptop, Package, Paintbrush,
-  PartyPopper, PawPrint, Puzzle, ShoppingBag, Snowflake, Sparkles, Sprout, Tag,
-  Truck, Wrench, Zap,
+  Baby, BookOpen, Car, ClipboardList, Droplets, Dumbbell, Hammer, Handshake,
+  HeartHandshake, Home, KeyRound, Laptop, Package, Paintbrush, PartyPopper,
+  PawPrint, Puzzle, Snowflake, Sparkles, Sprout, Tag, Truck, Wrench, Zap,
 } from 'lucide-react';
 import { rootOf } from '@/lib/brand/categoryTree';
 
@@ -43,13 +42,9 @@ const BY_KEY = {
   fitness: Dumbbell,
   parent_events: PartyPopper,
   other: ClipboardList,
-  // The section that holds its own actionable categories directly
-  // (רכב, משלוח, הסעות, קניות) — each needs its own icon, because they share a
-  // parent that is not itself a category.
-  car: Car,
-  transportation: Bus,
-  delivery: Bike,
-  shopping: ShoppingBag,
+  // The transport section holds its own categories directly (רכב, משלוח,
+  // הסעות, קניות) and has no root of its own, so it carries the icon itself.
+  parent_transport: Car,
 };
 
 /** The icon for a category key — its own, its root's, or a neutral tag. */

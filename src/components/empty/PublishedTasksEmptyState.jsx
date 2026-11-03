@@ -4,8 +4,9 @@ import { Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
-import { deriveMainCategories } from '@/lib/brand/categoryTree';
+import { useWorkerPool } from '@/hooks/useWorkerPool';
 import { categoryIcon } from '@/components/empty/categoryIcons';
+import BenefitsBanner from '@/components/empty/BenefitsBanner';
 import CategoryCarousel from '@/components/empty/CategoryCarousel';
 import EmptyStateVideoCard from '@/components/empty/EmptyStateVideoCard';
 
@@ -16,42 +17,55 @@ import EmptyStateVideoCard from '@/components/empty/EmptyStateVideoCard';
  * finished, succeeded, and returned nothing active, so it can never appear while
  * tasks are loading or when a task exists.
  *
- * The content sits at the TOP of the space under the header, never centred in
- * it: a vertically centred block opens with a band of empty background, which
- * reads as a loading gap rather than as a designed screen.
+ * Content order is deliberate: the history control above (in the screen header),
+ * then the rotating trust banner, then the headline, its explanation, the one
+ * primary action, the categories, and the explainer video last. The block sits
+ * at the TOP of the space, never centred in it — a vertically centred column
+ * opens with a band of empty background, which reads as a loading gap.
  *
- * ── WHICH CATEGORIES ──────────────────────────────────────────────────────
- * The catalogue's own MAIN categories, read from data (deriveMainCategories) —
- * every pickable category that is not a single job hidden under a trade. That
- * is the top-level taxonomy as the catalogue defines it, which includes the
- * categories that hang directly off a section (רכב, משלוח, הסעות, קניות) and
- * not only the nodes typed as a root. Nothing is listed, ordered or renamed
- * here: re-ordering the catalogue re-orders this rail.
+ * ── THE CATEGORIES ARE THE PUBLISH FORM'S OWN LIST ────────────────────────
+ * `rootGroups` comes from the same shared grouping the publish form's first
+ * "בחרו קטגוריה" step reads (categoryTree.categoryRootGroups), so the rail shows
+ * exactly the form's main categories, in exactly the form's order, with no
+ * local sorting, renaming or filtering. A category added or re-ordered in the
+ * catalogue appears here automatically.
  *
- * A Brand scoped to its own niche shows ITS categories instead, derived from
- * its own assignment, so a sub-brand reads as that brand rather than as the
- * whole marketplace.
+ * ── THE NUMBER ON EACH TILE ───────────────────────────────────────────────
+ * The count is real: it is the number of professionals in the public worker pool
+ * who offer anything inside that section (their own declared categories), read
+ * from the same shared pool query the app's live "N professionals" surfaces use.
+ * It counts PEOPLE, not category listings, so someone who offers both plumbing
+ * and a plumbing sub-service is one professional — never two. A section with
+ * nobody in it shows no badge at all rather than a "0".
  */
 export default function PublishedTasksEmptyState() {
   const navigate = useNavigate();
   const { t, lang, isRTL } = useLanguage();
-  const { categories, globalMap, globalRows, isPlatformBrand } = useBrandCategories();
+  const { rootGroups, globalMap } = useBrandCategories();
+  const { data: pool = [] } = useWorkerPool();
 
   const items = useMemo(() => {
-    const source = isPlatformBrand
-      ? deriveMainCategories(globalRows || []).map((r) => ({ key: r.category_key, row: r }))
-      : (categories || []).map((c) => ({ key: c.value, row: globalMap?.[c.value] }));
-    const seen = new Set();
-    return source
-      .filter(({ key }) => key && !seen.has(key) && seen.add(key))
-      .map(({ key, row }) => {
-        // The label, never the emoji: the icon comes from the shared line-icon
-        // set so every tile is drawn identically.
-        const raw = String(row ? localizedCategoryLabel(key, row, lang, t) : (t(`cat_${key}`) || key));
-        const label = raw.replace(/^[^\p{L}\p{N}]+/u, '').trim() || raw;
-        return { key, label, Icon: categoryIcon(key, globalMap) };
+    // Each section's own keys: its root key plus every service beneath it.
+    const keySets = (rootGroups || []).map((g) => new Set((g.services || []).map((s) => s.value).filter(Boolean)));
+    const counts = keySets.map(() => 0);
+    for (const w of pool || []) {
+      const offers = w.preferred_categories || [];
+      if (!offers.length) continue;
+      keySets.forEach((keys, i) => {
+        if (offers.some((k) => keys.has(k))) counts[i] += 1;
       });
-  }, [isPlatformBrand, categories, globalRows, globalMap, lang, t]);
+    }
+    const seen = new Set();
+    return (rootGroups || [])
+      .filter((g) => g?.key && !seen.has(g.key) && seen.add(g.key))
+      .map((g, i) => {
+        // The label, never the emoji: the icon comes from the shared line-icon
+        // set so every tile is drawn identically on every device.
+        const raw = String(localizedCategoryLabel(g.key, globalMap?.[g.key], lang, t) || g.label || g.key);
+        const label = raw.replace(/^[^\p{L}\p{N}]+/u, '').trim() || raw;
+        return { key: g.key, label, Icon: categoryIcon(g.key, globalMap), count: counts[i] || 0 };
+      });
+  }, [rootGroups, globalMap, pool, lang, t]);
 
   const publish = (key) => {
     try { navigator.vibrate?.(12); } catch {}
@@ -59,14 +73,19 @@ export default function PublishedTasksEmptyState() {
   };
 
   return (
-    <div style={{ paddingTop: 26 }}>
-      {/* A. One headline, one line — the screen's own words, no mark beside them */}
+    <div style={{ paddingTop: 2 }}>
+      {/* 2. The rotating benefits banner — trust before the ask */}
+      <BenefitsBanner />
+
+      {/* 3. One headline, one line */}
       <h2 style={{
-        margin: 0, fontSize: 22, fontWeight: 900, lineHeight: 1.26,
+        margin: '18px 0 0', fontSize: 22, fontWeight: 900, lineHeight: 1.26,
         letterSpacing: -0.4, color: 'var(--text-1)', textAlign: 'center',
       }}>
         {t('mtempty_title')}
       </h2>
+
+      {/* 4. A single short explanation */}
       <p style={{
         margin: '6px 0 0', fontSize: 14, lineHeight: 1.5,
         fontWeight: 500, color: 'var(--text-2)', textAlign: 'center',
@@ -74,12 +93,12 @@ export default function PublishedTasksEmptyState() {
         {t('mtempty_sub')}
       </p>
 
-      {/* B. The one action this screen exists for — the only filled element */}
+      {/* 5. The one action this screen exists for — the only filled element */}
       <button
         type="button"
         onClick={() => publish()}
         style={{
-          marginTop: 16, width: '100%', height: 50, borderRadius: 14, border: 'none',
+          marginTop: 14, width: '100%', height: 50, borderRadius: 14, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
           color: 'var(--brand-btn-primary-text, #ffffff)',
@@ -92,21 +111,15 @@ export default function PublishedTasksEmptyState() {
         {t('post_task_btn')}
       </button>
 
-      {/* C. The main categories — one consistent icon per category */}
+      {/* 6. The categories — no heading: they speak for themselves */}
       {items.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{
-            marginBottom: 8, fontSize: 12.5, fontWeight: 800,
-            color: 'var(--text-3)', letterSpacing: 0.2,
-          }}>
-            {t('mtempty_cat_label')}
-          </div>
+        <div style={{ marginTop: 14 }}>
           <CategoryCarousel items={items} onSelect={publish} isRTL={isRTL} />
         </div>
       )}
 
-      {/* D. The explainer video that already exists in the app */}
-      <div style={{ marginTop: 8 }}>
+      {/* 7. The explainer video that already exists in the app */}
+      <div style={{ marginTop: 10 }}>
         <EmptyStateVideoCard
           title={t('mtempty_video_title')}
           subtitle={t('mtempty_video_sub')}

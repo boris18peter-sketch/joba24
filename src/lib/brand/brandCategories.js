@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { CATEGORIES } from '@/lib/categories';
 import { useGlobalCategories, globalFormFields } from '@/lib/brand/globalCategories';
-import { deriveServices, deriveRoots, serviceGroups } from '@/lib/brand/categoryTree';
+import { deriveServices, deriveRoots, serviceGroups, categoryRootGroups } from '@/lib/brand/categoryTree';
 import { resolveCategoryContent, resolveBrandExamples } from '@/lib/brand/categoryContent';
 import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -31,7 +31,11 @@ export function useBrandCategories() {
   const categories = services.map(g => ({ ...g,value:g.category_key,label:localizedCategoryLabel(g.category_key, global.map[g.category_key], lang, t) || g.label || platformCategoryLabel(g.category_key),fields:globalFormFields(g,global.map),brandSpecific:isBrandSpecificKey(g.category_key) }));
   // Single source of truth for every Brand-facing task example / placeholder.
   const examplesFor = (limit = 4) => resolveBrandExamples(global.rows, categories, effectiveBrand, limit, lang).map(e => e.text);
-  return { categories,roots,isPlatformBrand,examples:examplesFor(4),examplesFor,groups:serviceGroups(global.rows,categories,effectiveBrand),rows:legacy.data || [],globalRows:global.rows,globalMap:global.map,
+  // The MAIN categories — their canonical roots, in catalogue order. Shared by the
+  // publish form's picker and the published-tasks empty state, so the two always
+  // show the same categories in the same order.
+  const rootGroups = categoryRootGroups(categories, global.map);
+  return { categories,roots,rootGroups,isPlatformBrand,examples:examplesFor(4),examplesFor,groups:serviceGroups(global.rows,categories,effectiveBrand),rows:legacy.data || [],globalRows:global.rows,globalMap:global.map,
     contentFor:value => resolveCategoryContent(global.rows,value,effectiveBrand,lang),
     configured:effectiveBrand?.category_model_version === 2 || !!legacy.data?.length,
     isLoading:scopeQuery.isLoading || global.isLoading || (effectiveBrand?.category_model_version !== 2 && legacy.isLoading),
