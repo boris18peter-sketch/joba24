@@ -45,6 +45,32 @@ const SLIDES = [
   },
 ];
 
+/* ── THE ILLUSTRATION HAS TO BE THERE WHEN THE BANNER IS ───────────────────
+   The first picture used to start downloading only when this banner mounted —
+   after the session check, the public-settings fetch and the task list — so the
+   illustration arrived seconds late, into a banner that was already on screen
+   showing an empty space where a character should be.
+
+   It now starts the moment this module is evaluated, i.e. with the app's own
+   JavaScript rather than after its data, and index.html carries a matching
+   <link rel="preload"> that starts it during the HTML parse — before any of this
+   code has even been parsed. The other two slides are fetched once the banner
+   is on screen (never at boot, so they cannot compete with the app's start-up
+   requests), and the CDN serves all three `immutable` for a month, so this
+   ordering only matters on the very first launch. */
+const FIRST_ART = SLIDES[0].art;
+
+function warmArt(src, priority) {
+  if (typeof window === 'undefined' || !src) return null;
+  const img = new window.Image();
+  img.decoding = 'async';
+  try { img.fetchPriority = priority; } catch { /* older engine: no hint */ }
+  img.src = src;
+  return img;
+}
+
+const FIRST_ART_IMG = warmArt(FIRST_ART, 'high');
+
 export default function BenefitsBanner() {
   const { t, isRTL, lang } = useLanguage();
   const [index, setIndex] = useState(0);
@@ -71,17 +97,24 @@ export default function BenefitsBanner() {
     setTimeout(() => { busyRef.current = false; }, ANIM_MS);
   }, []);
 
-  /* All three preloaded, so a change never reveals a half-loaded picture. */
+  /* All three in hand before the carousel starts, so a change never reveals a
+     half-loaded picture. The first one is already in flight (or done) from the
+     warm-up above — only the two the visitor cannot see yet are fetched here. */
   useEffect(() => {
     let alive = true;
     let left = SLIDES.length;
-    SLIDES.forEach((s) => {
-      const img = new Image();
-      const done = () => { left -= 1; if (alive && left === 0) setReady(true); };
-      img.onload = done;
-      img.onerror = done;
-      img.src = s.art;
-    });
+    const done = () => { left -= 1; if (alive && left === 0) setReady(true); };
+
+    const settle = (img) => {
+      if (!img) { done(); return; }
+      if (img.complete && img.naturalWidth > 0) { done(); return; }
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    };
+
+    settle(FIRST_ART_IMG);
+    SLIDES.slice(1).forEach((s) => settle(warmArt(s.art, 'low')));
+
     return () => { alive = false; };
   }, []);
 
@@ -229,7 +262,20 @@ export default function BenefitsBanner() {
           </div>
 
           <div className="j-ben-art">
-            <img src={slide.art} alt="" aria-hidden="true" draggable="false" />
+            {/* Intrinsic size + the priority hint: the browser can lay the box
+                out from these numbers before the pixels land, and it knows
+                these pictures are the point of the card rather than something
+                to defer. */}
+            <img
+              src={slide.art}
+              alt=""
+              aria-hidden="true"
+              draggable="false"
+              width={430}
+              height={296}
+              decoding="async"
+              fetchpriority="high"
+            />
           </div>
         </div>
       </div>

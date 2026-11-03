@@ -58,17 +58,15 @@ entitlement, and Live Activities need no App Group.
 > `app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID" --create`. Creating it
 > by hand first is simply the safer order.
 
-### 3.2 Codemagic — three environment variables
+### 3.2 Codemagic — nothing to add by hand any more
 
-In **Codemagic → your app → Environment variables**, add to the `ios_signing`
-group (or as workflow variables):
-
-| Name | Value |
-| --- | --- |
-| `WIDGET_BUNDLE_ID` | `com.base69e6bdb4986a04a256653a23.app.JobaActivityWidget` |
-| `ENABLE_LIVE_ACTIVITY_WIDGET` | `false` (leave false until 3.1 is done) |
-
-`BUNDLE_ID` already exists. That is the whole configuration.
+`WIDGET_BUNDLE_ID` (the App ID from 3.1) is already in the workflow, and the
+switch is now a **build input**: `Start new build` shows a checkbox
+"Include the Live Activity widget extension", default **off**. Ticked, the
+first step ("Resolve build flags") sets `ENABLE_LIVE_ACTIVITY_WIDGET=true`
+through `$CM_ENV` for that build only — the workflow file is never edited and the
+production default stays off. `BUNDLE_ID` and the `ios_signing` group are
+untouched.
 
 > The signing step fetches a second provisioning profile for the widget and the
 > export step adds it to `provisioningProfiles`. Both are skipped unless

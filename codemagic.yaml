@@ -2,6 +2,17 @@ workflows:
   ios-workflow:
     name: Joba24 iOS Workflow
     max_build_duration: 120
+    # ── ONE SWITCH, ASKED FOR AT BUILD TIME ──────────────────────────────────
+    # Codemagic shows this as a field in "Start new build". Left unticked, the
+    # build is exactly the app that ships today. Ticked, this one build also
+    # builds and embeds the Live Activity widget extension. The default lives
+    # here as `false`, so no build can ever be armed by accident and the
+    # production default is never edited in the repository.
+    inputs:
+      liveActivityWidget:
+        description: "Include the Live Activity widget extension (TestFlight test build)"
+        type: boolean
+        default: false
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: Joba24
@@ -16,7 +27,11 @@ workflows:
         # signing fetch, export options, archive check), so unless it is exactly
         # "true" this workflow builds exactly the same app it built yesterday.
         WIDGET_BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app.JobaActivityWidget"
-        ENABLE_LIVE_ACTIVITY_WIDGET: "false"
+        # ENABLE_LIVE_ACTIVITY_WIDGET is NOT set here on purpose: its permanent
+        # default is "off", and it is turned on for a single build by the
+        # `liveActivityWidget` build input (see the "Resolve build flags" step).
+        # Leaving it out of vars means nothing can shadow the per-build value,
+        # and this file's default is never quietly flipped in source control.
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         CERTIFICATE_P12_PASSWORD: "Joba24SigningPass1"
@@ -27,6 +42,24 @@ workflows:
       node: latest
       xcode: latest
     scripts:
+      # ── THE ONE PLACE THE WIDGET FLAG COMES FROM ─────────────────────────
+      # Every Live Activity step below is already gated on
+      # $ENABLE_LIVE_ACTIVITY_WIDGET being exactly "true". This step turns the
+      # build input into that variable through $CM_ENV (Codemagic's supported
+      # way to set a variable for the remaining steps), so the gate and the
+      # checkbox can never disagree. Nothing is written back to this file, and
+      # an unticked box leaves the variable "false" — the shipping build.
+      - name: Resolve build flags
+        script: |
+          set -e
+          WANT="${{ inputs.liveActivityWidget }}"
+          if [ "$WANT" = "true" ]; then
+            echo "ENABLE_LIVE_ACTIVITY_WIDGET=true" >> "$CM_ENV"
+            echo "Live Activity widget: ENABLED for this build (TestFlight only)."
+          else
+            echo "ENABLE_LIVE_ACTIVITY_WIDGET=false" >> "$CM_ENV"
+            echo "Live Activity widget: disabled - building the shipping app."
+          fi
       - name: Install npm dependencies
         script: |
           npm install

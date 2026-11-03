@@ -1,67 +1,52 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { useBrandCategories } from '@/lib/brand/brandCategories';
-import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
-import { useWorkerPool } from '@/hooks/useWorkerPool';
-import { categoryIcon } from '@/components/empty/categoryIcons';
 import BenefitsBanner from '@/components/empty/BenefitsBanner';
-import CategoryCarousel from '@/components/empty/CategoryCarousel';
-import EmptyStateVideoCard from '@/components/empty/EmptyStateVideoCard';
 
 /**
  * The empty state of My Published Tasks › Active — and ONLY that.
  *
- * ── ONE HERO, THEN THE ACTION ─────────────────────────────────────────────
- * Order is deliberate: the banner carousel first (it now carries the whole
- * message — "צריך עזרה במשהו?" lives inside it), then immediately the publish
- * button, then a quiet history link, then the categories, then the explainer.
- * There is no separate headline or explanation above the banner: that was the
- * same message twice.
+ * ── TWO THINGS, SPREAD OVER THE SCREEN ───────────────────────────────────
+ * The hero banner carries the whole message, and the publish button is the one
+ * action the screen exists for. The category rail and the explainer video were
+ * removed: with them the screen stacked four blocks in the top half and left
+ * the bottom empty. What is left is centred in the space it is given, so the
+ * banner and the button read as one composition instead of a column that
+ * stops halfway down the screen.
  */
 export default function PublishedTasksEmptyState() {
   const navigate = useNavigate();
-  const { t, lang, isRTL } = useLanguage();
-  const { rootGroups, globalMap } = useBrandCategories();
-  const { data: pool = [] } = useWorkerPool();
+  const { t } = useLanguage();
 
-  const items = useMemo(() => {
-    const keySets = (rootGroups || []).map((g) => new Set((g.services || []).map((s) => s.value).filter(Boolean)));
-    const counts = keySets.map(() => 0);
-    for (const w of pool || []) {
-      const offers = w.preferred_categories || [];
-      if (!offers.length) continue;
-      keySets.forEach((keys, i) => {
-        if (offers.some((k) => keys.has(k))) counts[i] += 1;
-      });
-    }
-    const seen = new Set();
-    return (rootGroups || [])
-      .filter((g) => g?.key && !seen.has(g.key) && seen.add(g.key))
-      .map((g, i) => {
-        const raw = String(localizedCategoryLabel(g.key, globalMap?.[g.key], lang, t) || g.label || g.key);
-        const label = raw.replace(/^[^\p{L}\p{N}]+/u, '').trim() || raw;
-        return { key: g.key, label, Icon: categoryIcon(g.key, globalMap), count: counts[i] || 0 };
-      });
-  }, [rootGroups, globalMap, pool, lang, t]);
-
-  const publish = (key) => {
+  const publish = () => {
     try { navigator.vibrate?.(12); } catch {}
-    navigate(key ? `/create-task?category=${encodeURIComponent(key)}` : '/create-task');
+    navigate('/create-task');
   };
 
   return (
-    <div style={{ paddingTop: 2 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: 26,
+        /* Fills the room the two removed sections left behind. A floor, not a
+           fixed height: on a short screen the composition simply starts higher
+           and the page keeps scrolling as it always did. */
+        minHeight: 'min(58vh, 520px)',
+        paddingTop: 8,
+        paddingBottom: 16,
+      }}
+    >
       {/* 1. The hero — message and illustration in one compact banner */}
       <BenefitsBanner />
 
-      {/* 2. The one action this screen exists for, directly under the banner */}
+      {/* 2. The one action this screen exists for, under the banner */}
       <button
         type="button"
-        onClick={() => publish()}
+        onClick={publish}
         style={{
-          marginTop: 14, width: '100%', height: 48, borderRadius: 14, border: 'none',
+          width: '100%', height: 52, borderRadius: 15, border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
           color: 'var(--brand-btn-primary-text, #ffffff)',
@@ -74,24 +59,6 @@ export default function PublishedTasksEmptyState() {
         {t('post_task_btn')}
       </button>
 
-      {/* 3. The categories — no heading: the icons speak for themselves. The
-          room the heading used to take is given back as air around the rail, so
-          the row reads as its own section instead of being squeezed between the
-          button above it and the video below. */}
-      {items.length > 0 && (
-        <div style={{ marginTop: 34, marginBottom: 22 }}>
-          <CategoryCarousel items={items} onSelect={publish} isRTL={isRTL} />
-        </div>
-      )}
-
-      {/* 4. The explainer video — pushed further down: it is the last, optional
-          item on the screen, so it must not sit on the heels of the catalogue. */}
-      <div style={{ marginTop: 46 }}>
-        <EmptyStateVideoCard
-          title={t('mtempty_video_title')}
-          subtitle={t('mtempty_video_sub')}
-        />
-      </div>
     </div>
   );
 }

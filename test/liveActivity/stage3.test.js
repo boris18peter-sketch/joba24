@@ -294,7 +294,19 @@ describe('codemagic pipeline', () => {
   const yaml = read(CODEMAGIC);
 
   it('ships the widget off by default', () => {
-    expect(yaml).toContain('ENABLE_LIVE_ACTIVITY_WIDGET: "false"');
+    // The switch is NOT hardcoded in the workflow any more: it is asked for at
+    // build time and defaults to off, so an ordinary build is exactly the app
+    // that ships today and the production default can never be flipped by
+    // accident in source control.
+    expect(yaml).toContain('liveActivityWidget:');
+    expect(yaml).toContain('type: boolean');
+    expect(yaml).toContain('default: false');
+    expect(yaml).not.toMatch(/^\s*ENABLE_LIVE_ACTIVITY_WIDGET:\s*"true"/m);
+    // One step turns that input into the variable every gate below reads, and it
+    // runs before the project can be patched.
+    expect(yaml).toContain('echo "ENABLE_LIVE_ACTIVITY_WIDGET=true" >> "$CM_ENV"');
+    expect(yaml.indexOf('Resolve build flags'))
+      .toBeLessThan(yaml.indexOf('python3 scripts/patch-ios-live-activity.py'));
     expect(yaml).toContain('WIDGET_BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app.JobaActivityWidget"');
   });
 
