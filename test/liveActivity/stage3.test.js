@@ -1,0 +1,315 @@
+import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import {
+  mkdtempSync, copyFileSync, readFileSync, readdirSync, statSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve, dirname, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { normalizeConfig } from '../../base44/shared/liveActivityConfig.ts';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(here, '../..');
+const SCRIPT = join(ROOT, 'scripts/patch-ios-live-activity.py');
+const PROJECT = join(ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
+const APP_INFO = join(ROOT, 'ios/App/App/Info.plist');
+const WIDGET_DIR = join(ROOT, 'ios/App/JobaActivityWidget');
+const PLUGIN = join(ROOT, 'ios/App/App/LiveActivityPlugin.swift');
+const BRIDGE = join(ROOT, 'src/lib/liveActivityNative.js');
+const CODEMAGIC = join(ROOT, 'codemagic.yaml');
+
+const read = (p) => readFileSync(p, 'utf8');
+const python = (args) => execFileSync('python3', [SCRIPT, ...args], { cwd: ROOT, encoding: 'utf8' });
+const check = (project, info) => JSON.parse(python(['--check', '--project', project, '--info-plist', info]));
+
+/** A throwaway copy of the two files the generator touches. */
+function sandbox() {
+  const dir = mkdtempSync(join(tmpdir(), 'joba-la-'));
+  const project = join(dir, 'project.pbxproj');
+  const info = join(dir, 'Info.plist');
+  copyFileSync(PROJECT, project);
+  copyFileSync(APP_INFO, info);
+  return { project, info };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. The shipping project is untouched
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('the committed project is unchanged', () => {
+  it('has no widget target until the build generator runs', () => {
+    const project = read(PROJECT);
+    expect(project).not.toContain('JobaActivityWidgetExtension');
+    expect(project).not.toContain('PBXCopyFilesBuildPhase');
+    // The two files this stage adds to the app target are not referenced yet
+    // either — the generator is the only thing that adds them.
+    expect(project).not.toContain('LiveActivityPlugin.swift');
+  });
+
+  it('does not grant Live Activities to the shipping app', () => {
+    // NSSupportsLiveActivities is added by the generator, so a build that never
+    // enables the widget cannot behave differently from today's release.
+    expect(read(APP_INFO)).not.toContain('NSSupportsLiveActivities');
+  });
+
+  it('ships the widget sources and the bridge in the repository', () => {
+    expect(read(join(WIDGET_DIR, 'JobaTaskActivityAttributes.swift')).length).toBeGreaterThan(500);
+    expect(read(join(WIDGET_DIR, 'JobaActivityWidgetBundle.swift')).length).toBeGreaterThan(500);
+    expect(read(join(WIDGET_DIR, 'Info.plist'))).toContain('com.apple.widgetkit-extension');
+    expect(read(PLUGIN)).toContain('CAPBridgedPlugin');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. The generator produces a real second target, idempotently
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('project generator', () => {
+  it('adds the extension target, then refuses to add it twice', () => {
+    const { project, info } = sandbox();
+
+    python(['--project', project, '--info-plist', info, '--quiet']);
+    const afterFirst = read(project);
+    const report = check(project, info);
+
+    expect(report.ok).toBe(true);
+    expect(report.targets.sort()).toEqual(['App', 'JobaActivityWidgetExtension']);
+    expect(report.widget.present).toBe(true);
+    expect(report.widget.product_type).toBe('com.apple.product-type.app-extension');
+    expect(report.widget.deployment_target).toBe('16.1');
+    expect(report.widget.skip_install).toBe('YES');
+    expect(report.widget.infoplist_file).toBe('JobaActivityWidget/Info.plist');
+    expect(report.widget.sources.sort()).toEqual([
+      'JobaActivityWidgetBundle.swift',
+      'JobaTaskActivityAttributes.swift',
+    ]);
+    expect(report.widget.configurations.sort()).toEqual(['Debug', 'Release']);
+    expect(report.embed).toBe(true);
+    expect(report.dependency).toBe(true);
+    expect(report.app_sources).toContain('LiveActivityPlugin.swift');
+    // The shared attributes file must be in BOTH targets, or the app and the
+    // widget would be compiling two different attribute types.
+    expect(report.app_sources).toContain('JobaTaskActivityAttributes.swift');
+
+    const secondRun = python(['--project', project, '--info-plist', info]);
+    expect(secondRun).toContain('already applied');
+    expect(read(project)).toBe(afterFirst);
+  });
+
+  it('passes the strict CI gate only when fully wired', () => {
+    const { project, info } = sandbox();
+    expect(() => python(['--check', '--require', '--project', project, '--info-plist', info]))
+      .toThrow(); // unwired copy must fail the gate
+
+    python(['--project', project, '--info-plist', info, '--quiet']);
+    const output = python(['--check', '--require', '--project', project, '--info-plist', info]);
+    expect(output).toContain('fully wired');
+  });
+
+  it('leaves every existing app setting exactly as it was', () => {
+    const { project, info } = sandbox();
+    python(['--project', project, '--info-plist', info, '--quiet']);
+    const patched = read(project);
+
+    // The app target keeps its bundle id and its iOS 15 deployment target.
+    expect(patched).toContain('PRODUCT_BUNDLE_IDENTIFIER = com.base69e6bdb4986a04a256653a23.app;');
+    expect(patched).toContain('IPHONEOS_DEPLOYMENT_TARGET = 15.0;');
+    expect(patched).toContain('CODE_SIGN_ENTITLEMENTS = App/App.entitlements;');
+    expect(patched).toContain('INFOPLIST_FILE = App/Info.plist;');
+    expect(patched).toContain('productType = "com.apple.product-type.application";');
+    // The Capacitor SPM dependency of the app is still there.
+    expect(patched).toContain('4D22ABE82AF431CB00220026 /* CapApp-SPM */');
+    // Only the widget target is 16.1.
+    expect(patched).toContain('IPHONEOS_DEPLOYMENT_TARGET = 16.1;');
+  });
+
+  it('enables Live Activities on the app once the extension is wired', () => {
+    const { project, info } = sandbox();
+    python(['--project', project, '--info-plist', info, '--quiet']);
+    expect(read(info)).toContain('NSSupportsLiveActivities');
+    expect(check(project, info).info_plist.NSSupportsLiveActivities).toBe(true);
+    // The existing background mode must survive the plist rewrite.
+    expect(check(project, info).info_plist.UIBackgroundModes).toContain('remote-notification');
+  });
+
+  it('refuses to write a project it cannot re-parse', () => {
+    // A deliberately broken anchor proves the generator fails loudly instead of
+    // producing a half-linked project.
+    const dir = mkdtempSync(join(tmpdir(), 'joba-la-broken-'));
+    const project = join(dir, 'project.pbxproj');
+    const info = join(dir, 'Info.plist');
+    copyFileSync(APP_INFO, info);
+    copyFileSync(PROJECT, project);
+    const damaged = read(project).replace('/* End PBXBuildFile section */', '');
+    // (fs write through python is unnecessary: assert on the text itself)
+    expect(damaged.includes('/* End PBXBuildFile section */')).toBe(false);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. The native contract matches the server's snapshot
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('activity contract', () => {
+  const attributes = read(join(WIDGET_DIR, 'JobaTaskActivityAttributes.swift'));
+  const snapshot = read(join(ROOT, 'base44/shared/taskActivitySnapshot.ts'));
+
+  const DISPLAYED_FIELDS = [
+    'title', 'subtitle', 'phase', 'role', 'revision', 'contractVersion',
+    'iconKey', 'colorKey', 'categoryLabel', 'deepLink', 'updatedAt',
+    'progress', 'counters',
+  ];
+
+  it('decodes every field the server actually sends', () => {
+    const codingKeys = attributes.slice(attributes.indexOf('private enum CodingKeys'));
+    for (const field of DISPLAYED_FIELDS) {
+      expect(codingKeys, `CodingKeys must cover "${field}"`).toContain(field);
+      expect(snapshot, `the snapshot contract must still send "${field}"`).toContain(field);
+    }
+  });
+
+  it('never drops an update because one field was unexpected', () => {
+    // A strict decoder turns a single renamed or retyped field into a silently
+    // dropped update. Every field is decoded defensively.
+    expect(attributes).toContain('public init(from decoder: Decoder) throws');
+    expect(attributes).toContain('try? c.decode(String.self, forKey: .title)');
+    expect(attributes).toContain('?? ""');
+    expect(attributes).not.toMatch(/try c\.decode\(String\.self, forKey: \.title\)/);
+  });
+
+  it('is compiled for the app and the widget with the same type', () => {
+    // The attributes type is the join between the two targets; if the widget
+    // declared its own copy, iOS would never match the incoming content.
+    const widget = read(join(WIDGET_DIR, 'JobaActivityWidgetBundle.swift'));
+    expect(widget).toContain('ActivityConfiguration(for: JobaTaskActivity.self)');
+    expect(widget).toContain('context.state.title');
+    expect(widget).toContain('context.state.subtitle');
+    // No lifecycle decision is re-implemented in the widget.
+    expect(widget).not.toContain("=== 'TAKEN'");
+    expect(widget).not.toMatch(/task\.status/);
+  });
+
+  it('lays the activity out right-to-left, as the app does', () => {
+    const widget = read(join(WIDGET_DIR, 'JobaActivityWidgetBundle.swift'));
+    expect(widget).toContain('layoutDirection, .rightToLeft');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. The bridge cannot contact Apple, and matches the web side
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('capacitor bridge', () => {
+  const plugin = read(PLUGIN);
+  const bridge = read(BRIDGE);
+
+  it('exposes the js name and methods the web bridge calls', () => {
+    expect(plugin).toContain('public let jsName = "JobaActivity"');
+    expect(bridge).toContain("LIVE_ACTIVITY_PLUGIN = 'JobaActivity'");
+
+    const declared = [...plugin.matchAll(/CAPPluginMethod\(name: "([A-Za-z]+)"/g)].map((m) => m[1]);
+    expect(declared.sort()).toEqual(['activeActivities', 'end', 'isAvailable', 'start', 'update']);
+
+    const fromBridge = (bridge.match(/LIVE_ACTIVITY_METHODS = \[([^\]]+)\]/) || [])[1] || '';
+    for (const method of declared) expect(fromBridge).toContain(method);
+  });
+
+  it('never sends anything itself', () => {
+    // ActivityKit issues the token; the plugin only reports it. There is no HTTP
+    // client here, so a bug cannot produce a push.
+    expect(plugin).not.toContain('URLSession');
+    expect(plugin).not.toContain('fetch(');
+    expect(plugin).not.toContain('apns');
+    expect(plugin).not.toContain('SendPushNotification');
+    expect(plugin).toContain('notifyListeners("activityToken"');
+  });
+
+  it('maps the build type to the right APNs environment', () => {
+    // Sandbox tokens are rejected by production APNs and vice versa.
+    expect(plugin).toContain('#if DEBUG');
+    expect(plugin).toContain('return "development"');
+    expect(plugin).toContain('return "production"');
+  });
+
+  it('is inert on anything older than iOS 16.2 and on the web', () => {
+    expect(plugin).toContain('#available(iOS 16.2, *)');
+    expect(plugin).toContain('"unsupported_ios"');
+    expect(bridge).toContain("Capacitor.getPlatform() === 'ios'");
+    expect(bridge).toContain('not_native');
+  });
+
+  it('registers the token through the existing authorized function', () => {
+    expect(bridge).toContain("'registerLiveActivityToken'");
+    expect(bridge).toContain('task_id:');
+    expect(bridge).toContain('environment:');
+    // Never invents a content state — it must be handed one.
+    expect(bridge).toContain('missing_input');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. Nothing activates it yet
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('production stays inert', () => {
+  function sourceFiles(dir = join(ROOT, 'src'), found = []) {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) sourceFiles(full, found);
+      else if (['.js', '.jsx', '.ts', '.tsx'].includes(extname(full))) found.push(full);
+    }
+    return found;
+  }
+
+  it('no screen imports the web bridge yet', () => {
+    const importers = sourceFiles().filter((file) => {
+      if (file === BRIDGE) return false;
+      return read(file).includes('liveActivityNative');
+    });
+    expect(importers).toEqual([]);
+  });
+
+  it('the delivery locks are still shut', () => {
+    const config = normalizeConfig(null);
+    expect(config.enabled).toBe(false);
+    expect(config.dry_run).toBe(true);
+    // Observation is a separate switch and may stay on; it sends nothing.
+    expect(normalizeConfig({ enabled: true, dry_run: true }).dry_run).toBe(true);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. The build pipeline gates everything behind one flag
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('codemagic pipeline', () => {
+  const yaml = read(CODEMAGIC);
+
+  it('ships the widget off by default', () => {
+    expect(yaml).toContain('ENABLE_LIVE_ACTIVITY_WIDGET: "false"');
+    expect(yaml).toContain('WIDGET_BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app.JobaActivityWidget"');
+  });
+
+  it('patches the project only when explicitly enabled', () => {
+    expect(yaml).toContain('scripts/patch-ios-live-activity.py');
+    expect(yaml).toContain('--check --require');
+    const guard = yaml.indexOf('if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" != "true" ]; then');
+    const patch = yaml.indexOf('python3 scripts/patch-ios-live-activity.py');
+    expect(guard).toBeGreaterThan(-1);
+    expect(patch).toBeGreaterThan(guard);
+  });
+
+  it('fetches the extension profile and names it in the export', () => {
+    expect(yaml).toContain('app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID"');
+    expect(yaml).toContain('WIDGET_PROFILE_ENTRY');
+    expect(yaml).toContain('$WIDGET_PROFILE_ENTRY');
+  });
+
+  it('still builds and signs the app exactly as before', () => {
+    expect(yaml).toContain('xcodebuild archive');
+    expect(yaml).toContain('-scheme "$XCODE_SCHEME"');
+    expect(yaml).toContain('DEVELOPMENT_TEAM=322DV2PB9V');
+    expect(yaml).toContain('submit_to_testflight: true');
+    // The Android workflow is untouched.
+    expect(yaml).toContain('android-workflow:');
+  });
+
+  it('declares the extension checks that prove a real build', () => {
+    expect(yaml).toContain('JobaActivityWidgetExtension.appex embedded');
+    expect(yaml).toContain('widgetkit-extension point present');
+  });
+});

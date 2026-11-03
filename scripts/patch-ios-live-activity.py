@@ -1,0 +1,661 @@
+#!/usr/bin/env python3
+"""
+patch-ios-live-activity.py — wire the Live Activity widget extension into the
+Capacitor Xcode project WITHOUT Xcode.
+
+    python3 scripts/patch-ios-live-activity.py             # apply (idempotent)
+    python3 scripts/patch-ios-live-activity.py --check      # parse + report JSON
+    python3 scripts/patch-ios-live-activity.py --check --require
+
+── WHY A GENERATOR AND NOT A HAND-EDITED PROJECT ────────────────────────────
+A Widget Extension is not a folder of files: it is a second TARGET in
+project.pbxproj, with its own build configurations, its own provisioning and an
+"Embed Foundation Extensions" copy phase inside the app target. Building one
+normally means Xcode's "File > New > Target" wizard.
+
+This script writes exactly the objects that wizard writes, using deterministic
+UUIDs (md5 of a seed, so a re-run produces byte-identical output). It is the only
+supported way to add the extension here, and it is checked into the repository so
+the change is reviewable instead of living in one person's Xcode.
+
+── SAFETY ──────────────────────────────────────────────────────────────────
+  * Idempotent: if the target is already present, nothing is written.
+  * Every anchor is asserted; a project whose shape changed fails loudly instead
+    of producing a half-linked file.
+  * `--check` re-parses the file with an OpenStep-plist parser written here, so
+    the report describes what Xcode will actually read rather than what this
+    script intended to write.
+
+The app target itself is only touched in two places — two files appended to its
+Sources phase, and the embed phase + dependency added — so every existing screen,
+plugin and signing setting is left exactly as it was.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import plistlib
+import sys
+
+# ── Identity ────────────────────────────────────────────────────────────────
+APP_TARGET_ID = "504EC3031FED79650016851F"
+PROJECT_OBJECT_ID = "504EC2FC1FED79650016851F"
+APP_TARGET_NAME = "App"
+WIDGET_TARGET_NAME = "JobaActivityWidgetExtension"
+WIDGET_DIR = "JobaActivityWidget"
+APP_BUNDLE_ID = "com.base69e6bdb4986a04a256653a23.app"
+WIDGET_BUNDLE_ID = APP_BUNDLE_ID + "." + WIDGET_DIR
+DEPLOYMENT_TARGET = "16.1"  # ActivityKit + WidgetKit Live Activities
+
+DEFAULT_PROJECT = "ios/App/App.xcodeproj/project.pbxproj"
+DEFAULT_INFO_PLIST = "ios/App/App/Info.plist"
+
+
+def uid(seed):
+    """A stable 24-hex-character object id for a named object."""
+    return hashlib.md5(("joba24.liveactivity." + seed).encode("utf-8")).hexdigest().upper()[:24]
+
+
+IDS = {k: uid(k) for k in (
+    "widget_group", "file_bundle", "file_attrs", "file_info", "file_product", "file_plugin",
+    "bf_attrs_widget", "bf_bundle_widget", "bf_attrs_app", "bf_plugin_app", "bf_product_embed",
+    "phase_sources", "phase_frameworks", "phase_resources", "phase_embed",
+    "target", "cfg_debug", "cfg_release", "cfg_list", "proxy", "dep",
+)}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# OpenStep property-list parser (the format project.pbxproj is written in)
+# ══════════════════════════════════════════════════════════════════════════════
+PUNCT = "{}()=;,"
+
+
+def tokenize(text):
+    tokens = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c in " \t\r\n":
+            i += 1
+            continue
+        if text.startswith("//", i):
+            nl = text.find("\n", i)
+            i = n if nl < 0 else nl + 1
+            continue
+        if text.startswith("/*", i):
+            end = text.find("*/", i)
+            if end < 0:
+                raise ValueError("unterminated /* comment at offset %d" % i)
+            i = end + 2
+            continue
+        if c == '"':
+            i += 1
+            out = []
+            while i < n:
+                ch = text[i]
+                if ch == "\\":
+                    i += 1
+                    if i < n:
+                        out.append(text[i])
+                        i += 1
+                    continue
+                if ch == '"':
+                    i += 1
+                    tokens.append(("str", "".join(out)))
+                    break
+                out.append(ch)
+                i += 1
+            else:
+                raise ValueError("unterminated string")
+            continue
+        if c in PUNCT:
+            tokens.append(("punct", c))
+            i += 1
+            continue
+        start = i
+        while i < n and text[i] not in " \t\r\n" + PUNCT + '"':
+            if text.startswith("//", i) or text.startswith("/*", i):
+                break
+            i += 1
+        if start == i:
+            raise ValueError("unexpected character %r at offset %d" % (text[i], i))
+        tokens.append(("str", text[start:i]))
+    return tokens
+
+
+class Parser:
+    def __init__(self, tokens):
+        self.t = tokens
+        self.i = 0
+
+    def peek(self):
+        return self.t[self.i] if self.i < len(self.t) else ("eof", "")
+
+    def next(self):
+        tok = self.peek()
+        self.i += 1
+        return tok
+
+    def expect(self, ch):
+        tok = self.next()
+        if tok != ("punct", ch):
+            raise ValueError("expected %r, found %r near token %d" % (ch, tok, self.i))
+
+    def value(self):
+        kind, val = self.next()
+        if kind == "punct" and val == "{":
+            out = {}
+            while True:
+                tok = self.peek()
+                if tok == ("punct", "}"):
+                    self.next()
+                    return out
+                key = self.next()
+                if key[0] != "str":
+                    raise ValueError("expected a dictionary key, found %r" % (key,))
+                self.expect("=")
+                out[key[1]] = self.value()
+                self.expect(";")
+        if kind == "punct" and val == "(":
+            out = []
+            while True:
+                tok = self.peek()
+                if tok == ("punct", ")"):
+                    self.next()
+                    return out
+                if tok == ("punct", ","):
+                    self.next()
+                    continue
+                out.append(self.value())
+            # unreachable
+        if kind == "str":
+            return val
+        raise ValueError("unexpected token %r at position %d" % ((kind, val), self.i))
+
+    def document(self):
+        value = self.value()
+        if self.peek()[0] != "eof":
+            raise ValueError("trailing content after the root object")
+        return value
+
+
+def parse_pbxproj(text):
+    return Parser(tokenize(text)).document()
+
+
+def resolve(objects, entry):
+    """A build-phase entry may be a plain id or a {value, comment} pair."""
+    if isinstance(entry, dict):
+        return objects.get(entry.get("value", ""), {})
+    return objects.get(str(entry), {})
+
+
+def name_of(objects, entry):
+    """The file name behind a build-phase entry.
+
+    A phase's `files` array holds PBXBuildFile ids, and a PBXBuildFile is only a
+    join row — it has no path of its own, it points at a PBXFileReference. So the
+    name lives one hop further out; without this hop every check below would
+    report an empty Sources phase on a perfectly wired project.
+    """
+    obj = resolve(objects, entry)
+    if not obj:
+        return ""
+    if obj.get("path") or obj.get("name"):
+        return obj.get("path") or obj.get("name")
+    ref = obj.get("fileRef")
+    if ref:
+        target = objects.get(ref if isinstance(ref, str) else ref.get("value", "")) or {}
+        return target.get("path") or target.get("name") or ""
+    return ""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Inspection
+# ══════════════════════════════════════════════════════════════════════════════
+def inspect(project_text, info_plist_path):
+    report = {"ok": False, "error": None, "targets": [], "widget": {"present": False},
+              "embed": False, "dependency": False, "app_sources": [], "info_plist": {}}
+    try:
+        data = parse_pbxproj(project_text)
+    except Exception as exc:  # noqa: BLE001 - the message is the product
+        report["error"] = "project.pbxproj is not parseable: %s" % exc
+        return report
+
+    objects = data.get("objects") or {}
+    project = objects.get(PROJECT_OBJECT_ID) or {}
+    target_ids = [t if isinstance(t, str) else t.get("value") for t in (project.get("targets") or [])]
+    report["targets"] = [name_of(objects, t) for t in target_ids]
+    report["app_sources"] = app_source_names(objects)
+
+    widget_id = next((t for t in target_ids
+                      if (objects.get(t) or {}).get("name") == WIDGET_TARGET_NAME), None)
+    if widget_id:
+        target = objects[widget_id]
+        phases = [p if isinstance(p, str) else p.get("value") for p in (target.get("buildPhases") or [])]
+        sources = []
+        config_names = []
+        for phase_id in phases:
+            phase = objects.get(phase_id) or {}
+            if phase.get("isa") == "PBXSourcesBuildPhase":
+                sources = [name_of(objects, f) for f in (phase.get("files") or [])]
+        for cfg in ((objects.get((target.get("buildConfigurationList") or "")) or {}).get("buildConfigurations") or []):
+            config_names.append((objects.get((cfg if isinstance(cfg, str) else cfg.get("value"))) or {}).get("name"))
+        settings = {}
+        for cfg in ((objects.get((target.get("buildConfigurationList") or "")) or {}).get("buildConfigurations") or []):
+            obj = objects.get((cfg if isinstance(cfg, str) else cfg.get("value"))) or {}
+            settings.update(obj.get("buildSettings") or {})
+        report["widget"] = {
+            "present": True,
+            "id": widget_id,
+            "product_type": target.get("productType"),
+            "sources": sorted(x for x in sources if x),
+            "configurations": config_names,
+            "bundle_id": settings.get("PRODUCT_BUNDLE_IDENTIFIER", ""),
+            "deployment_target": settings.get("IPHONEOS_DEPLOYMENT_TARGET", ""),
+            "infoplist_file": settings.get("INFOPLIST_FILE", ""),
+            "skip_install": settings.get("SKIP_INSTALL", ""),
+        }
+
+    app = objects.get(APP_TARGET_ID) or {}
+    for phase_entry in (app.get("buildPhases") or []):
+        phase = resolve(objects, phase_entry)
+        if phase.get("isa") != "PBXCopyFilesBuildPhase":
+            continue
+        embedded = [name_of(objects, f) for f in (phase.get("files") or [])]
+        if any(str(x).endswith(".appex") for x in embedded):
+            report["embed"] = True
+    report["dependency"] = bool(app.get("dependencies"))
+
+    if info_plist_path and os.path.exists(info_plist_path):
+        try:
+            with open(info_plist_path, "rb") as fh:
+                info = plistlib.load(fh)
+            report["info_plist"] = {
+                "NSSupportsLiveActivities": info.get("NSSupportsLiveActivities"),
+                "UIBackgroundModes": info.get("UIBackgroundModes") or [],
+            }
+        except Exception as exc:  # noqa: BLE001
+            report["error"] = "Info.plist is not readable: %s" % exc
+            return report
+
+    report["ok"] = True
+    return report
+
+
+def app_source_names(objects):
+    app = objects.get(APP_TARGET_ID) or {}
+    for phase_entry in (app.get("buildPhases") or []):
+        phase = resolve(objects, phase_entry)
+        if phase.get("isa") == "PBXSourcesBuildPhase":
+            return sorted(n for n in (name_of(objects, f) for f in (phase.get("files") or [])) if n)
+    return []
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Application
+# ══════════════════════════════════════════════════════════════════════════════
+def must_replace(text, anchor, replacement, what):
+    count = text.count(anchor)
+    if count != 1:
+        raise SystemExit(
+            "ERROR: expected exactly 1 occurrence of %s in project.pbxproj, found %d.\n"
+            "       The project's shape changed - review this script before building.\n"
+            "       anchor: %r" % (what, count, anchor[:120])
+        )
+    return text.replace(anchor, replacement, 1)
+
+
+def widget_build_settings():
+    common = """				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = %s/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = %s;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = %s;
+				PRODUCT_BUNDLE_PACKAGE_TYPE = "XPC!";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";""" % (WIDGET_DIR, DEPLOYMENT_TARGET, WIDGET_BUNDLE_ID)
+    debug = """			%s /* Debug */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+%s
+					SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+					SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				};
+				name = Debug;
+			};
+""" % (IDS["cfg_debug"], common)
+    release = """			%s /* Release */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+%s
+					SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+					SWIFT_OPTIMIZATION_LEVEL = "-O";
+				};
+				name = Release;
+			};
+""" % (IDS["cfg_release"], common)
+    return debug + release
+
+
+def apply(project_text, info_plist_path):
+    if WIDGET_TARGET_NAME in project_text:
+        return project_text, ["already applied - nothing written"]
+
+    notes = []
+    t = project_text
+
+    # ── 1. PBXBuildFile ─────────────────────────────────────────────────────
+    t = must_replace(t, "/* End PBXBuildFile section */", """		%s /* JobaTaskActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaTaskActivityAttributes.swift */; };
+		%s /* JobaActivityWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityWidgetBundle.swift */; };
+		%s /* JobaTaskActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaTaskActivityAttributes.swift */; };
+		%s /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* LiveActivityPlugin.swift */; };
+		%s /* JobaActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */""" % (
+        IDS["bf_attrs_widget"], IDS["file_attrs"],
+        IDS["bf_bundle_widget"], IDS["file_bundle"],
+        IDS["bf_attrs_app"], IDS["file_attrs"],
+        IDS["bf_plugin_app"], IDS["file_plugin"],
+        IDS["bf_product_embed"], IDS["file_product"],
+    ), "PBXBuildFile section")
+    notes.append("PBXBuildFile: 5 entries")
+
+    # ── 2. PBXFileReference ─────────────────────────────────────────────────
+    t = must_replace(t, "/* End PBXFileReference section */", """		%s /* JobaActivityWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobaActivityWidgetBundle.swift; sourceTree = "<group>"; };
+		%s /* JobaTaskActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobaTaskActivityAttributes.swift; sourceTree = "<group>"; };
+		%s /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		%s /* JobaActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JobaActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		%s /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */""" % (
+        IDS["file_bundle"], IDS["file_attrs"], IDS["file_info"],
+        IDS["file_product"], IDS["file_plugin"],
+    ), "PBXFileReference section")
+    notes.append("PBXFileReference: 5 entries")
+
+    # ── 3. Container proxy + target dependency + copy phase sections ────────
+    t = must_replace(t, "/* Begin PBXFileReference section */", """/* Begin PBXContainerItemProxy section */
+		%s /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = %s /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = %s;
+			remoteInfo = %s;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		%s /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				%s /* JobaActivityWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */""" % (
+        IDS["proxy"], PROJECT_OBJECT_ID, IDS["target"], WIDGET_TARGET_NAME,
+        IDS["phase_embed"], IDS["bf_product_embed"],
+    ), "PBXFileReference section start")
+    notes.append("new sections: PBXContainerItemProxy, PBXCopyFilesBuildPhase")
+
+    # ── 4. Frameworks phase for the widget (system frameworks only) ─────────
+    t = must_replace(t, "/* End PBXFrameworksBuildPhase section */", """		%s /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */""" % IDS["phase_frameworks"], "PBXFrameworksBuildPhase section")
+
+    # ── 5. Groups: widget group, product, main group, plugin file ref ───────
+    t = must_replace(t, "/* End PBXGroup section */", """		%s /* %s */ = {
+			isa = PBXGroup;
+			children = (
+				%s /* JobaActivityWidgetBundle.swift */,
+				%s /* JobaTaskActivityAttributes.swift */,
+				%s /* Info.plist */,
+			);
+			path = %s;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */""" % (
+        IDS["widget_group"], WIDGET_DIR,
+        IDS["file_bundle"], IDS["file_attrs"], IDS["file_info"], WIDGET_DIR,
+    ), "PBXGroup section")
+    t = must_replace(t, """				504EC3041FED79650016851F /* App.app */,
+""", """				504EC3041FED79650016851F /* App.app */,
+				%s /* JobaActivityWidgetExtension.appex */,
+""" % IDS["file_product"], "Products group")
+    t = must_replace(t, """				504EC3051FED79650016851F /* Products */,
+""", """				504EC3051FED79650016851F /* Products */,
+				%s /* %s */,
+""" % (IDS["widget_group"], WIDGET_DIR), "main group")
+    t = must_replace(t, """				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
+""", """				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
+				%s /* LiveActivityPlugin.swift */,
+""" % IDS["file_plugin"], "App group")
+    notes.append("groups: widget group + product + plugin")
+
+    # ── 6. App target: embed phase + dependency ─────────────────────────────
+    t = must_replace(t, """				504EC3021FED79650016851F /* Resources */,
+""", """				504EC3021FED79650016851F /* Resources */,
+				%s /* Embed Foundation Extensions */,
+""" % IDS["phase_embed"], "App target build phases")
+    t = must_replace(t, """			dependencies = (
+			);
+			name = App;""", """			dependencies = (
+				%s /* PBXTargetDependency */,
+			);
+			name = App;""" % IDS["dep"], "App target dependencies")
+    notes.append("App target: embed phase + dependency")
+
+    # ── 7. Widget native target ─────────────────────────────────────────────
+    t = must_replace(t, "/* End PBXNativeTarget section */", """		%s /* %s */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = %s /* Build configuration list for PBXNativeTarget "%s" */;
+			buildPhases = (
+				%s /* Sources */,
+				%s /* Frameworks */,
+				%s /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = %s;
+			productName = %s;
+			productReference = %s /* JobaActivityWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */""" % (
+        IDS["target"], WIDGET_TARGET_NAME, IDS["cfg_list"], WIDGET_TARGET_NAME,
+        IDS["phase_sources"], IDS["phase_frameworks"], IDS["phase_resources"],
+        WIDGET_TARGET_NAME, WIDGET_TARGET_NAME, IDS["file_product"],
+    ), "PBXNativeTarget section")
+    notes.append("PBXNativeTarget: %s" % WIDGET_TARGET_NAME)
+
+    # ── 8. Project: target list + target attributes ─────────────────────────
+    t = must_replace(t, """				504EC3031FED79650016851F /* App */,
+			);""", """				504EC3031FED79650016851F /* App */,
+				%s /* %s */,
+			);""" % (IDS["target"], WIDGET_TARGET_NAME), "PBXProject targets")
+    t = must_replace(t, """						ProvisioningStyle = Automatic;
+					};""", """						ProvisioningStyle = Automatic;
+					};
+					%s = {
+						CreatedOnToolsVersion = 15.0;
+						ProvisioningStyle = Manual;
+					};""" % IDS["target"], "PBXProject TargetAttributes")
+    notes.append("PBXProject: targets + TargetAttributes")
+
+    # ── 9. Resources + Sources phases ───────────────────────────────────────
+    t = must_replace(t, "/* End PBXResourcesBuildPhase section */", """		%s /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */""" % IDS["phase_resources"], "PBXResourcesBuildPhase section")
+    t = must_replace(t, "/* End PBXSourcesBuildPhase section */", """		%s /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				%s /* JobaTaskActivityAttributes.swift in Sources */,
+				%s /* JobaActivityWidgetBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */""" % (
+        IDS["phase_sources"], IDS["bf_attrs_widget"], IDS["bf_bundle_widget"],
+    ), "PBXSourcesBuildPhase section")
+    t = must_replace(t, """				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
+""", """				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
+				%s /* JobaTaskActivityAttributes.swift in Sources */,
+				%s /* LiveActivityPlugin.swift in Sources */,
+""" % (IDS["bf_attrs_app"], IDS["bf_plugin_app"]), "App Sources phase")
+    notes.append("App Sources: attributes + plugin")
+
+    # ── 10. Target dependency ───────────────────────────────────────────────
+    t = must_replace(t, "/* Begin PBXVariantGroup section */", """/* Begin PBXTargetDependency section */
+		%s /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = %s /* %s */;
+			targetProxy = %s /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */""" % (
+        IDS["dep"], IDS["target"], WIDGET_TARGET_NAME, IDS["proxy"],
+    ), "PBXVariantGroup section start")
+
+    # ── 11. Build configurations + configuration list ───────────────────────
+    t = must_replace(t, "/* End XCBuildConfiguration section */",
+                     widget_build_settings() + "/* End XCBuildConfiguration section */",
+                     "XCBuildConfiguration section")
+    t = must_replace(t, "/* End XCConfigurationList section */", """		%s /* Build configuration list for PBXNativeTarget "%s" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				%s /* Debug */,
+				%s /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */""" % (
+        IDS["cfg_list"], WIDGET_TARGET_NAME, IDS["cfg_debug"], IDS["cfg_release"],
+    ), "XCConfigurationList section")
+    notes.append("XCBuildConfiguration: Debug + Release (iOS %s)" % DEPLOYMENT_TARGET)
+
+    # ── 12. The app must be allowed to show Live Activities ─────────────────
+    if info_plist_path and os.path.exists(info_plist_path):
+        with open(info_plist_path, "rb") as fh:
+            info = plistlib.load(fh)
+        if info.get("NSSupportsLiveActivities") is not True:
+            info["NSSupportsLiveActivities"] = True
+            with open(info_plist_path, "wb") as fh:
+                plistlib.dump(info, fh)
+            notes.append("Info.plist: NSSupportsLiveActivities = true")
+        else:
+            notes.append("Info.plist: NSSupportsLiveActivities already true")
+    else:
+        notes.append("Info.plist: NOT FOUND - Live Activities would not be permitted")
+
+    return t, notes
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+def main():
+    parser = argparse.ArgumentParser(description="Wire the Live Activity widget extension into the Xcode project")
+    parser.add_argument("--check", action="store_true", help="report the project's structure as JSON")
+    parser.add_argument("--require", action="store_true", help="with --check: exit 1 unless the target is fully wired")
+    parser.add_argument("--project", default=DEFAULT_PROJECT)
+    parser.add_argument("--info-plist", dest="info_plist", default=DEFAULT_INFO_PLIST)
+    parser.add_argument("--quiet", action="store_true")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.project):
+        print("ERROR: %s not found (run this from the repository root)" % args.project)
+        return 1
+
+    if args.check:
+        with open(args.project, "r", encoding="utf-8") as fh:
+            report = inspect(fh.read(), args.info_plist)
+        if not args.quiet:
+            print(json.dumps(report, indent=2, ensure_ascii=False))
+        if not report["ok"]:
+            return 1
+        if args.require:
+            widget = report["widget"]
+            app_sources = report["app_sources"]
+            missing = []
+            if not widget.get("present"):
+                missing.append("widget target")
+            if widget.get("present"):
+                if widget.get("product_type") != "com.apple.product-type.app-extension":
+                    missing.append("widget product type")
+                if widget.get("bundle_id") != WIDGET_BUNDLE_ID:
+                    missing.append("widget bundle id")
+                if widget.get("deployment_target") != DEPLOYMENT_TARGET:
+                    missing.append("widget deployment target")
+                if "JobaActivityWidgetBundle.swift" not in widget.get("sources", []):
+                    missing.append("widget sources")
+                if not widget.get("infoplist_file"):
+                    missing.append("widget Info.plist")
+            if not report["embed"]:
+                missing.append("Embed Foundation Extensions phase")
+            if not report["dependency"]:
+                missing.append("app -> widget target dependency")
+            for need in ("LiveActivityPlugin.swift", "JobaTaskActivityAttributes.swift"):
+                if need not in app_sources:
+                    missing.append("App sources: " + need)
+            if report["info_plist"].get("NSSupportsLiveActivities") is not True:
+                missing.append("Info.plist NSSupportsLiveActivities")
+            if missing:
+                print("ERROR: the Live Activity target is not fully wired: " + ", ".join(missing))
+                return 1
+            print("OK: Live Activity widget extension is fully wired")
+        return 0
+
+    with open(args.project, "r", encoding="utf-8") as fh:
+        original = fh.read()
+
+    patched, notes = apply(original, args.info_plist)
+
+    if patched != original:
+        # Parse BEFORE writing: a file that cannot be re-read is never saved.
+        try:
+            parse_pbxproj(patched)
+        except Exception as exc:  # noqa: BLE001
+            print("ERROR: refusing to write a project.pbxproj that does not parse: %s" % exc)
+            return 1
+        with open(args.project, "w", encoding="utf-8") as fh:
+            fh.write(patched)
+
+    if not args.quiet:
+        for note in notes:
+            print("[live-activity] " + note)
+        print("[live-activity] %s" % ("project.pbxproj updated" if patched != original else "project already patched"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

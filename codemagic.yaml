@@ -10,6 +10,13 @@ workflows:
         - ios_signing
       vars:
         BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app"
+        # ── Live Activity widget extension (Stage 3) ──────────────────────────
+        # The extension is a SECOND target with its own bundle id and profile.
+        # ENABLE_LIVE_ACTIVITY_WIDGET gates every part of it (project patch,
+        # signing fetch, export options, archive check), so unless it is exactly
+        # "true" this workflow builds exactly the same app it built yesterday.
+        WIDGET_BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app.JobaActivityWidget"
+        ENABLE_LIVE_ACTIVITY_WIDGET: "false"
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         CERTIFICATE_P12_PASSWORD: "Joba24SigningPass1"
@@ -341,6 +348,43 @@ workflows:
               plistlib.dump(info, f)
           print("[tiktok] Injected TikTok credentials into Info.plist (values not printed)")
           PYEOF
+      - name: Wire the Live Activity widget extension (opt-in)
+        script: |
+          # GATED. With ENABLE_LIVE_ACTIVITY_WIDGET unset/false this step does
+          # nothing at all, so the app target, its signing and the .ipa are
+          # identical to every build so far — the extension's bundle id does not
+          # exist in Apple yet, and a build that tried to sign it would fail.
+          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" != "true" ]; then
+            echo "SKIPPED: ENABLE_LIVE_ACTIVITY_WIDGET is not true - no widget target added."
+            echo "         The build below is the unchanged shipping app."
+            exit 0
+          fi
+          set -e
+          if [ -z "${WIDGET_BUNDLE_ID:-}" ]; then
+            echo "ERROR: WIDGET_BUNDLE_ID is empty but the widget target is enabled."
+            exit 1
+          fi
+          # cap sync ios can regenerate native scaffolding; the widget sources are
+          # committed under ios/App, so assert they survived before patching.
+          for F in ios/App/JobaActivityWidget/JobaTaskActivityAttributes.swift \
+                   ios/App/JobaActivityWidget/JobaActivityWidgetBundle.swift \
+                   ios/App/JobaActivityWidget/Info.plist \
+                   ios/App/App/LiveActivityPlugin.swift; do
+            if [ ! -f "$F" ]; then
+              echo "ERROR: $F is missing - the Live Activity sources did not survive cap sync."
+              exit 1
+            fi
+          done
+          echo "=== Adding the widget target to project.pbxproj ==="
+          python3 scripts/patch-ios-live-activity.py
+          echo "=== Verifying the patched project, structurally ==="
+          python3 scripts/patch-ios-live-activity.py --check --require
+          echo "=== Confirming the app is allowed to show Live Activities ==="
+          if ! /usr/libexec/PlistBuddy -c "Print :NSSupportsLiveActivities" ios/App/App/Info.plist | grep -qi true; then
+            echo "ERROR: NSSupportsLiveActivities is missing from ios/App/App/Info.plist."
+            exit 1
+          fi
+          echo "OK: NSSupportsLiveActivities present"
       - name: Validate Xcode project file syntax
         script: |
           ruby -e 'require "xcodeproj"; Xcodeproj::Project.open("ios/App/App.xcodeproj")' && echo "project.pbxproj is valid" || (echo "ERROR: project.pbxproj has a syntax error - it was likely corrupted during copy-paste. Re-copy the full file carefully." && exit 1)
@@ -355,6 +399,21 @@ workflows:
             --p12-password "$CERTIFICATE_P12_PASSWORD" \
             --certificates-dir "$HOME/Library/MobileDevice/Certificates" \
             --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles"
+          # ── Live Activity widget extension: its own profile ────────────────
+          # An app extension is signed with a profile for ITS bundle id — the
+          # app's profile cannot sign it. --create registers the identifier in
+          # Apple if it does not exist yet.
+          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" = "true" ]; then
+            echo "Live Activity widget enabled - fetching a profile for $WIDGET_BUNDLE_ID"
+            app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID" \
+              --type IOS_APP_STORE \
+              --create \
+              --p12-password "$CERTIFICATE_P12_PASSWORD" \
+              --certificates-dir "$HOME/Library/MobileDevice/Certificates" \
+              --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles"
+          else
+            echo "SKIPPED: widget profile not fetched (ENABLE_LIVE_ACTIVITY_WIDGET is not true)"
+          fi
       - name: Set up signing certificate
         script: |
           keychain add-certificates \
@@ -402,6 +461,44 @@ workflows:
             MARKETING_VERSION=2.130299.0 \
             CURRENT_PROJECT_VERSION=31 \
             FACEBOOK_CLIENT_TOKEN="$FACEBOOK_CLIENT_TOKEN"
+      - name: Verify the Live Activity extension in the archive (iOS)
+        script: |
+          # Only meaningful when the widget was enabled for this build; otherwise
+          # the archive legitimately has no extension and this check would be a
+          # false alarm.
+          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" != "true" ]; then
+            echo "SKIPPED: widget target not enabled for this build."
+            exit 0
+          fi
+          APP="$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app"
+          PLUGINS="$APP/PlugIns"
+          if [ ! -d "$PLUGINS" ]; then
+            echo "ERROR: the archive has no PlugIns directory - the extension was not embedded."
+            exit 1
+          fi
+          APEX=$(find "$PLUGINS" -maxdepth 1 -name "*.appex" | head -1)
+          if [ -z "$APEX" ]; then
+            echo "ERROR: no .appex inside $PLUGINS - the widget is missing from the archive."
+            ls -la "$PLUGINS"
+            exit 1
+          fi
+          echo "OK: JobaActivityWidgetExtension.appex embedded at $APEX"
+          # The extension must carry the ActivityKit widget point identifier, or
+          # iOS will never offer the Live Activity.
+          if /usr/libexec/PlistBuddy -c "Print :NSExtension:NSExtensionPointIdentifier" "$APEX/Info.plist" | grep -q "widgetkit-extension"; then
+            echo "OK: widgetkit-extension point present"
+          else
+            echo "ERROR: NSExtensionPointIdentifier is missing from the embedded extension."
+            /usr/libexec/PlistBuddy -c "Print :NSExtension" "$APEX/Info.plist" || true
+            exit 1
+          fi
+          # And the host app must be allowed to show Live Activities at all.
+          if /usr/libexec/PlistBuddy -c "Print :NSSupportsLiveActivities" "$APP/Info.plist" | grep -qi true; then
+            echo "OK: NSSupportsLiveActivities present in the archived app"
+          else
+            echo "ERROR: NSSupportsLiveActivities is missing from the archived app - no Live Activity can appear."
+            exit 1
+          fi
       - name: Verify SKAdNetwork IDs in the built app (iOS)
         script: |
           PLIST="$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app/Info.plist"
@@ -468,7 +565,23 @@ workflows:
           fi
       - name: Export ipa
         script: |
-          PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
+          # ── Pick the APP's profile, not just the first one on disk ──────────
+          # With the Live Activity extension enabled there are two profiles in
+          # this directory. Taking the first would have exported the app with the
+          # WIDGET's profile (its entitlement names a different app id), so the
+          # app's own bundle id is matched explicitly. When only one profile
+          # exists the first match wins immediately, exactly as before.
+          PROFILE_PATH=""
+          for CANDIDATE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision; do
+            [ -f "$CANDIDATE" ] || continue
+            [ -z "$PROFILE_PATH" ] && PROFILE_PATH="$CANDIDATE"
+            security cms -D -i "$CANDIDATE" -o /tmp/appcandidate.plist 2>/dev/null || continue
+            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/appcandidate.plist 2>/dev/null || echo "")
+            if [ "${APP_ID#*.}" = "$BUNDLE_ID" ]; then
+              PROFILE_PATH="$CANDIDATE"
+              break
+            fi
+          done
           if [ -z "$PROFILE_PATH" ]; then
             echo "ERROR: No .mobileprovision file found in Provisioning Profiles directory"
             exit 1
@@ -488,6 +601,31 @@ workflows:
             exit 1
           fi
           echo "Using provisioning profile: $PROFILE_NAME"
+          # ── The widget's own profile, matched by its bundle id ─────────────
+          # The export list must name a profile for EVERY bundle id in the
+          # archive. A missing entry for the extension fails the export with
+          # "does not support provisioning profiles", so it is matched here by
+          # reading the entitlement inside each downloaded profile.
+          WIDGET_PROFILE_ENTRY=""
+          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" = "true" ]; then
+            for CANDIDATE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision; do
+              [ -f "$CANDIDATE" ] || continue
+              security cms -D -i "$CANDIDATE" -o /tmp/candidate.plist 2>/dev/null || continue
+              APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/candidate.plist 2>/dev/null || echo "")
+              # application-identifier is "<TEAMID>.<bundle id>"
+              if [ "${APP_ID#*.}" = "$WIDGET_BUNDLE_ID" ]; then
+                WIDGET_PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/candidate.plist)
+                WIDGET_PROFILE_ENTRY="              <key>$WIDGET_BUNDLE_ID</key>
+                          <string>$WIDGET_PROFILE_NAME</string>"
+                echo "Widget profile: $WIDGET_PROFILE_NAME"
+                break
+              fi
+            done
+            if [ -z "$WIDGET_PROFILE_ENTRY" ]; then
+              echo "ERROR: no provisioning profile found for $WIDGET_BUNDLE_ID - the export would fail."
+              exit 1
+            fi
+          fi
           cat > "$CM_BUILD_DIR/export_options.plist" << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -505,6 +643,7 @@ workflows:
             <dict>
               <key>$BUNDLE_ID</key>
               <string>$PROFILE_NAME</string>
+          $WIDGET_PROFILE_ENTRY
             </dict>
           </dict>
           </plist>

@@ -81,6 +81,10 @@ class JobaBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(IosIapPlugin())
         bridge?.registerPluginInstance(MetaAppEventsPlugin())
+        // Live Activities (Stage 3). Registered unconditionally and harmlessly:
+        // it reports `available:false` below iOS 16.2, and nothing in the app
+        // calls it while production delivery stays disabled.
+        bridge?.registerPluginInstance(JobaActivityPlugin())
     }
 }
 
