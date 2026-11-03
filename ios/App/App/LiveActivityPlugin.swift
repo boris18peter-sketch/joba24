@@ -72,6 +72,10 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
                     "role": activity.attributes.role,
                     "phase": activity.content.state.phase,
                     "revision": activity.content.state.revision,
+                    // The ActivityKit lifecycle value (active / stale / ended /
+                    // dismissed). Without it a caller cannot tell a running
+                    // activity from one iOS is still showing after it ended.
+                    "activityState": Self.describe(activity.activityState),
                 ])
                 // Re-arm the token listener: after a relaunch the app must learn
                 // the current token again, or a rotated token is never registered.
@@ -142,17 +146,31 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
                 $0.attributes.taskId == taskId && $0.attributes.role == role
             }
             guard !targets.isEmpty else {
-                call.resolve(["updated": false, "reason": "no_activity"])
+                call.resolve(["updated": false, "reason": "no_activity", "count": 0, "skipped": 0])
                 return
             }
+            var applied = 0
+            var skipped = 0
             for activity in targets {
                 // Never move backwards: an out-of-order update is refused here as
                 // well as on the server, because a stale Lock Screen is worse than
                 // a slightly late one.
-                if state.revision < activity.content.state.revision { continue }
+                if state.revision < activity.content.state.revision {
+                    skipped += 1
+                    continue
+                }
                 await activity.update(ActivityContent(state: state, staleDate: Self.staleDate(from: state)))
+                applied += 1
             }
-            call.resolve(["updated": true, "count": targets.count])
+            // Honest, like `end` below: an update that changed nothing on screen
+            // must not report success, or a refused revision is indistinguishable
+            // from a live refresh.
+            call.resolve([
+                "updated": applied > 0,
+                "count": applied,
+                "skipped": skipped,
+                "reason": targets.isEmpty ? "no_activity" : (applied == 0 ? "stale_revision" : ""),
+            ])
         }
     }
 
