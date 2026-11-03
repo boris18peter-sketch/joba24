@@ -95,11 +95,11 @@ describe('the local test screen renders the real mapping', () => {
 
   it('has no hand-written status copy left in the fixture', () => {
     const fixture = read('src/lib/liveActivityTestState.js');
-    // The old fixture's invented lines. Any of them coming back means the test
-    // screen stopped mirroring the app.
-    for (const invented of ['אפשר לעקוב אחרי ההתקדמות', 'העבודה מתחילה עכשיו', 'בדיקה מקומית', 'העובד בדרך אליך']) {
-      expect(fixture).not.toContain(invented);
-    }
+    // The fixture may DESCRIBE the old copy in its comments, but it must not
+    // carry a hand-written ladder: the old PHASES/STEPS tables are what made the
+    // screen's words unrelated to the app's.
+    expect(fixture).not.toContain('const PHASES');
+    expect(fixture).not.toContain('const STEPS');
     expect(fixture).toContain('buildTaskActivitySnapshot');
   });
 

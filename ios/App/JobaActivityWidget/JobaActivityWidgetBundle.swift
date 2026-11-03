@@ -46,10 +46,12 @@ struct JobaTaskLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     IconBubble(state: context.state, size: 28)
                         .padding(.leading, 2)
+                        .environment(\.layoutDirection, .rightToLeft)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     StatusChip(state: context.state)
                         .padding(.trailing, 2)
+                        .environment(\.layoutDirection, .rightToLeft)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -70,6 +72,11 @@ struct JobaTaskLiveActivity: Widget {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    // Direction is set on the CONTENT, never on the DynamicIsland
+                    // container itself: the `dynamicIsland:` builder must return
+                    // the concrete dynamic-island view, so a generic modifier
+                    // there would not compile.
+                    .environment(\.layoutDirection, .rightToLeft)
                 }
             } compactLeading: {
                 IconBubble(state: context.state, size: 26)
@@ -81,7 +88,6 @@ struct JobaTaskLiveActivity: Widget {
                 IconBubble(state: context.state, size: 24)
             }
             .keylineTint(JobaPalette.brand)
-            .environment(\.layoutDirection, .rightToLeft)
         }
     }
 
