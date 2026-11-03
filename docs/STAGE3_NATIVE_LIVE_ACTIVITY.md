@@ -496,3 +496,81 @@ archive.
 
 Verification: `npx vitest run test/liveActivity` → 13 files, **335 tests** passing;
 `npx vite build` → exit 0.
+
+## 10. Automatic wording refresh + final pre-build readiness (2026-11-04)
+
+### 10.1 Why wording needed its own mechanism
+
+Every visible string on the card comes from a `GlobalCategory` row (its own or an
+ancestor's). Editing one moves **no Task field**, so `updated_date` does not move,
+so the revision a dispatch carries does not move — a revision-driven pipeline can
+never notice. The refresh path therefore watches the CONTENT, not the task.
+
+### 10.2 The pieces
+
+| Piece | File | Role |
+| --- | --- | --- |
+| Fingerprint | `base44/shared/liveActivityContent.ts` | Hash of the RESOLVED presentation: step labels/owner labels/icons, CTA labels, category label, icon, plus `PRESENTATION_VERSION`. Ignores descriptions, examples, form fields, fees, ordering. |
+| Inheritance | same (via `resolveStatusFlow`) | A child that declares no flow inherits its root's, so re-wording a root changes every descendant's fingerprint with no enumeration. |
+| Change detection | same → `detectContentChanges` | `baseline` (first sight — recorded, never dispatched), `changed`, `unchanged`, `removed`. |
+| Bookkeeping | entity `LiveActivityContentVersion` | One row per category: fingerprint, previous, pending, attempts, backoff, last result. Admin-only RLS. |
+| Refresh pass | `base44/functions/liveActivityContentRefresh` | Scan → mark → dispatch ≤2 changed categories to ≤12 recipients (hard cap 30), one dispatch per recipient, retry with backoff, give up at 5. |
+| One sender | `base44/shared/liveActivitySend.ts` | The single “read state → build → plan → send → audit → commit” path, now shared by `liveActivityDispatch` and the refresh pass, so they cannot diverge. |
+| Fast path | workflow `Live Activity Content Observer` | Entity trigger on `GlobalCategory` (create/update, conditioned on the fields a card draws) → immediate refresh. |
+| Reconciliation | workflow `Live Activity Content Reconcile` | Every 30 min: re-fingerprints all categories (catches a code deployment, a bulk write, a missed event) and drains retries. |
+| Code deployments | `PRESENTATION_VERSION` | Bumping it marks every category changed once — the versioned mechanism for a contract change that touches no row. |
+
+Dedupe: the planner’s `content_key` still suppresses an identical picture, so a
+pass over unchanged cards sends nothing. A wording change moves the key, and the
+server advances the revision so iOS accepts the update.
+
+Constraints held: no Task write anywhere in the path (asserted by test), payments /
+credits / auth / FCM untouched, and `enabled=false, dry_run=true` remain the
+production state.
+
+### 10.3 No iOS build is required for a wording change
+
+The card is drawn from fields the SERVER computes (`title`, `subtitle`, step
+labels, counter, action label). Swift contains no Hebrew and no status mapping, so
+new wording arrives in the next snapshot — no archive, no TestFlight.
+
+### 10.4 Signing readiness, verified in the repository
+
+* App Group `group.<APP_BUNDLE_ID>` is byte-identical in three places (app
+  entitlements, widget entitlements, `JobaActivityAuthStore.appGroup`) — one
+  distinct value, 42 characters.
+* `CODE_SIGN_ENTITLEMENTS` is set on **all four** configurations: app Debug +
+  Release → `App/App.entitlements`; widget Debug + Release →
+  `JobaActivityWidget/JobaActivityWidget.entitlements`.
+* Widget bundle id is derived in one place (`APP_BUNDLE_ID + ".JobaActivityWidget"`)
+  and CI compares it with `WIDGET_BUNDLE_ID` before signing.
+* Target membership (generator `--check --require`, run on a copy): attributes +
+  auth store in **both** targets, intent in the **widget only**, plugin in the app,
+  `LIVE_ACTIVITY_WIDGET` on both app configurations.
+* Codemagic: widget profile fetched with `fetch-signing-files … --create` (gated on
+  the flag), export options built by `scripts/ios-export-options.py` with
+  `--require-widget`.
+
+### 10.5 What only a human can do (Apple side)
+
+1. App Group created — **done by the owner**.
+2. **Delete the old provisioning profiles** for both bundle ids in App Store
+   Connect → Profiles, so the next `fetch-signing-files` mints profiles that carry
+   the App Group. A profile created before the capability existed does not include
+   it, and signing then fails with a mismatch.
+3. Start the build with the `liveActivityWidget` input ticked.
+
+### 10.6 Dry-run evidence recorded here
+
+With `enabled` temporarily true and `dry_run` locked true (no APNs attempt is
+possible in that state, `willContactApns` requires `dry_run === false`):
+
+* scan → 60 active categories, 60 baseline rows written, 0 changed;
+* forced refresh of `plumbing` → `affected_categories: 7` (plumbing + its six
+  child services), 0 recipients (no device token registered yet), row closed as
+  `no_recipients`;
+* `contactedApns: false` throughout; config restored to `enabled=false,
+  dry_run=true` and re-read to confirm.
+
+Verification: `npx vitest run test/liveActivity` → **15 files, 377 tests**;
+`npx vite build` → exit 0.
