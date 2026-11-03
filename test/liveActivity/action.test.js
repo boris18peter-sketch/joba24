@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { signActionToken, verifyActionToken, ACTION_TOKEN_VERSION } from '../../base44/shared/liveActivityActionToken.ts';
+import {
+  signActionToken,
+  verifyActionToken,
+  ttlForTask,
+  ACTION_TOKEN_VERSION,
+  ACTION_TOKEN_MAX_TTL_SECONDS,
+  ACTION_TOKEN_DEFAULT_TTL_SECONDS,
+} from '../../base44/shared/liveActivityActionToken.ts';
 import {
   ACTION_IDS,
   actionsForRole,
@@ -90,13 +97,35 @@ describe('action capability token', () => {
 
   it('expires on its own, and can never be extended from the device', async () => {
     const now = Date.parse('2026-11-03T12:00:00.000Z');
-    // Asking for a year is capped at the 24h ceiling.
+    // Asking for a year is capped at the weekly ceiling.
     const signed = await signActionToken({ secret: SECRET, ...CLAIMS, ttlSeconds: 365 * 24 * 3600, now });
-    expect(signed.claims.exp - signed.claims.iat).toBe(24 * 3600);
+    expect(signed.claims.exp - signed.claims.iat).toBe(ACTION_TOKEN_MAX_TTL_SECONDS);
 
-    const later = now + 25 * 3600 * 1000;
+    const later = now + (ACTION_TOKEN_MAX_TTL_SECONDS + 60) * 1000;
     const verified = await verifyActionToken({ secret: SECRET, token: signed.token, now: later });
     expect(verified).toMatchObject({ ok: false, reason: 'expired' });
+  });
+
+  it('gives a plain request one day, not the ceiling', async () => {
+    const signed = await signActionToken({ secret: SECRET, ...CLAIMS });
+    expect(signed.claims.exp - signed.claims.iat).toBe(ACTION_TOKEN_DEFAULT_TTL_SECONDS);
+  });
+
+  it('sizes a capability to the task, so a long task keeps its buttons', () => {
+    const now = Date.parse('2026-11-03T12:00:00.000Z');
+    const at = (hours) => new Date(now + hours * 3600 * 1000).toISOString();
+
+    // No horizon at all: the plain day.
+    expect(ttlForTask({}, now)).toBe(ACTION_TOKEN_DEFAULT_TTL_SECONDS);
+    expect(ttlForTask(null, now)).toBe(ACTION_TOKEN_DEFAULT_TTL_SECONDS);
+    // A task that ends sooner than a day still gets the full day (the floor).
+    expect(ttlForTask({ expires_at: at(3) }, now)).toBe(ACTION_TOKEN_DEFAULT_TTL_SECONDS);
+    // A task running for three days is covered, plus the margin.
+    expect(ttlForTask({ expires_at: at(72) }, now)).toBe(72 * 3600 + 12 * 3600);
+    // Whatever the horizon, the weekly ceiling holds.
+    expect(ttlForTask({ scheduled_time: at(24 * 30) }, now)).toBe(ACTION_TOKEN_MAX_TTL_SECONDS);
+    // A horizon already in the past is not a horizon.
+    expect(ttlForTask({ expires_at: at(-5) }, now)).toBe(ACTION_TOKEN_DEFAULT_TTL_SECONDS);
   });
 
   it('reports a missing secret instead of failing open', async () => {

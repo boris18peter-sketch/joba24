@@ -37,8 +37,51 @@
 
 export const ACTION_TOKEN_VERSION = 1;
 
-/** Hard ceiling on a token's life. A caller may ask for less, never more. */
-export const ACTION_TOKEN_MAX_TTL_SECONDS = 24 * 60 * 60;
+/**
+ * Hard ceiling on a token's life. A caller may ask for less, never more.
+ *
+ * ── WHY 7 DAYS AND NOT 24 HOURS ────────────────────────────────────────────
+ * A task can legitimately outlive a day: a babysitting evening that runs late, a
+ * plumbing job waiting on a part, a multi-day engagement. With a flat 24h life the
+ * worker's and the publisher's Lock Screen buttons simply stopped working partway
+ * through a live task, with no way to renew them from the extension.
+ *
+ * The ceiling is therefore a week — and, in practice, `ttlForTask()` below gives a
+ * token exactly as long as the task's own horizon plus a margin, never more. The
+ * authority a longer token grants is small by construction: it names ONE task,
+ * ONE role and that role's single action, and every use is re-authorized against
+ * the live record, so an expired task, a reassignment or a cancellation still
+ * refuses the action no matter how long the token lives.
+ */
+export const ACTION_TOKEN_MAX_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+/** The default life. A caller that asks for nothing gets a day. */
+export const ACTION_TOKEN_DEFAULT_TTL_SECONDS = 24 * 60 * 60;
+
+/** How far past a task's own horizon a capability may reach. */
+const TASK_HORIZON_MARGIN_SECONDS = 12 * 60 * 60;
+
+/**
+ * The life a capability should get for THIS task.
+ *
+ * ── THE RENEWAL PROBLEM, AND WHY THIS IS THE ANSWER ────────────────────────
+ * Only the app can mint (it is the only process with a session), and a running
+ * activity's next tap may happen while the app is closed. So the capability must
+ * already be long enough when it is minted: it is sized to the task's own
+ * `expires_at` / `scheduled_time` plus a margin, with a one-day floor and the
+ * weekly ceiling above. A task with no horizon keeps the plain 24h.
+ */
+export function ttlForTask(task, now = Date.now()) {
+  const base = ACTION_TOKEN_DEFAULT_TTL_SECONDS;
+  if (!task) return base;
+  const nowMs = Number(now);
+  const horizons = [task.expires_at, task.scheduled_time]
+    .map((value) => Date.parse(String(value || '')))
+    .filter((ms) => Number.isFinite(ms) && ms > nowMs);
+  if (!horizons.length) return base;
+  const seconds = Math.ceil((Math.max(...horizons) - nowMs) / 1000) + TASK_HORIZON_MARGIN_SECONDS;
+  return Math.max(base, Math.min(seconds, ACTION_TOKEN_MAX_TTL_SECONDS));
+}
 
 const encoder = new TextEncoder();
 
@@ -109,7 +152,8 @@ export async function signActionToken(input: {
   if (!Array.isArray(actions) || !actions.length) return { ok: false, reason: 'missing_actions' };
 
   const nowSeconds = Math.floor((input.now ?? Date.now()) / 1000);
-  const requested = Number(input.ttlSeconds) || ACTION_TOKEN_MAX_TTL_SECONDS;
+  // No request = the plain day. A request is clamped to the weekly ceiling.
+  const requested = Number(input.ttlSeconds) || ACTION_TOKEN_DEFAULT_TTL_SECONDS;
   const ttl = Math.max(60, Math.min(requested, ACTION_TOKEN_MAX_TTL_SECONDS));
 
   const claims: ActionTokenClaims = {

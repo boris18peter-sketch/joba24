@@ -791,13 +791,23 @@ def main():
                     missing.append("widget deployment target")
                 if "JobaActivityWidgetBundle.swift" not in widget.get("sources", []):
                     missing.append("widget sources")
+                # The Lock Screen button only exists if these two are compiled
+                # into the extension: the App Group store it reads its capability
+                # from, and the intent it calls. Without them the widget still
+                # builds and draws perfectly — it just has no working button —
+                # so a build that lost them must fail here, not on a device.
+                for need in ("JobaActivityAuthStore.swift", "JobaTaskActionIntent.swift"):
+                    if need not in widget.get("sources", []):
+                        missing.append("Widget sources: " + need)
                 if not widget.get("infoplist_file"):
                     missing.append("widget Info.plist")
             if not report["embed"]:
                 missing.append("Embed Foundation Extensions phase")
             if not report["dependency"]:
                 missing.append("app -> widget target dependency")
-            for need in ("LiveActivityPlugin.swift", "JobaTaskActivityAttributes.swift"):
+            # JobaActivityAuthStore is compiled into the APP as well: it is the
+            # writer side of the App Group the extension reads.
+            for need in ("LiveActivityPlugin.swift", "JobaTaskActivityAttributes.swift", "JobaActivityAuthStore.swift"):
                 if need not in app_sources:
                     missing.append("App sources: " + need)
             # The class SceneDelegate registers can only exist if the file above

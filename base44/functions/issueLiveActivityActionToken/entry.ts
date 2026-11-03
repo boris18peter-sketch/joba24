@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { authorizeActivity } from '../../shared/taskActivitySnapshot.ts';
 import { actionsForRole } from '../../shared/liveActivityActionGuard.ts';
-import { signActionToken } from '../../shared/liveActivityActionToken.ts';
+import { signActionToken, ttlForTask } from '../../shared/liveActivityActionToken.ts';
 
 /**
  * issueLiveActivityActionToken — mint the NARROW capability a Lock Screen button
@@ -9,9 +9,12 @@ import { signActionToken } from '../../shared/liveActivityActionToken.ts';
  *
  * ── WHAT IT GRANTS, AND WHAT IT DOES NOT ───────────────────────────────────
  * The token is bound to the signed-in user, ONE task and ONE role, lists only
- * the action ids that role may ever perform, and expires in 24 hours. It is not
- * a session: it reads nothing, acts on nothing else, and every submission is
- * re-authorized against the database by `liveActivityAction`.
+ * the action ids that role may ever perform, and lives for as long as the task
+ * itself can (its own horizon plus a margin, at least a day, never more than a
+ * week — see `ttlForTask`). It is not a session: it reads nothing, acts on
+ * nothing else, and every submission is re-authorized against the database by
+ * `liveActivityAction`, so a task that ended, was cancelled or was reassigned
+ * refuses the tap however long the token lives.
  *
  * ── WHY THE APP ASKS FOR IT ────────────────────────────────────────────────
  * The App Intent runs in the widget extension, where no user session exists. The
@@ -54,6 +57,8 @@ Deno.serve(async (req) => {
       taskId: task.id,
       role,
       actions,
+      // Sized to the task, so a long job never loses its Lock Screen buttons.
+      ttlSeconds: ttlForTask(task),
     });
     if (!signed.ok) return Response.json({ error: signed.reason }, { status: 500 });
 

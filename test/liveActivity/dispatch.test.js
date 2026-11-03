@@ -96,14 +96,35 @@ describe('ordering: latest state wins', () => {
     expect(nextRevision({ revision: 'x' })).toBe(1);
   });
 
-  it('refuses an event that is not newer than the committed revision', () => {
-    for (const eventRevision of [3, 4, 2]) {
+  it('refuses an event OLDER than the committed revision', () => {
+    for (const eventRevision of [3, 2]) {
       const plan = planLiveActivityDispatch({
         task, role: 'worker', userId: WORKER, config: ON, snapshot, eventRevision,
         state: { revision: 4, content_key: 'other', phase: 'arrived' },
       });
       expect(plan, `event ${eventRevision}`).toMatchObject({ kind: 'none', decision: 'stale_revision' });
     }
+  });
+
+  it('accepts a SAME-revision event when only the wording changed', () => {
+    // Re-wording a category writes no task row, so the revision cannot move —
+    // yet every word on the Lock Screen just changed. It must still be sent, and
+    // the pushed revision must still advance so iOS accepts the update.
+    const plan = planLiveActivityDispatch({
+      task, role: 'worker', userId: WORKER, config: ON, snapshot, eventRevision: 4,
+      state: { revision: 4, content_key: 'the-previous-wording', phase: 'arrived' },
+    });
+    expect(plan.kind).toBe('send');
+    expect(plan.decision).toBe('send');
+    expect(plan.revision).toBe(5);
+  });
+
+  it('still suppresses a same-revision event whose picture did not change', () => {
+    const plan = planLiveActivityDispatch({
+      task, role: 'worker', userId: WORKER, config: ON, snapshot, eventRevision: 4,
+      state: { revision: 4, content_key: snapshotContentKey(snapshot), phase: snapshot.phase },
+    });
+    expect(plan).toMatchObject({ kind: 'none', decision: 'duplicate' });
   });
 
   it('accepts a newer event', () => {

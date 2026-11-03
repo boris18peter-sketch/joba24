@@ -86,8 +86,10 @@ export async function startTaskActivity({ taskId, role, state } = {}) {
  * ── WHY A TOKEN AT ALL ──────────────────────────────────────────────────────
  * The App Intent runs in the widget extension, where no session exists. Rather
  * than put a session in a widget, the app asks the server for a capability that
- * is bound to this user, this task and this role, expires in 24h, and permits
- * only that role's actions. The server still re-checks the task on every tap.
+ * is bound to this user, this task and this role, and permits only that role's
+ * actions. Its life follows the task itself (its horizon plus a margin, at least
+ * a day, never more than a week), so a long job keeps its Lock Screen buttons.
+ * The server still re-checks the task on every tap.
  *
  * It is handed straight to the native side, which stores it in the App Group. It
  * is never put in the activity content (that is displayed on the Lock Screen), in

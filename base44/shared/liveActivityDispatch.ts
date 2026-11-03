@@ -110,12 +110,21 @@ export function planLiveActivityDispatch(input) {
   const auth = authorizeActivity(task, role, userId);
   if (!auth.ok) return { ...base, ...skip('unauthorized', { reason: auth.reason }) };
 
-  // 3. Refuse an event that is not newer than what was already committed.
+  // 3. Refuse an event that is OLDER than what was already committed.
+  //
+  //    Strictly older, not "not newer". Revision is derived from the task's own
+  //    updated_date, so an edit to a category's wording — a new title, a renamed
+  //    step, a reworded button — carries the SAME revision while changing every
+  //    word on the Lock Screen. Treating an equal revision as stale made that
+  //    presentation refresh impossible: the only way to re-word a running card
+  //    would have been to write to the task row, which is a real state change for
+  //    a cosmetic one. An equal revision now falls through to the content check
+  //    below, which still suppresses it when nothing visible changed.
   if (eventRevision != null && state) {
     const incoming = Number(eventRevision);
     const committed = Number(state.revision) || 0;
     if (!Number.isFinite(incoming)) return { ...base, ...skip('stale_revision', { reason: 'invalid_revision' }) };
-    if (incoming <= committed) return { ...base, ...skip('stale_revision') };
+    if (incoming < committed) return { ...base, ...skip('stale_revision') };
   }
 
   if (!snapshot) return { ...base, ...skip('no_snapshot') };

@@ -396,3 +396,103 @@ Swift toolchain); the first real compile is the Codemagic archive. `npx vite bui
 passes, the generator was verified on a copy of the project (widget target, both
 new sources, widget entitlements, idempotent second run), and `npx vitest run
 test/liveActivity` is green: **13 files, 331 tests**.
+
+## 9. Final readiness check (2026-11-04)
+
+### 9.1 App Group — one identifier, three places, verified identical
+
+`group.<APP_BUNDLE_ID>` — i.e. `group.` + the app's bundle id (42 characters),
+declared in exactly three files and compared byte-for-byte:
+
+| File | Role |
+| --- | --- |
+| `ios/App/App/App.entitlements` | the app's capability (also carries `aps-environment`, associated-domains) |
+| `ios/App/JobaActivityWidget/JobaActivityWidget.entitlements` | the extension's capability |
+| `ios/App/JobaActivityWidget/JobaActivityAuthStore.swift` → `appGroup` | the runtime constant both processes read |
+
+**Apple-side:** the App Group must be created once in
+developer.apple.com → Identifiers → App Groups, and enabled on **both** App IDs —
+the app's, and `<APP_BUNDLE_ID>.JobaActivityWidget`. **Both provisioning profiles
+must be regenerated**: an App Group is an entitlement, so a profile minted before
+it existed does not carry it and signing fails.
+
+### 9.2 Dynamic content — server-side, no iOS build needed
+
+Every visible string is produced by `buildBackendSnapshot` from the resolved
+`GlobalCategory` flow and the app's own dictionary: title, subtitle, the step
+labels (`flow.steps[i].label` / `owner_label`), the progress counter, and the
+action label (`flow.cta[key].label` — or `confirm_done_work` for publisher
+approval). Swift contains no Hebrew and no status mapping; it draws fields.
+
+* **A newly started activity** reads the current wording the moment it starts —
+  it is computed server-side per dispatch.
+* **An already-running activity** refreshes on its next dispatch: the snapshot is
+  rebuilt from the live `GlobalCategory` rows, so the new wording arrives as a new
+  `content_key` and is pushed. No task transition is required, because the
+  wording lives in neither the task nor the app.
+* **The one rule that used to block it** was in the planner: an event whose
+  revision was *not strictly newer* was refused as `stale_revision`, and a wording
+  edit moves no revision (revision is derived from `Task.updated_date`). It is now
+  strictly-older only; an equal revision falls through to the content comparison,
+  so an unchanged picture is still `duplicate`, and a re-worded one sends with the
+  revision advanced server-side so iOS accepts the update.
+* **Gap, stated plainly:** nothing *triggers* a refresh when a category is edited.
+  The only Live Activity workflow is a **Task** entity trigger, so a wording-only
+  change reaches running cards when that task is next dispatched/reconciled, or
+  immediately via `liveActivityDispatch` (admin, per recipient) /
+  `liveActivityReconcile`. Adding a GlobalCategory-triggered refresh job is the
+  remaining piece if wording edits should propagate with no operator action.
+
+### 9.3 Category parity
+
+`babysitting` (root) and `plumbing` (root) both carry their own `status_flow`, and
+`plumbing`'s six child services (`plumbing_leak`, `plumbing_clog`, …) inherit it
+through the generic → root → service merge. Verified different on all three steps
+and all three CTAs, e.g. worker `done` = "סיימתי את השפירה" vs "סיימתי את התיקון",
+publisher `arrived` = "השמירה החלה" vs "האינסטלטור הגיע". 26 of 60 categories
+define a flow; the rest use the generic one, in the app and on the Lock Screen
+alike. The action each role gets is derived by `deriveActivityAction` from that
+same flow, so the difference is preserved end to end.
+
+### 9.4 Token life — renewed by sizing, not by a second credential
+
+A capability is now minted for **the task's own horizon** (`expires_at` /
+`scheduled_time` plus a 12h margin), with a one-day floor and a seven-day ceiling
+(`ttlForTask`). A task that outlives a day therefore keeps its buttons without the
+app being reopened, which matters because only the app can mint and the extension
+cannot renew anything. A task with no horizon keeps the plain 24h, and any request
+above the ceiling is clamped. The authority is unchanged: one user, one task, one
+role, that role's single action, and every tap still re-authorized against the
+live record.
+
+### 9.5 Publisher approval
+
+`publisher_approve` → `completeTaskCore(base44, { id: claims.sub }, task.id)` —
+the same body `completeTask` runs (worker counter, refunds, credit ledger,
+applicant projection, idempotency guard), called with the token's own user id.
+Nothing about the in-app path changed.
+
+### 9.6 Build readiness
+
+* Target membership (generator, verified by `--check --require` on a copy):
+  `JobaTaskActivityAttributes.swift` + `JobaActivityAuthStore.swift` in **both**
+  targets, `JobaTaskActionIntent.swift` in the **widget only**,
+  `LiveActivityPlugin.swift` in the app, `LIVE_ACTIVITY_WIDGET` defined on both app
+  configurations. The checker now also *requires* the intent and the store, so a
+  build that lost the button fails at the check instead of on a device.
+* Widget entitlements: `CODE_SIGN_ENTITLEMENTS` on both widget configurations; the
+  app already pointed at `App/App.entitlements` in both.
+* `NSSupportsLiveActivities` = true, deployment target 16.1 on the widget.
+* Codemagic: `WIDGET_BUNDLE_ID` = `<APP_BUNDLE_ID>.JobaActivityWidget`, compared
+  against the patched project before signing; widget profile fetched and added to
+  export options only when the flag is on; the flag is a per-build input, default
+  off.
+* Production dispatch remains disabled (`enabled=false`, `dry_run=true`).
+
+**Remaining blockers:** (1) the App Group must exist in the portal and be enabled
+on both App IDs; (2) both profiles regenerated; (3) the Swift has still never been
+compiled — no Xcode in this environment, so the first real compile is the Codemagic
+archive.
+
+Verification: `npx vitest run test/liveActivity` → 13 files, **335 tests** passing;
+`npx vite build` → exit 0.
