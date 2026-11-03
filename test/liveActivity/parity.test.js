@@ -67,6 +67,22 @@ describe('parity — TAKEN task, both roles, every worker_status', () => {
   }
 });
 
+describe('parity — legacy live statuses (never written, still read by the app)', () => {
+  for (const status of ['APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS']) {
+    it(`${status} / worker quotes no button, exactly like the banner`, () => {
+      const task = makeTask({ status, worker_status: 'on_the_way' });
+      const oracle = bannerPresentation(task, { role: 'worker', catRows: CATEGORY_ROWS, now: NOW, t });
+      const snap = snapshotFor(task, 'worker');
+
+      expect(oracle.nextBtnLabel ?? null).toBeNull();
+      expect(snap).not.toBeNull();
+      expect(snap.title).toBe(oracle.title);
+      expect(snap.subtitle).toBe(oracle.subtitle);
+      expect(snap.colorKey).toBeNull();
+    });
+  }
+});
+
 describe('parity — TAKEN engagement (scheduled ahead), both roles', () => {
   for (const workerStatus of [null, 'on_the_way']) {
     for (const role of ['worker', 'publisher']) {

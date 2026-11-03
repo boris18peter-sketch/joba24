@@ -51,8 +51,21 @@ export const LIVE_ACTIVITY_PHASES = [
   'done',           // canonical step 2
 ];
 
-/** Task statuses a Live Activity may describe. Everything else ends one. */
-const TRACKABLE_STATUSES = ['OPEN', 'TAKEN'];
+/**
+ * Task statuses that describe live work.
+ *
+ * `TAKEN` is the only status any function writes — progress lives in
+ * `worker_status`. The four legacy values below still exist in the entity enum
+ * and are still READ defensively by TaskDetail, the brand dashboards and the
+ * simulator, so a historical record carrying one of them describes live work
+ * too and must not silently lose its activity. NOTE: ActiveTaskBanner gates its
+ * action CTA on `status === 'TAKEN'` alone; this contract reproduces that gate
+ * exactly (see nextBtnLabel), so a legacy record matches what the banner would
+ * show for the same record.
+ */
+const LEGACY_ACTIVE_STATUSES = ['APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'];
+const ACTIVE_STATUSES = ['TAKEN', ...LEGACY_ACTIVE_STATUSES];
+const TRACKABLE_STATUSES = ['OPEN', ...ACTIVE_STATUSES];
 
 /** The canonical step order. Identical to CANONICAL_STEPS in taskStatusFlow. */
 const CANONICAL_STEPS = ['on_the_way', 'arrived', 'done'];
@@ -157,7 +170,12 @@ export function buildTaskActivitySnapshot(input: any) {
   // offers no step CTA, so there is no next-action label to quote either.
   const isEngagement = !!schedule?.isEngagement;
   const occurrenceLabel = isEngagement ? (schedule?.occurrenceLabel || '') : '';
-  const nextBtnLabel = isWorker && !isEngagement ? nextCtaLabel(flow, task.worker_status) : null;
+  // The banner offers a step CTA only while the task is exactly TAKEN
+  // (ActiveTaskBanner: `isTaskActive = task.status === 'TAKEN'`). Reproduced
+  // verbatim, so a legacy status shows the flow's own words and no button quote.
+  const nextBtnLabel = isWorker && task.status === 'TAKEN' && !isEngagement
+    ? nextCtaLabel(flow, task.worker_status)
+    : null;
 
   let phase;
   let title;
@@ -236,7 +254,7 @@ export function buildTaskActivitySnapshot(input: any) {
   // The colour of the worker's next ACTION, exactly as getQuickAction() picks it:
   // setting out is the brand blue, arrival and completion are the success green.
   // Null when there is no action to offer (publisher, or an engagement).
-  const quickKey = isWorker && !isOpen && !isEngagement ? nextCtaKey(flow, task.worker_status) : null;
+  const quickKey = nextBtnLabel ? nextCtaKey(flow, task.worker_status) : null;
   const colorKey = quickKey === 'on_the_way' ? 'brand' : (quickKey ? 'success' : null);
 
   const snapshot = {
@@ -291,8 +309,8 @@ export function buildTaskActivitySnapshot(input: any) {
 export function pickTrackedTask(tasks, userId, now = Date.now()) {
   if (!Array.isArray(tasks) || !userId) return null;
   const tiers = [
-    { role: 'worker', match: (task) => task.status === 'TAKEN' && task.worker_id === userId },
-    { role: 'publisher', match: (task) => task.status === 'TAKEN' && task.client_id === userId },
+    { role: 'worker', match: (task) => ACTIVE_STATUSES.includes(task.status) && task.worker_id === userId },
+    { role: 'publisher', match: (task) => ACTIVE_STATUSES.includes(task.status) && task.client_id === userId },
     { role: 'publisher', match: (task) => task.status === 'OPEN' && task.client_id === userId },
   ];
 

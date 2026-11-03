@@ -74,8 +74,9 @@ describe('every existing task state', () => {
         if (TERMINAL_STATUSES.includes(status)) {
           expect(snap).toBeNull();
         } else if (status === 'OPEN') {
-          // An OPEN task is only ever the publisher's to track.
-          expect(snap).toBeNull();
+          // An OPEN task is only ever the PUBLISHER's to track.
+          if (role === 'worker') expect(snap).toBeNull();
+          else expect(snap.phase).toBe('open');
         } else {
           expect(snap).not.toBeNull();
           expect(LIVE_ACTIVITY_PHASES).toContain(snap.phase);
