@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, Play, X } from 'lucide-react';
 import { EXPLAINER_VIDEO_URL } from '@/lib/explainerVideo';
@@ -6,30 +6,17 @@ import { EXPLAINER_VIDEO_URL } from '@/lib/explainerVideo';
 /**
  * The explainer video, as a compact row inside the published-tasks empty state.
  *
- * Nothing is downloaded with the screen: the card renders as a plain tile, and
- * the preview frame is only attached once the card is actually near the
- * viewport. The video itself mounts when the sheet opens — and it never plays by
- * itself, so opening it is always a deliberate tap.
+ * ── NO VIDEO THUMBNAIL ─────────────────────────────────────────────────────
+ * The row used to carry a 52px dark tile with a still frame of the video in it,
+ * which read as a second, broken player sitting inside the card. It is now just
+ * the play mark in the brand colour: one clear "this is a video" cue, and
+ * nothing on the screen is downloaded until the row is actually tapped.
+ *
+ * The video itself mounts when the sheet opens — and it never plays by itself,
+ * so opening it is always a deliberate tap.
  */
 export default function EmptyStateVideoCard({ title, subtitle }) {
   const [open, setOpen] = useState(false);
-  const [near, setNear] = useState(false);
-  const cardRef = useRef(null);
-
-  // Lazy: the preview frame is attached when the card approaches the viewport.
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') { setNear(true); return; }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some(e => e.isIntersecting)) { setNear(true); io.disconnect(); }
-      },
-      { rootMargin: '180px' }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -41,7 +28,6 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
   return (
     <>
       <button
-        ref={cardRef}
         type="button"
         onClick={() => setOpen(true)}
         style={{
@@ -54,30 +40,12 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
           fontFamily: 'inherit',
         }}
       >
-        {/* Preview frame — a dark tile with the play mark on top of it */}
+        {/* The play mark alone — no frame, no still, no dark rectangle. */}
         <span style={{
-          position: 'relative', width: 52, height: 52, borderRadius: 13,
-          overflow: 'hidden', flexShrink: 0, background: '#0b1220',
+          flexShrink: 0, width: 24, height: 24,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          {near && (
-            <video
-              src={`${EXPLAINER_VIDEO_URL}#t=0.8`}
-              preload="metadata"
-              muted
-              playsInline
-              aria-hidden="true"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
-            />
-          )}
-          <span style={{
-            position: 'relative', width: 26, height: 26, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.94)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
-          }}>
-            <Play size={11} color="#0b1220" fill="#0b1220" style={{ marginLeft: 1 }} />
-          </span>
+          <Play size={17} color="var(--brand-primary)" fill="var(--brand-primary)" />
         </span>
 
         <span style={{ flex: 1, minWidth: 0 }}>

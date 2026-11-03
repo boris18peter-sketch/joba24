@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { fetchPublicTasks } from '@/lib/publicTasks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Check, History } from 'lucide-react';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/PullToRefreshIndicator';
 
@@ -184,12 +184,6 @@ export default function HomeFeed() {
   // show. A failed background refresh leaves the tasks already on screen — and
   // the empty state — exactly where they are.
   const myTasksLoadFailed = myTasksError && myTasks.length === 0;
-
-  // Active = the same two statuses the "פעילות" view shows. When there are none,
-  // the screen is the empty state, which carries its own headline — so the header
-  // drops its title and leaves only the small history button.
-  const ACTIVE_PUB_STATUSES = ['OPEN', 'TAKEN'];
-  const hasActivePublished = myTasks.some(x => ACTIVE_PUB_STATUSES.includes(x.status));
 
   // ── Active tasks are DERIVED, never fetched ───────────────────────────────
   // Both used to be their own one-row query — plus a 30-second poll each — for
@@ -712,9 +706,15 @@ export default function HomeFeed() {
         const availableDot = isAuthenticated && hasActiveWorkerTaskForBadge;
         // Red dot on "my_published" tab if client has active task or new applicants
         const myPubDot = isAuthenticated && (hasNewApplicants || hasActiveClientTaskForBadge);
+        // The history the icon beside the tab opens — and ONLY when there is
+        // something in it: an icon into two empty lists is a dead end.
+        const historyCount = myTasks.filter(x =>
+          x.status === 'COMPLETED' || x.status === 'CANCELLED' || x.status === 'EXPIRED'
+        ).length;
+        const showHistoryIcon = activeTab === 'my_published' && myPubTab === 'active' && historyCount > 0;
         return (
-          <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
-            <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 8, marginTop: -1 }}>
+            <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, flex: 1, minWidth: 0, position: 'relative', height: 38, alignItems: 'center' }}>
               <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', ...(isRTL ? { right: activeTab === 'available' ? 3 : 'calc(50%)' } : { left: activeTab === 'available' ? 3 : 'calc(50%)' }), background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', borderRadius: 99, transition: 'all 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
               <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
                 {t('all_tasks')}
@@ -725,6 +725,31 @@ export default function HomeFeed() {
                 {myPubDot && activeTab !== 'my_published' && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid var(--surface-3)', animation: 'pulseRedDot 1.5s infinite' }} />}
               </button>
             </div>
+
+            {/* ── ההיסטוריה, צמודה לטאב "משימות שפרסמתי" ────────────────────
+                It used to sit inside the screen body, below the list, so reaching
+                it meant scrolling past the very screen it belongs to. It now sits
+                right beside the tab it is about, and only when there really is a
+                completed / archived task to open. The ICON alone: the tab next to
+                it already says whose history this is. */}
+            {showHistoryIcon && (
+              <button
+                type="button"
+                onClick={() => setMyPubTab('completed')}
+                aria-label={t('mypub_history')}
+                title={t('mypub_history')}
+                style={{
+                  flexShrink: 0, width: 36, height: 36, minWidth: 36, minHeight: 36,
+                  borderRadius: 12, cursor: 'pointer',
+                  background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--text-2)',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                <History size={17} strokeWidth={2.2} />
+              </button>
+            )}
           </div>
         );
       })()}
@@ -926,13 +951,10 @@ export default function HomeFeed() {
           <PublishedTasksHeader
             view={myPubTab === 'active' || myTasks.length === 0 ? 'active' : 'history'}
             historyTab={myPubTab === 'other' ? 'other' : 'completed'}
-            showHistory={hasActivePublished}
-            hideTitle={!myTasksLoading && !myTasksLoadFailed && !hasActivePublished}
             counts={{
               completed: myTasks.filter(x => x.status === 'COMPLETED').length,
               archive: myTasks.filter(x => x.status === 'CANCELLED' || x.status === 'EXPIRED').length,
             }}
-            onOpenHistory={() => setMyPubTab('completed')}
             onBackToActive={() => setMyPubTab('active')}
             onChangeHistoryTab={setMyPubTab}
           />
@@ -967,10 +989,7 @@ export default function HomeFeed() {
           </div>
         )}
         {activeTab === 'my_published' && !myTasksLoading && !myTasksLoadFailed && myTasks.length === 0 && (
-          <PublishedTasksEmptyState
-            hasHistory={false}
-            onOpenHistory={() => setMyPubTab('completed')}
-          />
+          <PublishedTasksEmptyState />
         )}
         {activeTab === 'my_published' && !myTasksLoading && myTasks.length > 0 && (() => {
           const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
@@ -978,10 +997,7 @@ export default function HomeFeed() {
           return (
             <div>
               {filteredPub.length === 0 && myPubTab === 'active' ? (
-                <PublishedTasksEmptyState
-                  hasHistory={myTasks.some(x => x.status === 'COMPLETED' || x.status === 'CANCELLED' || x.status === 'EXPIRED')}
-                  onOpenHistory={() => setMyPubTab('completed')}
-                />
+                <PublishedTasksEmptyState />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>

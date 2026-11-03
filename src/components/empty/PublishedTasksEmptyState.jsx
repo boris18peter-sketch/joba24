@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { History, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
@@ -20,7 +20,7 @@ import EmptyStateVideoCard from '@/components/empty/EmptyStateVideoCard';
  * There is no separate headline or explanation above the banner: that was the
  * same message twice.
  */
-export default function PublishedTasksEmptyState({ onOpenHistory, hasHistory = false }) {
+export default function PublishedTasksEmptyState() {
   const navigate = useNavigate();
   const { t, lang, isRTL } = useLanguage();
   const { rootGroups, globalMap } = useBrandCategories();
@@ -74,37 +74,16 @@ export default function PublishedTasksEmptyState({ onOpenHistory, hasHistory = f
         {t('post_task_btn')}
       </button>
 
-      {/* 3. History — the same views as before, as a quiet secondary link */}
-      {hasHistory && onOpenHistory && (
-        <button
-          type="button"
-          onClick={onOpenHistory}
-          style={{
-            // A quiet SECONDARY action, so it sits at the start of the line (the
-            // right edge in Hebrew) as a small link — centred, it read as the
-            // heading of the category rail below it.
-            display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 5,
-            margin: '4px 0 0', height: 34, minHeight: 34, padding: '0 8px',
-            borderRadius: 999, background: 'transparent', border: 'none',
-            color: 'var(--text-2)', fontSize: 12.5, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <History size={13} strokeWidth={2.2} />
-          {t('mypub_history')}
-        </button>
-      )}
-
-      {/* 4. The categories — no heading: they speak for themselves */}
+      {/* 3. The categories — no heading: they speak for themselves */}
       {items.length > 0 && (
-        <div style={{ marginTop: hasHistory && onOpenHistory ? 2 : 8 }}>
+        <div style={{ marginTop: 10 }}>
           <CategoryCarousel items={items} onSelect={publish} isRTL={isRTL} />
         </div>
       )}
 
-      {/* 5. The explainer video that already exists in the app */}
-      <div style={{ marginTop: 8 }}>
+      {/* 4. The explainer video. It sits clear of the category rail above it —
+          two tappable rows 8px apart read as one block and invited the wrong tap. */}
+      <div style={{ marginTop: 22 }}>
         <EmptyStateVideoCard
           title={t('mtempty_video_title')}
           subtitle={t('mtempty_video_sub')}

@@ -46,7 +46,7 @@ const SLIDES = [
 ];
 
 export default function BenefitsBanner() {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
   const [paused, setPaused] = useState(false);
@@ -58,6 +58,7 @@ export default function BenefitsBanner() {
   const [dragging, setDragging] = useState(false);
 
   const frameRef = useRef(null);
+  const titleRef = useRef(null);
   const busyRef = useRef(false);
   const touchRef = useRef({ x: 0, y: 0, active: false, horiz: null });
 
@@ -83,6 +84,32 @@ export default function BenefitsBanner() {
     });
     return () => { alive = false; };
   }, []);
+
+  /* ── ONE LINE, ALWAYS ──────────────────────────────────────────────────────
+     Every headline in this carousel has to read as ONE line, like the ones beside
+     it: one that broke onto a second row pushed its support line down and made
+     that slide look like a different card than the others. The headline therefore
+     never wraps — it steps down in half-pixel steps until it fits the width the
+     illustration leaves it, and never further than 13px, so it always stays the
+     dominant element of the banner whatever the language or the screen. */
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.fontSize = '';
+      const base = parseFloat(window.getComputedStyle(el).fontSize) || 22;
+      let size = base;
+      while (el.scrollWidth > el.clientWidth + 1 && size > 13) {
+        size -= 0.5;
+        el.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    // The webfont can land after the first measurement and change every width.
+    if (document.fonts?.ready) document.fonts.ready.then(fit).catch(() => {});
+    return () => window.removeEventListener('resize', fit);
+  }, [index, lang]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
@@ -197,7 +224,7 @@ export default function BenefitsBanner() {
           }}
         >
           <div className="j-ben-text">
-            <div className="j-ben-title">{t(`ben_s${slide.n}_title`)}</div>
+            <div className="j-ben-title" ref={titleRef}>{t(`ben_s${slide.n}_title`)}</div>
             <div className="j-ben-body">{t(`ben_s${slide.n}_body`)}</div>
           </div>
 
@@ -269,17 +296,23 @@ export default function BenefitsBanner() {
           align-items: flex-start;
           text-align: start;
         }
-        /* The dominant typographic element of the banner. */
+        /* The dominant typographic element of the banner — and always ONE line.
+           The font size is fitted to the space by the component, so the line can
+           never wrap and no two slides can start their text at different heights. */
         .j-ben-title {
           font-size: 22px;
           font-weight: 900;
           line-height: 1.16;
           letter-spacing: -0.6px;
           color: #0b1b3d;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
+          white-space: nowrap;
           overflow: hidden;
+          text-overflow: ellipsis;
+          /* A full-width box, so the component can MEASURE the line against the
+             column: auto width would shrink to the text and every long headline
+             would look like it fits. */
+          width: 100%;
+          max-width: 100%;
         }
         .j-ben-body {
           margin-top: 8px;
