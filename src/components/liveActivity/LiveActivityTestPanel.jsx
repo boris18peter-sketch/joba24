@@ -56,6 +56,8 @@ export default function LiveActivityTestPanel() {
   const [role, setRole] = useState('publisher');
   const [stage, setStage] = useState(() => firstAssignedStage('publisher'));
   const [revision, setRevision] = useState(1);
+  // Which frame of the action button is on the card (idle/confirm/pending/failed).
+  const [actionState, setActionState] = useState('idle');
   const [busy, setBusy] = useState(false);
   const [availability, setAvailability] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -220,6 +222,51 @@ export default function LiveActivityTestPanel() {
     setBusy(false);
   };
 
+  /**
+   * Push one of the button's four states into the activity, so the Lock Screen
+   * can be inspected without a real tap.
+   *
+   * It sends the SAME content the contract produced, with `actionState`
+   * overridden — that field belongs to the intent, not the server, so this is
+   * exactly what a real pending/failed/confirm frame looks like. Nothing is
+   * written to a task and no endpoint is called.
+   */
+  const handleActionState = async (next) => {
+    if (!me?.id) return;
+    setBusy(true);
+    setFeedback(null);
+    const rev = nextRevision();
+    const base = buildTestSnapshot({ stage, role, revision: rev, userId: me.id, t, catRows, settings });
+    if (!base) {
+      flash(false, 'אין תצוגה זמינה לשלב הזה');
+      setBusy(false);
+      return;
+    }
+    if (!base.action) {
+      // The truthful answer: this stage offers no action, so there is no button
+      // to draw. Not a failure of the test — it is the contract working.
+      flash(false, 'בשלב הזה אין כפתור פעולה — בחר שלב שבו יש צעד הבא');
+      setBusy(false);
+      return;
+    }
+    const result = await updateTaskActivity({
+      taskId: TEST_TASK_ID,
+      role,
+      state: { ...base, actionState: next },
+    });
+    note(`actionState → ${next} → ${JSON.stringify(result)}`);
+    if (result.updated) {
+      revisionRef.current = rev;
+      setRevision(rev);
+      setActionState(next);
+      flash(true, `מצב הכפתור עודכן: ${next}`);
+    } else {
+      flash(false, explain(result.reason, 'העדכון לא בוצע'));
+    }
+    await refresh();
+    setBusy(false);
+  };
+
   const handleRefresh = async () => {
     setBusy(true);
     const list = await refresh();
@@ -249,6 +296,8 @@ export default function LiveActivityTestPanel() {
         onEnd={handleEnd}
         onEndAll={handleEndAll}
         onRefresh={handleRefresh}
+        onActionState={handleActionState}
+        actionState={actionState}
         busy={busy}
         feedback={feedback}
         startable={!!snapshot}

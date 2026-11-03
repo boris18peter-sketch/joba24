@@ -8,5 +8,12 @@
 	<array>
 		<string>applinks:joba24.com</string>
 	</array>
+	<!-- Shared with the Live Activity widget extension ONLY, so the widget's App
+	     Intent can read the short-lived action capability the app mints while a
+	     session exists. It carries no user data and no session token. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.base69e6bdb4986a04a256653a23.app</string>
+	</array>
 </dict>
 </plist>

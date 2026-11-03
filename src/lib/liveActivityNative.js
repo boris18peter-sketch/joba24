@@ -24,7 +24,7 @@ import { base44 } from '@/api/base44Client';
 export const LIVE_ACTIVITY_PLUGIN = 'JobaActivity';
 
 /** Must match the plugin's `pluginMethods`. Asserted by the Stage 3 test. */
-export const LIVE_ACTIVITY_METHODS = ['isAvailable', 'start', 'update', 'end', 'activeActivities'];
+export const LIVE_ACTIVITY_METHODS = ['isAvailable', 'start', 'update', 'end', 'activeActivities', 'setActionAuth'];
 
 const JobaActivity = registerPlugin('JobaActivity');
 
@@ -68,9 +68,61 @@ export async function startTaskActivity({ taskId, role, state } = {}) {
   if (!taskId || !state) return { started: false, reason: 'missing_input' };
   try {
     const result = await JobaActivity.start({ taskId, role: role || 'publisher', state });
+    // The Lock Screen button needs a capability before it can do anything, and a
+    // session exists only here. Best effort: a failure leaves the card purely
+    // informational, it never blocks the activity from starting.
+    if (result?.started === true) {
+      syncActivityAction({ taskId, role }).catch(() => {});
+    }
     return { started: result?.started === true, activityId: result?.activityId || null, reason: result?.reason || '' };
   } catch {
     return { started: false, reason: 'plugin_error' };
+  }
+}
+
+/**
+ * Give this activity's Lock Screen button its capability.
+ *
+ * ── WHY A TOKEN AT ALL ──────────────────────────────────────────────────────
+ * The App Intent runs in the widget extension, where no session exists. Rather
+ * than put a session in a widget, the app asks the server for a capability that
+ * is bound to this user, this task and this role, expires in 24h, and permits
+ * only that role's actions. The server still re-checks the task on every tap.
+ *
+ * It is handed straight to the native side, which stores it in the App Group. It
+ * is never put in the activity content (that is displayed on the Lock Screen), in
+ * a push payload, or in a URL.
+ */
+export async function syncActivityAction({ taskId, role = 'publisher' } = {}) {
+  if (!isLiveActivityNative()) return { ok: false, reason: 'not_native' };
+  if (!taskId) return { ok: false, reason: 'missing_task' };
+  try {
+    const response = await base44.functions.invoke('issueLiveActivityActionToken', {
+      task_id: taskId,
+      role,
+    });
+    const token = response?.data?.token;
+    if (!token) return { ok: false, reason: response?.data?.error || 'no_token' };
+    const stored = await JobaActivity.setActionAuth({
+      taskId,
+      role,
+      endpoint: `${window.location.origin}/functions/liveActivityAction`,
+      token,
+    });
+    return { ok: stored?.stored === true, expiresAt: response?.data?.expires_at || null };
+  } catch {
+    return { ok: false, reason: 'mint_failed' };
+  }
+}
+
+/** Drop a capability (the activity ended): a cleared token can never be reused. */
+export async function clearActivityAction({ taskId, role = 'publisher' } = {}) {
+  if (!isLiveActivityNative() || !taskId) return { ok: false };
+  try {
+    await JobaActivity.setActionAuth({ taskId, role, token: '' });
+    return { ok: true };
+  } catch {
+    return { ok: false };
   }
 }
 

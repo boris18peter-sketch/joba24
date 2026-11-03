@@ -1,0 +1,69 @@
+import Foundation
+
+/**
+ JobaActivityAuthStore — where a Lock Screen action's capability lives.
+
+ ── WHY THIS FILE IS IN BOTH TARGETS ────────────────────────────────────────
+ The token is WRITTEN by the app (the Capacitor plugin, which is the only process
+ that ever has a user session) and READ by the widget's App Intent. Two processes,
+ one storage location — the App Group container — so the key format must be
+ identical on both sides. It is compiled into both targets, like the attributes
+ type, rather than duplicated.
+
+ ── WHAT IS STORED ──────────────────────────────────────────────────────────
+  • the action endpoint (not secret — the app's own function URL), and
+  • per (role, task): the capability token the server minted for that pair.
+
+ A capability is deliberately narrow: one user, one task, one role, only the
+ actions that role may perform, and a short server-set expiry. It is not a
+ session, it reads no data, and every use is re-authorized against the task.
+
+ It is never written to the Live Activity content state, a push payload or a URL:
+ Live Activity content is displayed on the Lock Screen.
+ */
+enum JobaActivityAuthStore {
+
+    /// Must match the App Group entitlement on BOTH targets. A mismatch is not a
+    /// crash: `UserDefaults(suiteName:)` returns nil, and the intent then reports
+    /// the action as unavailable instead of running unauthenticated.
+    static let appGroup = "group.com.base69e6bdb4986a04a256653a23.app"
+    static let endpointKey = "joba24.liveactivity.actionEndpoint"
+
+    static var defaults: UserDefaults? {
+        UserDefaults(suiteName: appGroup)
+    }
+
+    static func tokenKey(taskId: String, role: String) -> String {
+        "joba24.liveactivity.actionToken.\(role).\(taskId)"
+    }
+
+    static func endpoint() -> URL? {
+        guard let raw = defaults?.string(forKey: endpointKey), !raw.isEmpty else { return nil }
+        return URL(string: raw)
+    }
+
+    static func token(taskId: String, role: String) -> String? {
+        guard let value = defaults?.string(forKey: tokenKey(taskId: taskId, role: role)),
+              !value.isEmpty else { return nil }
+        return value
+    }
+
+    /// Store (or, when `token` is nil/empty, CLEAR) this pair's capability.
+    static func store(endpoint: String?, token: String?, taskId: String, role: String) {
+        guard let defaults = defaults else { return }
+        if let endpoint = endpoint, !endpoint.isEmpty {
+            defaults.set(endpoint, forKey: endpointKey)
+        }
+        let key = tokenKey(taskId: taskId, role: role)
+        if let token = token, !token.isEmpty {
+            defaults.set(token, forKey: key)
+        } else {
+            // A cleared capability must never be reused by a later tap.
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    static func clear(taskId: String, role: String) {
+        defaults?.removeObject(forKey: tokenKey(taskId: taskId, role: role))
+    }
+}

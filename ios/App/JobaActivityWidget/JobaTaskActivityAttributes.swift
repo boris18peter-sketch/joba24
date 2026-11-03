@@ -54,6 +54,10 @@ public struct JobaTaskActivity: ActivityAttributes {
         public var updatedAt: String?
         public var stepProgress: StepProgress?
         public var counters: Counters?
+        /// The ONE action this role may take right now (contract v2), or nil.
+        public var action: Action?
+        /// idle | pending | failed — owned by the App Intent, never by the server.
+        public var actionState: String?
 
         /// `progress` in the contract: which flow step the work is on.
         public struct StepProgress: Codable, Hashable {
@@ -94,6 +98,40 @@ public struct JobaTaskActivity: ActivityAttributes {
             }
         }
 
+        /// ── The interactive action ────────────────────────────────────────────
+        /// `id` is the machine-readable operation (`worker_step` /
+        /// `publisher_approve`) and the ONLY thing authorization is keyed on.
+        /// `label` and `confirm` are display copy the SERVER supplies, from the
+        /// app's own translation — the widget invents no wording of its own, so a
+        /// category that renames its steps renames its button too.
+        ///
+        /// Nothing here is trusted for authorization: the executor re-derives
+        /// eligibility from the task. A stale label can only ever be a stale look.
+        public struct Action: Codable, Hashable {
+            public var id: String
+            public var step: String
+            public var label: String
+            public var style: String?
+            public var confirm: String?
+
+            public init(id: String, step: String, label: String, style: String? = nil, confirm: String? = nil) {
+                self.id = id
+                self.step = step
+                self.label = label
+                self.style = style
+                self.confirm = confirm
+            }
+
+            public init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                id = (try? c.decode(String.self, forKey: .id)) ?? ""
+                step = (try? c.decode(String.self, forKey: .step)) ?? ""
+                label = (try? c.decode(String.self, forKey: .label)) ?? ""
+                style = try? c.decodeIfPresent(String.self, forKey: .style)
+                confirm = try? c.decodeIfPresent(String.self, forKey: .confirm)
+            }
+        }
+
         public struct Counters: Codable, Hashable {
             public var applicants: Int?
             public var views: Int?
@@ -126,7 +164,9 @@ public struct JobaTaskActivity: ActivityAttributes {
             deepLink: String? = nil,
             updatedAt: String? = nil,
             stepProgress: StepProgress? = nil,
-            counters: Counters? = nil
+            counters: Counters? = nil,
+            action: Action? = nil,
+            actionState: String? = nil
         ) {
             self.title = title
             self.subtitle = subtitle
@@ -141,6 +181,32 @@ public struct JobaTaskActivity: ActivityAttributes {
             self.updatedAt = updatedAt
             self.stepProgress = stepProgress
             self.counters = counters
+            self.action = action
+            self.actionState = actionState
+        }
+
+        /// A copy with only the action state changed — how the intent shows
+        /// "sending" and "not sent" WITHOUT the server inventing a revision for a
+        /// local, unsaved state. Every other field is carried through untouched,
+        /// so a pending card still says exactly what the last confirmed one said.
+        public func withActionState(_ state: String?) -> ContentState {
+            ContentState(
+                title: title,
+                subtitle: subtitle,
+                phase: phase,
+                role: role,
+                revision: revision,
+                contractVersion: contractVersion,
+                iconKey: iconKey,
+                colorKey: colorKey,
+                categoryLabel: categoryLabel,
+                deepLink: deepLink,
+                updatedAt: updatedAt,
+                stepProgress: stepProgress,
+                counters: counters,
+                action: action,
+                actionState: state
+            )
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -148,6 +214,7 @@ public struct JobaTaskActivity: ActivityAttributes {
             case iconKey, colorKey, categoryLabel, deepLink, updatedAt
             case stepProgress = "progress"
             case counters
+            case action, actionState
         }
 
         public init(from decoder: Decoder) throws {
@@ -165,6 +232,8 @@ public struct JobaTaskActivity: ActivityAttributes {
             updatedAt = try? c.decodeIfPresent(String.self, forKey: .updatedAt)
             stepProgress = try? c.decodeIfPresent(StepProgress.self, forKey: .stepProgress)
             counters = try? c.decodeIfPresent(Counters.self, forKey: .counters)
+            action = try? c.decodeIfPresent(Action.self, forKey: .action)
+            actionState = try? c.decodeIfPresent(String.self, forKey: .actionState)
         }
     }
 }

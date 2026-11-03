@@ -294,7 +294,8 @@ describe('the backend snapshot says exactly what the app says', () => {
     expect(built.categoryLabel).toBe('די.ג׳י לאירוע');
     expect(built.progress.steps.map((s) => s.label)).toEqual(['בדרך לאירוע', 'הציוד מורכב', 'סיימתי את העבודה']);
     expect(built.progress.step).toBe(1);
-    expect(built.contractVersion).toBe(1);
+    // v2 added `action` / `actionState` — the interactive Lock Screen action.
+    expect(built.contractVersion).toBe(2);
     expect(built.deepLink).toContain(task.id);
   });
 

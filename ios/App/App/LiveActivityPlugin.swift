@@ -35,6 +35,7 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "update", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "activeActivities", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setActionAuth", returnType: CAPPluginReturnPromise),
     ]
 
     /// One token listener per (task, role), so a rotation replaces the old one.
@@ -233,6 +234,39 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         let key = listenerKey(taskId, role)
         tokenListeners[key]?.cancel()
         tokenListeners.removeValue(forKey: key)
+    }
+
+    // MARK: - Action capability
+
+    /**
+     Hand this activity's capability token and the action endpoint to the App
+     Group, where the widget's App Intent can read them.
+
+     ── WHY THE APP, AND NOT THE EXTENSION ───────────────────────────────────
+     A token can only be minted while a user session exists, and the only process
+     that ever has one is the app. The extension has no way to obtain a session of
+     its own, and giving the Lock Screen a session token would hand far more
+     authority to a widget than a single confirmed tap needs.
+
+     The token is a capability: one user, one task, one role, one short expiry. It
+     is written to the App Group container only — never to the content state, a
+     push payload, a log line or a URL.
+     */
+    @objc public func setActionAuth(_ call: CAPPluginCall) {
+        guard let taskId = call.getString("taskId"), !taskId.isEmpty else {
+            call.reject("taskId is required")
+            return
+        }
+        let role = call.getString("role") ?? "publisher"
+        // A missing/blank token clears the stored one, so a revoked capability is
+        // never left behind for a later tap to use.
+        JobaActivityAuthStore.store(
+            endpoint: call.getString("endpoint"),
+            token: call.getString("token"),
+            taskId: taskId,
+            role: role
+        )
+        call.resolve(["stored": JobaActivityAuthStore.token(taskId: taskId, role: role) != nil])
     }
 
     // MARK: - Push token

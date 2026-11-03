@@ -173,8 +173,9 @@ describe('end is honest about what happened', () => {
     expect(plugin).toContain('let endsEverything = call.getBool("all") ?? false');
     expect(bridge).toContain('export function endAllActivities()');
     expect(bridge).toContain('endTaskActivity({ all: true, dismissAfter: 0 })');
-    // Still the same five native methods — no new bridge surface.
-    expect((plugin.match(/CAPPluginMethod\(name: "/g) || []).length).toBe(5);
+    // Six native methods: the original five, plus `setActionAuth`, which only
+    // stores the capability the app minted — it sends nothing and reads no task.
+    expect((plugin.match(/CAPPluginMethod\(name: "/g) || []).length).toBe(6);
   });
 
   it('reports the ActivityKit lifecycle value for every activity', () => {

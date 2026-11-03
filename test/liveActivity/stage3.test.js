@@ -95,7 +95,11 @@ describe('project generator', () => {
     expect(report.widget.skip_install).toBe('YES');
     expect(report.widget.infoplist_file).toBe('JobaActivityWidget/Info.plist');
     expect(report.widget.sources.sort()).toEqual([
+      // The interactive action: the App Intent (widget only) and the App Group
+      // store it reads the capability from.
+      'JobaActivityAuthStore.swift',
       'JobaActivityWidgetBundle.swift',
+      'JobaTaskActionIntent.swift',
       'JobaTaskActivityAttributes.swift',
     ]);
     expect(report.widget.configurations.sort()).toEqual(['Debug', 'Release']);
@@ -105,6 +109,8 @@ describe('project generator', () => {
     // The shared attributes file must be in BOTH targets, or the app and the
     // widget would be compiling two different attribute types.
     expect(report.app_sources).toContain('JobaTaskActivityAttributes.swift');
+    // Written by the app (the only process with a session), read by the widget.
+    expect(report.app_sources).toContain('JobaActivityAuthStore.swift');
 
     // Notes are diagnostics, so they are read from stderr (stdout stays data-only).
     const secondRun = pythonLog(['--project', project, '--info-plist', info]);
@@ -222,7 +228,9 @@ describe('capacitor bridge', () => {
     expect(bridge).toContain("LIVE_ACTIVITY_PLUGIN = 'JobaActivity'");
 
     const declared = [...plugin.matchAll(/CAPPluginMethod\(name: "([A-Za-z]+)"/g)].map((m) => m[1]);
-    expect(declared.sort()).toEqual(['activeActivities', 'end', 'isAvailable', 'start', 'update']);
+    // `setActionAuth` hands the Lock Screen button its capability; everything
+    // else is the original lifecycle surface.
+    expect(declared.sort()).toEqual(['activeActivities', 'end', 'isAvailable', 'setActionAuth', 'start', 'update']);
 
     const fromBridge = (bridge.match(/LIVE_ACTIVITY_METHODS = \[([^\]]+)\]/) || [])[1] || '';
     for (const method of declared) expect(fromBridge).toContain(method);

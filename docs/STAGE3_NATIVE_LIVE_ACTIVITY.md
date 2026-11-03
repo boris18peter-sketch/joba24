@@ -318,3 +318,81 @@ Start, each update, end, and a repeated Start -> Update -> End loop are all
 verifiable from `/live-activity-test`. The Lock Screen and Dynamic Island layouts
 need a real iPhone with the widget-enabled TestFlight build. Production dispatch
 remains disabled (`enabled=false`, `dry_run=true`).
+
+## 8. Interactive Lock Screen actions (App Intents)
+
+Status: **implemented end to end, still inert in production** (`enabled=false`,
+`dry_run=true`), and **one Apple-side step away from buildable**: the App Group
+below must exist in the Developer portal before the widget-enabled build is
+signed.
+
+### 8.1 The pieces
+
+| Piece | File | Role |
+| --- | --- | --- |
+| Action rule | `base44/shared/taskActivitySnapshot.ts` → `deriveActivityAction` | The ONE place that decides which action a role gets, right now. Used by the snapshot (display), the token minter (capability) and the executor (authorization). |
+| Capability | `base44/shared/liveActivityActionToken.ts` | HMAC-SHA256, task + user + role bound, action allow-list, 24h hard expiry. |
+| Execution rules | `base44/shared/liveActivityActionGuard.ts` | Forward-only worker transitions, ownership, terminal/duplicate handling. |
+| Mint | `base44/functions/issueLiveActivityActionToken` | Called by the app while a session exists. |
+| Execute | `base44/functions/liveActivityAction` | The only endpoint the intent calls. Re-derives everything from the task. |
+| Completion | `base44/shared/taskCompletion.ts` | `completeTask`'s real body, now shared — the Lock Screen approval runs the same workflow, not a copy. |
+| Native | `ios/App/JobaActivityWidget/JobaTaskActionIntent.swift`, `JobaActivityAuthStore.swift` | The intent and the App Group store. |
+| Widget | `JobaActivityWidgetBundle.swift` → `TaskActionRow` | Renders the four frames; invents no copy. |
+| Bridge | `src/lib/liveActivityNative.js` → `syncActivityAction` | Mints and hands the capability to the native side. |
+
+### 8.2 Authentication without a session
+
+The intent runs in the widget extension: no WebView, no bridge, no session, and
+possibly with the app not running. A session token in a widget would be far too
+much authority, so the app asks for a **capability** instead:
+
+* bound to one user, one task, one role;
+* carrying only the action ids that role may perform;
+* expiring after 24h, never renewable from the device;
+* signed with `LIVE_ACTIVITY_ACTION_SECRET` (server only).
+
+It is stored in the App Group container — never in the content state (which is
+displayed on the Lock Screen), never in a push payload, never in a URL.
+
+**Every tap is re-authorized from the database**: the task is re-read, the
+category flow re-resolved, eligibility re-derived with the same function that drew
+the button, and the transition re-guarded. A token minted an hour ago cannot
+approve a cancelled task or step a task twice.
+
+### 8.3 What actually runs
+
+* `worker_step` → exactly the banner's write (`worker_status` + its timestamp).
+  Notifications come from the existing entity-triggered workflows, unchanged.
+* `publisher_approve` → `completeTaskCore`, i.e. `completeTask` itself: worker
+  counter, refunds, credit ledger, applicant projection, idempotency guard.
+  The in-app button is untouched and calls the same shared body through the
+  function.
+
+`publisher_approve` is irreversible, so its **first tap only asks to confirm**
+(the card shows the contract's own confirmation sentence) and the second submits.
+A worker step is forward-only and idempotent, so it submits on one tap.
+
+### 8.4 Feedback states
+
+`actionState` is owned by the intent (`idle → confirm → pending → failed`) and the
+card draws it: spinner while in flight, retry glyph when it did not land, and the
+server's confirmed snapshot on success. No wording is written in Swift — the
+label, the confirmation sentence and the resulting status all come from the
+contract, so a category that renames its steps renames its button.
+
+### 8.5 The one external step
+
+Create the App Group **`group.com.base69e6bdb4986a04a256653a23.app`** in
+developer.apple.com → Identifiers → App Groups, then enable it on BOTH App IDs
+(the app and `…JobaActivityWidget`) and let the signing step re-fetch the
+profiles. Until then the widget-enabled build fails at signing — the app's own
+build path is unaffected (`CODE_SIGN_ENTITLEMENTS` is only set on the widget target
+by the generator).
+
+### 8.6 Residual risk
+
+The Swift is reviewed but cannot be compiled in this environment (no Xcode, no
+Swift toolchain); the first real compile is the Codemagic archive. `npx vite build`
+passes, the generator was verified on a copy of the project (widget target, both
+new sources, widget entitlements, idempotent second run), and `npx vitest run
+test/liveActivity` is green: **13 files, 331 tests**.

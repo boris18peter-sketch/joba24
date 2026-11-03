@@ -17,6 +17,8 @@ export default function TestStageControls({
   onEnd,
   onEndAll,
   onRefresh,
+  onActionState,
+  actionState,
   busy,
   feedback,
   startable,
@@ -45,6 +47,41 @@ export default function TestStageControls({
             </button>
           );
         })}
+      </div>
+
+      {/* The button's four frames. These are the states the App Intent owns on
+          the device, so they can be inspected here without a real tap. */}
+      <div>
+        <div style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-3)', marginBottom: 7 }}>
+          מצב כפתור הפעולה
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {[
+            { key: 'idle', label: 'רגיל' },
+            { key: 'confirm', label: 'ממתין לאישור' },
+            { key: 'pending', label: 'בשליחה' },
+            { key: 'failed', label: 'לא נשלח' },
+          ].map((option) => {
+            const active = actionState === option.key;
+            return (
+              <button
+                key={option.key}
+                onClick={() => onActionState?.(option.key)}
+                aria-pressed={active}
+                disabled={busy}
+                style={{
+                  padding: '8px 12px', borderRadius: 10, cursor: busy ? 'default' : 'pointer',
+                  border: `1.5px solid ${active ? 'var(--brand-primary)' : 'var(--border-1)'}`,
+                  background: active ? 'var(--brand-primary-light)' : 'var(--surface-2)',
+                  color: active ? 'var(--brand-primary-dark, var(--brand-primary))' : 'var(--text-2)',
+                  fontSize: 12, fontWeight: 700,
+                }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Stage — the canonical lifecycle, never a new one. */}

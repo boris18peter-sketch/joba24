@@ -86,6 +86,9 @@ IDS = {k: uid(k) for k in (
     "bf_attrs_widget", "bf_bundle_widget", "bf_attrs_app", "bf_plugin_app", "bf_product_embed",
     "phase_sources", "phase_frameworks", "phase_resources", "phase_embed",
     "target", "cfg_debug", "cfg_release", "cfg_list", "proxy", "dep",
+    # The interactive action: the intent lives in the widget only, the App Group
+    # store is compiled into BOTH targets (written by the app, read by the widget).
+    "file_intent", "bf_intent_widget", "file_store", "bf_store_widget", "bf_store_app",
 )}
 
 
@@ -357,6 +360,7 @@ def must_replace(text, anchor, replacement, what):
 def widget_build_settings():
     common = """				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = %s/JobaActivityWidget.entitlements;
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -373,7 +377,7 @@ def widget_build_settings():
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";""" % (WIDGET_DIR, DEPLOYMENT_TARGET, WIDGET_BUNDLE_ID)
+				TARGETED_DEVICE_FAMILY = "1,2";""" % (WIDGET_DIR, WIDGET_DIR, DEPLOYMENT_TARGET, WIDGET_BUNDLE_ID)
     debug = """			%s /* Debug */ = {
 				isa = XCBuildConfiguration;
 				buildSettings = {
@@ -474,14 +478,20 @@ def apply(project_text, info_plist_path):
 		%s /* JobaTaskActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaTaskActivityAttributes.swift */; };
 		%s /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* LiveActivityPlugin.swift */; };
 		%s /* JobaActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		%s /* JobaTaskActionIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaTaskActionIntent.swift */; };
+		%s /* JobaActivityAuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityAuthStore.swift */; };
+		%s /* JobaActivityAuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityAuthStore.swift */; };
 /* End PBXBuildFile section */""" % (
         IDS["bf_attrs_widget"], IDS["file_attrs"],
         IDS["bf_bundle_widget"], IDS["file_bundle"],
         IDS["bf_attrs_app"], IDS["file_attrs"],
         IDS["bf_plugin_app"], IDS["file_plugin"],
         IDS["bf_product_embed"], IDS["file_product"],
+        IDS["bf_intent_widget"], IDS["file_intent"],
+        IDS["bf_store_widget"], IDS["file_store"],
+        IDS["bf_store_app"], IDS["file_store"],
     ), "PBXBuildFile section")
-    notes.append("PBXBuildFile: 5 entries")
+    notes.append("PBXBuildFile: 8 entries")
 
     # ── 2. PBXFileReference ─────────────────────────────────────────────────
     t = must_replace(t, "/* End PBXFileReference section */", """		%s /* JobaActivityWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobaActivityWidgetBundle.swift; sourceTree = "<group>"; };
@@ -489,11 +499,14 @@ def apply(project_text, info_plist_path):
 		%s /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		%s /* JobaActivityWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JobaActivityWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		%s /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
+		%s /* JobaTaskActionIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobaTaskActionIntent.swift; sourceTree = "<group>"; };
+		%s /* JobaActivityAuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobaActivityAuthStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */""" % (
         IDS["file_bundle"], IDS["file_attrs"], IDS["file_info"],
         IDS["file_product"], IDS["file_plugin"],
+        IDS["file_intent"], IDS["file_store"],
     ), "PBXFileReference section")
-    notes.append("PBXFileReference: 5 entries")
+    notes.append("PBXFileReference: 7 entries")
 
     # ── 3. Container proxy + target dependency + copy phase sections ────────
     t = must_replace(t, "/* Begin PBXFileReference section */", """/* Begin PBXContainerItemProxy section */
@@ -542,6 +555,8 @@ def apply(project_text, info_plist_path):
 			children = (
 				%s /* JobaActivityWidgetBundle.swift */,
 				%s /* JobaTaskActivityAttributes.swift */,
+				%s /* JobaTaskActionIntent.swift */,
+				%s /* JobaActivityAuthStore.swift */,
 				%s /* Info.plist */,
 			);
 			path = %s;
@@ -549,7 +564,8 @@ def apply(project_text, info_plist_path):
 		};
 /* End PBXGroup section */""" % (
         IDS["widget_group"], WIDGET_DIR,
-        IDS["file_bundle"], IDS["file_attrs"], IDS["file_info"], WIDGET_DIR,
+        IDS["file_bundle"], IDS["file_attrs"], IDS["file_intent"], IDS["file_store"],
+        IDS["file_info"], WIDGET_DIR,
     ), "PBXGroup section")
     t = must_replace(t, """				504EC3041FED79650016851F /* App.app */,
 """, """				504EC3041FED79650016851F /* App.app */,
@@ -632,18 +648,22 @@ def apply(project_text, info_plist_path):
 			files = (
 				%s /* JobaTaskActivityAttributes.swift in Sources */,
 				%s /* JobaActivityWidgetBundle.swift in Sources */,
+				%s /* JobaTaskActionIntent.swift in Sources */,
+				%s /* JobaActivityAuthStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */""" % (
         IDS["phase_sources"], IDS["bf_attrs_widget"], IDS["bf_bundle_widget"],
+        IDS["bf_intent_widget"], IDS["bf_store_widget"],
     ), "PBXSourcesBuildPhase section")
     t = must_replace(t, """				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 """, """				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				%s /* JobaTaskActivityAttributes.swift in Sources */,
 				%s /* LiveActivityPlugin.swift in Sources */,
-""" % (IDS["bf_attrs_app"], IDS["bf_plugin_app"]), "App Sources phase")
-    notes.append("App Sources: attributes + plugin")
+				%s /* JobaActivityAuthStore.swift in Sources */,
+""" % (IDS["bf_attrs_app"], IDS["bf_plugin_app"], IDS["bf_store_app"]), "App Sources phase")
+    notes.append("App Sources: attributes + plugin + action store")
 
     # ── 9b. The flag SceneDelegate's guard reads ────────────────────────────
     # Added in the same run as the file above: the reference and the class it

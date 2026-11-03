@@ -38,7 +38,11 @@ struct JobaActivityWidgetBundle: WidgetBundle {
 struct JobaTaskLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: JobaTaskActivity.self) { context in
-            LockScreenCard(state: context.state)
+            LockScreenCard(
+                state: context.state,
+                taskId: context.attributes.taskId,
+                role: context.attributes.role
+            )
                 .widgetURL(Self.deepLink(for: context))
                 .activitySystemActionForegroundColor(JobaPalette.brand)
         } dynamicIsland: { context in
@@ -70,6 +74,13 @@ struct JobaTaskLiveActivity: Widget {
                         if let progress = context.state.stepProgress, progress.step >= 0 {
                             StepRail(progress: progress, showsCounter: false)
                         }
+                        // The same button the Lock Screen card offers, so the
+                        // expanded island can complete the task without opening it.
+                        TaskActionRow(
+                            state: context.state,
+                            taskId: context.attributes.taskId,
+                            role: context.attributes.role
+                        )
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     // Direction is set on the CONTENT, never on the DynamicIsland
@@ -102,6 +113,9 @@ struct JobaTaskLiveActivity: Widget {
 
 struct LockScreenCard: View {
     let state: JobaTaskActivity.ContentState
+    /// Only needed to address the action intent at the right activity.
+    let taskId: String
+    let role: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -130,6 +144,12 @@ struct LockScreenCard: View {
             if let progress = state.stepProgress, progress.step >= 0 {
                 StepRail(progress: progress, showsCounter: true)
             }
+
+            // ── The one action this role may take ────────────────────────────
+            // Its label is the server's, so it is the same words the banner uses
+            // for this category. Absent when the contract offers no action, in
+            // which case the card is purely informational.
+            TaskActionRow(state: state, taskId: taskId, role: role)
         }
         .padding(.horizontal, 15)
         .padding(.vertical, 13)
@@ -297,6 +317,97 @@ struct ApplicantPill: View {
         .background(Capsule(style: .continuous).fill(JobaPalette.gold.opacity(0.16)))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("\(count)"))
+    }
+}
+
+// MARK: - Action
+
+/**
+ The Lock Screen action.
+
+ ── IT DRAWS FOUR STATES, AND INVENTS NONE OF THEIR WORDS ───────────────────
+  • idle / confirm — the contract's own label; `confirm` adds the contract's own
+    confirmation sentence above it when the action is irreversible.
+  • pending — the same label with a spinner, and the button disabled, so a second
+    tap cannot be queued behind the first.
+  • failed — a retry glyph on a dimmed button. No sentence is invented: the card
+    still carries the last confirmed content, and the glyph says this tap did not
+    land.
+
+ Below iOS 17 a Live Activity has no interactive controls, so nothing is drawn:
+ a button that did nothing would be worse than no button. The card's own tap
+ (widgetURL) still opens the task, which is where the action lives in the app.
+ */
+struct TaskActionRow: View {
+    let state: JobaTaskActivity.ContentState
+    let taskId: String
+    let role: String
+
+    private var action: JobaTaskActivity.ContentState.Action? {
+        guard let value = state.action, !value.id.isEmpty, !value.label.isEmpty else { return nil }
+        return value
+    }
+
+    private var isPending: Bool { state.actionState == "pending" }
+    private var isFailed: Bool { state.actionState == "failed" }
+    private var tint: Color {
+        action?.style == "success" ? JobaPalette.success : JobaPalette.brand
+    }
+
+    var body: some View {
+        if let action = action {
+            VStack(alignment: .leading, spacing: 5) {
+                if state.actionState == "confirm", let confirm = action.confirm, !confirm.isEmpty {
+                    Text(confirm)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                }
+                if #available(iOS 17.0, *) {
+                    Button(intent: JobaTaskActionIntent(
+                        taskId: taskId,
+                        role: role,
+                        actionId: action.id,
+                        expectedStep: action.step
+                    )) {
+                        label(for: action)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isPending)
+                    .accessibilityLabel(Text(action.label))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private func label(for action: JobaTaskActivity.ContentState.Action) -> some View {
+        HStack(spacing: 6) {
+            if isPending {
+                ProgressView()
+                    .controlSize(.mini)
+                    .tint(.white)
+            } else if isFailed {
+                // A failed attempt, without a single invented word.
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 11, weight: .bold))
+            }
+            Text(action.label)
+                .font(.caption.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 9)
+        .background(
+            Capsule(style: .continuous)
+                .fill(tint.opacity(isPending ? 0.5 : 1))
+        )
+        .contentShape(Capsule(style: .continuous))
     }
 }
 
