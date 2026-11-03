@@ -39,7 +39,9 @@
  * a shipped iOS build decodes `content-state` with a fixed Codable.
  */
 
-export const LIVE_ACTIVITY_CONTRACT_VERSION = 1;
+// v2 added `action` / `actionState` (the interactive Lock Screen action). A v1
+// decoder ignores them; a v2 one reads them. Never reused, only bumped.
+export const LIVE_ACTIVITY_CONTRACT_VERSION = 2;
 
 /** Every phase a snapshot may carry. Mirrors ActiveTaskBanner's branches. */
 export const LIVE_ACTIVITY_PHASES = [
@@ -93,6 +95,56 @@ function nextCtaLabel(flow, workerStatus) {
   const cta = flow?.cta?.[nextKey];
   const label = typeof cta?.label === 'string' && cta.label.trim() ? cta.label.trim() : null;
   return label;
+}
+
+/**
+ * The ONE action a Live Activity may offer this role, right now.
+ *
+ * ── ONE RULE, THREE CONSUMERS ──────────────────────────────────────────────
+ * The snapshot (for display), the token minter (which capability to grant) and
+ * the action endpoint (whether a submitted tap is legal) all ask THIS function.
+ * A button can therefore never appear on the Lock Screen that the backend would
+ * refuse, and an action can never be accepted that the banner would not offer.
+ *
+ * `id` is stable and machine-readable; `label` is display-only. Re-wording a
+ * button changes the string and nothing else — the id still means the same
+ * operation and carries the same authorization.
+ *
+ * Worker: exactly the banner's gate — TAKEN, not an upcoming engagement, and a
+ * next CTA exists (so the last step offers no button, only the waiting text).
+ * Publisher: exactly the banner's gate — `worker_status === 'done'`.
+ */
+export function deriveActivityAction(input: any) {
+  const { task, role, flow, isEngagement, t } = input || {};
+  if (!task || !flow || typeof t !== 'function') return null;
+
+  if (role === 'worker') {
+    if (task.status !== 'TAKEN' || isEngagement) return null;
+    const nextKey = nextCtaKey(flow, task.worker_status);
+    const label = nextCtaLabel(flow, task.worker_status);
+    if (!nextKey || !label) return null;
+    return {
+      id: 'worker_step',
+      step: nextKey,
+      label,
+      style: nextKey === 'on_the_way' ? 'brand' : 'success',
+      confirm: null,
+    };
+  }
+
+  if (role === 'publisher') {
+    if (!ACTIVE_STATUSES.includes(task.status)) return null;
+    if (task.worker_status !== 'done') return null;
+    return {
+      id: 'publisher_approve',
+      step: 'approve',
+      label: t('confirm_done_work'),
+      style: 'success',
+      confirm: t('atb_sub_tap_approve'),
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -282,6 +334,10 @@ export function buildTaskActivitySnapshot(input: any) {
     },
     iconKey,
     colorKey,
+    // The interactive action (or null). `actionState` is 'idle' from the server:
+    // only the App Intent moves it to pending / failed on the device.
+    action: deriveActivityAction({ task, role, flow, isEngagement, t }),
+    actionState: 'idle',
     deepLink: `${OPEN_DEEP_LINK}${task.id}`,
     endsAt: isOpen ? (task.expires_at || null) : null,
     revision: Math.max(1, Math.floor(Number(revision) || 1)),

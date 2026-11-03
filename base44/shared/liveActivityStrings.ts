@@ -48,6 +48,8 @@ export const REQUIRED_KEYS = [
   'atb_sub_tap_approve',
   'atb_sub_worker_updates',
   'atb_sub_youll_know',
+  // The publisher's approval button — ActiveTaskBanner's own label.
+  'confirm_done_work',
 ];
 
 export const HE = {
@@ -81,6 +83,9 @@ export const HE = {
   atb_sub_tap_approve: 'לחץ/י על אישור הסיום',
   atb_sub_worker_updates: 'העובד יעדכן את הסטטוס בקרוב',
   atb_sub_youll_know: 'תקבל/י עדכון כשיגיע',
+
+  // The publisher's completion button, verbatim from i18n-he.js.
+  confirm_done_work: 'אשר סיום עבודה',
 };
 
 /**

@@ -17,7 +17,7 @@
  * silently. If the contract changes, that test names the field that diverged.
  */
 
-export const LIVE_ACTIVITY_CONTRACT_VERSION = 1;
+export const LIVE_ACTIVITY_CONTRACT_VERSION = 2;
 
 export const LIVE_ACTIVITY_PHASES = [
   'open',
@@ -52,6 +52,44 @@ function nextCtaLabel(flow, workerStatus) {
   const cta = flow?.cta?.[nextKey];
   const label = typeof cta?.label === 'string' && cta.label.trim() ? cta.label.trim() : null;
   return label;
+}
+
+/**
+ * The ONE action this role may take right now — same rule as the server's
+ * `deriveActivityAction`, so the test screen can never offer a button the
+ * backend would refuse.
+ */
+export function deriveActivityAction(input) {
+  const { task, role, flow, isEngagement, t } = input || {};
+  if (!task || !flow || typeof t !== 'function') return null;
+
+  if (role === 'worker') {
+    if (task.status !== 'TAKEN' || isEngagement) return null;
+    const nextKey = nextCtaKey(flow, task.worker_status);
+    const label = nextCtaLabel(flow, task.worker_status);
+    if (!nextKey || !label) return null;
+    return {
+      id: 'worker_step',
+      step: nextKey,
+      label,
+      style: nextKey === 'on_the_way' ? 'brand' : 'success',
+      confirm: null,
+    };
+  }
+
+  if (role === 'publisher') {
+    if (!ACTIVE_STATUSES.includes(task.status)) return null;
+    if (task.worker_status !== 'done') return null;
+    return {
+      id: 'publisher_approve',
+      step: 'approve',
+      label: t('confirm_done_work'),
+      style: 'success',
+      confirm: t('atb_sub_tap_approve'),
+    };
+  }
+
+  return null;
 }
 
 export function authorizeActivity(task, role, userId) {
@@ -214,6 +252,8 @@ export function buildTaskActivitySnapshot(input) {
     },
     iconKey,
     colorKey,
+    action: deriveActivityAction({ task, role, flow, isEngagement, t }),
+    actionState: 'idle',
     deepLink: `${OPEN_DEEP_LINK}${task.id}`,
     endsAt: isOpen ? (task.expires_at || null) : null,
     revision: Math.max(1, Math.floor(Number(revision) || 1)),
