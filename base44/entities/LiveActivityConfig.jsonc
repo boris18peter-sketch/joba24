@@ -5,12 +5,22 @@
     "enabled": {
       "type": "boolean",
       "default": false,
-      "description": "MASTER FLAG. false = the entire Live Activity pipeline is inert: no snapshot is built, no dispatch row is written and no network call is made. Shipped false, and must stay false until Stage 2 is separately approved."
+      "description": "MASTER FLAG for SENDING. false = no snapshot is dispatched and no network call is made. Shipped false, and stays false until Stage 3 is separately approved."
     },
     "dry_run": {
       "type": "boolean",
       "default": true,
-      "description": "true = the pipeline computes and records what it WOULD send, but never contacts APNs. Only an explicit false, together with enabled=true, permits a real push."
+      "description": "true = the sender computes and records what it WOULD send, but never contacts APNs. Only an explicit false, together with enabled=true, permits a real push."
+    },
+    "diagnostic_events": {
+      "type": "boolean",
+      "default": false,
+      "description": "STAGE 2 SWITCH. true = real Task events are observed and recorded as diagnostic rows. Independent of `enabled`: observation never sends, and sending never records observations."
+    },
+    "diagnostic_retention_days": {
+      "type": "number",
+      "default": 7,
+      "description": "How many days of diagnostic rows to keep. Rows older than this are swept on the next recorded observation. Capped at 30 server-side."
     },
     "track_open_publisher": {
       "type": "boolean",

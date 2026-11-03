@@ -1,0 +1,207 @@
+{
+  "name": "LiveActivityEvent",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "The Task this observation was computed for."
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "enumColors": [
+        "green",
+        "blue",
+        "red"
+      ],
+      "description": "The entity event that triggered the observation."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "The recipient this row is about. Always derived from the stored Task (client_id or worker_id), never from a request."
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "publisher",
+        "worker"
+      ],
+      "enumColors": [
+        "purple",
+        "blue"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "entity_event",
+        "trigger_hint"
+      ],
+      "enumColors": [
+        "green",
+        "yellow"
+      ],
+      "description": "Where the recipient came from. trigger_hint is used only for a deleted task, where the record no longer exists and the event payload is the only evidence."
+    },
+    "task_status": {
+      "type": "string",
+      "description": "The authoritative Task.status at observation time."
+    },
+    "worker_status": {
+      "type": "string",
+      "description": "The authoritative worker progress state (on_the_way / arrived / done), or empty."
+    },
+    "phase": {
+      "type": "string",
+      "description": "The presentation phase the contract derived: open, scheduled, awaiting_start, on_the_way, arrived, done, terminal."
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "send",
+        "duplicate",
+        "stale_revision",
+        "terminal",
+        "terminal_already_sent",
+        "no_snapshot",
+        "unauthorized",
+        "task_missing",
+        "disabled"
+      ],
+      "enumColors": [
+        "blue",
+        "gray",
+        "yellow",
+        "red",
+        "gray",
+        "gray",
+        "red",
+        "red",
+        "gray"
+      ],
+      "description": "What the dispatcher WOULD have decided for this event. 'send' means a real push would have been produced."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "send",
+        "end",
+        "none"
+      ],
+      "enumColors": [
+        "blue",
+        "red",
+        "gray"
+      ],
+      "description": "The would-be push type: content update, activity close, or nothing at all."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Short machine reason for a non-send decision (e.g. task_deleted, record_older_than_last_observation, not_owner)."
+    },
+    "revision": {
+      "type": "number",
+      "description": "The task-state version, derived from the record's own updated_date (epoch seconds). Monotonic per task."
+    },
+    "next_revision": {
+      "type": "number",
+      "description": "The revision a real push would have carried if this decision were a send. Null when nothing would be sent."
+    },
+    "content_key": {
+      "type": "string",
+      "description": "Canonical string of the visible snapshot fields. An unchanged key is what turns a repeated event into 'duplicate'."
+    },
+    "title": {
+      "type": "string",
+      "description": "The exact title the Lock Screen would have shown."
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "The exact subtitle the Lock Screen would have shown."
+    },
+    "category_key": {
+      "type": "string"
+    },
+    "category_label": {
+      "type": "string"
+    },
+    "applicants": {
+      "type": "number",
+      "description": "Task.applicants.length at observation time \u2014 the applicant count the publisher's activity would display."
+    },
+    "terminal": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once a close has been observed for this recipient, so it is only ever recorded once."
+    },
+    "send_gate": {
+      "type": "string",
+      "enum": [
+        "disabled",
+        "dry_run",
+        "armed"
+      ],
+      "enumColors": [
+        "gray",
+        "yellow",
+        "red"
+      ],
+      "description": "What the REAL configuration would allow: disabled = master flag off, dry_run = would compute but never send, armed = a real push would be permitted."
+    },
+    "device_tokens": {
+      "type": "number",
+      "default": 0,
+      "description": "How many active ActivityKit tokens this recipient had in the configured environment. Zero means nothing could have been delivered yet."
+    },
+    "apns_contacted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Always false in Stage 2. Present so a future stage can prove the difference in the same table."
+    },
+    "task_updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The Task.updated_date this observation was computed from."
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the observation was recorded."
+    },
+    "received_ms": {
+      "type": "number",
+      "description": "received_at as epoch milliseconds \u2014 the retention sweep compares numbers, not strings."
+    }
+  },
+  "required": [
+    "task_id",
+    "event_type",
+    "decision"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

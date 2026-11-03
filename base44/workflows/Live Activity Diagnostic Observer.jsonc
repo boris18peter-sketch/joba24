@@ -1,0 +1,46 @@
+{
+  "name": "Live Activity Diagnostic Observer",
+  "description": "Records what a Live Activity WOULD show for every real task event. Diagnostic only: no pushes, no FCM, no native activation.",
+  "trigger": {
+    "condition": "${ ((.trigger.event_type != \"update\") or ((.trigger.changed_fields // []) | index(\"status\") != null) or ((.trigger.changed_fields // []) | index(\"worker_status\") != null) or ((.trigger.changed_fields // []) | index(\"worker_id\") != null) or ((.trigger.changed_fields // []) | index(\"applicants\") != null) or ((.trigger.changed_fields // []) | index(\"scheduled_time\") != null) or ((.trigger.changed_fields // []) | index(\"schedule_agreed_at\") != null) or ((.trigger.changed_fields // []) | index(\"category_details\") != null) or ((.trigger.changed_fields // []) | index(\"expires_at\") != null)) }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "entity_name": "Task"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "live_activity_diagnostic_observer",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "observe_task_event": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "liveActivityObserve",
+            "args": {
+              "task_id": "${ .trigger.entity_id }",
+              "event_type": "${ .trigger.event_type }",
+              "client_id": "${ .trigger.data.client_id }",
+              "worker_id": "${ .trigger.data.worker_id }",
+              "status": "${ .trigger.data.status }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Record Live Activity diagnosis",
+            "description": "Plans the snapshot and stores it. Never sends."
+          }
+        }
+      }
+    ]
+  }
+}

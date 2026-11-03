@@ -21,6 +21,11 @@ export const DEFAULT_CONFIG = {
   track_taken_worker: true,
   environment: 'development',
   max_tokens_per_dispatch: 20,
+  // Stage 2. A SEPARATE switch from `enabled`: it governs whether real task
+  // events are recorded as diagnostics. Turning observation on never arms a
+  // send, and arming a send later never starts recording observations.
+  diagnostic_events: false,
+  diagnostic_retention_days: 7,
 };
 
 /** Coerce a stored row into a complete, safe config. Anything odd means "off". */
@@ -39,6 +44,14 @@ export function normalizeConfig(row) {
 
   const max = Number(row.max_tokens_per_dispatch);
   out.max_tokens_per_dispatch = Number.isFinite(max) && max > 0 ? Math.min(Math.floor(max), 100) : DEFAULT_CONFIG.max_tokens_per_dispatch;
+
+  // Diagnostics are opt-in with a literal `true`, and retention is capped so a
+  // mistyped value can never turn the diagnostic table into an archive.
+  out.diagnostic_events = row.diagnostic_events === true;
+  const days = Number(row.diagnostic_retention_days);
+  out.diagnostic_retention_days = Number.isFinite(days) && days > 0
+    ? Math.min(Math.floor(days), 30)
+    : DEFAULT_CONFIG.diagnostic_retention_days;
 
   return out;
 }
