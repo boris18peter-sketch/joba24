@@ -128,6 +128,45 @@ push token, which exercises the existing registration function.
    matching its profile request and a `PROVISIONING_PROFILE_SPECIFIER`. A target
    left unsigned fails here instead of at the end of the archive.
 
+## 5d. Why the app target can never fail this way again
+
+The first widget-enabled archive died in `SceneDelegate.swift` with
+
+```
+error: cannot find 'JobaActivityPlugin' in scope
+```
+
+The class and the file were both correct. They were simply not in the same
+build: `LiveActivityPlugin.swift` is added to the app target by the generator,
+and that build never ran the generator, so the target compiled a registration of
+a class it did not contain. Requirements 1 and 4 of that report were both true
+and both irrelevant — the file existed on disk, and the extension target was
+absent from the archive exactly because no patch had run.
+
+Two changes make the two states inseparable instead of merely "supposed to match":
+
+1. **The registration is compiled conditionally.**
+   `bridge?.registerPluginInstance(JobaActivityPlugin())` sits inside
+   `#if LIVE_ACTIVITY_WIDGET`. A build that does not compile the file compiles an
+   empty line, so the shipping (widget-disabled) build is byte-equivalent in
+   behaviour and cannot break on a class it does not have.
+2. **The generator defines that condition on the app target** — `"DEBUG
+   LIVE_ACTIVITY_WIDGET"` in Debug, `"LIVE_ACTIVITY_WIDGET"` in Release — in the
+   same run that adds the file to the target's Compile Sources. The flag and the
+   class therefore travel together: whenever the reference is compiled, the class
+   is compiled too.
+
+CI proves it before archiving. `--check --require` now fails unless (a) the app
+target compiles `SceneDelegate.swift`, `LiveActivityPlugin.swift` and
+`JobaTaskActivityAttributes.swift` in the same target, and (b) both app
+configurations define `LIVE_ACTIVITY_WIDGET`. The build-input step also refuses
+to run at all when the flag does not resolve to a clean `true`/`false`, so a
+build can never quietly fall back to the shipping app while looking like a widget
+build.
+
+`test/liveActivity/stage3.test.js` mirrors all of this, including a test that
+strips the condition from a patched project and asserts the gate fails.
+
 ## 6. Residual risk, stated plainly
 
 The Swift was written and reviewed here, but this environment has no Swift

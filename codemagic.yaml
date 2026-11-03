@@ -53,13 +53,26 @@ workflows:
         script: |
           set -e
           WANT="${{ inputs.liveActivityWidget }}"
-          if [ "$WANT" = "true" ]; then
-            echo "ENABLE_LIVE_ACTIVITY_WIDGET=true" >> "$CM_ENV"
-            echo "Live Activity widget: ENABLED for this build (TestFlight only)."
-          else
-            echo "ENABLE_LIVE_ACTIVITY_WIDGET=false" >> "$CM_ENV"
-            echo "Live Activity widget: disabled - building the shipping app."
-          fi
+          case "$WANT" in
+            true)
+              echo "ENABLE_LIVE_ACTIVITY_WIDGET=true" >> "$CM_ENV"
+              echo "Live Activity widget: ENABLED for this build (TestFlight only)."
+              ;;
+            false)
+              echo "ENABLE_LIVE_ACTIVITY_WIDGET=false" >> "$CM_ENV"
+              echo "Live Activity widget: disabled - building the shipping app."
+              ;;
+            *)
+              # Anything other than a clean true/false means the box and the gate
+              # disagree (an input that could not be resolved, a renamed input, a
+              # build started without it). Proceeding would build the SHIPPING app
+              # while the log looked like a widget build - the exact confusion this
+              # flag exists to prevent - so the build stops here and says why.
+              echo "ERROR: liveActivityWidget resolved to '$WANT' (expected true or false)."
+              echo "Refusing to build: the Live Activity flag could not be resolved."
+              exit 1
+              ;;
+          esac
       - name: Install npm dependencies
         script: |
           npm install

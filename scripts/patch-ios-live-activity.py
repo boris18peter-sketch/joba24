@@ -219,7 +219,8 @@ def name_of(objects, entry):
 # ══════════════════════════════════════════════════════════════════════════════
 def inspect(project_text, info_plist_path):
     report = {"ok": False, "error": None, "targets": [], "widget": {"present": False},
-              "embed": False, "dependency": False, "app_sources": [], "info_plist": {}}
+              "embed": False, "dependency": False, "app_sources": [], "app_conditions": {},
+              "info_plist": {}}
     try:
         data = parse_pbxproj(project_text)
     except Exception as exc:  # noqa: BLE001 - the message is the product
@@ -231,6 +232,7 @@ def inspect(project_text, info_plist_path):
     target_ids = [t if isinstance(t, str) else t.get("value") for t in (project.get("targets") or [])]
     report["targets"] = [name_of(objects, t) for t in target_ids]
     report["app_sources"] = app_source_names(objects)
+    report["app_conditions"] = app_compilation_conditions(objects)
 
     widget_id = next((t for t in target_ids
                       if (objects.get(t) or {}).get("name") == WIDGET_TARGET_NAME), None)
@@ -288,12 +290,33 @@ def inspect(project_text, info_plist_path):
 
 
 def app_source_names(objects):
+    """Everything the App target compiles, from ITS OWN sources phase.
+
+    Reported per file name so the CI gate can prove that SceneDelegate.swift and
+    LiveActivityPlugin.swift are compiled by the same target - the condition under
+    which `JobaActivityPlugin` exists at all."""
     app = objects.get(APP_TARGET_ID) or {}
     for phase_entry in (app.get("buildPhases") or []):
         phase = resolve(objects, phase_entry)
         if phase.get("isa") == "PBXSourcesBuildPhase":
             return sorted(n for n in (name_of(objects, f) for f in (phase.get("files") or [])) if n)
     return []
+
+
+def app_compilation_conditions(objects):
+    """The APP target's SWIFT_ACTIVE_COMPILATION_CONDITIONS per configuration.
+
+    This is what makes the guarded registration in SceneDelegate compile, so the
+    gate fails when it is missing. The widget's own copy lives on its own target
+    and says nothing about whether the app can see the class."""
+    app = objects.get(APP_TARGET_ID) or {}
+    out = {}
+    for cfg_entry in ((objects.get((app.get("buildConfigurationList") or "")) or {})
+                      .get("buildConfigurations") or []):
+        obj = resolve(objects, cfg_entry)
+        out[obj.get("name") or "?"] = (obj.get("buildSettings") or {}).get(
+            "SWIFT_ACTIVE_COMPILATION_CONDITIONS", "")
+    return out
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -353,8 +376,72 @@ def widget_build_settings():
     return debug + release
 
 
+# ── The app target's two build configurations (stable ids in this project) ──────
+APP_CONFIG_IDS = {"Debug": "504EC3171FED79650016851F", "Release": "504EC3181FED79650016851F"}
+
+
+def _config_block(text, config_id, name):
+    """The [start, end) slice of ONE build configuration object."""
+    marker = "%s /* %s */ = {" % (config_id, name)
+    start = text.find(marker)
+    if start < 0:
+        raise SystemExit(
+            "ERROR: could not find the App target's %s build configuration (%s) in "
+            "project.pbxproj.\n"
+            "       The project's shape changed - review this script before building."
+            % (name, config_id)
+        )
+    end = text.find("\n\t\t};", start)
+    if end < 0:
+        raise SystemExit("ERROR: unterminated %s build configuration in project.pbxproj" % name)
+    return start, end
+
+
+def add_app_compilation_condition(text):
+    """Define LIVE_ACTIVITY_WIDGET on the APP target, in the run that adds the file.
+
+    SceneDelegate registers the plugin behind `#if LIVE_ACTIVITY_WIDGET`, so the
+    flag and the class's source file travel together. A build that compiles the
+    reference always compiles the class; the shipping build, whose project never
+    receives the file, compiles the guard instead of the reference.
+
+    That is the fix for "cannot find 'JobaActivityPlugin' in scope": the app target
+    used to reference a type that only some builds contain.
+
+    Only the app target gets the flag - the widget extension never needs it, and
+    defining it there would say nothing about whether the app can see the class."""
+    plan = {
+        "Debug": ("SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;",
+                  'SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG LIVE_ACTIVITY_WIDGET";'),
+        "Release": ('SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";',
+                    'SWIFT_ACTIVE_COMPILATION_CONDITIONS = "LIVE_ACTIVITY_WIDGET";'),
+    }
+    for name in ("Debug", "Release"):
+        start, end = _config_block(text, APP_CONFIG_IDS[name], name)
+        block = text[start:end]
+        if "LIVE_ACTIVITY_WIDGET" in block:
+            continue
+        old, new = plan[name]
+        if block.count(old) != 1:
+            raise SystemExit(
+                "ERROR: expected exactly 1 occurrence of %r in the App target's %s "
+                "configuration, found %d.\n"
+                "       The project's shape changed - review this script before building."
+                % (old, name, block.count(old))
+            )
+        text = text[:start] + block.replace(old, new, 1) + text[end:]
+    return text
+
+
 def apply(project_text, info_plist_path):
     if WIDGET_TARGET_NAME in project_text:
+        # A project patched by an earlier version of this script has the target
+        # but not the compilation condition. Adding it is what makes the guarded
+        # registration compile, so a half-patched project is repaired rather than
+        # silently left inert.
+        repaired = add_app_compilation_condition(project_text)
+        if repaired != project_text:
+            return repaired, ["widget target already present - added the LIVE_ACTIVITY_WIDGET condition"]
         return project_text, ["already applied - nothing written"]
 
     notes = []
@@ -537,6 +624,12 @@ def apply(project_text, info_plist_path):
 """ % (IDS["bf_attrs_app"], IDS["bf_plugin_app"]), "App Sources phase")
     notes.append("App Sources: attributes + plugin")
 
+    # ── 9b. The flag SceneDelegate's guard reads ────────────────────────────
+    # Added in the same run as the file above: the reference and the class it
+    # names are now inseparable.
+    t = add_app_compilation_condition(t)
+    notes.append("App target: LIVE_ACTIVITY_WIDGET compilation condition")
+
     # ── 10. Target dependency ───────────────────────────────────────────────
     t = must_replace(t, "/* Begin PBXVariantGroup section */", """/* Begin PBXTargetDependency section */
 		%s /* PBXTargetDependency */ = {
@@ -630,6 +723,17 @@ def main():
             for need in ("LiveActivityPlugin.swift", "JobaTaskActivityAttributes.swift"):
                 if need not in app_sources:
                     missing.append("App sources: " + need)
+            # The class SceneDelegate registers can only exist if the file above
+            # is compiled by the SAME target that compiles SceneDelegate.
+            if "SceneDelegate.swift" not in app_sources:
+                missing.append("App sources: SceneDelegate.swift")
+            # ...and SceneDelegate only references it behind this condition.
+            conditions = report.get("app_conditions") or {}
+            if not conditions:
+                missing.append("App target build configurations")
+            for cfg_name, value in conditions.items():
+                if "LIVE_ACTIVITY_WIDGET" not in (value or ""):
+                    missing.append("App %s: LIVE_ACTIVITY_WIDGET compilation condition" % cfg_name)
             if report["info_plist"].get("NSSupportsLiveActivities") is not True:
                 missing.append("Info.plist NSSupportsLiveActivities")
             if missing:

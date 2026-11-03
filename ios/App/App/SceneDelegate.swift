@@ -81,10 +81,24 @@ class JobaBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(IosIapPlugin())
         bridge?.registerPluginInstance(MetaAppEventsPlugin())
-        // Live Activities (Stage 3). Registered unconditionally and harmlessly:
-        // it reports `available:false` below iOS 16.2, and nothing in the app
-        // calls it while production delivery stays disabled.
+        // ── Live Activities (Stage 3) — COMPILED IN ONLY WHEN ITS FILE IS ────
+        // LiveActivityPlugin.swift is NOT part of this target in the shipping
+        // build: it is added to the app's Compile Sources by the build-time
+        // project generator, and only when the Live Activity widget is enabled.
+        // Registering it unconditionally therefore asked this file to reference a
+        // type the target did not contain, which is a hard compile error:
+        //
+        //   SceneDelegate.swift: cannot find 'JobaActivityPlugin' in scope
+        //
+        // Every other build then failed with it, and the flag that was supposed
+        // to turn the feature on could not even be reached. The generator now
+        // defines LIVE_ACTIVITY_WIDGET on this target in the SAME run that adds
+        // the file, so the guard and the class always arrive together: a build
+        // that compiles this reference always compiles the class, and a build
+        // that does not compiles an empty line instead.
+        #if LIVE_ACTIVITY_WIDGET
         bridge?.registerPluginInstance(JobaActivityPlugin())
+        #endif
     }
 }
 
