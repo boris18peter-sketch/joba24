@@ -6,6 +6,27 @@ Capacitor Xcode project WITHOUT Xcode.
     python3 scripts/patch-ios-live-activity.py             # apply (idempotent)
     python3 scripts/patch-ios-live-activity.py --check      # parse + report JSON
     python3 scripts/patch-ios-live-activity.py --check --require
+    python3 scripts/patch-ios-live-activity.py --check --require --report report.json
+
+── OUTPUT CONTRACT (why there are two streams) ──────────────────────────────
+The report is MACHINE DATA. Diagnostics are for a human reading the build log.
+Mixing them on one stream is what failed the widget-enabled build:
+
+    python3 patch-ios-live-activity.py --check --require > widget-check.json
+    json.load(open("widget-check.json"))
+    -> JSONDecodeError: Extra data: line 44 column 1
+
+The JSON document ended at line 43 and `OK: ... fully wired` followed it on
+stdout, so the consumer was handed a document plus a sentence. The contract is now:
+
+  * stdout (with --check, unless --quiet) carries THE JSON DOCUMENT AND NOTHING
+    ELSE, so `> file.json` stays parseable.
+  * `--report FILE` writes the same document to a dedicated file, atomically,
+    even on failure and even with --quiet. This is what CI reads.
+  * every diagnostic — `OK:`, `ERROR:`, `[live-activity] …` — goes to stderr.
+
+So a consumer never has to guess where the JSON ends, and a failing run still
+produces a complete, inspectable report.
 
 ── WHY A GENERATOR AND NOT A HAND-EDITED PROJECT ────────────────────────────
 A Widget Extension is not a folder of files: it is a second TARGET in
@@ -679,25 +700,61 @@ def apply(project_text, info_plist_path):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+def diag(message):
+    """A human line. NEVER stdout: stdout is reserved for the JSON document."""
+    sys.stderr.write(str(message) + "\n")
+    sys.stderr.flush()
+
+
+def emit_report(report, path):
+    """Write the report to its own file, atomically.
+
+    Always called - success or failure - so the consumer in CI never reads a
+    partial document and never has to parse a sentence out of a data stream."""
+    if not path:
+        return
+    directory = os.path.dirname(os.path.abspath(path))
+    if directory and not os.path.isdir(directory):
+        os.makedirs(directory, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    os.replace(tmp, path)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Wire the Live Activity widget extension into the Xcode project")
     parser.add_argument("--check", action="store_true", help="report the project's structure as JSON")
     parser.add_argument("--require", action="store_true", help="with --check: exit 1 unless the target is fully wired")
     parser.add_argument("--project", default=DEFAULT_PROJECT)
     parser.add_argument("--info-plist", dest="info_plist", default=DEFAULT_INFO_PLIST)
-    parser.add_argument("--quiet", action="store_true")
+    parser.add_argument("--report", default=None,
+                        help="write the JSON report to this file (always, even on failure)")
+    parser.add_argument("--quiet", action="store_true",
+                        help="suppress the JSON on stdout; --report still writes the file")
     args = parser.parse_args()
 
     if not os.path.exists(args.project):
-        print("ERROR: %s not found (run this from the repository root)" % args.project)
+        emit_report({"ok": False, "error": "%s not found (run this from the repository root)" % args.project,
+                     "targets": [], "widget": {"present": False}, "embed": False, "dependency": False,
+                     "app_sources": [], "app_conditions": {}, "info_plist": {}}, args.report)
+        diag("ERROR: %s not found (run this from the repository root)" % args.project)
         return 1
 
     if args.check:
         with open(args.project, "r", encoding="utf-8") as fh:
             report = inspect(fh.read(), args.info_plist)
+        # The document goes to its own file FIRST, so even a failing run leaves a
+        # complete report behind for the caller to read.
+        emit_report(report, args.report)
+        # stdout carries the document and nothing else - never a human line.
         if not args.quiet:
-            print(json.dumps(report, indent=2, ensure_ascii=False))
+            json.dump(report, sys.stdout, indent=2, ensure_ascii=False)
+            sys.stdout.write("\n")
+            sys.stdout.flush()
         if not report["ok"]:
+            diag("ERROR: %s" % (report.get("error") or "project check failed"))
             return 1
         if args.require:
             widget = report["widget"]
@@ -737,9 +794,12 @@ def main():
             if report["info_plist"].get("NSSupportsLiveActivities") is not True:
                 missing.append("Info.plist NSSupportsLiveActivities")
             if missing:
-                print("ERROR: the Live Activity target is not fully wired: " + ", ".join(missing))
+                diag("ERROR: the Live Activity target is not fully wired: " + ", ".join(missing))
                 return 1
-            print("OK: Live Activity widget extension is fully wired")
+            # Diagnostics are stderr: this line used to land on stdout, right
+            # after the JSON, which is what made the CI consumer fail with
+            # "Extra data: line 44 column 1".
+            diag("OK: Live Activity widget extension is fully wired")
         return 0
 
     with open(args.project, "r", encoding="utf-8") as fh:
@@ -752,15 +812,15 @@ def main():
         try:
             parse_pbxproj(patched)
         except Exception as exc:  # noqa: BLE001
-            print("ERROR: refusing to write a project.pbxproj that does not parse: %s" % exc)
+            diag("ERROR: refusing to write a project.pbxproj that does not parse: %s" % exc)
             return 1
         with open(args.project, "w", encoding="utf-8") as fh:
             fh.write(patched)
 
     if not args.quiet:
         for note in notes:
-            print("[live-activity] " + note)
-        print("[live-activity] %s" % ("project.pbxproj updated" if patched != original else "project already patched"))
+            diag("[live-activity] " + note)
+        diag("[live-activity] %s" % ("project.pbxproj updated" if patched != original else "project already patched"))
     return 0
 
 

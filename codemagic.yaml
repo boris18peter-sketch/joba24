@@ -411,7 +411,17 @@ workflows:
           echo "=== Adding the widget target to project.pbxproj ==="
           python3 scripts/patch-ios-live-activity.py
           echo "=== Verifying the patched project, structurally ==="
-          python3 scripts/patch-ios-live-activity.py --check --require > "$CM_BUILD_DIR/widget-check.json"
+          # ── THE REPORT IS WRITTEN TO ITS OWN FILE BY THE GENERATOR ──────────
+          # This used to be `--check --require > widget-check.json`. The generator
+          # printed the JSON document AND the line `OK: ... fully wired` on
+          # stdout, so the file held a complete document followed by a sentence
+          # and the next step died with:
+          #     json.decoder.JSONDecodeError: Extra data: line 44 column 1
+          # --report makes the generator write the document itself (atomically,
+          # even when the check fails) and every human line goes to stderr. No
+          # redirection, so no way for a log line to end up inside the JSON.
+          python3 scripts/patch-ios-live-activity.py --check --require --report "$CM_BUILD_DIR/widget-check.json"
+          echo "=== widget-check.json (generated report) ==="
           cat "$CM_BUILD_DIR/widget-check.json"
           # The profile downloaded later is looked up BY BUNDLE ID. If the project
           # was patched with a different id than WIDGET_BUNDLE_ID, signing fails
@@ -419,7 +429,11 @@ workflows:
           # is compared here, before anything is fetched or archived.
           python3 - "$CM_BUILD_DIR/widget-check.json" <<'PYEOF'
           import json, os, sys
-          report = json.load(open(sys.argv[1]))
+          with open(sys.argv[1], "r", encoding="utf-8") as fh:
+              report = json.load(fh)   # the file is the document and nothing else
+          if not report.get("ok"):
+              print("ERROR: the project report is not ok: %s" % (report.get("error") or "unknown"))
+              sys.exit(1)
           got = (report.get("widget") or {}).get("bundle_id") or ""
           want = os.environ.get("WIDGET_BUNDLE_ID", "")
           if got != want:
@@ -600,6 +614,23 @@ workflows:
             echo "ERROR: NSSupportsLiveActivities is missing from the archived app - no Live Activity can appear."
             exit 1
           fi
+          # ── AN EXTENSION'S VERSION MUST MATCH ITS HOST APP ────────────────
+          # App Store Connect rejects the upload when the .appex reports a
+          # different CFBundleShortVersionString / CFBundleVersion than the app.
+          # The widget target keeps its own defaults (1.0 / 1) and relies on this
+          # build's MARKETING_VERSION / CURRENT_PROJECT_VERSION overrides to
+          # reach the app's values, so the two are compared here instead of
+          # discovering it after a 40-minute archive during submission.
+          for KEY in CFBundleShortVersionString CFBundleVersion; do
+            APP_VALUE=$(/usr/libexec/PlistBuddy -c "Print :$KEY" "$APP/Info.plist")
+            APEX_VALUE=$(/usr/libexec/PlistBuddy -c "Print :$KEY" "$APEX/Info.plist")
+            if [ -z "$APEX_VALUE" ] || [ "$APEX_VALUE" != "$APP_VALUE" ]; then
+              echo "ERROR: $KEY differs - app='$APP_VALUE' extension='$APEX_VALUE'."
+              echo "The App Store would reject this build: an extension's version must match its host app."
+              exit 1
+            fi
+            echo "OK: $KEY matches the app ($APP_VALUE)"
+          done
       - name: Verify SKAdNetwork IDs in the built app (iOS)
         script: |
           PLIST="$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app/Info.plist"
@@ -664,91 +695,37 @@ workflows:
           else
             echo "SKIPPED: TikTok credentials not provided - TikTok is WAITING FOR CREDENTIAL."
           fi
+      - name: Build export options from the downloaded profiles
+        script: |
+          # ── ONE PROFILE PER BUNDLE ID, CHOSEN BY BUNDLE ID ──────────────────
+          # With the widget enabled there are two profiles on disk, and the
+          # export list must name one for EVERY bundle id in the archive.
+          #
+          # This was a shell loop inside this file, and it had a fault that only
+          # appears in exactly that two-profile case: the line
+          #     [ -z "$PROFILE_PATH" ] && PROFILE_PATH="$CANDIDATE"
+          # returns 1 on every iteration after the first, so under `set -e` the
+          # step aborted before xcodebuild ever ran. It was also impossible to
+          # test, because it needed macOS, a keychain and real profiles.
+          #
+          # scripts/ios-export-options.py does the same mapping as a pure function
+          # over decoded profiles, derives the team id from the app's own profile
+          # instead of hardcoding it, and is covered by
+          # test/liveActivity/pipeline.test.js. Its JSON report goes to its own
+          # file and its diagnostics go to stderr.
+          python3 scripts/ios-export-options.py \
+            --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            --app-bundle-id "$BUNDLE_ID" \
+            --widget-bundle-id "$WIDGET_BUNDLE_ID" \
+            --require-widget "${ENABLE_LIVE_ACTIVITY_WIDGET:-false}" \
+            --out "$CM_BUILD_DIR/export_options.plist" \
+            --report "$CM_BUILD_DIR/export-options.json"
+          echo "=== export_options.plist ==="
+          cat "$CM_BUILD_DIR/export_options.plist"
       - name: Export ipa
         script: |
-          # ── Pick the APP's profile, not just the first one on disk ──────────
-          # With the Live Activity extension enabled there are two profiles in
-          # this directory. Taking the first would have exported the app with the
-          # WIDGET's profile (its entitlement names a different app id), so the
-          # app's own bundle id is matched explicitly. When only one profile
-          # exists the first match wins immediately, exactly as before.
-          PROFILE_PATH=""
-          for CANDIDATE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision; do
-            [ -f "$CANDIDATE" ] || continue
-            [ -z "$PROFILE_PATH" ] && PROFILE_PATH="$CANDIDATE"
-            security cms -D -i "$CANDIDATE" -o /tmp/appcandidate.plist 2>/dev/null || continue
-            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/appcandidate.plist 2>/dev/null || echo "")
-            if [ "${APP_ID#*.}" = "$BUNDLE_ID" ]; then
-              PROFILE_PATH="$CANDIDATE"
-              break
-            fi
-          done
-          if [ -z "$PROFILE_PATH" ]; then
-            echo "ERROR: No .mobileprovision file found in Provisioning Profiles directory"
-            exit 1
-          fi
-          echo "Profile file: $PROFILE_PATH"
-          echo "File details:"
-          ls -la "$PROFILE_PATH"
-          file "$PROFILE_PATH"
-          echo "--- Extracting profile name ---"
-          security cms -D -i "$PROFILE_PATH" -o /tmp/profile.plist
-          echo "Decoded plist contents saved. First 500 chars:"
-          head -c 500 /tmp/profile.plist
-          echo ""
-          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist)
-          if [ -z "$PROFILE_NAME" ]; then
-            echo "ERROR: Could not extract profile name from decoded plist"
-            exit 1
-          fi
-          echo "Using provisioning profile: $PROFILE_NAME"
-          # ── The widget's own profile, matched by its bundle id ─────────────
-          # The export list must name a profile for EVERY bundle id in the
-          # archive. A missing entry for the extension fails the export with
-          # "does not support provisioning profiles", so it is matched here by
-          # reading the entitlement inside each downloaded profile.
-          WIDGET_PROFILE_ENTRY=""
-          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" = "true" ]; then
-            for CANDIDATE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision; do
-              [ -f "$CANDIDATE" ] || continue
-              security cms -D -i "$CANDIDATE" -o /tmp/candidate.plist 2>/dev/null || continue
-              APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/candidate.plist 2>/dev/null || echo "")
-              # application-identifier is "<TEAMID>.<bundle id>"
-              if [ "${APP_ID#*.}" = "$WIDGET_BUNDLE_ID" ]; then
-                WIDGET_PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/candidate.plist)
-                WIDGET_PROFILE_ENTRY="              <key>$WIDGET_BUNDLE_ID</key>
-                          <string>$WIDGET_PROFILE_NAME</string>"
-                echo "Widget profile: $WIDGET_PROFILE_NAME"
-                break
-              fi
-            done
-            if [ -z "$WIDGET_PROFILE_ENTRY" ]; then
-              echo "ERROR: no provisioning profile found for $WIDGET_BUNDLE_ID - the export would fail."
-              exit 1
-            fi
-          fi
-          cat > "$CM_BUILD_DIR/export_options.plist" << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store-connect</string>
-            <key>teamID</key>
-            <string>322DV2PB9V</string>
-            <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>Apple Distribution</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>$BUNDLE_ID</key>
-              <string>$PROFILE_NAME</string>
-          $WIDGET_PROFILE_ENTRY
-            </dict>
-          </dict>
-          </plist>
-          EOF
+          # The options plist was written by the step above, with a profile for
+          # the app and - when the widget is enabled - one for the extension.
           xcodebuild -exportArchive \
             -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
             -exportPath "$CM_BUILD_DIR/build/ios/ipa" \

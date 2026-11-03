@@ -176,6 +176,69 @@ build.
 `test/liveActivity/stage3.test.js` mirrors all of this, including a test that
 strips the condition from a patched project and asserts the gate fails.
 
+## 5e. Why the widget build failed with `Extra data: line 44 column 1`
+
+The step "Wire the Live Activity widget extension" ran
+
+```sh
+python3 scripts/patch-ios-live-activity.py --check --require > "$CM_BUILD_DIR/widget-check.json"
+```
+
+and the next step did `json.load(open(...))`. The generator printed the JSON
+report **and** the line `OK: Live Activity widget extension is fully wired` on
+stdout, so the file held a complete 43-line document followed by a sentence:
+
+```
+line 43: }
+line 44: OK: Live Activity widget extension is fully wired
+```
+
+That is the whole error. The project itself was fine — the log's own
+`OK: … fully wired` proves the target, its sources, the embed phase, the
+dependency and the compilation condition were all present.
+
+The contract is now split by purpose, in the generator and in
+`scripts/ios-export-options.py` alike:
+
+| stream | carries |
+| --- | --- |
+| stdout (`--check`, unless `--quiet`) | the JSON document and nothing else |
+| `--report FILE` | the same document, written atomically, **always** (even when the check fails, even with `--quiet`) |
+| stderr | every diagnostic: `OK:`, `ERROR:`, `[live-activity] …` |
+
+CI no longer redirects anything: it passes `--report` and reads that file.
+
+## 5f. Export options are built by a tested script
+
+The profile → export-options step used to be a `for` loop inside `codemagic.yaml`.
+It had a fault that only appears with a **second** profile on disk — i.e. exactly
+when the widget is enabled:
+
+```sh
+[ -z "$PROFILE_PATH" ] && PROFILE_PATH="$CANDIDATE"   # returns 1 after the first pass
+```
+
+Under `set -e` that aborts the step, so the export would have died before
+`xcodebuild` was called. It was also untestable: it needed macOS, a keychain and
+real profiles, so nothing could prove which profile a bundle id would receive.
+
+`scripts/ios-export-options.py` replaces it: the mapping is a pure function over
+decoded profiles, the team id is taken from the app profile itself instead of a
+hardcoded string, a widget build fails loudly when the extension's profile is
+missing, and a *single* profile on disk still works exactly as before (the
+widget-disabled path is byte-identical in behaviour). Covered by
+`test/liveActivity/pipeline.test.js`.
+
+## 5g. Running the preflight locally
+
+```sh
+npx vitest run test/liveActivity        # the whole pipeline preflight
+```
+
+This executes the real scripts (flag resolver, project generator, report
+consumer, export-options builder) — no mocks. What it cannot do is compile Swift
+or run `xcodebuild`: that needs macOS and only happens on Codemagic.
+
 ## 6. Residual risk, stated plainly
 
 The Swift was written and reviewed here, but this environment has no Swift

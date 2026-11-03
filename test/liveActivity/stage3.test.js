@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   mkdtempSync, copyFileSync, readFileSync, readdirSync, statSync, writeFileSync,
 } from 'node:fs';
@@ -19,7 +19,14 @@ const BRIDGE = join(ROOT, 'src/lib/liveActivityNative.js');
 const CODEMAGIC = join(ROOT, 'codemagic.yaml');
 
 const read = (p) => readFileSync(p, 'utf8');
+// stdout only: with --check that is the JSON document and nothing else.
 const python = (args) => execFileSync('python3', [SCRIPT, ...args], { cwd: ROOT, encoding: 'utf8' });
+// stdout + stderr: for assertions about the human diagnostics, which live on
+// stderr so they can never corrupt the report (see pipeline.test.js).
+const pythonLog = (args) => {
+  const result = spawnSync('python3', [SCRIPT, ...args], { cwd: ROOT, encoding: 'utf8' });
+  return `${result.stdout || ''}${result.stderr || ''}`;
+};
 const check = (project, info) => JSON.parse(python(['--check', '--project', project, '--info-plist', info]));
 
 /** Runs the generator expecting it to FAIL, and returns everything it said. */
@@ -99,7 +106,8 @@ describe('project generator', () => {
     // widget would be compiling two different attribute types.
     expect(report.app_sources).toContain('JobaTaskActivityAttributes.swift');
 
-    const secondRun = python(['--project', project, '--info-plist', info]);
+    // Notes are diagnostics, so they are read from stderr (stdout stays data-only).
+    const secondRun = pythonLog(['--project', project, '--info-plist', info]);
     expect(secondRun).toContain('already applied');
     expect(read(project)).toBe(afterFirst);
   });
@@ -110,7 +118,7 @@ describe('project generator', () => {
       .toThrow(); // unwired copy must fail the gate
 
     python(['--project', project, '--info-plist', info, '--quiet']);
-    const output = python(['--check', '--require', '--project', project, '--info-plist', info]);
+    const output = pythonLog(['--check', '--require', '--project', project, '--info-plist', info]);
     expect(output).toContain('fully wired');
   });
 
@@ -333,8 +341,11 @@ describe('codemagic pipeline', () => {
 
   it('fetches the extension profile and names it in the export', () => {
     expect(yaml).toContain('app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID"');
-    expect(yaml).toContain('WIDGET_PROFILE_ENTRY');
-    expect(yaml).toContain('$WIDGET_PROFILE_ENTRY');
+    // The export list is produced by the tested script (it maps one profile per
+    // bundle id), so the wiring is checked through what it is handed rather than
+    // through an inline heredoc that nothing could verify.
+    expect(yaml).toContain('python3 scripts/ios-export-options.py');
+    expect(yaml).toContain('--widget-bundle-id "$WIDGET_BUNDLE_ID"');
   });
 
   it('still builds and signs the app exactly as before', () => {
