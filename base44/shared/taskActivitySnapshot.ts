@@ -67,10 +67,15 @@ function flowIndex(flow, workerStatus) {
   return steps.findIndex((s) => s && s.key === workerStatus);
 }
 
+/** The canonical key of the worker's next action, as nextCta() derives it. */
+function nextCtaKey(flow, workerStatus) {
+  const idx = flowIndex(flow, workerStatus);
+  return idx < 0 ? CANONICAL_STEPS[0] : (CANONICAL_STEPS[idx + 1] || null);
+}
+
 /** The next CTA label a worker would see, exactly as nextCta() derives it. */
 function nextCtaLabel(flow, workerStatus) {
-  const idx = flowIndex(flow, workerStatus);
-  const nextKey = idx < 0 ? CANONICAL_STEPS[0] : CANONICAL_STEPS[idx + 1];
+  const nextKey = nextCtaKey(flow, workerStatus);
   if (!nextKey) return null;
   const cta = flow?.cta?.[nextKey];
   const label = typeof cta?.label === 'string' && cta.label.trim() ? cta.label.trim() : null;
@@ -228,7 +233,11 @@ export function buildTaskActivitySnapshot(input: any) {
   const iconKey = isEngagement
     ? 'calendar'
     : (stepIdx === 2 ? 'check' : (heroIconStep?.icon || 'navigation'));
-  const colorKey = stepIdx === 0 ? 'brand' : (stepIdx >= 1 ? 'success' : 'brand');
+  // The colour of the worker's next ACTION, exactly as getQuickAction() picks it:
+  // setting out is the brand blue, arrival and completion are the success green.
+  // Null when there is no action to offer (publisher, or an engagement).
+  const quickKey = isWorker && !isOpen && !isEngagement ? nextCtaKey(flow, task.worker_status) : null;
+  const colorKey = quickKey === 'on_the_way' ? 'brand' : (quickKey ? 'success' : null);
 
   const snapshot = {
     contractVersion: LIVE_ACTIVITY_CONTRACT_VERSION,
