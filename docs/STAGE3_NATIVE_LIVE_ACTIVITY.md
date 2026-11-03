@@ -268,3 +268,53 @@ compiler, so it has **not** been compiled. The first real compile happens in
 Codemagic. If anything is wrong it will fail at `Archive the app` with the exact
 file and line, and the build is configured to stop rather than ship — the web
 app, the shipping iOS path and Android are untouched by that failure.
+## 7. UX stage - End behaviour, content parity and the redesign
+
+### 7.1 Why `end` looked like it did nothing
+
+Three separate causes, none of them "ActivityKit ignored the call":
+
+1. **The dismissal policy.** With a farewell state the plugin ended the activity
+   with `.after(Date() + 60)`, so iOS deliberately kept the ended card on the
+   Lock Screen for a full minute. It was over; it was still drawn.
+2. **The plugin lied about the result.** `ended: true` was returned even when no
+   activity matched (`count: 0`), so a no-op was indistinguishable from a close.
+3. **The screen kept its own state.** `step` and `revision` were local React
+   values that nothing reset after an end, so it went on saying
+   "Step 2 of 3 - revision 9" while no activity existed.
+
+Now: the dismissal default is **immediate** (`dismissAfter` seconds, 0 by
+default); `ended` is true only when something was actually closed; `count`,
+`activityIds`, `remaining` and a `reason` are reported; and the screen resets and
+re-reads the native list afterwards, treating it - not its own memory - as truth.
+`all: true` closes every activity on the device (the deliberate cleanup), and
+`activeActivities` now reports each activity's ActivityKit `activityState`
+(active / stale / ended / dismissed).
+
+### 7.2 Content parity
+
+The local test no longer carries hand-written Hebrew. Every snapshot it sends is
+produced by the app's own presentation contract over a real `GlobalCategory` flow
+and the app's translator, for both roles and every canonical stage (OPEN ->
+TAKEN -> on_the_way -> arrived -> done, plus the scheduled engagement). The only
+wording on the Lock Screen is therefore wording the banner already shows.
+
+The frontend cannot import `base44/shared/`, so the contract has a documented
+mirror in `src/lib/liveActivityContract.js`, and
+`test/liveActivity/testScreenParity.test.js` runs both implementations over the
+full stage x role matrix and fails on any difference.
+
+### 7.3 The widget
+
+Rebuilt around one accent (brand blue) on the system material, so light and dark
+both keep contrast: icon bubble, status title, secondary line, and a three-segment
+rail carrying the current step's real label plus a numeric counter. System text
+styles throughout (bounded Dynamic Type), RTL set on the content, and the compact
+slot shows digits only - it used to fall back to a raw English phase name.
+
+### 7.4 Still needs a device
+
+Start, each update, end, and a repeated Start -> Update -> End loop are all
+verifiable from `/live-activity-test`. The Lock Screen and Dynamic Island layouts
+need a real iPhone with the widget-enabled TestFlight build. Production dispatch
+remains disabled (`enabled=false`, `dry_run=true`).
