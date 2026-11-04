@@ -123,9 +123,17 @@ struct JobaTaskActionIntent: LiveActivityIntent {
 
         // ── 3. Irreversible action: the first tap only asks to confirm ───────
         // The sentence shown is the server's (`action.confirm`), never ours.
-        let isApproval = action.id == "publisher_approve"
+        // ── WHICH ACTIONS TAKE TWO TAPS IS THE SERVER'S DECISION ─────────────
+        // This used to hardcode `publisher_approve`, which made every new action
+        // either single-tap by accident or require another app release to be
+        // gated at all. The contract already says which actions are irreversible:
+        // the server sends a `confirm` sentence for exactly those. So the rule is
+        // "an action with a confirmation sentence confirms first" — completion
+        // and assignment today, anything consequential added later, with no
+        // string of ids to keep in step.
+        let requiresConfirm = !(action.confirm ?? "").isEmpty
         let awaitingConfirmation = (current.actionState == "confirm")
-        if isApproval && !awaitingConfirmation {
+        if requiresConfirm && !awaitingConfirmation {
             await apply(activity, current.withActionState("confirm"))
             stage("confirm_requested")
             return .result()

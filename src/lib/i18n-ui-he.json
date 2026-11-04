@@ -81,6 +81,8 @@
   "atb_sub_youll_know": "תקבל/י עדכון כשיגיע",
   "atb_worker_here": "העובד הגיע ומבצע",
   "atb_worker_done": "העובד סיים — אשר/י סיום",
+  "la_assign_worker": "אשר את",
+  "la_assign_sub": "העובד יקבל את המשימה",
   "atb_sub_tap_approve": "לחץ/י על אישור הסיום",
   "onb_demo_badge": "הדגמה",
   "task_completed_badge": "הושלם",

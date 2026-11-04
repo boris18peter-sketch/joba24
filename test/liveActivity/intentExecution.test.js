@@ -182,7 +182,10 @@ describe('the intent records every stage it stops at', () => {
     const send = intent.indexOf('URLSession.shared.data');
     expect(confirm).toBeGreaterThan(-1);
     expect(confirm).toBeLessThan(send);
-    expect(intent).toContain('let isApproval = action.id == "publisher_approve"');
+    // The gate is the CONTRACT's own marker — an action the server marked
+    // irreversible by sending a confirmation sentence — never a hardcoded id.
+    expect(intent).toContain('let requiresConfirm = !(action.confirm ?? "").isEmpty');
+    expect(intent).toContain('if requiresConfirm && !awaitingConfirmation {');
     // A worker step is not gated twice: the contract makes it forward-only.
     expect(intent).toContain('current.actionState == "confirm"');
   });

@@ -25,13 +25,60 @@
 import { CANONICAL_STEPS } from './liveActivityFlow.ts';
 
 /** The only ids a token may carry. Stable forever — labels are display only. */
-export const ACTION_IDS = ['worker_step', 'publisher_approve'];
+export const ACTION_IDS = ['worker_step', 'publisher_approve', 'publisher_assign'];
 
 /** Which action ids a role may ever perform on a task. */
 export function actionsForRole(role: string): string[] {
   if (role === 'worker') return ['worker_step'];
-  if (role === 'publisher') return ['publisher_approve'];
+  if (role === 'publisher') return ['publisher_approve', 'publisher_assign'];
   return [];
+}
+
+/**
+ * Is assigning an applicant legal right now — and is the choice UNAMBIGUOUS?
+ *
+ * ── WHY THIS EXISTS AT ALL ─────────────────────────────────────────────────
+ * A Lock Screen card cannot hold a list, so it can only offer a choice that
+ * needs no choosing. This guard is what makes that honest: it approves nothing
+ * unless the database currently holds EXACTLY ONE pending application, and that
+ * application belongs to the worker it names.
+ *
+ * It re-reads the applications instead of trusting the card (or the task's
+ * `applicants` projection, which is only rebuilt on certain writes). If a second
+ * worker applied while the card was on screen, the count is 2 and the tap is
+ * refused with `selection_ambiguous` — nothing is guessed, and the refreshed
+ * snapshot has no action, so the button disappears rather than inviting a second
+ * tap. The publisher then picks in the app, where the choice can be shown.
+ */
+export function guardPublisherAssign(input: {
+  task: any;
+  userId: string;
+  applications: any[];
+}):
+  | { ok: true; applicationId: string; workerId: string }
+  | { ok: false; reason: string; status: number; detail?: any } {
+  const { task, userId, applications } = input || ({} as any);
+  if (!task) return { ok: false, reason: 'task_missing', status: 404 };
+  if (task.client_id !== userId) return { ok: false, reason: 'not_owner', status: 403 };
+  if (task.status === 'TAKEN') {
+    return { ok: false, reason: 'already_assigned', status: 409, detail: { task_status: task.status } };
+  }
+  if (task.status !== 'OPEN') {
+    return { ok: false, reason: 'task_not_active', status: 409, detail: { task_status: task.status } };
+  }
+
+  const pending = (Array.isArray(applications) ? applications : [])
+    .filter((a) => a?.status === 'pending');
+  if (pending.length === 0) return { ok: false, reason: 'no_applicants', status: 409 };
+  if (pending.length > 1) {
+    return { ok: false, reason: 'selection_ambiguous', status: 409, detail: { pending: pending.length } };
+  }
+
+  const app = pending[0];
+  if (!app?.id || !app?.worker_id) {
+    return { ok: false, reason: 'application_incomplete', status: 409 };
+  }
+  return { ok: true, applicationId: app.id, workerId: app.worker_id };
 }
 
 export type GuardResult =

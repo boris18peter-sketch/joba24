@@ -77,7 +77,22 @@ export default function CompletionApprovalPopup({ task, onClose }) {
       // evidence on its own, and the approval call re-checks the task anyway.
       .catch(() => { if (alive) setVerified(true); });
 
-    return () => { alive = false; };
+    // ── AND IT KEEPS LISTENING WHILE IT IS OPEN ─────────────────────────────
+    // The read above covers the sheet that is ABOUT to open. This covers the one
+    // already on screen: the publisher can leave it open, approve on the Lock
+    // Screen, and be looking at a sheet offering an action that no longer exists.
+    // The task record is the truth, so a terminal update closes the sheet here and
+    // refreshes the app — rather than letting the tap fail and asking him to
+    // figure out why.
+    const unsubscribe = base44.entities.Task.subscribe((event) => {
+      if (!alive || event?.id !== task.id) return;
+      const next = event.data || {};
+      if (!TERMINAL_STATUSES.includes(next.status)) return;
+      refreshCaches();
+      onClose();
+    });
+
+    return () => { alive = false; unsubscribe?.(); };
   }, [task?.id]);
 
   // The freshest version of the task this sheet may show.

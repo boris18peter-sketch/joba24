@@ -143,14 +143,14 @@ describe('action capability token', () => {
 });
 
 describe('what a role may ever do', () => {
-  it('gives each role exactly one capability', () => {
+  it('gives each role exactly the capabilities it may perform', () => {
     expect(actionsForRole('worker')).toEqual(['worker_step']);
-    expect(actionsForRole('publisher')).toEqual(['publisher_approve']);
+    expect(actionsForRole('publisher')).toEqual(['publisher_approve', 'publisher_assign']);
     expect(actionsForRole('admin')).toEqual([]);
   });
 
   it('keeps the action ids stable', () => {
-    expect(ACTION_IDS).toEqual(['worker_step', 'publisher_approve']);
+    expect(ACTION_IDS).toEqual(['worker_step', 'publisher_approve', 'publisher_assign']);
   });
 });
 
@@ -232,6 +232,8 @@ describe('the action the contract offers', () => {
     { label: 'worker, upcoming engagement', task: task(), role: 'worker', isEngagement: true },
     { label: 'publisher, worker finished', task: task({ worker_status: 'done' }), role: 'publisher' },
     { label: 'publisher, worker on the way', task: task({ worker_status: 'on_the_way' }), role: 'publisher' },
+    { label: 'publisher, one applicant', task: task({ status: 'OPEN', applicants: [{ worker_id: 'w1', worker_name: 'דני' }] }), role: 'publisher' },
+    { label: 'publisher, two applicants', task: task({ status: 'OPEN', applicants: [{ worker_id: 'w1', worker_name: 'דני' }, { worker_id: 'w2', worker_name: 'רות' }] }), role: 'publisher' },
   ];
 
   it('is identical on the server and in the app', () => {

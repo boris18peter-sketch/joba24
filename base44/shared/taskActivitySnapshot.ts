@@ -133,6 +133,26 @@ export function deriveActivityAction(input: any) {
   }
 
   if (role === 'publisher') {
+    // ── ASSIGNING THE ONE APPLICANT, FROM THE LOCK SCREEN ──────────────────
+    // Offered ONLY while the task is still open and exactly ONE worker has
+    // applied. With two or more there is no unambiguous choice and a card cannot
+    // show a list — so no action is offered at all and the card's own tap opens
+    // the task, where the applicants are. The server re-checks the count before
+    // approving (guardPublisherAssign), so a second applicant arriving while the
+    // card is on screen turns the tap into a refusal, never a guess.
+    if (task.status === 'OPEN') {
+      const applicants = Array.isArray(task.applicants) ? task.applicants : [];
+      if (applicants.length !== 1) return null;
+      const name = String(applicants[0]?.worker_name || '').trim();
+      if (!name) return null;
+      return {
+        id: 'publisher_assign',
+        step: 'assign',
+        label: `${t('la_assign_worker')} ${name}`,
+        style: 'brand',
+        confirm: t('la_assign_sub'),
+      };
+    }
     if (!ACTIVE_STATUSES.includes(task.status)) return null;
     if (task.worker_status !== 'done') return null;
     return {

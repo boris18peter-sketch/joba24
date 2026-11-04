@@ -346,7 +346,7 @@ describe('an install-scoped capability, bounded and re-authorized', () => {
     expect(verified.claims.scope).toBe('user');
     expect(verified.claims.sub).toBe(WORKER);
     expect(verified.claims.tid).toBeUndefined();
-    expect(verified.claims.actions.sort()).toEqual(['publisher_approve', 'worker_step']);
+    expect(verified.claims.actions.sort()).toEqual(['publisher_approve', 'publisher_assign', 'worker_step']);
   });
 
   it('cannot be stretched past twelve hours', async () => {

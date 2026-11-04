@@ -3,9 +3,11 @@ import { verifyActionToken } from '../../shared/liveActivityActionToken.ts';
 import {
   ACTION_IDS,
   guardPublisherApproval,
+  guardPublisherAssign,
   guardWorkerStep,
   workerStepPatch,
 } from '../../shared/liveActivityActionGuard.ts';
+import { approveWorkerCore } from '../../shared/workerApproval.ts';
 import { deriveActivityAction, authorizeActivity } from '../../shared/taskActivitySnapshot.ts';
 import { actionsForRole } from '../../shared/liveActivityActionGuard.ts';
 import { ROLES } from '../../shared/liveActivityAuth.ts';
@@ -186,6 +188,55 @@ Deno.serve(async (req) => {
         worker_status: fresh.worker_status || null,
         snapshot: snapshotFor(fresh),
       });
+    }
+
+    // ── Publisher assignment: the real approval workflow ───────────────────
+    // Runs `approveWorkerCore` — the SAME code the in-app applicant list calls —
+    // so the assignment, the schedule agreement, the worker notification and the
+    // applicant projection cannot diverge. The only thing added here is the
+    // "exactly one pending applicant" rule, checked against the database.
+    if (actionId === 'publisher_assign') {
+      const applications = await base44.asServiceRole.entities.TaskApplication
+        .filter({ task_id: task.id })
+        .catch(() => []);
+      const assign = guardPublisherAssign({ task, userId: claims.sub, applications });
+
+      if (!assign.ok) {
+        return Response.json({
+          ok: false,
+          decision: 'rejected',
+          error: assign.reason,
+          action_id: actionId,
+          task_status: task.status,
+          detail: assign.detail || null,
+          // The refreshed snapshot is what makes the card correct itself: with a
+          // second applicant it carries no action, so the button disappears
+          // instead of inviting a pointless second tap.
+          snapshot: snapshotFor(task),
+        }, { status: assign.status });
+      }
+
+      const result = await approveWorkerCore(base44, {
+        actorId: claims.sub,
+        taskId: task.id,
+        applicationId: assign.applicationId,
+        workerId: assign.workerId,
+      });
+
+      const fresh = (await base44.asServiceRole.entities.Task.filter({ id: task.id }))[0] || task;
+      const applied = result.status < 400;
+      // `already_assigned` is a SUCCESS: the tap landed and this worker is the
+      // task's worker. Anything else is a real refusal and is reported as one.
+      const already = result.body?.already_assigned === true;
+      return Response.json({
+        ok: applied || already,
+        decision: already ? 'duplicate' : (applied ? 'applied' : 'rejected'),
+        error: applied ? undefined : (result.body?.error || 'assign_failed'),
+        action_id: actionId,
+        worker_id: assign.workerId,
+        task_status: fresh.status,
+        snapshot: snapshotFor(fresh),
+      }, { status: already ? 200 : result.status });
     }
 
     // ── Publisher approval: the real completion workflow ───────────────────

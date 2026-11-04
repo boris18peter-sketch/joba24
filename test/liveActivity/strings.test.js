@@ -15,9 +15,10 @@ const he = translations.he;
 
 describe('backend Hebrew copy IS the app copy', () => {
   it('carries every key the contract reads', () => {
-    // 27: the publisher's approval button joined the set — its wording must be
-    // the app's own, never a string invented for the Lock Screen.
-    expect(REQUIRED_KEYS.length).toBe(27);
+    // 29: the Lock Screen assignment button joined the set — `la_assign_worker`
+    // and `la_assign_sub` are read from the app's own dictionary like every other
+    // string here, never invented for the Lock Screen.
+    expect(REQUIRED_KEYS.length).toBe(29);
     for (const key of REQUIRED_KEYS) {
       expect(HE[key], `missing key: ${key}`).toBeDefined();
       expect(he[key], `key not in the app dictionary: ${key}`).toBeDefined();
