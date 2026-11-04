@@ -21,7 +21,7 @@ import { requestFirstTaskFlow } from '@/lib/firstTaskFlow';
 import { useAuth } from '@/lib/AuthContext';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
-const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+const LOGO = '/icons/icon-192.png';
 
 // ── CSS (injected once) ───────────────────────────────────────────────────────
 const ANIM_CSS = `

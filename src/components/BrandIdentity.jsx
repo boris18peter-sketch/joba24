@@ -13,7 +13,7 @@ import { useBrand } from '@/lib/brand/BrandProvider';
  */
 
 /** The platform Brand's own mark — the value used when a Brand defines none. */
-export const PLATFORM_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+export const PLATFORM_LOGO = '/icons/icon-192.png';
 
 export function useBrandIdentity() {
   const { effective, isPlatformBrand, isLoading } = useBrand();

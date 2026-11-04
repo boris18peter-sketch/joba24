@@ -17,8 +17,7 @@
  * width and stays crisp — never a stretched bitmap.
  */
 
-export const APP_ICON =
-  'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+export const APP_ICON = '/icons/icon-192.png';
 
 export const CANVASES = {
   iphone: {

@@ -51,7 +51,7 @@ export default function Landing() {
       <nav className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.95)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
         <div className="px-4 py-4 flex items-center justify-between">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 10 }} />
+            <img src="/icons/icon-192.png" alt="Joba24" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 10 }} />
             <h1 className="text-2xl font-black" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
           </div>
           <a href="#signup" className="text-sm font-semibold text-primary hover:text-primary/80">הרשם עכשיו</a>

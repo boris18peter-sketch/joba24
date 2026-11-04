@@ -39,6 +39,10 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const IOS_SET = path.join(ROOT, 'ios/App/App/Assets.xcassets/AppIcon.appiconset');
 const ANDROID_ICONS = path.join(ROOT, 'android-config/icons');
+/** The web icons the browser and the installed PWA read. Served from the app's
+ *  own origin, so the favicon needs no network round trip and the same files
+ *  back the in-app logo — one mascot, one source. */
+const WEB_ICONS = path.join(ROOT, 'public/icons');
 
 /** The mascot's own background — read from the artwork, not invented. */
 const NAVY = [10, 18, 32];
@@ -58,6 +62,17 @@ const DENSITIES = [
 /** Adaptive icons: the artwork must sit inside the inner 72/108 safe zone so no
  *  launcher mask (circle, squircle, rounded square) can crop the mascot. */
 const ADAPTIVE_RATIO = 72 / 108;
+
+/** favicon + home-screen + manifest sizes, plus the maskable variant (whose
+ *  content must sit inside the maskable safe zone, on the mascot's own navy). */
+const WEB_TARGETS = [
+  { filename: 'favicon-32.png', px: 32, mask: 'square' },
+  { filename: 'favicon-48.png', px: 48, mask: 'square' },
+  { filename: 'apple-touch-icon-180.png', px: 180, mask: 'square' },
+  { filename: 'icon-192.png', px: 192, mask: 'square' },
+  { filename: 'icon-512.png', px: 512, mask: 'square' },
+  { filename: 'icon-maskable-512.png', px: 512, mask: 'maskable' },
+];
 
 /* ══════════════════════════════════════════════════════════════════════════
    PNG CODEC (8-bit, colour types 2 and 6, non-interlaced)
@@ -291,15 +306,22 @@ function render(master, size, mask) {
     for (let x = 0; x < size; x += 1) {
       const o = (y * size + x) * channels;
 
-      if (mask === 'adaptive') {
-        // Content occupies ADAPTIVE_RATIO of the canvas, centred.
+      if (mask === 'adaptive' || mask === 'maskable') {
+        // Content occupies ADAPTIVE_RATIO of the canvas, centred. A maskable web
+        // icon differs in one way only: outside the content it is the mascot's
+        // navy rather than transparent, because a launcher mask must never
+        // reveal white behind the mark.
         const content = size * ADAPTIVE_RATIO;
         const off = (size - content) / 2;
         const dx = x + 0.5 - size / 2;
         const dy = y + 0.5 - size / 2;
         const dist = Math.hypot(dx, dy);
         const radius = content / 2;
-        if (dist > radius) { out[o] = 0; out[o + 1] = 0; out[o + 2] = 0; out[o + 3] = 0; continue; }
+        if (dist > radius) {
+          if (mask === 'maskable') { out[o] = NAVY[0]; out[o + 1] = NAVY[1]; out[o + 2] = NAVY[2]; out[o + 3] = 255; }
+          else { out[o] = 0; out[o + 1] = 0; out[o + 2] = 0; out[o + 3] = 0; }
+          continue;
+        }
         const [r, g, b] = areaAverage(
           master,
           ((x + 0.5 - off) / content) * MASTER_PX, ((y + 0.5 - off) / content) * MASTER_PX,
@@ -340,11 +362,24 @@ function iosTargets() {
   }).filter((t) => t.filename);
 }
 
-function generate(masterPath) {
+function generate(masterPath, webOnly = false) {
   const img = decodePng(fs.readFileSync(masterPath));
   const { master, radius, cx, cy } = buildMaster(img);
   console.log(`source ${img.width}x${img.height} · circle r=${radius.toFixed(1)} @ (${cx.toFixed(1)},${cy.toFixed(1)})`);
   console.log(`master ${MASTER_PX}x${MASTER_PX} · corners filled with navy rgb(${NAVY.join(',')})`);
+
+  // ── `--web` writes ONLY the browser/PWA set ──────────────────────────────
+  // The native sets are already generated and verified; re-encoding them from a
+  // down-scaled master would resample 33 shipped assets for no reason. Any
+  // source that is already the normalised master produces the same web icons.
+  if (webOnly) {
+    fs.mkdirSync(WEB_ICONS, { recursive: true });
+    for (const { filename, px, mask } of WEB_TARGETS) {
+      fs.writeFileSync(path.join(WEB_ICONS, filename), render(master, px, mask));
+    }
+    console.log(`Web: ${WEB_TARGETS.length} images in public/icons (favicon, apple-touch, PWA, maskable)`);
+    return;
+  }
 
   const written = [];
   for (const { filename, px } of iosTargets()) {
@@ -364,6 +399,13 @@ function generate(masterPath) {
     fs.writeFileSync(path.join(outDir, 'ic_launcher_foreground.png'), render(master, Math.round(legacy * 2.25), 'adaptive'));
   }
   console.log(`Android: ${DENSITIES.length} densities × (launcher, round, adaptive foreground)`);
+
+  // ── Web: the browser tab, the home screen, and the installed PWA ─────────
+  fs.mkdirSync(WEB_ICONS, { recursive: true });
+  for (const { filename, px, mask } of WEB_TARGETS) {
+    fs.writeFileSync(path.join(WEB_ICONS, filename), render(master, px, mask));
+  }
+  console.log(`Web: ${WEB_TARGETS.length} images in public/icons (favicon, apple-touch, PWA, maskable)`);
 
   // A manifest of what was written, so the build can prove nothing replaced it.
   const digest = crypto.createHash('sha256').update(master).digest('hex');
@@ -442,6 +484,17 @@ function verify() {
     }
   }
 
+  // ── Web: present, correctly sized, and the maskable one never transparent ──
+  for (const { filename, px, mask } of WEB_TARGETS) {
+    const file = path.join(WEB_ICONS, filename);
+    if (!fs.existsSync(file)) { problems.push(`web missing public/icons/${filename}`); continue; }
+    const img = inspect(file);
+    if (img.width !== px || img.height !== px) problems.push(`web ${filename} is ${img.width}x${img.height}, expected ${px}x${px}`);
+    else if (mask === 'maskable' && img.channels === 4 && img.data[3] !== 255) {
+      problems.push(`web ${filename} corner is transparent — a maskable icon must be opaque`);
+    } else ok.push(`${filename} ${px}px`);
+  }
+
   if (problems.length) {
     console.error(`\nICON CHECK FAILED (${problems.length}):`);
     for (const p of problems) console.error(`  ✗ ${p}`);
@@ -456,8 +509,8 @@ function verify() {
 
 const arg = process.argv[2];
 if (!arg) {
-  console.error('usage: build-app-icons.mjs <master.png> | --verify');
+  console.error('usage: build-app-icons.mjs <master.png> [--web] | --verify');
   process.exit(2);
 }
 if (arg === '--verify') verify();
-else generate(arg);
+else generate(arg, process.argv.includes('--web'));

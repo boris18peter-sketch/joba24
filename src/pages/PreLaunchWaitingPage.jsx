@@ -12,7 +12,7 @@ import SocialConnectSheet, { PLATFORMS } from '@/components/SocialConnectSheet';
 import { isStandaloneApp } from '@/lib/utils';
 import { isAndroidWebView, hasCapacitorBridge } from '@/lib/nativeEnv';
 
-const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+const BRAND_LOGO = '/icons/icon-192.png';
 
 const ACTION_BTN = {
   padding: '10px 18px', borderRadius: 12, flexShrink: 0,

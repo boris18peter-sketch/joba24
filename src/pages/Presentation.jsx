@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PhoneMockup from '@/components/presentation/PhoneMockup';
 
-const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+const LOGO = '/icons/icon-192.png';
 const BANNER = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/05e2e227e_2026-06-25-184231.png';
 const FEED_SS = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/671b7126f_2026-06-25-182139.png';
 const MAP_SS = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/b3dd362cb_2026-06-25-181044.png';

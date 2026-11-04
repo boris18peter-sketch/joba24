@@ -83,7 +83,7 @@ export default function AppHeader({ onOpenMenu }) {
           <img
             src={!isPlatformBrand && brandTheme.logoUrl
               ? brandTheme.logoUrl
-              : 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg'}
+              : '/icons/icon-192.png'}
             alt={brandTheme.displayName || 'Joba24'}
             style={{
               width: 34, height: 34, borderRadius: 'var(--r-sm)',
