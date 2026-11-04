@@ -69,6 +69,15 @@ workflows:
       - name: Sync Capacitor iOS project
         script: |
           ./node_modules/.bin/cap sync ios
+      - name: Verify the app icon set (iOS)
+        script: |
+          # ── THE ICON IS AN ASSET, NOT A BUILD ARTEFACT ───────────────────────
+          # `cap sync ios` regenerates native scaffolding, so the catalog is
+          # checked straight after it: the committed set must be full-bleed,
+          # navy in the corners and free of alpha (the App Store rejects a 1024
+          # icon with transparency). Fails here — seconds in — instead of
+          # surfacing as a rejected upload much later.
+          node scripts/build-app-icons.mjs --verify
       - name: Inject Meta + TikTok SDKs into iOS SPM package
         script: |
           python3 << 'PYEOF'
@@ -1434,6 +1443,15 @@ workflows:
             cp "android-config/splash.png" "$RES_DIR/drawable-port-$density/splash.png"
           done
           echo "Splash screen replaced in all densities and orientations"
+      - name: Wire the adaptive launcher icon
+        script: |
+          # `cap add android` generates the project (and its own icon) in this
+          # build, so the adaptive definition and its background colour are
+          # written here. The same script proves every copied icon is still
+          # byte-identical to android-config/icons — if any later step restored
+          # the template's icon, the build fails instead of shipping the old logo.
+          python3 scripts/patch-android-adaptive-icon.py
+          node scripts/build-app-icons.mjs --verify
       - name: Patch AndroidManifest.xml with joba24:// intent-filter
         script: |
           python3 << 'PYEOF'
