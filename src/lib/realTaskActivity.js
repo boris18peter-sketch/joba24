@@ -25,8 +25,21 @@ import { isEngagement, primaryOccurrence, formatOccurrence, scheduleWindows } fr
 /** The admin demo's literal task id — never treated as a real task. */
 export const DEMO_ACTIVITY_TASK_ID = 'joba-local-live-activity-test';
 
-/** Live work. Mirrors ACTIVE_STATUSES in the contract (legacy statuses included). */
-export const TRACKABLE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'];
+/**
+ * Live work — and a publisher's OPEN task.
+ *
+ * ── WHY OPEN IS TRACKABLE ─────────────────────────────────────────────────
+ * The applicant stage is part of the job, not a prelude to it: the publisher
+ * needs to see applicants arrive and, when there is exactly one, approve them
+ * without opening the app. Leaving OPEN out of this list made the device refuse
+ * to start a card for it (`task_not_active`), so the only card a publisher ever
+ * got began after somebody was already assigned — which is why the applicant
+ * count and the approve button had never been seen on a Lock Screen.
+ *
+ * It is also what keeps such a card from being closed by a cache gap: an OPEN
+ * task is still live work for its publisher.
+ */
+export const TRACKABLE_STATUSES = ['OPEN', 'TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'];
 
 /** ActivityKit states in which an activity is still on screen. */
 export const RUNNING_ACTIVITY_STATES = ['active', 'stale'];
@@ -63,13 +76,45 @@ export function isLiveForRole(task, role, userId) {
  * disagree about which task is active. The demo task is filtered out so the
  * admin test can never be mistaken for a real one.
  */
-export function selectTrackedTask({ workerTask, clientTask, userId } = {}) {
+export function selectTrackedTask({ workerTask, clientTask, openTask, userId } = {}) {
   if (!userId) return null;
-  const candidates = [workerTask, clientTask]
+  // `openTask` is the publisher's OWN open task. `pickTrackedTask` already
+  // ranks the three tiers (worker TAKEN > publisher TAKEN > publisher OPEN), so
+  // handing it all three is enough: an assignment moving the task from the open
+  // list to the TAKEN cache changes the CONTENT of one card, never its identity —
+  // same task id, same role, so the device updates it in place instead of
+  // ending one card and starting another.
+  const candidates = [workerTask, clientTask, openTask]
     .filter((task) => task && task.id && task.id !== DEMO_ACTIVITY_TASK_ID);
   if (!candidates.length) return null;
   const picked = pickTrackedTask(candidates, userId);
   return picked ? { task: picked.task, role: picked.role } : null;
+}
+
+/**
+ * The publisher's most recent OPEN task — the one the Lock Screen shows while
+ * applicants are arriving.
+ *
+ * Only tasks this user published, only while still OPEN. A worker's task is
+ * never OPEN (a worker exists only after assignment), so this can never hand a
+ * worker a publisher-only card.
+ */
+export function selectOpenPublisherTask(tasks, userId) {
+  if (!userId || !Array.isArray(tasks)) return null;
+  const open = tasks.filter((task) => (
+    task && task.id && task.id !== DEMO_ACTIVITY_TASK_ID
+    && task.status === 'OPEN'
+    && task.client_id === userId
+  ));
+  if (!open.length) return null;
+  // Newest first, then ascending id — the same deterministic tie-break the
+  // contract's own selector uses, so two devices agree on which task is shown.
+  return [...open].sort((a, b) => {
+    const at = Date.parse(a.created_date || a.updated_date || 0) || 0;
+    const bt = Date.parse(b.created_date || b.updated_date || 0) || 0;
+    if (at !== bt) return bt - at;
+    return String(a.id) < String(b.id) ? -1 : 1;
+  })[0];
 }
 
 /** The catalogue label of a task's service, exactly as the server passes it. */

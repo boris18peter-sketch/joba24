@@ -295,11 +295,15 @@ describe('the device knows exactly what to do', () => {
     expect(planActivityStep({ task: null, role: null, activities: [], contentKey: '' }).action).toBe('none');
   });
 
-  it('treats only live statuses as trackable', () => {
+  it('treats live statuses as trackable — the applicant stage included', () => {
     expect(isTrackableTask(makeTask({ status: 'TAKEN' }))).toBe(true);
     expect(isTrackableTask(makeTask({ status: 'ON_THE_WAY' }))).toBe(true);
-    expect(isTrackableTask(makeTask({ status: 'OPEN' }))).toBe(false);
+    // OPEN is live work for its PUBLISHER: the applicant stage has a card of its
+    // own. That it can never belong to a worker is enforced by ownership (an OPEN
+    // task has no worker_id), and pinned in openLifecycle.test.js.
+    expect(isTrackableTask(makeTask({ status: 'OPEN' }))).toBe(true);
     expect(isTrackableTask(makeTask({ status: 'COMPLETED' }))).toBe(false);
+    expect(isTrackableTask(makeTask({ status: 'CANCELLED' }))).toBe(false);
   });
 
   /* ────────────────────────────────────────────────────────────────────────

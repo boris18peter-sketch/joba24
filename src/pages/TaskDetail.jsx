@@ -369,6 +369,15 @@ export default function TaskDetail(props) {
           if (patch.status && TERMINAL.includes(patch.status)) return null;
           return { ...old, ...patch };
         });
+        // The publisher's OPEN task feeds the Lock Screen card while applicants
+        // are arriving, and it is read off this same published list. Patching it
+        // here keeps that card current while the sheet is the screen in use.
+        queryClient.setQueryData(['myPublishedTasks', currentMeId], (old) => {
+          if (!Array.isArray(old)) return old;
+          return old.some((t) => t.id === id)
+            ? old.map((t) => (t.id === id ? { ...t, ...patch } : t))
+            : old;
+        });
       }
       if (patch.status === 'COMPLETED') {
         queryClient.invalidateQueries({ queryKey: ['myReview', id, currentMeId] });

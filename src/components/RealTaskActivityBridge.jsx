@@ -22,10 +22,12 @@ import {
   contentKeyOf,
   isLiveForRole,
   planActivityStep,
+  selectOpenPublisherTask,
   selectTrackedTask,
   DEMO_ACTIVITY_TASK_ID,
   RUNNING_ACTIVITY_STATES,
 } from '@/lib/realTaskActivity';
+import { myPublishedTasksQuery } from '@/lib/queries';
 
 /**
  * RealTaskActivityBridge — the ONE call site that connects a REAL task to the
@@ -136,6 +138,28 @@ export default function RealTaskActivityBridge() {
     staleTime: Infinity,
   });
 
+  // ── THE APPLICANT STAGE ───────────────────────────────────────────────────
+  // The publisher's OPEN tasks. This is the SAME cached list the "my tasks"
+  // screens read (`['myPublishedTasks']`) — observed here without fetching, so
+  // it is seeded once with the app, patched by the realtime subscription on every
+  // task change (including a new applicant), and patched by the task sheet while
+  // it is open. One cache, three paths, no second source of truth.
+  //
+  // The active-task caches above stay deliberately TAKEN-only: they also drive
+  // the in-app banner, and an OPEN task is not "the job in progress". So this is
+  // a Lock Screen-only candidate.
+  const { data: publishedTasks } = useQuery({
+    queryKey: myPublishedTasksQuery(me?.id).queryKey,
+    queryFn: () => null,
+    enabled: false,
+    staleTime: Infinity,
+  });
+
+  const openPublisherTask = useMemo(
+    () => selectOpenPublisherTask(publishedTasks, me?.id),
+    [publishedTasks, me?.id],
+  );
+
   const [access, setAccess] = useState(ACCESS_CACHE.value);
   const [tick, setTick] = useState(0);
   const appliedRef = useRef(null);
@@ -178,8 +202,13 @@ export default function RealTaskActivityBridge() {
   }, [access?.allowed]);
 
   const tracked = useMemo(
-    () => selectTrackedTask({ workerTask, clientTask, userId: me?.id }),
-    [workerTask, clientTask, me?.id],
+    () => selectTrackedTask({
+      workerTask,
+      clientTask,
+      openTask: openPublisherTask,
+      userId: me?.id,
+    }),
+    [workerTask, clientTask, openPublisherTask, me?.id],
   );
 
   const snapshot = useMemo(() => {
@@ -263,6 +292,38 @@ export default function RealTaskActivityBridge() {
           }).catch(() => {});
         };
 
+        // ── APPLY THE CURRENT CONTENT TO A CARD THAT ALREADY EXISTS ─────────
+        // Used by the ordinary update path AND by a start that finds a card was
+        // created for this pair a moment earlier. A device update goes through
+        // `sync` so the revision advances exactly as a pushed one would.
+        const pushUpdate = async () => {
+          const sync = await base44.functions.invoke('liveActivityRealTask', {
+            action: 'sync', task_id: step.taskId, role: step.role,
+          }).then((r) => r?.data).catch(() => null);
+
+          if (!sync?.ok) { report('update_failed', { reason: sync?.error || 'sync_failed' }); return false; }
+
+          const state = buildRealSnapshot({
+            task: tracked.task,
+            role: step.role,
+            userId: me.id,
+            t,
+            catRows,
+            settings,
+            revision: sync.revision,
+          });
+          if (!state) { report('update_failed', { reason: 'no_snapshot' }); return false; }
+
+          const result = await updateTaskActivity({ taskId: step.taskId, role: step.role, state });
+          if (!result.updated) {
+            report('update_failed', { reason: result.reason || 'not_updated' });
+            return false;
+          }
+          appliedRef.current = { taskId: step.taskId, role: step.role, contentKey: contentKeyOf(state) };
+          report('updated', { revision: sync.revision, phase: state.phase });
+          return true;
+        };
+
         if (step.action === 'start') {
           // The server owns the revision sequence; ask before starting so the
           // first push after this card is never refused as stale.
@@ -272,6 +333,25 @@ export default function RealTaskActivityBridge() {
 
           if (!begin?.ok) {
             report('start_failed', { reason: begin?.error || 'begin_failed' });
+            return;
+          }
+
+          // ── A CARD THAT APPEARED WHILE WE WERE ASKING ──────────────────────
+          // Push-to-Start can create this pair's card at the same instant the app
+          // decides to start one. `begin` already stops the SERVER from starting a
+          // second (`revision > 0` refuses a remote start), but the device asked
+          // for its activity list BEFORE that push landed, so on its own it would
+          // request a second card for the same job. The list is read again here:
+          // an existing card is adopted and updated instead.
+          const { activities: latest } = await activeTaskActivities();
+          if (!alive) return;
+          const adopted = (latest || []).some((a) => (
+            a?.taskId === step.taskId
+            && a.role === step.role
+            && RUNNING_ACTIVITY_STATES.includes(a.activityState)
+          ));
+          if (adopted) {
+            await pushUpdate();
             return;
           }
 
@@ -300,30 +380,7 @@ export default function RealTaskActivityBridge() {
         }
 
         if (step.action === 'update') {
-          const sync = await base44.functions.invoke('liveActivityRealTask', {
-            action: 'sync', task_id: step.taskId, role: step.role,
-          }).then((r) => r?.data).catch(() => null);
-
-          if (!sync?.ok) { report('update_failed', { reason: sync?.error || 'sync_failed' }); return; }
-
-          const state = buildRealSnapshot({
-            task: tracked.task,
-            role: step.role,
-            userId: me.id,
-            t,
-            catRows,
-            settings,
-            revision: sync.revision,
-          });
-          if (!state) { report('update_failed', { reason: 'no_snapshot' }); return; }
-
-          const result = await updateTaskActivity({ taskId: step.taskId, role: step.role, state });
-          if (!result.updated) {
-            report('update_failed', { reason: result.reason || 'not_updated' });
-            return;
-          }
-          appliedRef.current = { taskId: step.taskId, role: step.role, contentKey: contentKeyOf(state) };
-          report('updated', { revision: sync.revision, phase: state.phase });
+          await pushUpdate();
           return;
         }
 
