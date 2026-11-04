@@ -41,7 +41,7 @@ export default function ReportModal({ task, me, onClose }) {
       style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'var(--overlay-bg)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)', touchAction: 'none' }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 40px', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--brand-modal-bg, var(--sheet-bg))', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 40px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#e5e7eb', margin: '0 auto 20px' }} />
 
         {done ? (
@@ -64,11 +64,11 @@ export default function ReportModal({ task, me, onClose }) {
                 </div>
                 <div>
                   <div style={{ fontWeight: 900, fontSize: 17, color: 'var(--brand-modal-title, #0f1e40)' }}>{t('report_task')}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{task.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{task.title}</div>
                 </div>
               </div>
               <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <X size={16} color="#6b7280" />
+                <X size={16} color="var(--text-2)" />
               </button>
             </div>
 

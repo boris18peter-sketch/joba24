@@ -368,6 +368,13 @@ export default function Layout() {
       ? existingReview.length > 0
       : !!existingReview?.id;
     if (hasReview) return;
+    // ── THE ASK ALWAYS OUTRANKS THE THANK-YOU ──────────────────────────────
+    // If the closing note is on screen when a rating arrives, the note steps
+    // aside first. Between this and the `!ratingTask` guard on the note below,
+    // the order is fixed no matter which trigger fired: the rating is shown,
+    // and only once it is closed does the note appear. They can never overlap,
+    // and the rating can never land on top of the note.
+    setCongratsTask(null);
     shownRatingRef.current.add(task.id);
     // Don't persist the localStorage key yet — only when the user actually
     // closes the modal (onClose below). Otherwise a navigation that unmounts
@@ -758,7 +765,10 @@ export default function Layout() {
         document.body
       )}
 
-      {congratsTask && createPortal(
+      {/* The closing note is drawn only when no rating is on screen — see
+          maybeShowRating above. One popup at a time, in one fixed order:
+          the ✓ on the card, then the rating, then this. */}
+      {congratsTask && !ratingTask && createPortal(
         <TaskCompletedCongratsPopup
           task={congratsTask.task}
           role={congratsTask.role}

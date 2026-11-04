@@ -140,19 +140,29 @@ export function authorizeDispatch({ task, role, userId }) {
 }
 
 /**
- * Which stored tokens may receive this dispatch: this recipient's own, active,
- * and in the environment the configuration targets. Never another user's token,
- * and never a sandbox token over production APNs.
+ * Which stored tokens may receive this dispatch: this recipient's own and active
+ * — preferring those registered for the environment the configuration targets.
+ * Never another user's token.
+ *
+ * ── WHY IT FALLS BACK INSTEAD OF RETURNING NOTHING ─────────────────────────
+ * This used to drop every token whose environment differed from the single
+ * configured value, so a config left on `development` while the testers ran a
+ * TestFlight build (production tokens) produced `no_active_tokens` for EVERY
+ * dispatch. That is indistinguishable, from the user's side, from "the Lock
+ * Screen simply never updates" — and it was exactly the asymmetry that made the
+ * worker's card move (their own taps update it locally) while the publisher's
+ * did not (theirs can only arrive by push).
+ *
+ * The host is chosen PER TOKEN from the row's own `environment` when the push is
+ * sent (`sendLiveActivityPush`), so a token is never delivered to the wrong APNs
+ * host by including it here. A token Apple rejects is retired by the caller. So
+ * when the configured environment matches nothing, this recipient's own active
+ * tokens are used rather than silence.
  */
 export function eligibleTokens(tokens, { userId, environment, limit = 20 }) {
   if (!Array.isArray(tokens) || !userId) return [];
-  const out = [];
-  for (const row of tokens) {
-    if (!row || row.status !== 'active') continue;
-    if (row.user_id !== userId) continue;
-    if (environment && row.environment !== environment) continue;
-    out.push(row);
-    if (out.length >= limit) break;
-  }
-  return out;
+  const own = tokens.filter((row) => row && row.status === 'active' && row.user_id === userId);
+  const matched = environment ? own.filter((row) => row.environment === environment) : own;
+  const chosen = matched.length > 0 ? matched : own;
+  return chosen.slice(0, limit > 0 ? limit : 20);
 }

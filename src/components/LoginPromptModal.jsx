@@ -175,11 +175,11 @@ function EmailForm({ onBack, onSuccess }) {
   if (mode === 'otp') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
           <ArrowLeft size={14} /> {t('lpm_back')}
         </button>
         <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('lpm_verify_email_title')}</div>
-        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
           {isReviewerEmail()
             ? t('lpm_reviewer_enter_code', { email })
             : t('lpm_code_sent_to', { email })}
@@ -203,7 +203,7 @@ function EmailForm({ onBack, onSuccess }) {
           style={{
             width: '100%', height: 52, borderRadius: 16,
             background: otp.trim().length >= 4 ? 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))' : '#e2e8f0',
-            color: otp.trim().length >= 4 ? 'white' : '#94a3b8',
+            color: otp.trim().length >= 4 ? 'white' : 'var(--text-3)',
             fontWeight: 800, fontSize: 15, border: 'none',
             cursor: otp.trim().length >= 4 ? 'pointer' : 'not-allowed',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -224,7 +224,7 @@ function EmailForm({ onBack, onSuccess }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
+      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
         <ArrowLeft size={14} /> {t('lpm_back')}
       </button>
       <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('lpm_login_with_email')}</div>
@@ -246,7 +246,7 @@ function EmailForm({ onBack, onSuccess }) {
         style={{
           width: '100%', height: 52, borderRadius: 16,
           background: validateEmail(email) ? 'linear-gradient(135deg,var(--brand-modal-cta-bg, var(--brand-primary)),var(--brand-modal-cta-bg, var(--brand-primary-dark)))' : '#e2e8f0',
-          color: validateEmail(email) ? 'white' : '#94a3b8',
+          color: validateEmail(email) ? 'white' : 'var(--text-3)',
           fontWeight: 800, fontSize: 15, border: 'none',
           cursor: validateEmail(email) ? 'pointer' : 'not-allowed',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -255,7 +255,7 @@ function EmailForm({ onBack, onSuccess }) {
       >
         {loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={16} /> {t('lpm_send_code')}</>}
       </button>
-      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.5 }}>{t('lpm_code_note')}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>{t('lpm_code_note')}</div>
     </div>
   );
 }
@@ -296,7 +296,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
       <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: 'var(--brand-modal-cta-bg, var(--brand-primary))' }} />
       <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{t('lpm_connecting', { brand: brandName })}</div>
-      <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
+      <div style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
         {t('lpm_finish_in_browser')}
       </div>
       {showManual && loginUrl && (
@@ -317,7 +317,7 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
       <button
         onClick={onCancel}
         style={{
-          background: 'none', border: 'none', color: '#94a3b8',
+          background: 'none', border: 'none', color: 'var(--text-3)',
           fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 16px',
         }}
       >
@@ -576,7 +576,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply', tit
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
-                  <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('or_separator')}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('or_separator')}</span>
                   <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
                 </div>
 

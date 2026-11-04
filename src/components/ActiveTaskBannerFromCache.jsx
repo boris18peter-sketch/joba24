@@ -10,9 +10,25 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
  *
  * This ensures TaskDetail's banner is always in sync with the feed banner
  * without creating a second data source.
+ *
+ * ── AND IT ALWAYS SHOWS THE TOP OF THE SHEET ───────────────────────────────
+ * The cache lookup was the ONLY source, so whenever it did not hold the very
+ * task that was opened, this returned null and the sheet rendered its details
+ * with no banner above them — the "active task sheet without the top" the
+ * publisher kept hitting. The cache holds the user's *newest* TAKEN task, and a
+ * publisher can have more than one published task marked TAKEN (an older one, a
+ * second job taken in the same hour), or the list that seeds it simply is not
+ * loaded yet on a cold open / deep link.
+ *
+ * The task the screen is already showing is therefore passed in as `task` and
+ * used as the fallback: the live cache still WINS whenever it has the match (it
+ * is the WebSocket-fed value, which is what keeps the banner in sync), and
+ * otherwise the banner shows the record this sheet is open on. Never a second
+ * fetch, never a second source of truth.
  */
-export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo }) {
+export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo, task = null }) {
   const { user: me } = useAuth();
+  const useCache = !!me?.id;
 
   // The banner must never show a task the worker has already left, completed or
   // had cancelled — but it no longer pays for that with a request on every open.
@@ -26,7 +42,7 @@ export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo 
     queryKey: ['activeWorkerTask', me?.id],
     queryFn: () =>
       base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
-    enabled: !!me?.id && isWorker,
+    enabled: useCache && isWorker,
     staleTime: 30000,
   });
 
@@ -34,14 +50,16 @@ export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo 
     queryKey: ['activeClientTask', me?.id],
     queryFn: () =>
       base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
-    enabled: !!me?.id && !isWorker,
+    enabled: useCache && !isWorker,
     staleTime: 30000,
   });
 
-  const liveTask = isWorker ? activeWorkerTask : activeClientTask;
+  const cached = isWorker ? activeWorkerTask : activeClientTask;
+  // The cache wins when it holds THIS task; otherwise the record already on
+  // screen keeps the banner there instead of leaving a hole.
+  const liveTask = cached?.id === taskId ? cached : (task?.id === taskId ? task : null);
 
-  // Only show if the cached task matches the current task page
-  if (!liveTask || liveTask.id !== taskId) return null;
+  if (!liveTask) return null;
 
   return (
     <div style={{ padding: '0 12px', paddingTop: 8 }}>

@@ -17,6 +17,7 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel } from '@/lib/priceCalculator';
+import { buildRepostUrl } from '@/lib/taskUtils';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import ApplySheet from '@/components/ApplySheet';
@@ -752,7 +753,14 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               </div>
             ) : (
               <button
-                onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${categoryKeyForTask(task)}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }}
+                // ── REPOST OPENS THE TASK ITSELF, NOT A LIST OF PARAMS ──────
+                // This used to carry title / price / category / city / location
+                // in the URL — and therefore lost every field it did not name,
+                // most visibly the DESCRIPTION. The form now loads the whole
+                // record from the task id (the same URL MyTasks and TaskDetail
+                // already use), so a repost arrives complete: description,
+                // images, requirements, schedule, everything.
+                onClick={e => { e.stopPropagation(); navigate(buildRepostUrl(task)); }}
                 style={{ width: '100%', height: 46, borderRadius: 14, background: 'var(--brand-primary-light)', border: '1.5px solid var(--border-2)', color: 'var(--brand-primary)', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, WebkitTapHighlightColor: 'transparent' }}
               >
                 <RefreshCw size={14} /> {t('repost')}

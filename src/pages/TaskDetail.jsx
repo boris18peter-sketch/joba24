@@ -860,6 +860,10 @@ export default function TaskDetail(props) {
         <ActiveTaskBannerFromCache
           taskId={id}
           isWorker={me?.id === task.worker_id}
+          // The record this sheet is open on. The banner prefers the live cache,
+          // and falls back to this — so the top of the sheet is never missing
+          // just because the cache holds another (or no) active task.
+          task={task}
           extraInfo={{
             clientName: task.client_name,
             clientId: task.client_id,

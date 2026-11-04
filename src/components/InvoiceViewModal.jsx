@@ -34,7 +34,7 @@ export default function InvoiceViewModal({ invoiceHtml, onClose }) {
               {downloading ? <Loader2 size={14} className="animate-spin" /> : (navigator.canShare ? <><Share size={14} /> שיתוף</> : <><Download size={14} /> הורד</>)}
             </button>
             <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <X size={16} color="#6b7280" />
+              <X size={16} color="var(--text-2)" />
             </button>
           </div>
         </div>

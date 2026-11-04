@@ -19,6 +19,19 @@
     --brand-accent:        #fbbf24;
     --brand-accent-dark:   #d97706;
 
+    /* ── Popup / modal surface tokens ──
+       The popup and sheet components read `var(--brand-modal-bg, white)` and
+       `var(--brand-modal-title, #0f2b6b)` — a light-mode literal is the
+       fallback. In dark mode that literal IS the bug: a white sheet carrying
+       near-white text, or a navy headline on a navy surface, so the words
+       simply disappeared. Declared here as TOKENS, those same expressions
+       resolve to the active scheme without touching a single component, and a
+       Brand that sets its own value (inline, on <html>) still wins. */
+    --brand-modal-bg:     var(--sheet-bg);
+    --brand-modal-border: var(--border-1);
+    --brand-modal-title:  var(--text-1);
+    --brand-modal-text:   var(--text-2);
+
     /* ── Header credit pill ──
        The balance number: a deep brand blue on the light pill, and a light blue
        on the dark one, so the figure stays the most legible thing in the pill in

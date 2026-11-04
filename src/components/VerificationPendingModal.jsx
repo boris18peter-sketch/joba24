@@ -62,12 +62,12 @@ export default function VerificationPendingModal({ onClose }) {
           </div>
 
           {/* Title */}
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', marginBottom: 10, letterSpacing: -0.3 }}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', marginBottom: 10, letterSpacing: -0.3 }}>
             {t('vpm_title')}
           </div>
 
           {/* Description */}
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }} dangerouslySetInnerHTML={{ __html: t('vpm_desc') }} />
+          <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 24 }} dangerouslySetInnerHTML={{ __html: t('vpm_desc') }} />
 
           {/* Status info */}
           <div style={{ width: '100%', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '14px 16px', marginBottom: 24, textAlign: 'right' }}>

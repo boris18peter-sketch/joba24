@@ -35,7 +35,22 @@ Deno.serve(async (req) => {
     const tokenPage = await base44.asServiceRole.entities.LiveActivityToken
       .filter({ token }, { limit: 5 })
       .catch(() => ({ items: [] }));
-    const existingTokens = tokenPage?.items || [];
+
+    // ── THE DEVICE'S OTHER TOKENS, SO OLD ONES ARE ACTUALLY RETIRED ─────────
+    // The planner retires a device's superseded tokens by comparing `device_id`
+    // — but it was only ever handed the rows of the SAME token, so `row.token
+    // !== token` could never be true and nothing was ever retired. A device that
+    // started an activity for five tasks therefore accumulated five "active"
+    // tokens, and a dispatch would fan out to four activities that no longer
+    // exist. The caller's own rows (their RLS allows exactly those) are read here
+    // so the retirement rule can finally see them.
+    const ownPage = await base44.entities.LiveActivityToken
+      .filter({ user_id: user.id }, { limit: 50 })
+      .catch(() => ({ items: [] }));
+
+    const seenIds = new Set();
+    const existingTokens = [...(tokenPage?.items || []), ...(ownPage?.items || [])]
+      .filter((row) => row && row.id && !seenIds.has(row.id) && seenIds.add(row.id));
 
     // The task is read as the CALLER: their RLS decides what they may see, and a
     // task that is not theirs simply does not come back.

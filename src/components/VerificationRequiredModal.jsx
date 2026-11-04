@@ -62,12 +62,12 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
           </div>
 
           {/* Title */}
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', marginBottom: 10, letterSpacing: -0.3 }}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', marginBottom: 10, letterSpacing: -0.3 }}>
             {t('vrm_title')}
           </div>
 
           {/* Description */}
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }} dangerouslySetInnerHTML={{ __html: t('vrm_desc') }} />
+          <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 24 }} dangerouslySetInnerHTML={{ __html: t('vrm_desc') }} />
 
           {/* Benefits */}
           <div style={{ width: '100%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: '14px 16px', marginBottom: 24, textAlign: 'right' }}>

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { notificationStore } from '@/lib/notificationStore';
 import { taskAlertStore } from '@/lib/taskAlertStore';
+import { isPopupBlocked, subscribePopupGate } from '@/lib/popupGate';
 import { useAuth } from '@/lib/AuthContext';
 import { useVerificationCelebration } from '@/hooks/useVerificationCelebration';
 import { useLoyaltyBonus } from '@/hooks/useLoyaltyBonus';
@@ -93,32 +94,42 @@ export default function GlobalPopups() {
     return taskAlertStore.subscribe(setTaskAlert);
   }, []);
 
+  // ── NEVER A FULL-SCREEN ALERT OVER ANOTHER FULL-SCREEN SHEET ────────────
+  // The rating sheet holds the shared popup gate while it is open, and every
+  // alert below is a full-screen sheet of its own. Drawing them together put
+  // one sheet on top of the other mid-flow — the "popups landing on each other"
+  // that made the end of a job feel messy. A held alert is NOT dropped: it
+  // stays in the store and appears the moment the gate clears, which is exactly
+  // the order the user expects (rate first, then the news about the job).
+  const [gateHeld, setGateHeld] = useState(isPopupBlocked());
+  useEffect(() => subscribePopupGate(() => setGateHeld(isPopupBlocked())), []);
+
   return (
     <>
       {celebration && <VerificationApprovedPopup variant={celebration} onClose={clearCelebration} />}
 
       {bonus && <LoyaltyBonusPopup amount={bonus.amount} kind={bonus.kind} user={user} onClose={clearBonus} />}
 
-      {taskAlert?.kind === 'cancelled' && createPortal(
+      {!gateHeld && taskAlert?.kind === 'cancelled' && createPortal(
         <WorkerCancelledPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />,
         document.body
       )}
-      {taskAlert?.kind === 'revoked' && createPortal(
+      {!gateHeld && taskAlert?.kind === 'revoked' && createPortal(
         <ApprovalRevokedPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />,
         document.body
       )}
-      {taskAlert?.kind === 'cancel_success' && createPortal(
+      {!gateHeld && taskAlert?.kind === 'cancel_success' && createPortal(
         <CancelSuccessPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />,
         document.body
       )}
 
       {/* The worker was approved → the departure sheet opens by itself */}
-      {taskAlert?.kind === 'approved' && (
+      {!gateHeld && taskAlert?.kind === 'approved' && (
         <ApprovedDeparturePopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />
       )}
 
       {/* A candidate just applied to my task → approve him from here */}
-      {taskAlert?.kind === 'new_applicant' && (
+      {!gateHeld && taskAlert?.kind === 'new_applicant' && (
         <NewApplicantPopup
           task={taskAlert.task?.task}
           application={taskAlert.task?.application}
@@ -127,7 +138,7 @@ export default function GlobalPopups() {
       )}
 
       {/* The worker marked my task done → approve the completion from here */}
-      {taskAlert?.kind === 'completion_ready' && (
+      {!gateHeld && taskAlert?.kind === 'completion_ready' && (
         <CompletionApprovalPopup task={taskAlert.task} onClose={() => taskAlertStore.clear()} />
       )}
 

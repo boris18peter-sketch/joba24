@@ -98,8 +98,8 @@ export default function InvoiceModal({ task, me, onClose }) {
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg,#e9d5ff,#c4b5fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 0 8px rgba(168,85,247,.1)' }}>
               <CheckCircle size={30} color="#7c3aed" />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#0f2b6b', marginBottom: 8 }}>{t('invoice_generated')}</div>
-            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>{t('invoice_available')}</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>{t('invoice_generated')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>{t('invoice_available')}</div>
           </div>
         ) : (
           <>
@@ -110,7 +110,7 @@ export default function InvoiceModal({ task, me, onClose }) {
               </div>
               <div>
                 <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{t('generate_invoice')}</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>{task.title} · <strong style={{ color: '#7c3aed' }}>₪{form.price}</strong></div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 1 }}>{task.title} · <strong style={{ color: '#7c3aed' }}>₪{form.price}</strong></div>
               </div>
             </div>
 

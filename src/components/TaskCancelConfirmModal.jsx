@@ -18,8 +18,8 @@ export default function TaskCancelConfirmModal({ task, isLoading, onConfirm, onC
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('tcc_title')}</div>
-          <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>{t('tcc_title')}</div>
+          <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
             {t('tcc_sub')}
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function TaskCancelConfirmModal({ task, isLoading, onConfirm, onC
               width: '100%',
               height: 48,
               borderRadius: 16,
-              background: 'white',
+              background: 'var(--brand-modal-bg, var(--sheet-bg))',
               border: '1px solid #fecaca',
               color: '#dc2626',
               fontWeight: 700,

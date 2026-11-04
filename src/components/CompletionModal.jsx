@@ -66,7 +66,7 @@ export default function CompletionModal({ task, me, onClose }) {
         dir={isRTL ? 'rtl' : 'ltr'}
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'white', borderRadius: '28px 28px 0 0',
+          background: 'var(--brand-modal-bg, var(--sheet-bg))', borderRadius: '28px 28px 0 0',
           width: '100%', maxWidth: 480,
           padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
           boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
@@ -82,7 +82,7 @@ export default function CompletionModal({ task, me, onClose }) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>
             {isWorker ? t('cm_worker_header') : t('cm_client_header')}
           </h2>
         </div>
@@ -94,7 +94,7 @@ export default function CompletionModal({ task, me, onClose }) {
           <div style={{ fontSize: 26, fontWeight: 900, color: '#059669', marginTop: 4 }}>₪{task.price}</div>
         </div>
 
-        <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 16, fontWeight: 500 }}>
+        <p style={{ textAlign: 'center', color: 'var(--text-2)', fontSize: 13, marginBottom: 16, fontWeight: 500 }}>
           {t('cm_how_was', { name: isWorker ? (task.client_name || t('client')) : (task.worker_name || t('worker')) })}
         </p>
 

@@ -141,7 +141,7 @@ export default function RatingModal({ task, me, onClose }) {
             {isOwner ? catConfig.rating.ownerHeader(revieweeName) : catConfig.rating.workerHeader}
           </h2>
           <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 'var(--r-sm)', background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <X size={18} color="#6b7280" />
+            <X size={18} color="var(--text-2)" />
           </button>
         </div>
 
@@ -189,7 +189,7 @@ export default function RatingModal({ task, me, onClose }) {
             {paymentConfirmed && <CheckCircle2 size={15} color="white" strokeWidth={2.5} />}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? '#065f46' : '#1e293b' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? 'var(--color-success)' : 'var(--text-1)' }}>
               {isOwner ? catConfig.rating.ownerConfirmTitle : catConfig.rating.workerConfirmTitle}
             </div>
             <div style={{ fontSize: 12, color: 'var(--brand-modal-text, #64748b)', marginTop: 2 }}>

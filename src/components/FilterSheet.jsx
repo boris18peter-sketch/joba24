@@ -21,7 +21,7 @@ function Chip({ label, active, onClick }) {
         transition: 'all 0.15s',
         border: 'none',
         background: active ? '#2563EB' : '#F1F5F9',
-        color: active ? 'white' : '#475569',
+        color: active ? 'white' : 'var(--text-2)',
         boxShadow: active ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
         textAlign: 'center',
         whiteSpace: 'nowrap',
@@ -37,8 +37,8 @@ function Chip({ label, active, onClick }) {
 function SectionLabel({ icon: Icon, children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-      {Icon && <Icon size={14} color="#94a3b8" strokeWidth={1.8} />}
-      <span style={{ fontSize: 13, fontWeight: 700, color: '#334155', letterSpacing: -0.1 }}>{children}</span>
+      {Icon && <Icon size={14} color="var(--text-3)" strokeWidth={1.8} />}
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', letterSpacing: -0.1 }}>{children}</span>
     </div>
   );
 }
@@ -122,7 +122,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{t('filter_title')}</div>
             <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <X size={15} color="#64748b" />
+              <X size={15} color="var(--text-2)" />
             </button>
           </div>
         </div>
@@ -144,11 +144,11 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: local.forYou ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sparkles size={16} color={local.forYou ? 'white' : '#94a3b8'} strokeWidth={1.8} />
+                  <Sparkles size={16} color={local.forYou ? 'white' : 'var(--text-3)'} strokeWidth={1.8} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: local.forYou ? '#92400e' : '#334155' }}>{t('filter_for_you_title')}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('filter_for_you_sub')}</div>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, color: local.forYou ? '#92400e' : 'var(--text-1)' }}>{t('filter_for_you_title')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('filter_for_you_sub')}</div>
                 </div>
               </div>
               <div style={{
@@ -205,11 +205,11 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: local.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileText size={16} color={local.requires_invoice ? 'white' : '#94a3b8'} strokeWidth={1.8} />
+                <FileText size={16} color={local.requires_invoice ? 'white' : 'var(--text-3)'} strokeWidth={1.8} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: local.requires_invoice ? '#6d28d9' : '#334155' }}>{t('filter_invoice_title')}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('filter_invoice_sub')}</div>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: local.requires_invoice ? '#6d28d9' : 'var(--text-1)' }}>{t('filter_invoice_title')}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('filter_invoice_sub')}</div>
               </div>
             </div>
             <div style={{
@@ -263,7 +263,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               placeholder={t('filter_other_city')}
               value={!cities.includes(local.city) ? local.city : ''}
               onChange={e => setLocal(p => ({ ...p, city: e.target.value }))}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#f8fafc', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: '#334155' }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#f8fafc', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
             />
           </div>
 
@@ -281,7 +281,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
         }}>
           {/* Reset — text button */}
           <button onClick={handleReset}
-            style={{ flexShrink: 0, height: 48, padding: '0 16px', borderRadius: 12, background: 'none', border: 'none', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ flexShrink: 0, height: 48, padding: '0 16px', borderRadius: 12, background: 'none', border: 'none', color: 'var(--text-2)', fontWeight: 600, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             {t('filter_reset')}
           </button>
