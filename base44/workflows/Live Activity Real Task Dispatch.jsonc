@@ -1,0 +1,46 @@
+{
+  "name": "Live Activity Real Task Dispatch",
+  "description": "Pushes a real task's Live Activity update or close to the allowlisted test recipients. Inert unless LiveActivityConfig.test_user_ids is non-empty (or the global flag is on).",
+  "trigger": {
+    "condition": "${ ((.trigger.event_type != \"update\") or ((.trigger.changed_fields // []) | index(\"status\") != null) or ((.trigger.changed_fields // []) | index(\"worker_status\") != null) or ((.trigger.changed_fields // []) | index(\"worker_id\") != null) or ((.trigger.changed_fields // []) | index(\"applicants\") != null) or ((.trigger.changed_fields // []) | index(\"scheduled_time\") != null) or ((.trigger.changed_fields // []) | index(\"schedule_agreed_at\") != null) or ((.trigger.changed_fields // []) | index(\"category_details\") != null) or ((.trigger.changed_fields // []) | index(\"expires_at\") != null)) }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "entity_name": "Task"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "live_activity_real_task_dispatch",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "dispatch_real_task_activity": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "liveActivityTaskEvent",
+            "args": {
+              "task_id": "${ .trigger.entity_id }",
+              "event_type": "${ .trigger.event_type }",
+              "client_id": "${ .trigger.data.client_id }",
+              "worker_id": "${ .trigger.data.worker_id }",
+              "status": "${ .trigger.data.status }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Dispatch the real-task Live Activity",
+            "description": "Allowlisted recipients only. The shared sender plans, dedupes and pushes; APNs is contacted only when the configuration permits it for that recipient."
+          }
+        }
+      }
+    ]
+  }
+}

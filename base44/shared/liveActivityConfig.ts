@@ -26,7 +26,16 @@ export const DEFAULT_CONFIG = {
   // send, and arming a send later never starts recording observations.
   diagnostic_events: false,
   diagnostic_retention_days: 7,
+  // ── RESTRICTED REAL-TASK TEST MODE ────────────────────────────────────────
+  // An empty allowlist is the shipped state and makes the real-task path inert
+  // for EVERYONE, whatever `enabled` says. Membership is the only way in.
+  test_user_ids: [],
+  // Real APNs for the allowlisted testers only. Never a global unlock.
+  test_apns: false,
 };
+
+/** More ids than this and the allowlist stops being a test list. */
+export const MAX_TEST_USERS = 20;
 
 /** Coerce a stored row into a complete, safe config. Anything odd means "off". */
 export function normalizeConfig(row) {
@@ -47,6 +56,19 @@ export function normalizeConfig(row) {
 
   // Diagnostics are opt-in with a literal `true`, and retention is capped so a
   // mistyped value can never turn the diagnostic table into an archive.
+  // ── The real-task allowlist ───────────────────────────────────────────────
+  // Trimmed, de-duplicated, non-empty strings only, and bounded. Junk in the
+  // array can therefore never widen the test surface, and an absent field is an
+  // empty list — never "everybody".
+  const ids = Array.isArray(row.test_user_ids) ? row.test_user_ids : [];
+  out.test_user_ids = Array.from(new Set(
+    ids
+      .filter((id) => typeof id === 'string' && id.trim())
+      .map((id) => id.trim()),
+  )).slice(0, MAX_TEST_USERS);
+  // Only a literal `true` arms real delivery, and only ever for those ids.
+  out.test_apns = row.test_apns === true;
+
   out.diagnostic_events = row.diagnostic_events === true;
   const days = Number(row.diagnostic_retention_days);
   out.diagnostic_retention_days = Number.isFinite(days) && days > 0
@@ -64,6 +86,55 @@ export function isPipelineEnabled(config) {
 /** May a real network request be made to APNs? Requires BOTH locks to be lifted. */
 export function willContactApns(config) {
   return config?.enabled === true && config?.dry_run === false;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE REAL-TASK TEST GATE
+   ══════════════════════════════════════════════════════════════════════════
+   The global flags above answer "may the pipeline run for everybody". These
+   answer "may it run for THIS recipient", which is the question the real-task
+   path asks. The two are independent on purpose:
+
+   • A recipient NOT on the allowlist is governed by the global flags alone —
+     exactly the Stage 3 behaviour, unchanged, so turning the allowlist on can
+     never accidentally arm production.
+   • A recipient ON the allowlist is governed by `test_apns` alone. They can
+     therefore be given real pushes while `enabled` stays false and every other
+     user's Lock Screen is untouched. */
+
+/** Is this user explicitly allowlisted for the real-task test? */
+export function isTestUser(config, userId) {
+  if (!userId || !Array.isArray(config?.test_user_ids)) return false;
+  return config.test_user_ids.includes(userId);
+}
+
+/** Is the real-task test mode configured at all? */
+export function testModeActive(config) {
+  return Array.isArray(config?.test_user_ids) && config.test_user_ids.length > 0;
+}
+
+/**
+ * May the pipeline build/plan/write for this recipient?
+ * Only an allowlisted user is reachable while the global flag is off.
+ */
+export function isTrackedRecipient(config, userId) {
+  return isTestUser(config, userId) || isPipelineEnabled(config);
+}
+
+/**
+ * May a REAL network request be made to APNs for this recipient?
+ * An allowlisted user needs only `test_apns`; everybody else still needs BOTH
+ * global locks lifted.
+ */
+export function mayContactApnsFor(config, userId) {
+  if (isTestUser(config, userId)) return config?.test_apns === true;
+  return willContactApns(config);
+}
+
+/** What the configuration permits for this recipient: disabled | dry_run | armed. */
+export function sendGateFor(config, userId) {
+  if (!isTrackedRecipient(config, userId)) return 'disabled';
+  return mayContactApnsFor(config, userId) ? 'armed' : 'dry_run';
 }
 
 /** Is this (status, role) combination allowed to be tracked? */

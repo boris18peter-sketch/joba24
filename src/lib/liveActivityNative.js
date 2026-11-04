@@ -1,11 +1,14 @@
 /**
  * liveActivityNative — the ONLY place the web layer talks to ActivityKit.
  *
- * ── STATUS: BUILT, NOT WIRED ────────────────────────────────────────────────
- * Production delivery is still disabled (`enabled=false`, `dry_run=true`), so no
- * screen imports this module yet: nothing starts an activity on any device. The
- * bridge, the widget extension and the pipeline are complete and verifiable;
- * activation is one deliberate call site added after approval, not a rewrite.
+ * ── STATUS: WIRED FOR AN ALLOWLISTED TEST ONLY ──────────────────────────────
+ * There are exactly TWO importers and that list is closed:
+ *   • LiveActivityTestPanel — the admin demo, unchanged, with a fixture task;
+ *   • RealTaskActivityBridge — the REAL task, mounted once in App.jsx.
+ * The bridge does nothing at all unless the server says the signed-in user is on
+ * `LiveActivityConfig.test_user_ids` (`action: 'access'`). Global delivery stays
+ * disabled (`enabled=false`, `dry_run=true`), so a user outside the allowlist
+ * can neither start an activity nor receive a push.
  *
  * ── WHAT IT GUARANTEES ──────────────────────────────────────────────────────
  *  • Nothing here throws. A Lock Screen extra must never be able to break a task
@@ -28,7 +31,14 @@ export const LIVE_ACTIVITY_METHODS = ['isAvailable', 'start', 'update', 'end', '
 
 const JobaActivity = registerPlugin('JobaActivity');
 
-let tokenListenerAttached = false;
+// ── ONE native listener, MANY subscribers ───────────────────────────────────
+// This used to be a boolean guard that let exactly one caller listen: the second
+// caller got a no-op detach and its callback never ran. With the real-task
+// bridge and the admin demo both listening, that would have silently killed the
+// demo's token readout. The native listener is now attached once and fanned out
+// to every subscriber, and it is removed when the last one leaves.
+const tokenSubscribers = new Set();
+let tokenListenerHandle = null;
 
 /** True only inside the native iOS app — never in a browser or on Android. */
 export function isLiveActivityNative() {
@@ -230,21 +240,30 @@ export async function registerActivityToken({ token, taskId, role, environment, 
  * through `registerActivityToken` above.
  */
 export function attachActivityTokenListener(onToken) {
-  if (!isLiveActivityNative() || tokenListenerAttached) return () => {};
-  tokenListenerAttached = true;
-  const handle = JobaActivity.addListener('activityToken', (event) => {
-    const payload = event || {};
-    if (typeof onToken === 'function') onToken(payload);
-    registerActivityToken({
-      token: payload.token,
-      taskId: payload.taskId,
-      role: payload.role,
-      environment: payload.environment,
-      bundleId: payload.bundleId,
+  if (!isLiveActivityNative()) return () => {};
+  if (typeof onToken === 'function') tokenSubscribers.add(onToken);
+
+  if (!tokenListenerHandle) {
+    tokenListenerHandle = JobaActivity.addListener('activityToken', (event) => {
+      const payload = event || {};
+      for (const fn of Array.from(tokenSubscribers)) {
+        try { fn(payload); } catch { /* a listener must never break the bridge */ }
+      }
+      registerActivityToken({
+        token: payload.token,
+        taskId: payload.taskId,
+        role: payload.role,
+        environment: payload.environment,
+        bundleId: payload.bundleId,
+      });
     });
-  });
+  }
+
   return () => {
-    tokenListenerAttached = false;
-    if (handle && typeof handle.remove === 'function') handle.remove();
+    if (typeof onToken === 'function') tokenSubscribers.delete(onToken);
+    if (tokenSubscribers.size === 0 && tokenListenerHandle) {
+      if (typeof tokenListenerHandle.remove === 'function') tokenListenerHandle.remove();
+      tokenListenerHandle = null;
+    }
   };
 }

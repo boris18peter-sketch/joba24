@@ -23,6 +23,7 @@ import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
 import NativeTaskLink from '@/components/NativeTaskLink';
+import RealTaskActivityBridge from '@/components/RealTaskActivityBridge';
 import NativeAuthListener from '@/components/NativeAuthListener';
 import IosIapRecovery from '@/components/IosIapRecovery';
 import PermissionPrompt from '@/components/PermissionPrompt';
@@ -442,6 +443,10 @@ function App() {
                     This is the half that catches the URL the OS hands the app. */}
                 <NativeTaskLink />
                 <NativeAuthListener />
+                {/* Real-task Live Activities: starts, updates and ends the native
+                    card from the SAME active-task caches the banner renders.
+                    Inert for anyone not on the server-side test allowlist. */}
+                <RealTaskActivityBridge />
                 <IosIapRecovery />
                 <PermissionPrompt />
                 <NativeOAuthBounce />

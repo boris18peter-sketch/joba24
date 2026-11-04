@@ -5,12 +5,24 @@
     "enabled": {
       "type": "boolean",
       "default": false,
-      "description": "MASTER FLAG for SENDING. false = no snapshot is dispatched and no network call is made. Shipped false, and stays false until Stage 3 is separately approved."
+      "description": "MASTER FLAG for SENDING, for EVERY user. false = no snapshot is dispatched and no network call is made. Test-mode recipients are governed separately by test_user_ids/test_apns and never depend on this flag."
     },
     "dry_run": {
       "type": "boolean",
       "default": true,
-      "description": "true = the sender computes and records what it WOULD send, but never contacts APNs. Only an explicit false, together with enabled=true, permits a real push."
+      "description": "true = the sender computes and records what it WOULD send, but never contacts APNs. Only an explicit false, together with enabled=true, permits a real push to a non-test user."
+    },
+    "test_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "RESTRICTED REAL-TASK TEST MODE. User ids explicitly allowlisted to receive real-task Live Activities (start/update/end) while the global pipeline stays off. An empty list means the real-task path is completely inert for everyone. Max 20 ids, trimmed server-side."
+    },
+    "test_apns": {
+      "type": "boolean",
+      "default": false,
+      "description": "Real APNs delivery FOR THE ALLOWLISTED test users only. Only a literal true permits a network call, and only for a recipient listed in test_user_ids. It can never arm delivery for anybody else, and it never overrides `dry_run` for non-test users."
     },
     "diagnostic_events": {
       "type": "boolean",
@@ -44,7 +56,7 @@
         "production"
       ],
       "default": "development",
-      "description": "Which APNs environment dispatches may target. Tokens registered for a different environment are skipped, never cross-sent."
+      "description": "Which APNs environment dispatches may target. Tokens registered for a different environment are skipped, never cross-sent. A TestFlight build registers production tokens; an Xcode/debug build registers sandbox tokens."
     },
     "max_tokens_per_dispatch": {
       "type": "number",

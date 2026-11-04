@@ -296,7 +296,12 @@ describe('the refresh pass observes the pipeline rules', () => {
   it('is dispatched through the dry-run pipeline, not around it', () => {
     expect(source).toContain("mode: 'dispatch'");
     expect(source).not.toContain('willContactApns');
-    expect(sender).toContain('willContactApns(config)');
+    // The APNs decision stays inside the one shared sender. It is now made PER
+    // RECIPIENT (`mayContactApnsFor`), which is the same global rule for every
+    // ordinary user and the allowlist rule for a real-task test user — so the
+    // caller still has no say, and no second place can arm a push.
+    expect(sender).toContain('mayContactApnsFor(config, recipientId)');
+    expect(sender).toContain('isTrackedRecipient(config, recipientId)');
   });
 
   it('keeps its bookkeeping table admin-only', () => {

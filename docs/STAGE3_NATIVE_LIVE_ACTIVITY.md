@@ -594,3 +594,85 @@ possible in that state, `willContactApns` requires `dry_run === false`):
 
 Verification: `npx vitest run test/liveActivity` → **15 files, 377 tests**;
 `npx vite build` → exit 0.
+## 11. Real-task integration — allowlisted test mode (2026-11-04)
+
+Status: **wired end to end, inert until an admin adds a user id.** Global
+delivery is unchanged (`enabled=false`, `dry_run=true`).
+
+### 11.1 What was missing before
+
+The infrastructure was complete and unreachable. Specifically:
+
+| Missing | Consequence |
+| --- | --- |
+| Any client call site | Nothing ever called `startTaskActivity`, so no phone ever created an activity from a real task. Only the admin demo did, with a fixture. |
+| A server START | `buildLiveActivityPush` emitted only `update` / `end`. ActivityKit activities are created by the app; a push can update one, never create one. |
+| A task-event sender | `liveActivityDispatch` was an admin HTTP endpoint; the Task workflow only wrote diagnostic rows. No real status change ever produced a push. |
+| A closeable terminal path | `dispatchRecipient` gated everything on `authorizeActivity`, which authorizes LIVE tracking only — so the planner's `end` branch was unreachable and a finished task could never close a card. Fixed. |
+| Revision coordination | The phone must start at the revision the SERVER will continue from, or its first push is refused as stale. Nothing allocated that. |
+| An allowlist | There was no way to run the real path for two testers without arming it for everyone. |
+
+### 11.2 The exact event that starts it
+
+**Server:** a `Task` entity event where the record's `status` leaves `OPEN`
+and `worker_id` is set — the write `approveWorker` (or an instant approval)
+performs. The workflow `Live Activity Real Task Dispatch` calls
+`liveActivityTaskEvent` for create/update/delete.
+
+**Device:** the same moment, seen through the caches `ActiveTaskBanner` already
+renders — `['activeWorkerTask', me.id]` / `['activeClientTask', me.id]` holding a
+`TAKEN` task. `RealTaskActivityBridge` (mounted once in `App.jsx`) starts the
+activity from there. No new status system: the record is the lifecycle.
+
+### 11.3 Pieces
+
+| Piece | File | Role |
+| --- | --- | --- |
+| Gate | `base44/shared/liveActivityConfig.ts` | `test_user_ids`, `test_apns`, `isTestUser`, `isTrackedRecipient`, `mayContactApnsFor`, `sendGateFor` |
+| Device session | `base44/shared/liveActivitySend.ts` | `beginRecipientState` / `syncRecipientState` / `closeRecipientState` — the revision the phone starts and updates with, in the server's own sequence |
+| Device API | `base44/functions/liveActivityRealTask` | `access` / `begin` / `sync` / `end` / `report`; allowlist + task ownership re-checked on every call |
+| Task event sender | `base44/functions/liveActivityTaskEvent` | recipients from the record, filtered by the gate, dispatched through the one shared sender |
+| Workflow | `base44/workflows/Live Activity Real Task Dispatch.jsonc` | Task create/update/delete |
+| Device decisions | `src/lib/realTaskActivity.js` | which task, and start / update / end / nothing |
+| Bridge | `src/components/RealTaskActivityBridge.jsx` | the single client call site |
+| Diagnostics + allowlist | `src/components/liveActivity/RealTaskDiagnostics.jsx` | on `/live-activity-test`, below the untouched demo |
+| Device evidence | entity `LiveActivityDeviceEvent` | what each phone actually did |
+
+### 11.4 Enabling it for two testers
+
+Admin → `/live-activity-test` → **משימה אמיתית — מצב בדיקה**:
+
+1. add both user ids (the `User.id`, not the email);
+2. leave **שליחת APNs אמיתית** off to watch the cards move on-device only, with
+   every attempt recorded as `dry_run`;
+3. set the environment: `production` for a TestFlight build, `development` for
+   an Xcode build. Tokens are never cross-sent;
+4. switch **שליחת APNs אמיתית** on when you want updates delivered while the
+   app is closed.
+
+Removing both ids turns the path off completely, with no other change.
+
+### 11.5 Why no new iOS build is required
+
+The shipped build already contains everything used here: `JobaActivity`
+`start` / `update` / `end` / `activeActivities` / `setActionAuth`, the token
+listener, and the App Intents that run the Lock Screen actions. Push-to-start
+(APNs `event: start`, iOS 17.2+) is deliberately **not** used — it would need a
+new Swift build and a second token type.
+
+The one consequence: an activity can only be **started** while that user's app
+is open. After a worker is approved, each participant sees the card as soon as
+their app is next in the foreground; from that moment it is updated and closed
+remotely.
+
+### 11.6 Residual risk, stated plainly
+
+* A card that was never started receives no push (Apple accepts it, nothing
+  displays). The diagnostic shows `started 0` for that role — that is the
+  signal, not a failure.
+* `begin` creates the state row for a fresh (user, task, role). Two devices of
+  the SAME user starting at the same instant could create two rows; the reader
+  takes the first. One device per tester avoids it.
+* The revision is monotonic per recipient and shared with the server: a dry-run
+  pass never consumes one, so switching APNs on does not suppress the first
+  real update.

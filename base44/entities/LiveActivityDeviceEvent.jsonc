@@ -1,0 +1,114 @@
+{
+  "name": "LiveActivityDeviceEvent",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "The REAL Task this device started, updated or ended a Live Activity for."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "The device owner. Always the server-authenticated caller, never a client-supplied id."
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "publisher",
+        "worker"
+      ],
+      "enumColors": [
+        "purple",
+        "blue"
+      ],
+      "description": "Which side of the task the device is showing."
+    },
+    "event": {
+      "type": "string",
+      "enum": [
+        "started",
+        "updated",
+        "ended",
+        "start_failed",
+        "update_failed",
+        "end_failed"
+      ],
+      "enumColors": [
+        "green",
+        "blue",
+        "gray",
+        "red",
+        "red",
+        "red"
+      ],
+      "description": "What the DEVICE reported doing. This is the only place a start is visible: the server never starts an activity, the device does."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Short machine reason for a failure or a skip (not_native, activities_disabled, unsupported_ios, no_activity, stale_revision, plugin_error...)."
+    },
+    "activity_id": {
+      "type": "string",
+      "description": "ActivityKit activity id when the device reported one. Used to correlate with Apple and to spot an orphan."
+    },
+    "revision": {
+      "type": "number",
+      "description": "The snapshot revision the device applied (or attempted). Same sequence the server uses, so a stale card is visible in the numbers."
+    },
+    "phase": {
+      "type": "string",
+      "description": "Contract phase of the snapshot the device applied (open, scheduled, awaiting_start, on_the_way, arrived, done, terminal)."
+    },
+    "app_version": {
+      "type": "string",
+      "description": "Client app version at report time, for diagnosing an old build."
+    },
+    "platform": {
+      "type": "string",
+      "default": "ios"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the device performed the action."
+    },
+    "received_ms": {
+      "type": "number",
+      "description": "occurred_at as epoch milliseconds \u2014 comparisons use numbers, not strings."
+    }
+  },
+  "required": [
+    "task_id",
+    "user_id",
+    "role",
+    "event"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

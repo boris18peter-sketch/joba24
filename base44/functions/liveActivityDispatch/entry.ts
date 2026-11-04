@@ -6,11 +6,12 @@ import { dispatchRecipient, DISPATCH_ROLES } from '../../shared/liveActivitySend
  * liveActivityDispatch — compute (and, only when explicitly unlocked, send) one
  * recipient's Live Activity update.
  *
- * ── NOT CONNECTED TO ANYTHING ──────────────────────────────────────────────
- * No task function calls this, no workflow triggers it on a task event. It is
- * reachable only by an admin, or by the refresh pass which calls the SAME shared
- * sender directly (never over HTTP). Stage 1 cannot emit a push as a side effect
- * of ordinary app usage.
+ * ── AN OPERATOR TOOL, NOT THE LIFECYCLE PATH ───────────────────────────────
+ * No task function calls this and no workflow triggers THIS endpoint. A task
+ * event reaches the same shared sender through `liveActivityTaskEvent` instead,
+ * and only for recipients the allowlist covers, so ordinary app usage still
+ * cannot emit a push from here. This stays the admin/operator surface: plan or
+ * dispatch one recipient by hand, without touching a task.
  *
  * ── THE WORK ITSELF LIVES IN shared/liveActivitySend.ts ────────────────────
  * The read → build → plan → send → audit → commit sequence is shared with

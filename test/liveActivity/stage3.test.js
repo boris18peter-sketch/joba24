@@ -282,15 +282,24 @@ describe('production stays inert', () => {
     return found;
   }
 
-  it('only the admin test panel imports the web bridge', () => {
-    // The bridge must not be reachable from any user-facing screen yet. The one
-    // permitted importer is the local test panel, which starts a fixture
-    // activity and touches no task.
+  it('has exactly two importers: the admin test panel and the allowlisted real-task bridge', () => {
+    // Stage 3 shipped the bridge unwired, and this test pinned that. The
+    // real-task integration is the deliberate activation, so the list is now
+    // closed at TWO — a third importer would mean some screen started touching
+    // Lock Screen state again — and the second one is gated by the server
+    // allowlist rather than by being unreachable.
     const importers = sourceFiles().filter((file) => {
       if (file === BRIDGE) return false;
       return read(file).includes('liveActivityNative');
     });
-    expect(importers).toEqual([join(ROOT, 'src/components/liveActivity/LiveActivityTestPanel.jsx')]);
+    expect(importers.sort()).toEqual([
+      join(ROOT, 'src/components/RealTaskActivityBridge.jsx'),
+      join(ROOT, 'src/components/liveActivity/LiveActivityTestPanel.jsx'),
+    ].sort());
+
+    const realTaskBridge = read(join(ROOT, 'src/components/RealTaskActivityBridge.jsx'));
+    expect(realTaskBridge).toContain("action: 'access'");
+    expect(realTaskBridge).toContain('access?.allowed');
   });
 
   it('reaches the local test surface only behind the admin guard', () => {

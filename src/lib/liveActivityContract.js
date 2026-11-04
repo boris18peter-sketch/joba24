@@ -5,8 +5,8 @@
  * The authoritative contract is `base44/shared/taskActivitySnapshot.ts`, which
  * the backend builds every Live Activity snapshot with. A frontend bundle cannot
  * import from `base44/` (server-side code), and the reverse is equally closed, so
- * the local test screen — the only client-side caller — needs the same pure
- * functions under `src/`.
+ * the two client-side callers — the admin test screen and the real-task bridge —
+ * need the same pure functions under `src/`.
  *
  * This is a faithful port, not a redesign: same phases, same ladder, same
  * authorization, same field order, same frozen result. It adds nothing and
@@ -262,4 +262,39 @@ export function buildTaskActivitySnapshot(input) {
   };
 
   return deepFreeze(snapshot);
+}
+
+/**
+ * Which ONE task a device tracks. Ported verbatim from the shared contract
+ * (`pickTrackedTask`), and asserted against it by the real-task test, because
+ * the server and the phone must agree on which task is "the" active one:
+ *
+ *   1. TAKEN-class where I am the worker   (live execution beats everything)
+ *   2. TAKEN-class where I am the client
+ *   3. OPEN        where I am the client
+ *
+ * Inside a tier: newest first by created_date, then ascending id, so equal
+ * timestamps still resolve to one stable winner.
+ */
+export function pickTrackedTask(tasks, userId) {
+  if (!Array.isArray(tasks) || !userId) return null;
+  const tiers = [
+    { role: 'worker', match: (task) => ACTIVE_STATUSES.includes(task.status) && task.worker_id === userId },
+    { role: 'publisher', match: (task) => ACTIVE_STATUSES.includes(task.status) && task.client_id === userId },
+    { role: 'publisher', match: (task) => task.status === 'OPEN' && task.client_id === userId },
+  ];
+
+  for (let tier = 0; tier < tiers.length; tier += 1) {
+    const { role, match } = tiers[tier];
+    const candidates = tasks.filter((task) => task && match(task));
+    if (!candidates.length) continue;
+    const sorted = [...candidates].sort((a, b) => {
+      const at = Date.parse(a.created_date || a.updated_date || 0) || 0;
+      const bt = Date.parse(b.created_date || b.updated_date || 0) || 0;
+      if (at !== bt) return bt - at;
+      return String(a.id) < String(b.id) ? -1 : 1;
+    });
+    return { task: sorted[0], role, tier };
+  }
+  return null;
 }
