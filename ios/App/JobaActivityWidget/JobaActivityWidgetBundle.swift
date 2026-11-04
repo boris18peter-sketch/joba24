@@ -162,7 +162,11 @@ struct LockScreenCard: View {
     let role: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // Spacing trimmed by three points in total, which is exactly the height
+        // the larger rail adds: the card grew where readability needed it and
+        // nowhere else, so it still fits the height iOS gives a Lock Screen card
+        // on the smallest iPhone.
+        VStack(alignment: .leading, spacing: 9) {
             // ── The banner's status hero ──────────────────────────────────────
             HStack(alignment: .center, spacing: 11) {
                 IconBubble(state: state, size: 40)
@@ -197,7 +201,7 @@ struct LockScreenCard: View {
             TaskActionRow(state: state, taskId: taskId, role: role)
         }
         .padding(.horizontal, 15)
-        .padding(.vertical, 13)
+        .padding(.vertical, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.layoutDirection, .rightToLeft)
         .dynamicTypeSize(.xSmall ... .accessibility1)
@@ -259,8 +263,22 @@ struct StepRail: View {
     var compact: Bool = false
     var showsCounter: Bool = true
 
-    private var diameter: CGFloat { compact ? 20 : 26 }
-    private var glyphSize: CGFloat { compact ? 10 : 12 }
+    // ── SIZED FOR AN iPHONE, NOT FOR A SCREENSHOT ───────────────────────────
+    // The first version was drawn at 26pt circles holding 12pt glyphs under
+    // 10pt labels. At tile size on a Mac it looked right; held in the hand, at
+    // arm's length, in Hebrew, the three steps read as one grey smear — on the
+    // single element the card exists to show. These are the smallest values
+    // that stay legible at that distance: a 30pt circle, an 18pt glyph (75% of
+    // lucide's 24pt box, where the shapes still hold), and an 11.5pt semibold
+    // label, the size iOS uses for its own Lock Screen detail text.
+    //
+    // The island keeps its compressed rail on purpose: it is a fixed box, read
+    // as a position counter rather than as a flow, and its own counter line
+    // carries the wording there.
+    private var diameter: CGFloat { compact ? 20 : 30 }
+    private var glyphSize: CGFloat { compact ? 10 : 18 }
+    /// The label under a step — iOS' own weight for detail text.
+    private var labelSize: CGFloat { 11.5 }
 
     private var currentLabel: String {
         guard progress.steps.indices.contains(progress.step) else { return "" }
@@ -306,7 +324,9 @@ struct StepRail: View {
     private func column(index: Int, step: JobaTaskActivity.ContentState.StepProgress.Step) -> some View {
         let reached = index <= progress.step
         let active = index == progress.step
-        VStack(spacing: compact ? 0 : 4) {
+        // More air between a circle and its label than before: the label is
+        // bigger now, and a hairline gap made the two fight each other.
+        VStack(spacing: compact ? 0 : 5) {
             HStack(spacing: 0) {
                 halfLine(filled: index > 0 && reached, hidden: index == 0)
                 ZStack {
@@ -333,11 +353,19 @@ struct StepRail: View {
                 halfLine(filled: index < progress.step, hidden: index == progress.steps.count - 1)
             }
             if !compact {
+                // ── THREE STATES THE EYE CAN TELL APART WITHOUT READING ─────
+                //  • current  — brand blue and the heaviest weight, and the only
+                //    label that is not grey, so the eye lands where the work is
+                //    now (the banner's own brand blue, --brand-primary);
+                //  • reached  — the card's primary text colour: done;
+                //  • upcoming — muted, plainly still ahead.
+                // One line, scaling to 80% only as a last resort, so a long
+                // category label never wraps into the row below it.
                 Text(step.label)
-                    .font(.system(size: 10, weight: active ? .heavy : .semibold))
-                    .foregroundStyle(reached ? theme.activeLabel : theme.label)
+                    .font(.system(size: labelSize, weight: active ? .heavy : .semibold))
+                    .foregroundStyle(active ? JobaPalette.brand : (reached ? theme.activeLabel : theme.label))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity)
             }
         }

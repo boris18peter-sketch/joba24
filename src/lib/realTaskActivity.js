@@ -37,6 +37,25 @@ export function isTrackableTask(task) {
 }
 
 /**
+ * Is this task still live work FOR THIS USER IN THIS ROLE?
+ *
+ * ── WHY THIS EXISTS SEPARATELY FROM THE CACHES ─────────────────────────────
+ * A card may only be closed when the WORK is over. The active-task caches are
+ * not evidence of that: the app rebuilds them after every realtime task event,
+ * so during a status update they are momentarily empty while the job is still
+ * running perfectly well. Reading that gap as "the task is gone" is what closed
+ * the Lock Screen card on every single update.
+ *
+ * The card's own task is therefore re-read and asked directly. `task` is that
+ * fresh record; null means it could not be read at all — deleted, or no longer
+ * this user's — which IS evidence to close.
+ */
+export function isLiveForRole(task, role, userId) {
+  if (!userId || !isTrackableTask(task)) return false;
+  return role === 'worker' ? task.worker_id === userId : task.client_id === userId;
+}
+
+/**
  * The ONE real task this device shows, and the role it is shown in.
  *
  * `workerTask` / `clientTask` are the app's own active-task caches — the very
@@ -135,6 +154,14 @@ export function contentKeyOf(snapshot) {
  *  5. A running activity whose content is unchanged since we applied it →
  *     nothing (this is what stops an event loop from re-updating in a circle).
  *  6. Otherwise → update.
+ *
+ * ── `verifiedLive` — THE GUARD AGAINST CLOSING A CARD ON A CACHE GAP ────────
+ * Rule 1 is only as good as the claim "that card is no longer the tracked
+ * task". When `task` is null BECAUSE THE CACHE HAS NOT CAUGHT UP yet, that
+ * claim is false, and acting on it tears down a card for work that is still
+ * running — which is what happened on every status update. A caller that has
+ * re-read a card's own task and found it still live for this user and role
+ * passes it here, and it is then not treated as an orphan.
  */
 export function planActivityStep(input) {
   const {
@@ -143,6 +170,7 @@ export function planActivityStep(input) {
     activities = [],
     contentKey = '',
     applied = null,
+    verifiedLive = [],
   } = input || {};
 
   const running = (activities || []).filter((a) => a && a.taskId && a.taskId !== DEMO_ACTIVITY_TASK_ID);
@@ -151,6 +179,7 @@ export function planActivityStep(input) {
   const orphan = running.find((a) => (
     RUNNING_ACTIVITY_STATES.includes(a.activityState)
     && !(trackable && a.taskId === task.id && a.role === role)
+    && !verifiedLive.some((live) => live && live.taskId === a.taskId && live.role === a.role)
   ));
   if (orphan) {
     return { action: 'end', taskId: orphan.taskId, role: orphan.role, reason: 'not_the_tracked_task' };

@@ -37,6 +37,32 @@ export const LIVE_ACTIVITY_METHODS = [
 
 const JobaActivity = registerPlugin('JobaActivity');
 
+/**
+ * The public origin the Lock Screen action posts to.
+ *
+ * `window.location.origin` is NOT usable here. Inside the native app the page is
+ * served from `capacitor://localhost`, so the endpoint stored for the App Intent
+ * was `capacitor://localhost/functions/liveActivityAction` — a scheme URL that
+ * URLSession refuses outright. Every tap therefore failed as `network_error`
+ * without a single packet leaving the phone: the button was dead in the only
+ * build that matters, and nothing in the diagnostics said why.
+ *
+ * A browser build keeps posting to the origin it is served from (so previews
+ * work); the native shell, which has no https origin at all, posts to the public
+ * app domain.
+ */
+const PUBLIC_APP_ORIGIN = 'https://joba24.com';
+
+function actionEndpoint() {
+  try {
+    const origin = window.location?.origin || '';
+    if (/^https:\/\//.test(origin)) return `${origin}/functions/liveActivityAction`;
+  } catch {
+    // No window, or a container that exposes no origin — use the public domain.
+  }
+  return `${PUBLIC_APP_ORIGIN}/functions/liveActivityAction`;
+}
+
 // ── ONE native listener, MANY subscribers ───────────────────────────────────
 // This used to be a boolean guard that let exactly one caller listen: the second
 // caller got a no-op detach and its callback never ran. With the real-task
@@ -121,10 +147,18 @@ export async function syncActivityAction({ taskId, role = 'publisher' } = {}) {
     });
     const token = response?.data?.token;
     if (!token) return { ok: false, reason: response?.data?.error || 'no_token' };
+    // ── THE ENDPOINT MUST BE A REAL https URL ──────────────────────────────
+    // This used to be built from `window.location.origin`, which inside the
+    // native app is `capacitor://localhost`. The App Intent then handed that to
+    // URLSession, which cannot request a scheme URL at all: every Lock Screen
+    // tap failed as `network_error` without a packet ever leaving the phone, so
+    // the button was dead in the one build that matters. `getPublicBaseUrl()`
+    // resolves the published https origin (and the current origin in a preview),
+    // so the intent calls the same host the web app does.
     const stored = await JobaActivity.setActionAuth({
       taskId,
       role,
-      endpoint: `${window.location.origin}/functions/liveActivityAction`,
+      endpoint: actionEndpoint(),
       token,
     });
     return { ok: stored?.stored === true, expiresAt: response?.data?.expires_at || null };

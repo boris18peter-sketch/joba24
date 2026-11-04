@@ -17,8 +17,11 @@ import {
 import {
   buildRealSnapshot,
   contentKeyOf,
+  isLiveForRole,
   planActivityStep,
   selectTrackedTask,
+  DEMO_ACTIVITY_TASK_ID,
+  RUNNING_ACTIVITY_STATES,
 } from '@/lib/realTaskActivity';
 
 /**
@@ -71,6 +74,41 @@ async function flushActionStages() {
       reason: [entry.stage, entry.detail].filter(Boolean).join(':').slice(0, 120),
     }).catch(() => {});
   }
+}
+
+/**
+ * Re-read the tasks behind the cards still on this device.
+ *
+ * ── WHY A CARD IS ALLOWED TO BE CLOSED ONLY ON THIS EVIDENCE ───────────────
+ * Closing a card is the one destructive thing the bridge does, and it used to
+ * be decided from the active-task CACHES — which the app empties and refills
+ * around every realtime task event. So each status update produced a pass where
+ * nothing was tracked, the card was read as an orphan, and it was ended with
+ * `.immediate` dismissal; the next pass started a brand-new one. On a locked
+ * iPhone that is precisely what the tester saw: the card did not move on, it
+ * vanished (and the screen went back to its idle Lock Screen) at the exact
+ * moment of the update, over and over.
+ *
+ * The card's own task is now read directly — one record, the one the card
+ * belongs to — and only a task that is genuinely no longer live work for this
+ * user and role allows the card to close. RLS refuses another user's record,
+ * which reads as `null` and is itself the evidence to close.
+ */
+async function verifyLiveCards(activities, userId) {
+  const running = (activities || []).filter((a) => (
+    a?.taskId
+    && a.taskId !== DEMO_ACTIVITY_TASK_ID
+    && RUNNING_ACTIVITY_STATES.includes(a.activityState)
+  ));
+  const live = [];
+  // At most one real card per role, so this is a two-read ceiling at worst.
+  for (const card of running.slice(0, 2)) {
+    const task = await base44.entities.Task.get(card.taskId).catch(() => null);
+    if (isLiveForRole(task, card.role, userId)) {
+      live.push({ taskId: card.taskId, role: card.role });
+    }
+  }
+  return live;
 }
 
 export default function RealTaskActivityBridge() {
@@ -162,13 +200,37 @@ export default function RealTaskActivityBridge() {
         // that turns out to have nothing else to do.
         flushActionStages();
 
-        const step = planActivityStep({
+        let plan = planActivityStep({
           task: tracked?.task || null,
           role: tracked?.role || null,
           activities,
           contentKey,
           applied: appliedRef.current,
         });
+
+        // ── A CLOSE IS ONLY EVER DECIDED BY THE TASK, NEVER BY A CACHE GAP ──
+        // Before this, "nothing tracked this instant" was enough to end the
+        // card. It is not evidence of anything: the caches are rebuilt around
+        // every realtime event, so the gap appears on every status update.
+        // Each card's own task is re-read, and the close is re-planned with that
+        // evidence; a card whose work is still live is left exactly where it is
+        // and the next pass updates it normally.
+        if (plan.action === 'end') {
+          const verifiedLive = await verifyLiveCards(activities, me.id);
+          if (!alive) return;
+          if (verifiedLive.length) {
+            plan = planActivityStep({
+              task: tracked?.task || null,
+              role: tracked?.role || null,
+              activities,
+              contentKey,
+              applied: appliedRef.current,
+              verifiedLive,
+            });
+          }
+        }
+
+        const step = plan;
         if (!alive || step.action === 'none' || !step.taskId) return;
 
         const report = (event, extra = {}) => {

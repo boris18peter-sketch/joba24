@@ -24,6 +24,7 @@ import {
   selectTrackedTask,
   DEMO_ACTIVITY_TASK_ID,
   isTrackableTask,
+  isLiveForRole,
 } from '@/lib/realTaskActivity';
 import { resolveStatusFlow } from '@/lib/taskStatusFlow';
 import { isEngagement, primaryOccurrence, formatOccurrence, scheduleWindows } from '@/lib/scheduling';
@@ -299,6 +300,96 @@ describe('the device knows exactly what to do', () => {
     expect(isTrackableTask(makeTask({ status: 'ON_THE_WAY' }))).toBe(true);
     expect(isTrackableTask(makeTask({ status: 'OPEN' }))).toBe(false);
     expect(isTrackableTask(makeTask({ status: 'COMPLETED' }))).toBe(false);
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     THE BUG THIS FIXES: "the card disappears when it updates".
+     A pass ran while the active-task caches were being rebuilt, so `task` was
+     null and the running card was read as an orphan and ended — the card did
+     not move on, it vanished. Ending is now allowed only on evidence from the
+     card's OWN task.
+     ──────────────────────────────────────────────────────────────────────── */
+  it('never closes a card whose own task is still live, even with nothing tracked', () => {
+    const task = makeTask({ status: 'ON_THE_WAY' });
+    const step = planActivityStep({
+      task: null,
+      role: null,
+      activities: running(task, 'worker'),
+      contentKey: '',
+      verifiedLive: [{ taskId: task.id, role: 'worker' }],
+    });
+    expect(step.action).toBe('none');
+    expect(step.reason).toBe('no_tracked_task');
+  });
+
+  it('still closes a card whose task is genuinely over', () => {
+    const task = makeTask({ status: 'COMPLETED' });
+    const step = planActivityStep({
+      task: null,
+      role: null,
+      activities: running(task, 'worker'),
+      contentKey: '',
+      // The re-read found nothing live, which is the evidence to close.
+      verifiedLive: [],
+    });
+    expect(step.action).toBe('end');
+    expect(step.taskId).toBe(task.id);
+  });
+
+  it('keeps one card and closes only the one that is not verified', () => {
+    const live = makeTask({ status: 'TAKEN' });
+    const stale = makeTask({ status: 'CANCELLED' });
+    const step = planActivityStep({
+      task: null,
+      role: null,
+      activities: [...running(live, 'worker'), ...running(stale, 'worker')],
+      contentKey: '',
+      verifiedLive: [{ taskId: live.id, role: 'worker' }],
+    });
+    expect(step.action).toBe('end');
+    expect(step.taskId).toBe(stale.id);
+  });
+
+  it('asks the task, not the cache, whether the work is still this user\'s', () => {
+    const task = makeTask({ status: 'IN_PROGRESS' });
+    expect(isLiveForRole(task, 'worker', WORKER)).toBe(true);
+    expect(isLiveForRole(task, 'publisher', CLIENT)).toBe(true);
+    // Same role, somebody else's task — not this device's card to keep.
+    expect(isLiveForRole(task, 'worker', STRANGER)).toBe(false);
+    expect(isLiveForRole(task, 'publisher', WORKER)).toBe(false);
+    // Live record, but the work is over.
+    expect(isLiveForRole(makeTask({ status: 'COMPLETED' }), 'worker', WORKER)).toBe(false);
+    // The record could not be read at all.
+    expect(isLiveForRole(null, 'worker', WORKER)).toBe(false);
+  });
+});
+
+describe('a card is closed only on the task\'s own evidence', () => {
+  it('re-reads the card\'s task before any close, and re-plans with it', () => {
+    const bridge = read('src/components/RealTaskActivityBridge.jsx');
+    // The verification runs on the END branch, before the step is acted on…
+    const endBranch = bridge.indexOf("if (plan.action === 'end')");
+    expect(endBranch).toBeGreaterThan(-1);
+    expect(bridge.indexOf('verifyLiveCards(activities, me.id)')).toBeGreaterThan(endBranch);
+    expect(bridge).toContain('verifiedLive,');
+    // …and the decision itself is the shared one, not a second rule.
+    expect(bridge).toContain('isLiveForRole(task, card.role, userId)');
+    expect(bridge).toContain('base44.entities.Task.get(card.taskId)');
+    // Nothing else about the lifecycle moved.
+    expect(bridge).not.toContain('activity.update(');
+    expect(bridge).not.toContain('Task.update(');
+  });
+
+  it('hands the Lock Screen a real https endpoint, not the webview\'s scheme', () => {
+    // `window.location.origin` in the native app is `capacitor://localhost`,
+    // which URLSession cannot request at all: every tap failed as a network
+    // error before a packet left the phone.
+    const native = read('src/lib/liveActivityNative.js');
+    expect(native).not.toContain('`${window.location.origin}/functions/liveActivityAction`');
+    // Only an https origin is accepted; the shell falls back to the public app.
+    expect(native).toContain("if (/^https:\\/\\//.test(origin)) return `${origin}/functions/liveActivityAction`");
+    expect(native).toContain("'https://joba24.com'");
+    expect(native).toContain('endpoint: actionEndpoint(),');
   });
 });
 
