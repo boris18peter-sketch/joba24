@@ -46,6 +46,10 @@ the change is reviewable instead of living in one person's Xcode.
   * `--check` re-parses the file with an OpenStep-plist parser written here, so
     the report describes what Xcode will actually read rather than what this
     script intended to write.
+  * The ActivityKit bridge source is REPAIRED and then VERIFIED here (see
+    SWIFT_API_REPAIRS / swift_api_report). A green JavaScript suite could not
+    catch `Activity<...>.pushType`, which does not exist and cost an archive;
+    this step is the last one before Xcode, so the check lives here.
 
 The app target itself is only touched in two places — two files appended to its
 Sources phase, and the embed phase + dependency added — so every existing screen,
@@ -57,6 +61,7 @@ import hashlib
 import json
 import os
 import plistlib
+import re
 import sys
 
 # ── Identity ────────────────────────────────────────────────────────────────
@@ -74,6 +79,7 @@ DEPLOYMENT_TARGET = "16.1"  # ActivityKit + WidgetKit Live Activities
 
 DEFAULT_PROJECT = "ios/App/App.xcodeproj/project.pbxproj"
 DEFAULT_INFO_PLIST = "ios/App/App/Info.plist"
+DEFAULT_PLUGIN = "ios/App/App/LiveActivityPlugin.swift"
 
 
 def uid(seed):
@@ -99,6 +105,109 @@ IDS = {k: uid(k) for k in (
     # app, read by the intent).
     "file_store", "bf_store_widget", "bf_store_app",
 )}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# THE ActivityKit SURFACE THIS REPOSITORY MAY USE
+# ══════════════════════════════════════════════════════════════════════════════
+# WHY THIS LIVES IN THE PATCHER, AND NOT ONLY IN A TEST
+#
+# The JavaScript suite was green while the Codemagic archive failed twice on the
+# same two lines. That is not a testing gap to explain away — it is the shape of
+# the problem: a regex over Swift in vitest can only catch a pattern somebody
+# remembered to write down, and it cannot ask a compiler anything. The two facts
+# that actually decide whether Xcode accepts the file are therefore checked HERE,
+# in the one step that prepares the build, and the patcher REPAIRS what it can.
+#
+#   1. `Activity<...>.pushType` DOES NOT EXIST. It cost a 40-minute archive:
+#          error: type 'Activity<JobaTaskActivity>' has no member 'pushType'
+#      `PushType` is only the ARGUMENT that opts one activity into push, passed
+#      to `Activity.request(attributes:content:pushType:)`. The Push-to-Start
+#      token is a STATIC member of `Activity` (iOS 17.2+), readable with NO
+#      activity in existence — which is exactly what an install-scoped token has
+#      to be, since it is the token that brings a card into existence.
+#
+#   2. Those static members are iOS 17.2+, so they may only be referenced inside
+#      a `@available(iOS 17.2, *)` scope (or after `guard #available(iOS 17.2,
+#      *)`). Unguarded, the file fails against the 16.1 deployment target.
+SWIFT_API_REPAIRS = (
+    (
+        "Activity<JobaTaskActivity>.pushType?.pushToStartToken",
+        "Activity<JobaTaskActivity>.pushToStartToken",
+        "'Activity' has no 'pushType' member - the start token is a STATIC member (iOS 17.2+)",
+    ),
+    (
+        "Activity<JobaTaskActivity>.pushType?.pushToStartTokenUpdates",
+        "Activity<JobaTaskActivity>.pushToStartTokenUpdates",
+        "'Activity' has no 'pushType' member - the update stream is a STATIC member (iOS 17.2+)",
+    ),
+)
+
+# A MEMBER ACCESS on a generic Activity. Deliberately not the `pushType: .token`
+# ARGUMENT LABEL that `Activity.request` takes — that one is correct and stays.
+PUSH_TYPE_MEMBER = re.compile(r"Activity<[A-Za-z0-9_]+>\s*\.\s*pushType\b")
+STATIC_START_TOKEN = re.compile(r"Activity<[A-Za-z0-9_]+>\s*\.\s*pushToStartToken\b")
+STATIC_START_UPDATES = re.compile(r"Activity<[A-Za-z0-9_]+>\s*\.\s*pushToStartTokenUpdates\b")
+AVAILABILITY_17_2 = re.compile(r"@available\(iOS 17\.2|#available\(iOS 17\.2")
+
+
+def swift_api_violations(text):
+    """Every reference to an ActivityKit member that does not exist."""
+    return sorted({m.group(0).replace(" ", "") for m in PUSH_TYPE_MEMBER.finditer(text)})
+
+
+def swift_api_report(path):
+    """What the plugin currently does with the push-to-start API, and whether it
+    is the call shape Xcode accepts."""
+    report = {
+        "path": path,
+        "present": False,
+        "ok": False,
+        "violations": [],
+        "static_start_token": False,
+        "static_start_updates": False,
+        "availability_17_2": False,
+    }
+    if not path or not os.path.exists(path):
+        return report
+    with open(path, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    report["present"] = True
+    report["violations"] = swift_api_violations(text)
+    report["static_start_token"] = bool(STATIC_START_TOKEN.search(text))
+    report["static_start_updates"] = bool(STATIC_START_UPDATES.search(text))
+    report["availability_17_2"] = bool(AVAILABILITY_17_2.search(text))
+    report["ok"] = (
+        not report["violations"]
+        and report["static_start_token"]
+        and report["static_start_updates"]
+        and report["availability_17_2"]
+    )
+    return report
+
+
+def repair_swift(path):
+    """Rewrite the known-broken ActivityKit expressions in place (idempotent).
+
+    A patcher that only edits project.pbxproj could not fix this, and a build
+    that keeps the broken line fails forty minutes later inside Xcode. The same
+    run that prepares the project therefore repairs the source it just wired, so
+    an older checkout cannot be archived with an API that never existed.
+    """
+    notes = []
+    if not path or not os.path.exists(path):
+        return notes
+    with open(path, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    original = text
+    for broken, correct, why in SWIFT_API_REPAIRS:
+        if broken in text:
+            text = text.replace(broken, correct)
+            notes.append("repaired %s: %s (%s)" % (os.path.basename(path), correct, why))
+    if text != original:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+    return notes
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -250,10 +359,10 @@ def name_of(objects, entry):
 # ══════════════════════════════════════════════════════════════════════════════
 # Inspection
 # ══════════════════════════════════════════════════════════════════════════════
-def inspect(project_text, info_plist_path):
+def inspect(project_text, info_plist_path, plugin_path=None):
     report = {"ok": False, "error": None, "targets": [], "widget": {"present": False},
               "embed": False, "dependency": False, "app_sources": [], "app_conditions": {},
-              "info_plist": {}}
+              "info_plist": {}, "native_api": swift_api_report(plugin_path)}
     try:
         data = parse_pbxproj(project_text)
     except Exception as exc:  # noqa: BLE001 - the message is the product
@@ -820,6 +929,8 @@ def main():
     parser.add_argument("--require", action="store_true", help="with --check: exit 1 unless the target is fully wired")
     parser.add_argument("--project", default=DEFAULT_PROJECT)
     parser.add_argument("--info-plist", dest="info_plist", default=DEFAULT_INFO_PLIST)
+    parser.add_argument("--plugin", default=DEFAULT_PLUGIN,
+                        help="the ActivityKit bridge source this run repairs and verifies")
     parser.add_argument("--report", default=None,
                         help="write the JSON report to this file (always, even on failure)")
     parser.add_argument("--quiet", action="store_true",
@@ -835,7 +946,7 @@ def main():
 
     if args.check:
         with open(args.project, "r", encoding="utf-8") as fh:
-            report = inspect(fh.read(), args.info_plist)
+            report = inspect(fh.read(), args.info_plist, args.plugin)
         # The document goes to its own file FIRST, so even a failing run leaves a
         # complete report behind for the caller to read.
         emit_report(report, args.report)
@@ -902,6 +1013,23 @@ def main():
                     missing.append("App %s: LIVE_ACTIVITY_WIDGET compilation condition" % cfg_name)
             if report["info_plist"].get("NSSupportsLiveActivities") is not True:
                 missing.append("Info.plist NSSupportsLiveActivities")
+            # ── THE NATIVE API, CHECKED WHERE THE BUILD IS PREPARED ───────────
+            # Both gates below fired as REAL archive errors after a green
+            # JavaScript suite, which is why they are here and not only in a test.
+            native = report.get("native_api") or {}
+            if not native.get("present"):
+                missing.append("LiveActivityPlugin.swift (the native API cannot be verified)")
+            else:
+                if native.get("violations"):
+                    missing.append(
+                        "Swift references an ActivityKit member that does not exist: "
+                        + ", ".join(native["violations"]))
+                if not native.get("static_start_token"):
+                    missing.append("Swift must read Activity<...>.pushToStartToken (static, iOS 17.2+)")
+                if not native.get("static_start_updates"):
+                    missing.append("Swift must observe Activity<...>.pushToStartTokenUpdates (static)")
+                if not native.get("availability_17_2"):
+                    missing.append("Swift needs an @available(iOS 17.2, *) scope for the static push-to-start API")
             if missing:
                 diag("ERROR: the Live Activity target is not fully wired: " + ", ".join(missing))
                 return 1
@@ -925,6 +1053,10 @@ def main():
             return 1
         with open(args.project, "w", encoding="utf-8") as fh:
             fh.write(patched)
+
+    # The source this run just wired is repaired in the same run, so an older
+    # checkout cannot be archived against an ActivityKit API that never existed.
+    notes.extend(repair_swift(args.plugin))
 
     if not args.quiet:
         for note in notes:

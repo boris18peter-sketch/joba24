@@ -396,3 +396,68 @@ keeps global rollout off; the device key is its own change, with its own review.
 Until then, the honest statement is: **an unattended Lock Screen tap is guaranteed
 for 12 hours after the app last ran; after that the same button opens the task in
 the app.**
+
+---
+
+## 14. Verification: what the JS suite proves, and what only Xcode does
+
+Two Codemagic archives failed on the same two lines while every JavaScript test
+passed. The distinction matters and is recorded here rather than glossed:
+
+| Check | Runs where | Proves |
+| --- | --- | --- |
+| `vitest` (540 tests) | Node, in CI | contract parity, payload safety, authorization, wiring, and that the Swift *sources contain* the correct API in the correct availability scope |
+| `patch-ios-live-activity.py --check --require` | CI, before signing | the project is fully wired **and** the ActivityKit call shapes are the ones Xcode accepts |
+| `xcodebuild archive` | **only Codemagic** | that the Swift actually compiles |
+| physical device run | only a device | that a card appears, a tap lands, a fallback opens the task |
+
+**No JavaScript test can substitute for the archive.** What the suite *can* do is
+refuse to encode a broken call shape as the expected one — which is exactly what
+had happened.
+
+### The incorrect API, and why it looked plausible
+
+```swift
+// WRONG — cost two 40-minute archives
+let data = Activity<JobaTaskActivity>.pushType?.pushToStartToken
+guard let pushType = Activity<JobaTaskActivity>.pushType else { return }
+let updates = pushType.pushToStartTokenUpdates
+```
+
+`Activity` has **no `pushType` member**. `PushType` is only the *argument* that
+opts one activity into push, at `Activity.request(attributes:content:pushType:)`
+— which is where the one legitimate `pushType:` in the file remains.
+
+```swift
+// CORRECT — both are STATIC members of Activity, iOS 17.2+
+let data = Activity<JobaTaskActivity>.pushToStartToken
+let updates = Activity<JobaTaskActivity>.pushToStartTokenUpdates
+for await tokenData in updates { … }
+```
+
+They must be static: the start token belongs to the **install** and is read
+*before any activity exists*, which is the entire point of Push-to-Start.
+
+### Why the tests were green
+
+`test/liveActivity/pushToStart.test.js` asserted
+`toContain('Activity<JobaTaskActivity>.pushType?.pushToStartToken')`. The suite had
+pinned the non-existent API as the contract, so it verified agreement with the bug.
+That assertion now requires the static members and forbids the `pushType` member
+access, and `test/liveActivity/nativeApi.test.js` adds the scope check (a 17.2-only
+member used outside `@available(iOS 17.2, *)` fails against the 16.1 deployment
+target).
+
+### The generator repairs, it does not merely complain
+
+`SWIFT_API_REPAIRS` rewrites the broken expressions in the **same run** that wires
+the project, so an older checkout cannot be archived against an API that never
+existed. `--check --require` then fails the build if either call shape or its
+availability scope is wrong — before signing, before a 40-minute archive.
+
+### The `.pending` state
+
+Newer SDKs add `ActivityState` cases, `.pending` among them. The switch reports an
+unknown state by its own name (`String(describing:).lowercased()`, which yields
+`pending`) instead of adding a case: naming it is a hard error on any SDK that
+lacks it, and this string is diagnostic output only — no logic branches on it.

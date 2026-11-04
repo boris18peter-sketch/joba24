@@ -417,8 +417,15 @@ describe('the native bridge reads, registers and rotates the install token', () 
   });
 
   it('reads the token and keeps listening for a rotation', () => {
-    expect(plugin).toContain('Activity<JobaTaskActivity>.pushType?.pushToStartToken');
-    expect(plugin).toContain('pushType.pushToStartTokenUpdates');
+    // ── THIS ASSERTION WAS ITSELF THE BUG ────────────────────────────────
+    // It required `Activity<JobaTaskActivity>.pushType?.pushToStartToken` — a
+    // member that does not exist — so a green run here was evidence of nothing:
+    // the test had pinned the broken call shape as the contract and passed while
+    // Xcode failed the archive twice. The correct API is STATIC on `Activity`
+    // (iOS 17.2+), and it is what these now require.
+    expect(plugin).toContain('Activity<JobaTaskActivity>.pushToStartToken');
+    expect(plugin).toContain('Activity<JobaTaskActivity>.pushToStartTokenUpdates');
+    expect(plugin).not.toMatch(/Activity<[A-Za-z0-9_]+>\s*\.\s*pushType\b/);
     expect(plugin).toContain('notifyListeners("pushToStartToken"');
     // One observer per process: a second read must not attach a second stream.
     expect(plugin).toContain('guard pushToStartTask == nil else { return }');

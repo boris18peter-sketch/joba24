@@ -139,7 +139,18 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         observePushToStartToken()
-        let data = Activity<JobaTaskActivity>.pushType?.pushToStartToken
+        // ── THE CORRECT API, AND WHY THE OLD ONE COULD NOT COMPILE ───────────
+        // This read the token off a `pushType` member OF `Activity`, and the
+        // Codemagic archive failed with "type 'Activity<JobaTaskActivity>' has
+        // no member 'pushType'". `Activity` has no `pushType` member at all:
+        // a `PushType` is only the ARGUMENT that opts one activity into push at
+        // `Activity.request(attributes:content:pushType:)` (see `start` below).
+        //
+        // The Push-to-Start token is a STATIC member of `Activity` itself, iOS
+        // 17.2+. That is not a detail of taste — it has to be static, because the
+        // token belongs to the INSTALL and is readable BEFORE any activity
+        // exists, which is precisely when it is needed.
+        let data = Activity<JobaTaskActivity>.pushToStartToken
         let hex = data.map { $0.map { String(format: "%02x", $0) }.joined() } ?? ""
         call.resolve([
             "supported": true,
@@ -411,8 +422,10 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     @available(iOS 17.2, *)
     private func observePushToStartToken() {
         guard pushToStartTask == nil else { return }
-        guard let pushType = Activity<JobaTaskActivity>.pushType else { return }
-        let updates = pushType.pushToStartTokenUpdates
+        // Static as well (see `pushToStartToken(_:)` above): there is no
+        // `pushType` object to obtain and no activity to obtain it from. This
+        // yields the current token immediately, then every rotation.
+        let updates = Activity<JobaTaskActivity>.pushToStartTokenUpdates
         pushToStartTask = Task { [weak self] in
             for await tokenData in updates {
                 let hex = tokenData.map { String(format: "%02x", $0) }.joined()
@@ -452,7 +465,19 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         case .stale: return "stale"
         case .ended: return "ended"
         case .dismissed: return "dismissed"
-        @unknown default: return "unknown"
+        // ── WHY THE UNKNOWN BRANCH RETURNS THE STATE'S OWN NAME ──────────────
+        // Newer SDKs add `ActivityState` cases — `.pending` among them: a card
+        // the system has accepted but not yet presented. Naming one here ties
+        // this file to the exact SDK the runner happens to ship, and the cost is
+        // asymmetric: on an SDK that lacks that case, spelling it out is a hard
+        // ERROR, not a warning.
+        //
+        // Reporting the state by its own name handles `.pending` — and anything
+        // added later — correctly on every SDK, and keeps the switch exhaustive.
+        // This string is diagnostic output only (`activeActivities`); nothing in
+        // the app branches on it, so an unfamiliar value can never mislead logic,
+        // only a reader.
+        @unknown default: return String(describing: state).lowercased()
         }
     }
 
