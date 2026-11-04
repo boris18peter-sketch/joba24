@@ -109,11 +109,15 @@ struct JobaTaskLiveActivity: Widget {
                             StepRail(progress: progress, theme: .island, compact: true, showsCounter: false)
                         }
                         // The same button the Lock Screen offers, so the island
-                        // can complete the task without opening it.
+                        // can complete the task without opening it — at the
+                        // height the expanded island's own fixed bottom region
+                        // allows, not the Lock Screen's 56pt, and on one line.
                         TaskActionRow(
                             state: context.state,
                             taskId: context.attributes.taskId,
-                            role: context.attributes.role
+                            role: context.attributes.role,
+                            minHeight: 46,
+                            maxLines: 1
                         )
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -465,8 +469,10 @@ struct ApplicantPill: View {
  (`linear-gradient(135deg,#059669,#047857)`), with the icon the in-app button
  shows for the same step — Navigation to set out, MapPin on arrival, CheckCircle
  to finish and to approve (`getQuickAction` in ActiveTaskBanner). The glyph is the
- real lucide shape, not an SF Symbol. It is deliberately taller than the pill it
- replaces: this is the one thing the user came to the Lock Screen to press.
+ real lucide shape, not an SF Symbol. It is deliberately the largest thing on the
+ card — a 56pt floor on the Lock Screen — because it is the one thing the user
+ came to the Lock Screen to press. The expanded Dynamic Island is a fixed, much
+ tighter box, so it passes its own height instead of inheriting 56pt.
 
  ── IT DRAWS FOUR STATES, AND INVENTS NONE OF THEIR WORDS ───────────────────
   • idle / confirm — the contract's own label; `confirm` adds the contract's own
@@ -485,6 +491,14 @@ struct TaskActionRow: View {
     let state: JobaTaskActivity.ContentState
     let taskId: String
     let role: String
+    /// The height floor this surface can give the button. The Lock Screen gives
+    /// it a generous 56pt; the expanded Dynamic Island passes its own tighter
+    /// value rather than forcing the Lock Screen's height into a fixed box.
+    /// It is a FLOOR, never a cap — see `label(for:)`.
+    var minHeight: CGFloat = 56
+    /// One line in the island (there is no room for two), up to two on the Lock
+    /// Screen, so a long category-specific label wraps instead of truncating.
+    var maxLines: Int = 2
 
     private var action: JobaTaskActivity.ContentState.Action? {
         guard let value = state.action, !value.id.isEmpty, !value.label.isEmpty else { return nil }
@@ -543,10 +557,19 @@ struct TaskActionRow: View {
             Text(action.label)
                 .font(.subheadline.weight(.heavy))
                 .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .multilineTextAlignment(.center)
+                .lineLimit(maxLines)
+                .minimumScaleFactor(0.7)
+                // Take the height the words actually need, so a wrapped label is
+                // drawn in full rather than squeezed into one clipped line.
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 46)
+        // Inset FIRST, then apply the height floor: the words never reach the
+        // rounded edge, and `minHeight` stays a minimum — a two-line label makes
+        // the button taller instead of overflowing it.
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: minHeight)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(

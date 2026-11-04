@@ -783,3 +783,27 @@ rather than an action.
 
 `TaskActionRow`'s intent wiring, confirmation step, pending/failed states and the
 whole action path from §12 are unchanged; the banner file itself is not modified.
+
+## 14. A larger primary action (2026-11-04)
+
+The Lock Screen button is the largest, easiest target on the card.
+
+- **Height** — a 56pt floor (was 46pt). It is a FLOOR: `minHeight` is applied
+  *after* the button's own inner padding (16pt horizontal, 12pt vertical), so the
+  button grows rather than overflowing when a label needs two lines.
+- **Label** — bold, white, centred, up to **two** lines with a 0.7 minimum scale
+  factor and `fixedSize(horizontal: false, vertical: true)`, so a long
+  category-specific CTA wraps or scales down instead of truncating. The words are
+  still the server's `action.label`; nothing is rewritten here.
+- **Unchanged** — the green gradient (`#059669 → #047857`), the 14pt corner
+  radius, the lucide action glyph (Navigation / MapPin / CheckCircle), the
+  `contentShape` that makes the whole surface tappable, and the card's own 15pt
+  inset around it.
+- **Dynamic Island** — passes `minHeight: 46, maxLines: 1`: the expanded island's
+  bottom region is a fixed, much tighter box, so it keeps the height that fits
+  there rather than forcing 56pt.
+- **App Intent** — untouched: `taskId`, `role`, `actionId`, `expectedStep`, the
+  confirmation step and the pending/failed states are exactly as in §12.
+
+Covered by `test/liveActivity/widgetDesign.test.js` (now 26 tests), which pins the
+two heights, the floor-after-padding ordering and the no-clipping modifiers.

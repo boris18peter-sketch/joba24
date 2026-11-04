@@ -155,11 +155,42 @@ describe('the shapes match the banner', () => {
   });
 
   it('keeps the primary action a large green rounded button with its glyph', () => {
+    // A 56pt floor on the Lock Screen; the expanded Dynamic Island is a fixed,
+    // much tighter box, so it passes the height that fits there instead.
+    expect(WIDGET).toContain('var minHeight: CGFloat = 56');
     expect(WIDGET).toContain('minHeight: 46');
     expect(WIDGET).toContain('RoundedRectangle(cornerRadius: 14, style: .continuous)');
     expect(WIDGET).toContain('glyph: JobaGlyph.forActionStep(action.step)');
     // The words are still the server's — nothing is invented here.
     expect(WIDGET).toContain('Text(action.label)');
+    // Green gradient, white centred label: unchanged.
+    expect(WIDGET).toContain('colors: [JobaPalette.success, JobaPalette.successDark]');
+    expect(WIDGET).toContain('.multilineTextAlignment(.center)');
+  });
+
+  it('grows for a long label instead of clipping or overflowing it', () => {
+    // `minHeight` is a FLOOR, applied AFTER the inner padding: the words never
+    // touch the rounded edge, and a wrapped label makes the button taller
+    // rather than being cut off.
+    expect(WIDGET).toContain('var maxLines: Int = 2');
+    expect(WIDGET).toContain('.lineLimit(maxLines)');
+    expect(WIDGET).toContain('.minimumScaleFactor(0.7)');
+    expect(WIDGET).toContain('.fixedSize(horizontal: false, vertical: true)');
+    expect(WIDGET).toContain('.frame(maxWidth: .infinity, minHeight: minHeight)');
+    expect(WIDGET.indexOf('.padding(.vertical, 12)'))
+      .toBeLessThan(WIDGET.indexOf('.frame(maxWidth: .infinity, minHeight: minHeight)'));
+    // The island keeps a single line, so nothing wraps inside its fixed height.
+    expect(WIDGET).toContain('maxLines: 1');
+  });
+
+  it('leaves the App Intent wiring exactly as it was', () => {
+    // Sizing is presentation only: the intent still receives the same four
+    // values, and the button is still the intent's own trigger.
+    expect(WIDGET).toContain('Button(intent: JobaTaskActionIntent(');
+    expect(WIDGET).toContain('taskId: taskId');
+    expect(WIDGET).toContain('actionId: action.id');
+    expect(WIDGET).toContain('expectedStep: action.step');
+    expect(WIDGET).toContain('.contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))');
   });
 
   it('pins the white card and its dark type, as approved', () => {
