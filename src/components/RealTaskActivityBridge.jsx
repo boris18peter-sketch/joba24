@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import useCachedQueryValues from '@/hooks/useCachedQueryValues';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
@@ -123,37 +124,34 @@ export default function RealTaskActivityBridge() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  // READ-ONLY subscriptions to the caches Layout owns. `enabled: false` means
-  // this never fetches: it observes what the app already loaded.
-  const { data: workerTask } = useQuery({
-    queryKey: ['activeWorkerTask', me?.id],
-    queryFn: () => null,
-    enabled: false,
-    staleTime: Infinity,
-  });
-  const { data: clientTask } = useQuery({
-    queryKey: ['activeClientTask', me?.id],
-    queryFn: () => null,
-    enabled: false,
-    staleTime: Infinity,
-  });
-
-  // ── THE APPLICANT STAGE ───────────────────────────────────────────────────
-  // The publisher's OPEN tasks. This is the SAME cached list the "my tasks"
-  // screens read (`['myPublishedTasks']`) — observed here without fetching, so
-  // it is seeded once with the app, patched by the realtime subscription on every
-  // task change (including a new applicant), and patched by the task sheet while
-  // it is open. One cache, three paths, no second source of truth.
+  // ── THE BRIDGE OBSERVES; IT NEVER FETCHES ────────────────────────────────
+  // These three values come straight out of the query cache, and the bridge
+  // subscribes to the cache's own events to re-render when they change.
   //
-  // The active-task caches above stay deliberately TAKEN-only: they also drive
-  // the in-app banner, and an OPEN task is not "the job in progress". So this is
-  // a Lock Screen-only candidate.
-  const { data: publishedTasks } = useQuery({
-    queryKey: myPublishedTasksQuery(me?.id).queryKey,
-    queryFn: () => null,
-    enabled: false,
-    staleTime: Infinity,
-  });
+  // It used to register a query per key whose fetch function resolved to nothing,
+  // believing that was an observation. React Query copies an observer's options
+  // onto the SHARED query, and `invalidateQueries()` refetches using the query's
+  // options — so after the bridge had rendered once, an invalidation of
+  // `['myPublishedTasks', meId]` ran `() => null` and replaced the publisher's
+  // task list with `null`. The app shell's next `T.find(...)` then threw
+  // `null is not an object`, and the in-app banner lost the active task the same
+  // way. Reading the cache registers nothing and cannot rewrite another
+  // component's query.
+  //
+  // The three keys are the ones the rest of the app already keeps live: the two
+  // active-task caches the banner renders, and the publisher's own task list —
+  // the same list the "my tasks" screens read, patched by the realtime
+  // subscription on every task change (including a new applicant). One cache,
+  // several readers, no second source of truth.
+  //
+  // The active-task caches are deliberately TAKEN-only: they also drive the
+  // in-app banner, and an OPEN task is not "the job in progress". The publisher's
+  // list is what makes an OPEN task a Lock Screen candidate before assignment.
+  const [workerTask, clientTask, publishedTasks] = useCachedQueryValues([
+    ['activeWorkerTask', me?.id],
+    ['activeClientTask', me?.id],
+    myPublishedTasksQuery(me?.id).queryKey,
+  ]);
 
   const openPublisherTask = useMemo(
     () => selectOpenPublisherTask(publishedTasks, me?.id),

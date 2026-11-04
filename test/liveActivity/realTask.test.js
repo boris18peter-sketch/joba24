@@ -119,11 +119,36 @@ describe('the allowlist is the only way in', () => {
 function stubBase44({ tokens = [], state = null } = {}) {
   const writes = [];
   const reads = [];
+  // ── A REAL (SMALL) STATE STORE ────────────────────────────────────────────
+  // The dispatcher now claims a revision with a compare-and-set before it
+  // contacts Apple, then re-reads the row to see whether its claim survived. A
+  // stub whose `filter` always returned the same static row could never show
+  // that, and would report every dispatch as a concurrent duplicate. So the
+  // state entity behaves like the database: writes are visible to the next read,
+  // and `updateMany` only touches rows whose filter still matches.
+  let rows = state ? [{ ...state }] : [];
+  const matches = (row, query) => Object.entries(query || {}).every(([key, value]) => row[key] === value);
   const entities = {
     LiveActivityState: {
-      filter: async (query) => { reads.push(['state', query]); return { items: state ? [state] : [] }; },
-      create: async (data) => { writes.push(['state.create', data]); return { id: 'state_1' }; },
-      update: async (id, data) => { writes.push(['state.update', data]); return { id }; },
+      filter: async (query) => { reads.push(['state', query]); return { items: rows.filter((row) => matches(row, query)) }; },
+      create: async (data) => { writes.push(['state.create', data]); const row = { id: `state_${rows.length + 1}`, ...data }; rows.push(row); return row; },
+      update: async (id, data) => {
+        writes.push(['state.update', data]);
+        const row = rows.find((r) => r.id === id);
+        if (row) Object.assign(row, data);
+        return { id };
+      },
+      updateMany: async (query, operation) => {
+        writes.push(['state.updateMany', operation.$set]);
+        let updated = 0;
+        for (const row of rows) {
+          if (!matches(row, query)) continue;
+          Object.assign(row, operation.$set);
+          updated += 1;
+        }
+        return { updated };
+      },
+      delete: async (id) => { writes.push(['state.delete', { id }]); rows = rows.filter((r) => r.id !== id); return { ok: true }; },
     },
     LiveActivityToken: {
       filter: async () => ({ items: tokens }),
@@ -157,9 +182,13 @@ describe('the shared sender refuses recipients the configuration does not cover'
 
     expect(result.decision).toBe('disabled');
     expect(result.contactedApns).toBe(false);
-    // Refused BEFORE any read: no state lookup, no dispatch row, no token touch.
+    // Refused BEFORE any read: no state lookup and no token touch…
     expect(base44.reads).toHaveLength(0);
-    expect(base44.writes).toHaveLength(0);
+    // …but the refusal itself is RECORDED. "Nobody asked for a card" and "the
+    // event never arrived" must not look identical in the audit table.
+    expect(base44.writes).toHaveLength(1);
+    expect(base44.writes[0][0]).toBe('dispatch.create');
+    expect(base44.writes[0][1]).toMatchObject({ status: 'skipped', reason: 'recipient_not_tracked' });
   });
 
   it('plans for an allowlisted user with no device token, and never sends', async () => {
@@ -172,7 +201,11 @@ describe('the shared sender refuses recipients the configuration does not cover'
 
     expect(result.decision).toBe('no_active_tokens');
     expect(result.contactedApns).toBe(false);
-    expect(base44.writes).toHaveLength(0);
+    // One audit row, and NO revision consumed: this is the case a token
+    // registration later reconciles (registerLiveActivityToken → dispatch).
+    expect(base44.writes).toHaveLength(1);
+    expect(base44.writes[0][0]).toBe('dispatch.create');
+    expect(base44.writes[0][1]).toMatchObject({ status: 'skipped', decision: 'no_active_tokens' });
   });
 
   it('records a dry-run attempt for an allowlisted user while test_apns is off', async () => {
@@ -187,9 +220,12 @@ describe('the shared sender refuses recipients the configuration does not cover'
     expect(result.dryRun).toBe(true);
     expect(result.contactedApns).toBe(false);
     // One audit row, and NO committed revision: a dry run must not consume it.
-    const kinds = base44.writes.map((w) => w[0]);
-    expect(kinds).toEqual(['dispatch.create']);
-    expect(base44.writes[0][1].status).toBe('dry_run');
+    const audit = base44.writes.filter((w) => w[0] === 'dispatch.create');
+    expect(audit).toHaveLength(1);
+    expect(audit[0][1].status).toBe('dry_run');
+    // The revision claimed before the attempt is handed back, so the first real
+    // push after arming is never suppressed as a duplicate.
+    expect(base44.writes.some((w) => w[0] === 'state.updateMany' && w[1].last_decision === 'claim_released')).toBe(true);
   });
 
   it('closes a terminal task for an allowlisted recipient', async () => {
@@ -202,7 +238,9 @@ describe('the shared sender refuses recipients the configuration does not cover'
 
     expect(result.kind).toBe('end');
     expect(result.decision).toBe('terminal');
-    expect(base44.writes[0][1].event).toBe('end');
+    const audit = base44.writes.filter((w) => w[0] === 'dispatch.create');
+    expect(audit).toHaveLength(1);
+    expect(audit[0][1].event).toBe('end');
   });
 
   it('never contacts APNs from a plan, whatever the allowlist says', async () => {

@@ -37,6 +37,183 @@ import { isTrackedRecipient, mayContactApnsFor } from './liveActivityConfig.ts';
 
 export const DISPATCH_ROLES = ['publisher', 'worker'];
 
+/* ══════════════════════════════════════════════════════════════════════════
+   THE AUDIT — every outcome, not only the ones that reached Apple
+   ══════════════════════════════════════════════════════════════════════════
+   A dispatch that decided "skip" used to leave no trace at all: the early
+   returns (no token, not tracked, unauthorized, duplicate, stale) wrote nothing,
+   so the audit table showed a healthy history while a card silently received
+   nothing. That is unreadable as evidence — the one question an operator asks
+   ("why didn't this update arrive?") had no row to answer it.
+
+   Every outcome is recorded now, with the reason and a timestamp. The row never
+   contains a token: `token_id` is the row's id, never the hex value itself.
+   Never throws — an audit failure must not fail a dispatch.
+*/
+const AUDIT_EVENTS = ['start', 'update', 'end'];
+const AUDIT_ENVIRONMENTS = ['development', 'production'];
+
+export async function recordDispatchOutcome(base44, input) {
+  const {
+    recipientId,
+    taskId,
+    role,
+    event = 'update',
+    revision = 0,
+    phase = '',
+    decision = '',
+    status = 'skipped',
+    reason = '',
+    environment = '',
+    apnsStatus = null,
+    apnsId = '',
+    errorCategory = '',
+    tokenId = '',
+    attempts = 0,
+  } = input || {};
+
+  if (!recipientId || !taskId || !role) return null;
+
+  const row: any = {
+    user_id: recipientId,
+    task_id: taskId,
+    role,
+    revision: Number(revision) || 0,
+    event: AUDIT_EVENTS.includes(event) ? event : 'update',
+    phase: phase || '',
+    status,
+    decision: decision || '',
+    reason: String(reason || '').slice(0, 200),
+    error_category: errorCategory || '',
+    attempts,
+    dispatched_at: new Date().toISOString(),
+  };
+  if (AUDIT_ENVIRONMENTS.includes(environment)) row.environment = environment;
+  if (tokenId) row.token_id = tokenId;
+  if (apnsStatus != null) row.apns_status = apnsStatus;
+  if (apnsId) row.apns_id = apnsId;
+
+  return base44.asServiceRole.entities.LiveActivityDispatch.create(row).catch(() => null);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE REVISION CLAIM — one push per revision, whoever gets there first
+   ══════════════════════════════════════════════════════════════════════════
+   Dispatch is triggered by Task entity events, and one task write often raises
+   two events in the same second (the status change, then the applicant
+   projection). Both dispatches read the state row before either had committed,
+   both decided "send", and both pushed — the audit table is full of pairs 20ms
+   apart, which is the opposite of the "one revision is never dispatched twice"
+   guarantee.
+
+   A start was already claimed; a CONTENT UPDATE and an END were not. This claims
+   them the same way, with a compare-and-set that needs no extra infrastructure:
+
+     · the runner writes its own random `claim_id` together with the target
+       revision, and the write is FILTERED on the previous revision — so the
+       second runner's update matches nothing;
+     · it then re-reads the row: whoever's `claim_id` survived owns the revision,
+       and everyone else backs off without touching APNs.
+
+   A claim that delivered nothing (no token, no credentials, a failed send, a dry
+   run) is RELEASED back to the previous revision, so a failure never swallows
+   the next legitimate update — and a later event simply claims the next revision,
+   which the device accepts because revisions are monotonic.
+*/
+export const CLAIM_TTL_MS = 120000;
+
+export async function claimDispatchRevision(base44, input) {
+  const {
+    state = null,
+    recipientId,
+    taskId,
+    role,
+    taskStatus = '',
+    targetRevision,
+    now = Date.now(),
+  } = input || {};
+
+  const claimId = `${now.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const at = new Date(now).toISOString();
+  const previous = Math.max(0, Math.floor(Number(state?.revision) || 0));
+
+  // A claim another run is still holding is respected — for a bounded time, so a
+  // crashed dispatch can never block this pair for good.
+  if (state?.claim_id) {
+    const heldSince = Date.parse(state.claim_at || '') || 0;
+    if (now - heldSince < CLAIM_TTL_MS) {
+      return { claimed: false, claimId, previous, reason: 'claim_in_flight' };
+    }
+  }
+
+  if (state?.id) {
+    await base44.asServiceRole.entities.LiveActivityState.updateMany(
+      { id: state.id, revision: previous },
+      {
+        $set: {
+          revision: targetRevision,
+          claim_id: claimId,
+          claim_at: at,
+          last_decision: 'send_claimed',
+        },
+      },
+    ).catch(() => null);
+  } else {
+    await base44.asServiceRole.entities.LiveActivityState.create({
+      user_id: recipientId,
+      task_id: taskId,
+      role,
+      revision: targetRevision,
+      claim_id: claimId,
+      claim_at: at,
+      phase: '',
+      content_key: '',
+      task_status: taskStatus || '',
+      terminal: false,
+      last_event_at: at,
+      last_decision: 'send_claimed',
+    }).catch(() => null);
+  }
+
+  const page = await base44.asServiceRole.entities.LiveActivityState
+    .filter({ user_id: recipientId, task_id: taskId, role }, { limit: 10 })
+    .catch(() => ({ items: [] }));
+  const rows = page?.items || [];
+  const mine = rows.find((row) => row?.claim_id === claimId);
+  if (!mine) return { claimed: false, claimId, previous, reason: 'concurrent_dispatch' };
+
+  // Two runs that both found no row each created one. The oldest row wins (the
+  // same deterministic tie-break the start claim uses) and the newcomer removes
+  // its own row rather than leaving a second state behind.
+  if (!state?.id && rows.length > 1) {
+    const oldest = [...rows].sort((a, b) => String(a.id).localeCompare(String(b.id)))[0];
+    if (oldest?.id !== mine.id) {
+      await base44.asServiceRole.entities.LiveActivityState.delete(mine.id).catch(() => null);
+      return { claimed: false, claimId, previous, reason: 'concurrent_dispatch' };
+    }
+  }
+
+  return { claimed: true, claimId, previous, stateId: mine.id, state: mine };
+}
+
+/** Give a claim back: nothing was delivered, so the revision is free again. */
+async function releaseDispatchClaim(base44, input) {
+  const { stateId, claimId, previousRevision, now = Date.now() } = input || {};
+  if (!stateId || !claimId) return;
+  await base44.asServiceRole.entities.LiveActivityState.updateMany(
+    { id: stateId, claim_id: claimId },
+    {
+      $set: {
+        revision: Math.max(0, Math.floor(Number(previousRevision) || 0)),
+        claim_id: '',
+        claim_at: '',
+        last_decision: 'claim_released',
+        last_event_at: new Date(now).toISOString(),
+      },
+    },
+  ).catch(() => null);
+}
+
 /** The APNs credentials, plus exactly which ones are absent. */
 export function readApnsCredentials() {
   const keyId = Deno.env.get('APNS_KEY_ID') || '';
@@ -268,6 +445,10 @@ export async function syncRecipientState(base44, input) {
     terminal: false,
     last_event_at: at,
     last_decision: 'device_sync',
+    // A device-applied revision settles any dispatch claim in flight: the
+    // dispatcher's post-claim read no longer finds its own id and backs off
+    // rather than pushing a revision the phone has already moved past.
+    claim_id: '',
   };
 
   if (existing?.id) {
@@ -313,6 +494,7 @@ export async function closeRecipientState(base44, input) {
     task_status: task.status || '',
     last_event_at: at,
     last_decision: 'device_end',
+    claim_id: '',
   };
 
   if (existing?.id) {
@@ -359,6 +541,15 @@ export async function dispatchRecipient(input) {
   // A recipient the configuration does not cover is refused before any read, so
   // the real-task test allowlist can never widen what production already does.
   if (!isTrackedRecipient(config, recipientId)) {
+    await recordDispatchOutcome(base44, {
+      recipientId,
+      taskId: task?.id,
+      role,
+      decision: 'disabled',
+      status: 'skipped',
+      reason: 'recipient_not_tracked',
+      environment: config?.environment,
+    });
     return { kind: 'none', decision: 'disabled', reason: 'recipient_not_tracked', contactedApns: false };
   }
 
@@ -373,16 +564,22 @@ export async function dispatchRecipient(input) {
   if (terminalTask) {
     const owns = role === 'worker' ? task.worker_id === recipientId : task.client_id === recipientId;
     if (!owns) {
-      return {
-        kind: 'none',
-        decision: 'unauthorized',
-        reason: role === 'worker' ? 'not_assigned' : 'not_owner',
-        contactedApns: false,
-      };
+      const reason = role === 'worker' ? 'not_assigned' : 'not_owner';
+      await recordDispatchOutcome(base44, {
+        recipientId, taskId: task.id, role, event: 'end',
+        decision: 'unauthorized', status: 'skipped', reason,
+        environment: config?.environment,
+      });
+      return { kind: 'none', decision: 'unauthorized', reason, contactedApns: false };
     }
   } else {
     const auth = authorizeDispatch({ task, role, userId: recipientId });
     if (!auth.ok) {
+      await recordDispatchOutcome(base44, {
+        recipientId, taskId: task.id, role,
+        decision: 'unauthorized', status: 'skipped', reason: auth.reason,
+        environment: config?.environment,
+      });
       return { kind: 'none', decision: 'unauthorized', reason: auth.reason, contactedApns: false };
     }
   }
@@ -421,6 +618,20 @@ export async function dispatchRecipient(input) {
   });
 
   if (plan.kind === 'none') {
+    // Recorded, not silent: "duplicate", "stale_revision", "terminal_already_sent"
+    // and "disabled" are the answers to most support questions about a card that
+    // did not move.
+    await recordDispatchOutcome(base44, {
+      recipientId,
+      taskId: task.id,
+      role,
+      revision: state?.revision || 0,
+      phase: snapshot?.phase || '',
+      decision: plan.decision,
+      status: 'skipped',
+      reason: plan.reason || '',
+      environment: config?.environment,
+    });
     return {
       kind: 'none',
       decision: plan.decision,
@@ -450,6 +661,24 @@ export async function dispatchRecipient(input) {
 
   const targetTokens = remoteStart ? startTokens : tokens;
   if (!targetTokens.length) {
+    // ── THE TOKEN RACE, RECORDED ───────────────────────────────────────────
+    // This is the case that hid the most: a progress event dispatched while the
+    // card's token was still travelling to the server. Nothing is claimed and no
+    // revision is consumed, so the reconciliation triggered by the token
+    // registration itself (see registerLiveActivityToken) pushes the CURRENT
+    // state as soon as the token exists. The row below is what makes that
+    // visible instead of looking like the event never happened.
+    await recordDispatchOutcome(base44, {
+      recipientId,
+      taskId: task.id,
+      role,
+      revision: state?.revision || 0,
+      phase: plan.snapshot?.phase || '',
+      decision: 'no_active_tokens',
+      status: 'skipped',
+      reason: remoteStart ? 'no_start_token' : 'no_activity_token',
+      environment: config?.environment,
+    });
     return { kind: plan.kind, decision: 'no_active_tokens', revision: state?.revision || 0, contactedApns: false };
   }
 
@@ -463,6 +692,13 @@ export async function dispatchRecipient(input) {
   // A start payload that cannot be built safely is not sent half-formed: the
   // device starts the card itself the next time the app runs.
   if (!payload) {
+    await recordDispatchOutcome(base44, {
+      recipientId, taskId: task.id, role, event,
+      revision: state?.revision || 0,
+      decision: 'no_snapshot', status: 'skipped',
+      reason: 'start_payload_unavailable',
+      environment: config?.environment,
+    });
     return {
       kind: 'none',
       decision: 'no_snapshot',
@@ -470,6 +706,42 @@ export async function dispatchRecipient(input) {
       revision: state?.revision || 0,
       contactedApns: false,
     };
+  }
+
+  // ── ONE PUSH PER REVISION: THE SLOT IS TAKEN BEFORE APPLE IS CONTACTED ──
+  // A start already claims its own slot below. A CONTENT UPDATE and an END did
+  // not, which is why the audit table holds pairs of identical pushes 20ms
+  // apart: the status change and the applicant projection raise two Task events,
+  // both dispatches read the state row before either committed, and both sent.
+  // The claim closes that window; the loser records "duplicate" and sends nothing.
+  let revisionClaim = null;
+  if (!remoteStart && (plan.kind === 'send' || plan.kind === 'end')) {
+    revisionClaim = await claimDispatchRevision(base44, {
+      state,
+      recipientId,
+      taskId: task.id,
+      role,
+      taskStatus: task.status,
+      targetRevision: plan.revision,
+      now,
+    });
+    if (!revisionClaim.claimed) {
+      await recordDispatchOutcome(base44, {
+        recipientId, taskId: task.id, role, event,
+        revision: revisionClaim.previous,
+        phase: plan.snapshot?.phase || '',
+        decision: 'duplicate', status: 'skipped',
+        reason: revisionClaim.reason || 'concurrent_dispatch',
+        environment: config?.environment,
+      });
+      return {
+        kind: 'none',
+        decision: 'duplicate',
+        reason: revisionClaim.reason || 'concurrent_dispatch',
+        revision: revisionClaim.previous,
+        contactedApns: false,
+      };
+    }
   }
 
   // ── ONE START PER PAIR: THE SLOT IS TAKEN BEFORE ANYTHING IS SENT ───────
@@ -532,6 +804,21 @@ export async function dispatchRecipient(input) {
   const sent = results.filter((r) => r.result.ok && !r.result.dryRun).length;
   const committed = sent > 0;
 
+  // ── A CLAIM THAT DELIVERED NOTHING IS GIVEN BACK ─────────────────────────
+  // A dry run, a missing credential or a failed send must not consume the
+  // revision: the next event would then look like a duplicate of something no
+  // phone ever received. Releasing restores the previous revision, and the next
+  // legitimate update claims it again — so a failure delays a card, it never
+  // silences it.
+  if (revisionClaim?.claimed && !committed) {
+    await releaseDispatchClaim(base44, {
+      stateId: revisionClaim.stateId,
+      claimId: revisionClaim.claimId,
+      previousRevision: revisionClaim.previous,
+      now,
+    });
+  }
+
   // Audit trail — one row per attempt, free of token content.
   const dispatchedAt = new Date().toISOString();
   await Promise.allSettled(results.map(({ tokenRow, result }) => base44.asServiceRole.entities.LiveActivityDispatch.create({
@@ -556,8 +843,10 @@ export async function dispatchRecipient(input) {
   // Commit the revision only when something was actually delivered. A start
   // commits onto the row it already claimed, so the pair never ends up with two
   // state rows.
-  const committedState = startClaim || state;
-  const stateFields = stateAfterPlan({ plan, task, committed, sent, now });
+  const committedState = startClaim || (revisionClaim?.claimed ? revisionClaim.state : state);
+  const planned = stateAfterPlan({ plan, task, committed, sent, now });
+  // The claim is settled by the commit, whichever path produced it.
+  const stateFields = planned ? { ...planned, claim_id: '' } : null;
   if (stateFields) {
     if (committedState?.id) {
       await base44.asServiceRole.entities.LiveActivityState.update(committedState.id, stateFields).catch(() => null);

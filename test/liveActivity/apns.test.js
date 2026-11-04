@@ -108,10 +108,14 @@ describe('hosts, topics and payload', () => {
     expect(payload.joba).toEqual({ taskId: 'task_0001', role: 'worker', revision: 3, contractVersion: 1 });
   });
 
-  it('sends an end with a dismissal date', () => {
+  it('sends an end that dismisses the card immediately', () => {
     const payload = buildLiveActivityPush({ snapshot: SNAPSHOT, event: 'end', now: 1700000000000 });
     expect(payload.aps.event).toBe('end');
-    expect(payload.aps['dismissal-date']).toBe(1700000000 + 240 * 60);
+    // 0 = dismiss now. This used to be `now + 240 minutes`, which kept a
+    // COMPLETED task's card on the Lock Screen for four hours even though APNs
+    // accepted every end push with 200 — the ending was delivered, the dismissal
+    // was simply scheduled hours into the future.
+    expect(payload.aps['dismissal-date']).toBe(0);
     expect(payload.aps['stale-date']).toBeUndefined();
   });
 });

@@ -1,5 +1,60 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { planTokenRegistration } from '../../shared/liveActivityAuth.ts';
+import { dispatchRecipient } from '../../shared/liveActivitySend.ts';
+import { normalizeConfig, testModeActive } from '../../shared/liveActivityConfig.ts';
+
+/**
+ * Bring a freshly-registered activity token up to date.
+ *
+ * ── THE RACE THIS CLOSES ───────────────────────────────────────────────────
+ * A task event can be dispatched BEFORE the card's token has reached the server:
+ * the phone starts the card, iOS issues the token, the task changes a moment
+ * earlier, and the dispatch finds no token to address. That push is recorded as
+ * `no_active_tokens` and consumes no revision, but nothing used to re-send it —
+ * the card sat on its old content until the task changed again or the user
+ * reopened the app.
+ *
+ * Now the moment the token is stored, the recipient's activity is reconciled
+ * against the task's CURRENT stored state, so a single registration recovers a
+ * missed transition on its own.
+ */
+async function reconcileAfterRegistration(base44, { user, task, taskRole }) {
+  const configPage = await base44.asServiceRole.entities.LiveActivityConfig
+    .list({ sort: '-updated_date', limit: 1 })
+    .catch(() => ({ items: [] }));
+  const config = normalizeConfig((configPage?.items || [])[0]);
+  if (!testModeActive(config) && config.enabled !== true) return [];
+
+  const pairs = [];
+  // The pair the client bound this token to is the precise answer.
+  if (task && taskRole) pairs.push({ task, role: taskRole });
+
+  // Otherwise the recipient's own open activities — a token can rotate while the
+  // app is running, with no task in the request at all. Bounded, never terminal.
+  if (!pairs.length) {
+    const live = await base44.asServiceRole.entities.LiveActivityState
+      .filter({ user_id: user.id, terminal: false }, { limit: 3, sort: '-updated_date' })
+      .catch(() => ({ items: [] }));
+    for (const row of live?.items || []) {
+      if (!row?.task_id || !row?.role) continue;
+      const current = await base44.asServiceRole.entities.Task.get(row.task_id).catch(() => null);
+      if (current) pairs.push({ task: current, role: row.role });
+    }
+  }
+
+  return Promise.all(pairs.slice(0, 3).map(({ task: pairTask, role }) => (
+    dispatchRecipient({
+      base44,
+      config,
+      task: pairTask,
+      role,
+      recipientId: user.id,
+      mode: 'dispatch',
+    })
+      .then((outcome) => ({ role, task_id: pairTask.id, decision: outcome.decision || 'none', sent: outcome.sent || 0 }))
+      .catch(() => ({ role, task_id: pairTask.id, decision: 'error', sent: 0 }))
+  )));
+}
 
 /**
  * registerLiveActivityToken — the ONLY way a Live Activity token enters the
@@ -97,6 +152,13 @@ Deno.serve(async (req) => {
       })));
     }
 
+    // A START token addresses an install, not a card, so there is nothing for it
+    // to catch up — only an activity token can be reconciled.
+    const reconciled = plan.record.kind === 'start'
+      ? []
+      : await reconcileAfterRegistration(base44, { user, task, taskRole: plan.taskRole })
+        .catch(() => []);
+
     return Response.json({
       ok: true,
       action: plan.action,
@@ -105,6 +167,7 @@ Deno.serve(async (req) => {
       timezone: plan.record.timezone,
       tracking: plan.taskRole ? { task_id: task?.id || null, role: plan.taskRole } : null,
       retired: plan.retireTokenIds.length,
+      reconciled,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -21,7 +21,16 @@
     "revision": {
       "type": "number",
       "default": 0,
-      "description": "The last revision successfully committed for this recipient. Server-owned and monotonic: it is only ever incremented by the server, and a lower revision is always refused."
+      "description": "The last revision committed for this recipient. Server-owned and monotonic: it is only ever incremented by the server, and a lower revision is always refused. A revision claimed for a dispatch that delivered nothing is released back to its previous value."
+    },
+    "claim_id": {
+      "type": "string",
+      "description": "Concurrency token for the dispatch that currently owns the next revision. A dispatch writes its own random id here, then re-reads the row: only the run whose id survived still owns the revision, and every other concurrent run for the same (user, task, role) backs off instead of pushing a duplicate. Empty when no dispatch is in flight."
+    },
+    "claim_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When claim_id was taken. Used only to let a claim from an interrupted run expire, so a crashed dispatch can never block the pair for good."
     },
     "phase": {
       "type": "string",
@@ -57,7 +66,7 @@
     },
     "last_decision": {
       "type": "string",
-      "description": "The decision of the last dispatch attempt (sent, duplicate, stale_revision, disabled, dry_run, unauthorized, terminal_already_sent, no_active_tokens)."
+      "description": "The decision of the last dispatch attempt (sent, duplicate, stale_revision, disabled, dry_run, unauthorized, terminal_already_sent, no_active_tokens, send_claimed, claim_released)."
     }
   },
   "required": [

@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { normalizeConfig, isTrackedRecipient, isRoleTracked, testModeActive } from '../../shared/liveActivityConfig.ts';
 import { TERMINAL_TASK_STATUSES } from '../../shared/liveActivityDispatch.ts';
-import { dispatchRecipient } from '../../shared/liveActivitySend.ts';
+import { dispatchRecipient, recordDispatchOutcome } from '../../shared/liveActivitySend.ts';
 import { requireInternalOperator } from '../../shared/internalAuth.ts';
 
 /**
@@ -101,6 +101,22 @@ export default async function handler(req) {
       isTrackedRecipient(config, userId)
       && (terminal || isRoleTracked(config, subject.status, role))
     ));
+
+    // ── A RECIPIENT THE GATE EXCLUDED IS STILL AN OUTCOME ──────────────────
+    // Without this row the audit reads as though the dispatcher was never asked
+    // about that person — which is indistinguishable from a lost event.
+    const skipped = candidates.filter(({ role }) => !targets.some((t) => t.role === role));
+    await Promise.allSettled(skipped.map(({ userId, role }) => recordDispatchOutcome(base44, {
+      recipientId: userId,
+      taskId: subject.id,
+      role,
+      event: terminal ? 'end' : 'update',
+      revision: 0,
+      decision: 'skipped',
+      status: 'skipped',
+      reason: isTrackedRecipient(config, userId) ? 'role_not_tracked' : 'recipient_not_tracked',
+      environment: config?.environment,
+    })));
 
     if (!targets.length) {
       return Response.json({

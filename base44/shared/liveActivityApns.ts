@@ -101,7 +101,6 @@ export function buildLiveActivityPush(input) {
     event = 'update',
     now = Date.now(),
     staleAfterMinutes = 30,
-    dismissalAfterMinutes = 240,
   } = input || {};
 
   const aps: any = {
@@ -110,8 +109,15 @@ export function buildLiveActivityPush(input) {
     'content-state': snapshot,
   };
 
+  // ── A FINISHED JOB MUST LEAVE THE LOCK SCREEN NOW ─────────────────────────
+  // `end` closes the activity, but ending and DISMISSING are two different
+  // things: if `dismissal-date` is omitted (or is in the future) iOS keeps the
+  // ended card on the Lock Screen for up to four hours. It used to be set to
+  // `now + 240 minutes`, which is why a COMPLETED task's card sat there for
+  // hours while Apple answered 200 to every end push — the ending was delivered,
+  // only its dismissal was scheduled four hours out. `0` = dismiss immediately.
   if (event === 'end') {
-    aps['dismissal-date'] = Math.floor((now + dismissalAfterMinutes * 60000) / 1000);
+    aps['dismissal-date'] = 0;
   } else {
     aps['stale-date'] = Math.floor((now + staleAfterMinutes * 60000) / 1000);
   }

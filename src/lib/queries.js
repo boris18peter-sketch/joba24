@@ -1,5 +1,21 @@
 import { base44 } from '@/api/base44Client';
 import { fetchPublicTasks } from '@/lib/publicTasks';
+import { listSelect } from '@/lib/listPayload';
+
+/**
+ * One `select` per list, at module scope so it is stable across renders.
+ *
+ * A list query now resolves with an ARRAY, always. A payload that is neither an
+ * array nor the documented paged envelope is reported by `listSelect` and
+ * degraded to `[]` — it is never silently treated as "no records". The crash
+ * this prevents (`null is not an object (evaluating 'T.find')`) is documented in
+ * @/lib/listPayload.
+ */
+const asPublishedTasks = listSelect('myPublishedTasks');
+const asWorkerTasks = listSelect('workerTasks');
+const asMyApplications = listSelect('myApplications');
+const asPendingApplications = listSelect('pendingApplications');
+const asOpenTasks = listSelect('openTasks');
 
 /**
  * Canonical query definitions for the CURRENT USER'S OWN data.
@@ -39,6 +55,7 @@ export const MY_APPLICATIONS_LIMIT = 100;
 export const myPublishedTasksQuery = (meId) => ({
   queryKey: ['myPublishedTasks', meId],
   queryFn: () => base44.entities.Task.filter({ client_id: meId }, '-created_date', MY_TASKS_LIMIT),
+  select: asPublishedTasks,
   enabled: !!meId,
   staleTime: 60000,
   // Safety net only — live updates arrive over the realtime subscription.
@@ -60,6 +77,7 @@ export const myPublishedTasksQuery = (meId) => ({
 export const workerTasksQuery = (meId) => ({
   queryKey: ['workerTasksLayout', meId],
   queryFn: () => base44.entities.Task.filter({ worker_id: meId }, '-created_date', MY_TASKS_LIMIT),
+  select: asWorkerTasks,
   enabled: !!meId,
   staleTime: 60000,
   refetchInterval: 60000,
@@ -76,6 +94,7 @@ export const workerTasksQuery = (meId) => ({
 export const myApplicationsQuery = (meId) => ({
   queryKey: ['myApplicationsFeed', meId],
   queryFn: () => base44.entities.TaskApplication.filter({ worker_id: meId }, '-created_date', MY_APPLICATIONS_LIMIT),
+  select: asMyApplications,
   enabled: !!meId,
   staleTime: 60000,
   refetchInterval: 60000,
@@ -106,6 +125,7 @@ export const selectActiveClientTask = (publishedTasks) =>
 export const openTasksQuery = () => ({
   queryKey: ['allTasks'],
   queryFn: () => fetchPublicTasks({ mode: 'open', limit: 100 }),
+  select: asOpenTasks,
   staleTime: 60000,
   gcTime: 300000,
   // Returning to the app from the background must re-read the feed: on Android the
@@ -132,6 +152,7 @@ export const openTasksQuery = () => ({
 export const pendingApplicationsQuery = (meId) => ({
   queryKey: ['myLockedJobas', meId],
   queryFn: () => base44.entities.TaskApplication.filter({ worker_id: meId, status: 'pending' }, '-created_date', 50),
+  select: asPendingApplications,
   enabled: !!meId,
   staleTime: 15000,
 });
