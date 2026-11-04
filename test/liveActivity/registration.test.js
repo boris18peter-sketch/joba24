@@ -215,6 +215,32 @@ describe('dispatch-side authorization and eligibility', () => {
     expect(eligibleTokens(many, { userId: CLIENT, environment: 'development', limit: 5 })).toHaveLength(5);
   });
 
+  it('still picks a matching-environment token first when one exists', () => {
+    const tokens = [
+      { id: 'sandbox', user_id: CLIENT, environment: 'development', status: 'active' },
+      { id: 'testflight', user_id: CLIENT, environment: 'production', status: 'active' },
+    ];
+    const picked = eligibleTokens(tokens, { userId: CLIENT, environment: 'production', limit: 10 });
+    expect(picked.map((t) => t.id)).toEqual(['testflight']);
+  });
+
+  it('falls back to the recipient\'s own tokens when the configured environment matches none', () => {
+    // THE "publisher\'s card never moves" REGRESSION. A config left on
+    // `development` while the tester runs a TestFlight build (production
+    // tokens) matched nothing, so every dispatch decided
+    // `no_active_tokens` — silence, not an error. The push host is chosen per
+    // token when it is actually sent, so using the row\'s own environment here
+    // can never deliver to the wrong APNs host.
+    const tokens = [
+      { id: 'mine', user_id: CLIENT, environment: 'production', status: 'active' },
+      { id: 'theirs', user_id: WORKER, environment: 'production', status: 'active' },
+      { id: 'dead', user_id: CLIENT, environment: 'production', status: 'invalid' },
+    ];
+    const picked = eligibleTokens(tokens, { userId: CLIENT, environment: 'development', limit: 10 });
+    // Only this recipient\'s own ACTIVE token — never another user\'s, never an invalid one.
+    expect(picked.map((t) => t.id)).toEqual(['mine']);
+  });
+
   it('re-checks the task ownership before dispatch', () => {
     const task = makeTask({ status: 'TAKEN' });
     expect(authorizeDispatch({ task, role: 'worker', userId: WORKER }).ok).toBe(true);
