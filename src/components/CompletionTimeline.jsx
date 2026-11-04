@@ -36,7 +36,7 @@ export default function CompletionTimeline({ tasks = [], reviews = [] }) {
   });
 
   return (
-    <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+    <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
       <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 14 }}>
         {t('execution_history')}
       </div>

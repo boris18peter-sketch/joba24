@@ -23,7 +23,7 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
         style={{
-          background: '#fafbff',
+          background: 'var(--brand-modal-bg, var(--sheet-bg))',
           borderRadius: '28px 28px 0 0',
           width: '100%', maxWidth: 480,
           maxHeight: '94vh', overflowY: 'auto',
@@ -32,14 +32,14 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
         }}
       >
         {/* Drag handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde3ee', margin: '14px auto 0' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
 
         {/* Close button */}
         <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
           <button
             onClick={onClose}
             style={{
-              width: 34, height: 34, borderRadius: 11, background: '#f0f2f7',
+              width: 34, height: 34, borderRadius: 11, background: 'var(--surface-3)',
               border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
             }}

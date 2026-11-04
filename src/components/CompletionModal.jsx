@@ -112,7 +112,7 @@ export default function CompletionModal({ task, me, onClose }) {
           value={comment}
           onChange={e => setComment(e.target.value)}
           rows={2}
-          style={{ width: '100%', padding: '12px 14px', borderRadius: 14, border: '1.5px solid #dce8f5', background: '#f4f7fb', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 14 }}
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--input-bg)', color: 'var(--text-1)', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 14 }}
         />
 
         <button

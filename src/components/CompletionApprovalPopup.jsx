@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Camera, Play } from 'lucide-react';
@@ -15,32 +15,98 @@ import StatusConfirmSheet from '@/components/StatusConfirmSheet';
  * It reuses StatusConfirmSheet, the same confirmation sheet the active task card
  * uses, so the automatic popup is the popup the publisher already knows — only
  * the moment it appears is new.
+ *
+ * ── IT ASKS THE RECORD BEFORE IT OPENS ─────────────────────────────────────
+ * The sheet is raised from an alert written at the moment the worker pressed
+ * "done". Anything may have happened between that alert and this open:
+ *
+ *   • the publisher approved from the LOCK SCREEN, without ever seeing the app;
+ *   • he approved on another device;
+ *   • the task was cancelled.
+ *
+ * In every one of those cases the alert is history, but it used to open anyway —
+ * asking for an approval that had already happened, and failing the moment it was
+ * tapped. That is the "I approved on the widget and the popup still came up"
+ * complaint, and it is the popup's fault, not the widget's: the widget did its job
+ * correctly, and the app never checked.
+ *
+ * One read of the task on open settles it. A task that is no longer awaiting
+ * approval closes this sheet before it is drawn, and the caches are refreshed so
+ * the banner and the task lists show the completed job immediately instead of
+ * waiting for the next realtime event.
  */
+const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'EXPIRED'];
+
 export default function CompletionApprovalPopup({ task, onClose }) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [approving, setApproving] = useState(false);
   const [lightbox, setLightbox] = useState(null);
+  const [freshTask, setFreshTask] = useState(null);
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
+    if (!task?.id) return undefined;
+    let alive = true;
+
+    const refreshCaches = () => {
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['activeClientTask'] });
+    };
+
+    base44.entities.Task.get(task.id)
+      .then((record) => {
+        if (!alive) return;
+        const stillAwaiting = record
+          && record.worker_status === 'done'
+          && !TERMINAL_STATUSES.includes(record.status)
+          && record.client_id === task.client_id;
+        if (!stillAwaiting) {
+          // Already handled (very often: from the Lock Screen). Close silently
+          // and let the app catch up, rather than asking a second time.
+          refreshCaches();
+          onClose();
+          return;
+        }
+        setFreshTask(record);
+        setVerified(true);
+      })
+      // A failed read is never a reason to withhold the sheet: the alert is real
+      // evidence on its own, and the approval call re-checks the task anyway.
+      .catch(() => { if (alive) setVerified(true); });
+
+    return () => { alive = false; };
+  }, [task?.id]);
+
+  // The freshest version of the task this sheet may show.
+  const current = freshTask || task;
 
   const proofItems = [
-    ...(task?.completion_photos || []).map((url) => ({ type: 'image', url })),
-    ...(task?.completion_video_url ? [{ type: 'video', url: task.completion_video_url }] : []),
+    ...(current?.completion_photos || []).map((url) => ({ type: 'image', url })),
+    ...(current?.completion_video_url ? [{ type: 'video', url: current.completion_video_url }] : []),
   ];
 
   const approve = async () => {
     if (approving) return;
     setApproving(true);
     try {
-      const res = await base44.functions.invoke('completeTask', { taskId: task.id });
-      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
-      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      const res = await base44.functions.invoke('completeTask', { taskId: current.id });
+      // `already_completed` is a SUCCESS, not an error: the job was closed a
+      // moment ago (often from the widget) and this tap only had to catch up.
+      if (!res.data?.success && res.data?.error !== 'already_completed') {
+        throw new Error(res.data?.error || 'שגיאה');
+      }
+      queryClient.invalidateQueries({ queryKey: ['task', current.id] });
       queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['activeClientTask'] });
       toast.success(t('completion_approved_toast') || 'המשימה הושלמה — תודה!');
       // Same hand-off the active task card makes: the rating sheet follows
       // completion, so the publisher rates the worker while it is still fresh.
       window.dispatchEvent(new CustomEvent('show_rating_modal', {
-        detail: { task: { ...task, status: 'COMPLETED' } },
+        detail: { task: { ...current, status: 'COMPLETED' } },
       }));
       setApproving(false);
       onClose();
@@ -49,6 +115,10 @@ export default function CompletionApprovalPopup({ task, onClose }) {
       toast.error(err?.message || t('generic_error') || 'משהו השתבש, נסה שוב');
     }
   };
+
+  // Nothing is drawn until the record agrees — otherwise the alert flashes a
+  // sheet that is about to disappear because the job is already closed.
+  if (!verified) return null;
 
   return (
     <>
@@ -68,9 +138,9 @@ export default function CompletionApprovalPopup({ task, onClose }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.3 }}>
-              {task?.title}
+              {current?.title}
             </div>
-            <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>₪{Math.round(task?.price || 0)}</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>₪{Math.round(current?.price || 0)}</span>
           </div>
 
           {proofItems.length > 0 && (
@@ -115,7 +185,8 @@ export default function CompletionApprovalPopup({ task, onClose }) {
           items={proofItems}
           initialIndex={lightbox}
           onClose={() => setLightbox(null)}
-        />,
+        />
+        ,
         document.body
       )}
     </>

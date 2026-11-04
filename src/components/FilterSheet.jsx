@@ -263,7 +263,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               placeholder={t('filter_other_city')}
               value={!cities.includes(local.city) ? local.city : ''}
               onChange={e => setLocal(p => ({ ...p, city: e.target.value }))}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#f8fafc', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--input-bg)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
             />
           </div>
 
