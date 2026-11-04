@@ -6,8 +6,8 @@ import AppIntents
  JobaTaskActionIntent — the Lock Screen button, as an Apple App Intent.
 
  ── THE CONSTRAINT THAT SHAPES THIS FILE ─────────────────────────────────────
- The intent runs in the WIDGET EXTENSION: no WebView, no Capacitor bridge, no user
- session, and possibly while the app is not running at all. It therefore cannot
+ The intent runs with NO WebView, NO Capacitor bridge and NO user session, and
+ possibly while the app is not in the foreground at all. It therefore cannot
  "call the app", and it must not carry a user's session token.
 
  It carries a NARROW CAPABILITY instead, minted by the app while it still had a
@@ -15,6 +15,18 @@ import AppIntents
  user, one task and one role, listing only the actions that role may perform,
  expiring on its own. The server re-derives eligibility from the task before doing
  anything, so this token can never approve a cancelled task or step a task twice.
+
+ ── THIS FILE MUST BE COMPILED INTO BOTH TARGETS ─────────────────────────────
+ `LiveActivityIntent` is performed by the system **in the app's process** — that
+ is the whole point of the protocol: it can reach ActivityKit to update and end
+ the activity, which the extension cannot do for it. The widget extension needs
+ the type only to CONSTRUCT the intent for `Button(intent:)`.
+
+ Compiling it into the extension alone produced a button that was drawn
+ perfectly, tapped, and did absolutely nothing: the process that had to run it
+ had no such intent, so no request was ever made and no state ever changed. The
+ build gate in `scripts/patch-ios-live-activity.py` now requires both targets,
+ and `test/liveActivity/intentExecution.test.js` pins it.
 
  ── NO WORDING IS INVENTED HERE ──────────────────────────────────────────────
  Every visible string — the button label, the confirmation sentence — arrives in
@@ -30,11 +42,23 @@ import AppIntents
  second tap submits. Nothing else in the app is bypassed: the submit runs the real
  `completeTask` workflow.
 
- ── HONEST STATES ────────────────────────────────────────────────────────────
+ ── HONEST STATES, AND NEVER A SILENT NO-OP ─────────────────────────────────
  `actionState` is owned by this intent, not the server, and it is what the card
  draws: "pending" while the request is in flight, "failed" (with a retry glyph)
- when it did not land. Success shows the server's confirmed snapshot. Nothing is
- ever reported as done before the backend has said so.
+ when it did not land. Success shows the server's confirmed snapshot.
+
+ EVERY exit records a stage in the App Group (`JobaActivityAuthStore.record`),
+ which the app forwards to the operator's diagnostic table. A tap that cannot
+ proceed is therefore never invisible: the stage names the reason
+ (`activity_missing`, `no_capability`, `http_409_stale_step`, `network_error`, …).
+ A stage entry never contains the capability token or a response body.
+
+ ── A STALE CARD IS REPAIRED, NOT BLAMED ────────────────────────────────────
+ A refusal carries the server's current snapshot. If that snapshot is in a
+ different phase, or offers a different action, the card was simply out of date
+ (another device moved the task on): the confirmed content is applied and the tap
+ is NOT reported as a failure. Only a refusal against a card that already matches
+ the server is drawn as failed.
  */
 @available(iOS 17.0, *)
 struct JobaTaskActionIntent: LiveActivityIntent {
@@ -70,43 +94,51 @@ struct JobaTaskActionIntent: LiveActivityIntent {
     }
 
     func perform() async throws -> some IntentResult {
+        // ── 1. The card this tap belongs to ──────────────────────────────────
         guard let activity = Activity<JobaTaskActivity>.activities.first(where: {
             $0.attributes.taskId == taskId && $0.attributes.role == role
         }) else {
+            stage("activity_missing")
             return .result()
         }
 
         let current = activity.content.state
+
+        // ── 2. The action the card is offering right now ─────────────────────
+        // A card whose action changed between the tap and this line must not run
+        // the old one. Nothing is sent; the stage says why.
         guard let action = current.action, action.id == actionId else {
+            stage("action_missing", current.action?.id ?? "")
             return .result()
         }
 
-        // ── Irreversible action: the first tap only asks to confirm ───────────
+        // ── 3. Irreversible action: the first tap only asks to confirm ───────
         // The sentence shown is the server's (`action.confirm`), never ours.
         let isApproval = action.id == "publisher_approve"
         let awaitingConfirmation = (current.actionState == "confirm")
         if isApproval && !awaitingConfirmation {
-            await activity.update(
-                ActivityContent(state: current.withActionState("confirm"), staleDate: nil)
-            )
+            await apply(activity, current.withActionState("confirm"))
+            stage("confirm_requested")
             return .result()
         }
 
-        // ── In flight ────────────────────────────────────────────────────────
-        await activity.update(
-            ActivityContent(state: current.withActionState("pending"), staleDate: nil)
-        )
+        // ── 4. In flight ─────────────────────────────────────────────────────
+        await apply(activity, current.withActionState("pending"))
 
-        guard let endpoint = JobaActivityAuthStore.endpoint(),
-              let token = JobaActivityAuthStore.token(taskId: taskId, role: role) else {
+        guard let endpoint = JobaActivityAuthStore.endpoint() else {
+            stage("no_endpoint")
+            await fail(activity, current)
+            return .result()
+        }
+        guard let token = JobaActivityAuthStore.token(taskId: taskId, role: role) else {
             // No capability means no verified identity: report the failure on the
             // card instead of acting on an unauthenticated request.
-            await activity.update(
-                ActivityContent(state: current.withActionState("failed"), staleDate: nil)
-            )
+            stage("no_capability")
+            await fail(activity, current)
             return .result()
         }
 
+        // ── 5. The request ───────────────────────────────────────────────────
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -116,18 +148,25 @@ struct JobaTaskActionIntent: LiveActivityIntent {
             "action_id": actionId,
             "expected_step": expectedStep,
         ])
+        guard request.httpBody != nil else {
+            stage("payload_error")
+            await fail(activity, current)
+            return .result()
+        }
 
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             let decoded = try? JSONDecoder().decode(JobaActionResponse.self, from: data)
 
-            if let snapshot = decoded?.snapshot {
-                // The SERVER's confirmed state — the card never shows a state the
-                // backend has not agreed to.
-                await activity.update(ActivityContent(state: snapshot, staleDate: nil))
+            // The SERVER's confirmed state — the card never shows a state the
+            // backend has not agreed to.
+            if let snapshot = decoded?.snapshot, status < 500 {
+                await apply(activity, snapshot)
             }
 
             if decoded?.ok == true {
+                stage(decoded?.terminal == true ? "applied_terminal" : "applied", decoded?.decision ?? "")
                 // A completed task has no live card left to show.
                 if decoded?.terminal == true || decoded?.snapshot == nil {
                     await activity.end(nil, dismissalPolicy: .immediate)
@@ -136,18 +175,61 @@ struct JobaTaskActionIntent: LiveActivityIntent {
                 return .result()
             }
 
-            // A refusal is a state, not a crash: the card keeps the last confirmed
-            // content and shows that this tap did not land.
-            await activity.update(
-                ActivityContent(state: (decoded?.snapshot ?? current).withActionState("failed"), staleDate: nil)
-            )
+            // ── A refusal ────────────────────────────────────────────────────
+            // If the server's snapshot moved on, THIS CARD was stale rather than
+            // the request being wrong: show the truth and say so, instead of a
+            // retry glyph that invites a pointless second tap.
+            if let snapshot = decoded?.snapshot, Self.isStaleRefusal(against: current, server: snapshot) {
+                // Its content was already applied above; the stage is what marks
+                // this as "the card was behind", not "the tap failed".
+                stage("stale_refreshed", decoded?.error ?? "")
+                return .result()
+            }
+
+            // A refusal against a card that already matched the server is a real
+            // failure. The card keeps the last confirmed content and shows that
+            // this tap did not land.
+            stage("http_\(status)", decoded?.error ?? "unknown")
+            await fail(activity, decoded?.snapshot ?? current)
             return .result()
         } catch {
-            await activity.update(
-                ActivityContent(state: current.withActionState("failed"), staleDate: nil)
-            )
+            // No status code at all: the request never completed (offline, DNS,
+            // timeout, redirect the OS refused). Named separately because it is
+            // the one failure the user can fix by moving somewhere with signal.
+            stage("network_error", String(describing: type(of: error)))
+            await fail(activity, current)
             return .result()
         }
+    }
+
+    // MARK: - Helpers
+
+    /// Record one stage of this attempt. Never contains the token or a body.
+    private func stage(_ name: String, _ detail: String = "") {
+        JobaActivityAuthStore.record(stage: name, taskId: taskId, role: role, detail: detail)
+    }
+
+    /// Did the server's answer show that the card — not the tap — was out of date?
+    private static func isStaleRefusal(
+        against current: JobaTaskActivity.ContentState,
+        server: JobaTaskActivity.ContentState
+    ) -> Bool {
+        if server.phase != current.phase { return true }
+        if server.action?.id != current.action?.id { return true }
+        if let serverStep = server.action?.step, let currentStep = current.action?.step, serverStep != currentStep {
+            return true
+        }
+        return false
+    }
+
+    /// Present a state, and never lose the request over a failed presentation.
+    private func apply(_ activity: Activity<JobaTaskActivity>, _ state: JobaTaskActivity.ContentState) async {
+        await activity.update(ActivityContent(state: state, staleDate: nil))
+    }
+
+    /// Leave the card carrying the server's truth, marked as a failed tap.
+    private func fail(_ activity: Activity<JobaTaskActivity>, _ state: JobaTaskActivity.ContentState) async {
+        await apply(activity, state.withActionState("failed"))
     }
 }
 

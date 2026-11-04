@@ -676,3 +676,52 @@ remotely.
 * The revision is monotonic per recipient and shared with the server: a dry-run
   pass never consumes one, so switching APNs on does not suppress the first
   real update.
+
+## 12. The Lock Screen button did nothing — root cause and fix (2026-11-04)
+
+### 12.1 Symptom
+
+The card was correct and updated live, and the worker's green "סיימתי את התיקון"
+was drawn. Tapping it did nothing at all: no spinner, no retry glyph, no request,
+no task change.
+
+### 12.2 Root cause
+
+`JobaTaskActionIntent.swift` was compiled into the **widget extension only**.
+
+That looks sufficient — the extension is what draws the `Button(intent:)` — but a
+`LiveActivityIntent` is performed by the system **in the app's process** (that is
+what the protocol is for: the intent needs ActivityKit to update and end the
+activity, which the extension cannot do on its behalf). The app binary contained
+no such intent, so a tap had no implementation to run. Nothing was executed:
+hence no `pending`, no `failed`, no HTTP request, no server record — exactly the
+observed silence.
+
+The CI gate was checking the wrong thing: it required the intent **only** in the
+widget's sources ("the button only exists if these are compiled into the
+extension"), so the pipeline stayed green while shipping a dead button.
+
+### 12.3 Fix
+
+| File | Change |
+| --- | --- |
+| `scripts/patch-ios-live-activity.py` | The intent now gets a build file in **both** targets and is added to the App target's Sources phase. The `--require` gate fails unless the **app** compiles it. A project patched by the old script is repaired on the next run instead of reporting "already applied". |
+| `ios/App/JobaActivityWidget/JobaTaskActionIntent.swift` | Every exit records a stage; HTTP status + the server's own error code are surfaced; a refusal that contradicts the card is treated as a **stale card** (server snapshot applied, no failure shown); no silent no-op remains. |
+| `ios/App/JobaActivityWidget/JobaActivityAuthStore.swift` | `record(stage:)` / `drainStages()` — a bounded (20) stage log in the App Group. Never a token, never a body. |
+| `ios/App/App/LiveActivityPlugin.swift` | New `actionStages` method so the app can drain that log. |
+| `src/lib/liveActivityNative.js` | `drainActivityActionStages()`; the capability is now **also** ensured on every successful update (mint failures retry; a relaunch with a running card re-mints). |
+| `src/components/RealTaskActivityBridge.jsx` | Forwards drained stages to `liveActivityRealTask` as `action_applied` / `action_failed`. |
+| `base44/functions/liveActivityRealTask/entry.ts`, `base44/entities/LiveActivityDeviceEvent.jsonc` | Accept the two new device events. |
+| `test/liveActivity/intentExecution.test.js` | 16 tests: the app-target regression, the gate failing for the widget-only shape, the repair, idempotency, and the intent's stage/confirmation/capability contract. |
+
+### 12.4 Verifying on a device
+
+1. Build with `liveActivityWidget: true` and install the new TestFlight build
+   (**Swift/native changed — a new build is required**).
+2. Worker's phone: open the app once so the card starts and the capability is
+   minted, then tap the green button on the Lock Screen.
+3. Expect: spinner → the server's confirmed snapshot (next step / "ממתין לאישורך").
+4. In the diagnostic view (task id) expect an `action_applied` row.
+5. A tap that cannot proceed now appears as `action_failed` with the stage:
+   `no_capability` (no mint yet), `no_endpoint`, `network_error`,
+   `http_409:stale_step`, `http_401:expired`, `activity_missing`, `action_missing`.

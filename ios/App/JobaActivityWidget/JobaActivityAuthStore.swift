@@ -66,4 +66,53 @@ enum JobaActivityAuthStore {
     static func clear(taskId: String, role: String) {
         defaults?.removeObject(forKey: tokenKey(taskId: taskId, role: role))
     }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // THE DEVICE SIDE OF THE DIAGNOSTIC TRAIL
+    // ══════════════════════════════════════════════════════════════════════════
+    //
+    // ── WHY THE INTENT CANNOT JUST POST ITS OWN LOG ─────────────────────────
+    // The intent has no session, so it has no endpoint it may call to record
+    // what happened. Any endpoint it could call anonymously would be one an
+    // attacker could also call to write whatever they liked into the operator's
+    // diagnostics — so it writes to the App Group instead, and the APP (which
+    // does have a session, and whose server call is authorized) forwards these
+    // entries to the diagnostic table. Nothing new is exposed, and a failure on
+    // the Lock Screen finally leaves evidence instead of silence.
+    //
+    // ── WHAT AN ENTRY MAY CONTAIN ───────────────────────────────────────────
+    // A stage name, the task id, the role, a short machine detail and a
+    // timestamp. NEVER the capability token, never a response body, never
+    // anything a person typed. The detail is a code (`http_409_stale_step`),
+    // not a sentence, precisely so no secret can leak into it by accident.
+    static let stagesKey = "joba24.liveactivity.actionStages"
+
+    /// Bounded: a device that taps a hundred times must not grow the container.
+    static let maxStageEntries = 20
+
+    /// Record one stage of an action attempt. Best effort — a logging failure
+    /// must never be the reason a tap does nothing.
+    static func record(stage: String, taskId: String, role: String, detail: String = "") {
+        guard let defaults = defaults, !stage.isEmpty else { return }
+        var entries = defaults.array(forKey: stagesKey) as? [[String: String]] ?? []
+        entries.append([
+            "at": ISO8601DateFormatter().string(from: Date()),
+            "stage": stage,
+            "task": taskId,
+            "role": role,
+            "detail": String(detail.prefix(80)),
+        ])
+        if entries.count > maxStageEntries {
+            entries = Array(entries.suffix(maxStageEntries))
+        }
+        defaults.set(entries, forKey: stagesKey)
+    }
+
+    /// Take the recorded stages and clear them, so each one is forwarded once.
+    static func drainStages() -> [[String: String]] {
+        guard let defaults = defaults else { return [] }
+        let entries = defaults.array(forKey: stagesKey) as? [[String: String]] ?? []
+        defaults.removeObject(forKey: stagesKey)
+        return entries
+    }
 }

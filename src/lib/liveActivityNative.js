@@ -27,7 +27,13 @@ import { base44 } from '@/api/base44Client';
 export const LIVE_ACTIVITY_PLUGIN = 'JobaActivity';
 
 /** Must match the plugin's `pluginMethods`. Asserted by the Stage 3 test. */
-export const LIVE_ACTIVITY_METHODS = ['isAvailable', 'start', 'update', 'end', 'activeActivities', 'setActionAuth'];
+export const LIVE_ACTIVITY_METHODS = [
+  'isAvailable', 'start', 'update', 'end', 'activeActivities', 'setActionAuth',
+  // Reads back what the App Intent recorded on the Lock Screen. The intent runs
+  // without a session, so it can only log into the App Group; the app forwards
+  // those stages to the server with its own authorized call.
+  'actionStages',
+];
 
 const JobaActivity = registerPlugin('JobaActivity');
 
@@ -82,7 +88,7 @@ export async function startTaskActivity({ taskId, role, state } = {}) {
     // session exists only here. Best effort: a failure leaves the card purely
     // informational, it never blocks the activity from starting.
     if (result?.started === true) {
-      syncActivityAction({ taskId, role }).catch(() => {});
+      ensureActionCapability({ taskId, role }).catch(() => {});
     }
     return { started: result?.started === true, activityId: result?.activityId || null, reason: result?.reason || '' };
   } catch {
@@ -138,12 +144,47 @@ export async function clearActivityAction({ taskId, role = 'publisher' } = {}) {
   }
 }
 
+/**
+ * Make sure this card's Lock Screen button HAS a capability, minting one only
+ * when it does not.
+ *
+ * ── WHY THIS IS NOT JUST "MINT ON START" ────────────────────────────────────
+ * A capability was only ever minted at START, which left three holes that all
+ * end in the same dead button:
+ *   • the app was relaunched while a card was already running (the bridge only
+ *     ever updates it, so nothing re-minted after a reinstall or a cleared
+ *     container);
+ *   • the mint failed the first time (offline, a cold backend) and nothing ever
+ *     tried again;
+ *   • the card was started by a build from before the capability existed.
+ * Asking again on each successful content pass closes all three, and costs one
+ * call per task for the life of the session because a success is remembered.
+ */
+const capabilityCache = new Map();
+
+export async function ensureActionCapability({ taskId, role = 'publisher' } = {}) {
+  if (!taskId) return { ok: false, reason: 'missing_task' };
+  const key = `${taskId}|${role}`;
+  const known = capabilityCache.get(key);
+  if (known?.ok) return known;
+  const result = await syncActivityAction({ taskId, role });
+  // A FAILURE is not remembered as success: the next pass tries again, which is
+  // what makes a transient mint failure self-heal.
+  if (result?.ok) capabilityCache.set(key, result);
+  return result;
+}
+
 /** Push a newer snapshot into the running activity. */
 export async function updateTaskActivity({ taskId, role, state } = {}) {
   if (!isLiveActivityNative()) return { updated: false, reason: 'not_native' };
   if (!taskId || !state) return { updated: false, reason: 'missing_input' };
   try {
     const result = await JobaActivity.update({ taskId, role: role || 'publisher', state });
+    if (result?.updated === true) {
+      // The button on an already-running card must be able to act even if the
+      // capability was never obtained when it started.
+      ensureActionCapability({ taskId, role: role || 'publisher' }).catch(() => {});
+    }
     return {
       updated: result?.updated === true,
       count: Number(result?.count) || 0,
@@ -177,6 +218,11 @@ export async function endTaskActivity({ taskId, role, state = null, dismissAfter
       dismissAfter: Math.max(0, Number(dismissAfter) || 0),
       all,
     });
+    // The capability cannot outlive the card: forget it so a future activity for
+    // this pair mints a fresh one instead of trusting a stale memory.
+    if (result?.ended === true) {
+      capabilityCache.delete(`${taskId}|${role || 'publisher'}`);
+    }
     return {
       ended: result?.ended === true,
       count: Number(result?.count) || 0,
@@ -203,6 +249,24 @@ export async function activeTaskActivities() {
     return { activities: Array.isArray(result?.activities) ? result.activities : [] };
   } catch {
     return { activities: [] };
+  }
+}
+
+/**
+ * Take the stages the Lock Screen action recorded since the last read.
+ *
+ * The App Intent runs without a session, so it can only write to the App Group;
+ * this is how that evidence reaches the app, which forwards it to the server
+ * with an authorized call. Draining means one entry is forwarded exactly once.
+ * An entry holds a stage name and a short code — never a token or a body.
+ */
+export async function drainActivityActionStages() {
+  if (!isLiveActivityNative()) return [];
+  try {
+    const result = await JobaActivity.actionStages();
+    return Array.isArray(result?.stages) ? result.stages : [];
+  } catch {
+    return [];
   }
 }
 

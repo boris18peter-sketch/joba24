@@ -86,9 +86,18 @@ IDS = {k: uid(k) for k in (
     "bf_attrs_widget", "bf_bundle_widget", "bf_attrs_app", "bf_plugin_app", "bf_product_embed",
     "phase_sources", "phase_frameworks", "phase_resources", "phase_embed",
     "target", "cfg_debug", "cfg_release", "cfg_list", "proxy", "dep",
-    # The interactive action: the intent lives in the widget only, the App Group
-    # store is compiled into BOTH targets (written by the app, read by the widget).
-    "file_intent", "bf_intent_widget", "file_store", "bf_store_widget", "bf_store_app",
+    # ── THE INTERACTIVE ACTION NEEDS TWO BUILD FILES, NOT ONE ────────────────
+    # `LiveActivityIntent` is performed by the system in the APP's process (that
+    # is what the protocol means: it must reach ActivityKit to update and end the
+    # activity, which the extension cannot do for it). The widget only CONSTRUCTS
+    # the intent for `Button(intent:)`, so it must compile the type too — but a
+    # build where the type exists only in the extension gives you a button that
+    # is drawn perfectly and does absolutely nothing when tapped, because the
+    # process that has to run it has no such intent. Both targets, always.
+    "file_intent", "bf_intent_widget", "bf_intent_app",
+    # The App Group store is compiled into BOTH targets as well (written by the
+    # app, read by the intent).
+    "file_store", "bf_store_widget", "bf_store_app",
 )}
 
 
@@ -458,6 +467,58 @@ def add_app_compilation_condition(text):
     return text
 
 
+def add_app_intent_build_file(text):
+    """Give an already-patched project the APP-side build file for the intent.
+
+    ── WHY THIS REPAIR EXISTS ────────────────────────────────────────────────
+    The intent was originally compiled into the widget extension only, on the
+    reasoning that the extension is what draws the button. That is half the
+    story and it produced a build whose Lock Screen button was dead: a
+    `LiveActivityIntent` is performed by the system in the APP's process, so the
+    app binary has to contain the type. The widget needs it to CONSTRUCT the
+    intent for `Button(intent:)`; the app needs it to RUN it.
+
+    A project patched by the older script therefore has the target, the
+    entitlements, the compilation condition — and a button that does nothing.
+    Re-running this patcher must fix that rather than report "already applied"
+    over an inert feature, exactly as it already repairs a missing compilation
+    condition.
+    """
+    if IDS["bf_intent_app"] in text:
+        return text, False
+
+    build_file_anchor = "/* End PBXBuildFile section */"
+    if text.count(build_file_anchor) != 1:
+        raise SystemExit(
+            "ERROR: expected exactly 1 occurrence of the PBXBuildFile section end, found %d.\n"
+            "       The project's shape changed - review this script before building."
+            % text.count(build_file_anchor)
+        )
+    entry = (
+        "\t\t%s /* JobaTaskActionIntent.swift in Sources */ = "
+        "{isa = PBXBuildFile; fileRef = %s /* JobaTaskActionIntent.swift */; };\n"
+        % (IDS["bf_intent_app"], IDS["file_intent"])
+    )
+    text = text.replace(build_file_anchor, entry + build_file_anchor, 1)
+
+    # The App target's own Sources phase, which this patcher created and which is
+    # identified by the build file it put in it.
+    sources_anchor = "\t\t\t\t%s /* JobaActivityAuthStore.swift in Sources */,\n" % IDS["bf_store_app"]
+    if text.count(sources_anchor) != 1:
+        raise SystemExit(
+            "ERROR: expected exactly 1 occurrence of the App Sources phase entry for "
+            "JobaActivityAuthStore.swift, found %d.\n"
+            "       The project's shape changed - review this script before building."
+            % text.count(sources_anchor)
+        )
+    text = text.replace(
+        sources_anchor,
+        "\t\t\t\t%s /* JobaTaskActionIntent.swift in Sources */,\n" % IDS["bf_intent_app"] + sources_anchor,
+        1,
+    )
+    return text, True
+
+
 def apply(project_text, info_plist_path):
     if WIDGET_TARGET_NAME in project_text:
         # A project patched by an earlier version of this script has the target
@@ -465,8 +526,14 @@ def apply(project_text, info_plist_path):
         # registration compile, so a half-patched project is repaired rather than
         # silently left inert.
         repaired = add_app_compilation_condition(project_text)
+        notes = []
         if repaired != project_text:
-            return repaired, ["widget target already present - added the LIVE_ACTIVITY_WIDGET condition"]
+            notes.append("widget target already present - added the LIVE_ACTIVITY_WIDGET condition")
+        repaired_at, added_intent = add_app_intent_build_file(repaired)
+        if added_intent:
+            notes.append("widget target already present - added JobaTaskActionIntent.swift to the APP target (it must be in both)")
+        if notes:
+            return repaired_at, notes
         return project_text, ["already applied - nothing written"]
 
     notes = []
@@ -479,6 +546,7 @@ def apply(project_text, info_plist_path):
 		%s /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* LiveActivityPlugin.swift */; };
 		%s /* JobaActivityWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		%s /* JobaTaskActionIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaTaskActionIntent.swift */; };
+		%s /* JobaTaskActionIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaTaskActionIntent.swift */; };
 		%s /* JobaActivityAuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityAuthStore.swift */; };
 		%s /* JobaActivityAuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* JobaActivityAuthStore.swift */; };
 /* End PBXBuildFile section */""" % (
@@ -488,10 +556,11 @@ def apply(project_text, info_plist_path):
         IDS["bf_plugin_app"], IDS["file_plugin"],
         IDS["bf_product_embed"], IDS["file_product"],
         IDS["bf_intent_widget"], IDS["file_intent"],
+        IDS["bf_intent_app"], IDS["file_intent"],
         IDS["bf_store_widget"], IDS["file_store"],
         IDS["bf_store_app"], IDS["file_store"],
     ), "PBXBuildFile section")
-    notes.append("PBXBuildFile: 8 entries")
+    notes.append("PBXBuildFile: 9 entries")
 
     # ── 2. PBXFileReference ─────────────────────────────────────────────────
     t = must_replace(t, "/* End PBXFileReference section */", """		%s /* JobaActivityWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobaActivityWidgetBundle.swift; sourceTree = "<group>"; };
@@ -661,9 +730,11 @@ def apply(project_text, info_plist_path):
 """, """				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				%s /* JobaTaskActivityAttributes.swift in Sources */,
 				%s /* LiveActivityPlugin.swift in Sources */,
+				%s /* JobaTaskActionIntent.swift in Sources */,
 				%s /* JobaActivityAuthStore.swift in Sources */,
-""" % (IDS["bf_attrs_app"], IDS["bf_plugin_app"], IDS["bf_store_app"]), "App Sources phase")
-    notes.append("App Sources: attributes + plugin + action store")
+""" % (IDS["bf_attrs_app"], IDS["bf_plugin_app"], IDS["bf_intent_app"], IDS["bf_store_app"]),
+        "App Sources phase")
+    notes.append("App Sources: attributes + plugin + ACTION INTENT + action store")
 
     # ── 9b. The flag SceneDelegate's guard reads ────────────────────────────
     # Added in the same run as the file above: the reference and the class it
@@ -791,11 +862,9 @@ def main():
                     missing.append("widget deployment target")
                 if "JobaActivityWidgetBundle.swift" not in widget.get("sources", []):
                     missing.append("widget sources")
-                # The Lock Screen button only exists if these two are compiled
-                # into the extension: the App Group store it reads its capability
-                # from, and the intent it calls. Without them the widget still
-                # builds and draws perfectly — it just has no working button —
-                # so a build that lost them must fail here, not on a device.
+                # The widget CONSTRUCTS the button, so it needs the intent type
+                # and the App Group store. (The app must have both as well, which
+                # is checked below — the widget alone is not enough to run it.)
                 for need in ("JobaActivityAuthStore.swift", "JobaTaskActionIntent.swift"):
                     if need not in widget.get("sources", []):
                         missing.append("Widget sources: " + need)
@@ -805,9 +874,19 @@ def main():
                 missing.append("Embed Foundation Extensions phase")
             if not report["dependency"]:
                 missing.append("app -> widget target dependency")
+            # ── THE APP TARGET MUST COMPILE THE INTENT ITSELF ────────────────
+            # A `LiveActivityIntent` is performed by the system in the APP's
+            # process, so the app binary must contain it. Compiling it only into
+            # the extension produces the worst possible outcome: the widget draws
+            # the button (it has the type), the tap is handled by a process that
+            # does not (so nothing runs), and the pipeline reports success
+            # because every other check passes. That exact build shipped once and
+            # the button was dead. It is a hard requirement now.
+            #
             # JobaActivityAuthStore is compiled into the APP as well: it is the
-            # writer side of the App Group the extension reads.
-            for need in ("LiveActivityPlugin.swift", "JobaTaskActivityAttributes.swift", "JobaActivityAuthStore.swift"):
+            # writer side of the App Group the intent reads.
+            for need in ("LiveActivityPlugin.swift", "JobaTaskActivityAttributes.swift",
+                         "JobaTaskActionIntent.swift", "JobaActivityAuthStore.swift"):
                 if need not in app_sources:
                     missing.append("App sources: " + need)
             # The class SceneDelegate registers can only exist if the file above

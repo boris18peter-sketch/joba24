@@ -8,6 +8,7 @@ import {
   activeTaskActivities,
   attachActivityTokenListener,
   clearActivityAction,
+  drainActivityActionStages,
   endTaskActivity,
   isLiveActivityNative,
   startTaskActivity,
@@ -47,6 +48,30 @@ import {
  * able to break a task action.
  */
 const ACCESS_CACHE = { value: null };
+
+/**
+ * Forward the Lock Screen's own account of its taps.
+ *
+ * The App Intent runs in this app's process but with no session, so the only
+ * thing it can do is write a stage into the shared App Group. This is the leg
+ * that turns that into evidence: an `action_applied` row, or an `action_failed`
+ * row naming the exact stage the tap stopped at (`no_capability`,
+ * `http_409:stale_step`, `network_error`, …). Without it a dead button looked
+ * identical to a button nobody pressed.
+ */
+async function flushActionStages() {
+  const stages = await drainActivityActionStages();
+  for (const entry of stages.slice(0, 10)) {
+    if (!entry?.task) continue;
+    base44.functions.invoke('liveActivityRealTask', {
+      action: 'report',
+      task_id: entry.task,
+      role: entry.role === 'worker' ? 'worker' : 'publisher',
+      event: String(entry.stage || '').startsWith('applied') ? 'action_applied' : 'action_failed',
+      reason: [entry.stage, entry.detail].filter(Boolean).join(':').slice(0, 120),
+    }).catch(() => {});
+  }
+}
 
 export default function RealTaskActivityBridge() {
   const { t } = useLanguage();
@@ -131,6 +156,11 @@ export default function RealTaskActivityBridge() {
       try {
         const { activities } = await activeTaskActivities();
         if (!alive) return;
+
+        // What the Lock Screen did since the last pass. Deliberately BEFORE the
+        // start/update decision, so a tap's evidence is recorded even on a pass
+        // that turns out to have nothing else to do.
+        flushActionStages();
 
         const step = planActivityStep({
           task: tracked?.task || null,

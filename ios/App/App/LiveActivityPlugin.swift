@@ -36,6 +36,10 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "activeActivities", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setActionAuth", returnType: CAPPluginReturnPromise),
+        // Reads back what the App Intent recorded on the Lock Screen, so the app
+        // can forward it to the diagnostic table with its own session. Draining
+        // is deliberate: an entry is forwarded exactly once.
+        CAPPluginMethod(name: "actionStages", returnType: CAPPluginReturnPromise),
     ]
 
     /// One token listener per (task, role), so a rotation replaces the old one.
@@ -267,6 +271,17 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             role: role
         )
         call.resolve(["stored": JobaActivityAuthStore.token(taskId: taskId, role: role) != nil])
+    }
+
+    /// Hand the app every stage the Lock Screen action recorded since the last
+    /// call, and clear the buffer.
+    ///
+    /// The intent can only log into the App Group (it has no session), so this is
+    /// how its evidence reaches the operator's diagnostic view. A tap that did
+    /// nothing used to leave no trace anywhere; now the app reports which stage
+    /// it stopped at.
+    @objc public func actionStages(_ call: CAPPluginCall) {
+        call.resolve(["stages": JobaActivityAuthStore.drainStages()])
     }
 
     // MARK: - Push token

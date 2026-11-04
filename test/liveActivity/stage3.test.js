@@ -228,9 +228,10 @@ describe('capacitor bridge', () => {
     expect(bridge).toContain("LIVE_ACTIVITY_PLUGIN = 'JobaActivity'");
 
     const declared = [...plugin.matchAll(/CAPPluginMethod\(name: "([A-Za-z]+)"/g)].map((m) => m[1]);
-    // `setActionAuth` hands the Lock Screen button its capability; everything
-    // else is the original lifecycle surface.
-    expect(declared.sort()).toEqual(['activeActivities', 'end', 'isAvailable', 'setActionAuth', 'start', 'update']);
+    // `setActionAuth` hands the Lock Screen button its capability, and
+    // `actionStages` reads back what the button actually did; everything else is
+    // the original lifecycle surface.
+    expect(declared.sort()).toEqual(['actionStages', 'activeActivities', 'end', 'isAvailable', 'setActionAuth', 'start', 'update']);
 
     const fromBridge = (bridge.match(/LIVE_ACTIVITY_METHODS = \[([^\]]+)\]/) || [])[1] || '';
     for (const method of declared) expect(fromBridge).toContain(method);

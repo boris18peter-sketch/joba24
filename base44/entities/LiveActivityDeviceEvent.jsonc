@@ -30,7 +30,9 @@
         "ended",
         "start_failed",
         "update_failed",
-        "end_failed"
+        "end_failed",
+        "action_applied",
+        "action_failed"
       ],
       "enumColors": [
         "green",
@@ -38,13 +40,15 @@
         "gray",
         "red",
         "red",
+        "red",
+        "green",
         "red"
       ],
-      "description": "What the DEVICE reported doing. This is the only place a start is visible: the server never starts an activity, the device does."
+      "description": "What the DEVICE reported doing. This is the only place a start is visible: the server never starts an activity, the device does. action_applied / action_failed are what a Lock Screen tap achieved \u2014 the App Intent cannot report directly (no session), so it records its stages in the App Group and the app forwards them."
     },
     "reason": {
       "type": "string",
-      "description": "Short machine reason for a failure or a skip (not_native, activities_disabled, unsupported_ios, no_activity, stale_revision, plugin_error...)."
+      "description": "Short machine reason for a failure or a skip (not_native, activities_disabled, unsupported_ios, no_activity, stale_revision, plugin_error...). For an action it is the stage the tap stopped at and its code, e.g. 'no_capability' or 'http_409:stale_step'."
     },
     "activity_id": {
       "type": "string",

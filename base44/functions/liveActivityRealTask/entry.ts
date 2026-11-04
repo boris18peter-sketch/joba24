@@ -30,7 +30,14 @@ import { beginRecipientState, syncRecipientState, closeRecipientState } from '..
  * Nothing in this file writes a Task, a credit, a payment or a notification.
  */
 const ROLES = ['publisher', 'worker'];
-const DEVICE_EVENTS = ['started', 'updated', 'ended', 'start_failed', 'update_failed', 'end_failed'];
+const DEVICE_EVENTS = [
+  'started', 'updated', 'ended', 'start_failed', 'update_failed', 'end_failed',
+  // What the LOCK SCREEN tap did. The App Intent has no session, so it records
+  // its stages in the shared App Group and the app forwards them here with its
+  // own authorized call. Without these a tap that did nothing left no evidence
+  // anywhere — which is exactly how a dead button went unnoticed.
+  'action_applied', 'action_failed',
+];
 const ACTIONS = ['access', 'begin', 'sync', 'end', 'report'];
 
 const clip = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
