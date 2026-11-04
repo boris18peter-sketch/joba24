@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { authorizeActivity } from '../../shared/taskActivitySnapshot.ts';
 import { actionsForRole } from '../../shared/liveActivityActionGuard.ts';
-import { signActionToken, ttlForTask } from '../../shared/liveActivityActionToken.ts';
+import { signActionToken, signUserActionToken, ttlForTask, USER_SCOPE_TTL_SECONDS } from '../../shared/liveActivityActionToken.ts';
+import { normalizeConfig, isTestUser } from '../../shared/liveActivityConfig.ts';
 
 /**
  * issueLiveActivityActionToken — mint the NARROW capability a Lock Screen button
@@ -32,14 +33,49 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'unauthenticated' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const taskId = typeof body?.task_id === 'string' ? body.task_id.trim() : '';
-    const role = body?.role === 'worker' ? 'worker' : 'publisher';
-    if (!taskId) return Response.json({ error: 'missing_task_id' }, { status: 400 });
 
     // The secret is server-only. Without it nothing can be signed, so the feature
     // reports itself unavailable instead of falling back to something weaker.
     const secret = Deno.env.get('LIVE_ACTIVITY_ACTION_SECRET');
     if (!secret) return Response.json({ error: 'action_auth_unavailable' }, { status: 503 });
+
+    // ── INSTALL-SCOPED CAPABILITY (only for a remotely started card) ────────
+    // A card started by a push appears while the app is closed, so there was no
+    // session to mint the per-card capability its button needs. This mints the
+    // narrow install-scoped one instead: no task, only the two action ids a card
+    // can offer, twelve hours, and every tap still re-authorized against the
+    // record. It exists ONLY for allowlisted testers — the same gate the start
+    // push itself uses — so it can never exist for a user who cannot receive one.
+    if (body?.scope === 'user') {
+      const configPage = await base44.asServiceRole.entities.LiveActivityConfig
+        .list({ sort: '-updated_date', limit: 1 })
+        .catch(() => ({ items: [] }));
+      const config = normalizeConfig((configPage?.items || [])[0]);
+      if (!isTestUser(config, user.id)) {
+        return Response.json({ error: 'not_allowlisted' }, { status: 403 });
+      }
+
+      const actions = Array.from(new Set([...actionsForRole('worker'), ...actionsForRole('publisher')]));
+      const signed = await signUserActionToken({
+        secret,
+        userId: user.id,
+        actions,
+        ttlSeconds: USER_SCOPE_TTL_SECONDS,
+      });
+      if (!signed.ok) return Response.json({ error: signed.reason }, { status: 500 });
+
+      return Response.json({
+        ok: true,
+        scope: 'user',
+        token: signed.token,
+        actions,
+        expires_at: new Date((signed.claims?.exp || 0) * 1000).toISOString(),
+      });
+    }
+
+    const taskId = typeof body?.task_id === 'string' ? body.task_id.trim() : '';
+    const role = body?.role === 'worker' ? 'worker' : 'publisher';
+    if (!taskId) return Response.json({ error: 'missing_task_id' }, { status: 400 });
 
     // Read AS THE CALLER: RLS decides what they may see, so a task that is not
     // theirs simply does not come back.

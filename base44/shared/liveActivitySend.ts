@@ -32,6 +32,7 @@ import {
 } from './liveActivityDispatch.ts';
 import { authorizeDispatch, eligibleTokens } from './liveActivityAuth.ts';
 import { buildLiveActivityPush, sendLiveActivityPush } from './liveActivityApns.ts';
+import { buildPushToStartPayload } from './liveActivityPushToStart.ts';
 import { isTrackedRecipient, mayContactApnsFor } from './liveActivityConfig.ts';
 
 export const DISPATCH_ROLES = ['publisher', 'worker'];
@@ -84,16 +85,26 @@ export async function loadSnapshotInputs(base44, input) {
     environment: config?.environment,
     limit: config?.max_tokens_per_dispatch,
   });
+  // The install's Push-to-Start tokens, from the same read. Only a `start` push
+  // goes here; every update and end stays on the activity tokens above.
+  const startTokens = eligibleTokens(tokenPage?.items || [], {
+    userId: recipientId,
+    environment: config?.environment,
+    limit: config?.max_tokens_per_dispatch,
+    kind: 'start',
+  });
 
   const [categories, settingsPage] = await Promise.all([
     preloaded ? Promise.resolve(preloaded) : loadCategoryChain(base44, task?.category),
     base44.asServiceRole.entities.JobaSettings.list({ sort: '-updated_date', limit: 1 }).catch(() => ({ items: [] })),
   ]);
 
+  const firstToken = tokens[0] || startTokens[0];
   return {
     tokens,
-    timeZone: tokens[0]?.timezone || undefined,
-    bundleId: tokens[0]?.bundle_id || readApnsCredentials().bundleId,
+    startTokens,
+    timeZone: firstToken?.timezone || undefined,
+    bundleId: firstToken?.bundle_id || readApnsCredentials().bundleId,
     categories,
     settings: (settingsPage?.items || [])[0] || {},
   };
@@ -102,9 +113,92 @@ export async function loadSnapshotInputs(base44, input) {
 /** The stored state row for one (user, task, role). */
 async function readState(base44, { recipientId, taskId, role }) {
   const page = await base44.asServiceRole.entities.LiveActivityState
-    .filter({ user_id: recipientId, task_id: taskId, role }, { limit: 1 })
+    // Newest first: if a pair ever ends up with more than one row, the one that
+    // was actually committed is the authority, never an older claim.
+    .filter({ user_id: recipientId, task_id: taskId, role }, { limit: 1, sort: '-updated_date' })
     .catch(() => ({ items: [] }));
   return (page?.items || [])[0] || null;
+}
+
+/**
+ * CLAIM the right to start this pair, before anything is sent.
+ *
+ * ── WHY A CLAIM AND NOT JUST A READ ────────────────────────────────────────
+ * A task is usually written more than once within a second (create, then its
+ * translations, then a price bump), and each write triggers a dispatch. Both runs
+ * would read "no state yet", both would push `event: "start"`, and iOS would show
+ * TWO cards for one job — which is exactly what must not happen.
+ *
+ * So a start takes a slot first: revision 1, `last_decision: 'start_claimed'`.
+ * The second run's pre-read sees it and backs off. If two runs still manage to
+ * claim at the same instant, the tie is broken deterministically by row id — the
+ * lower id wins and the other deletes its own claim — so exactly one card is ever
+ * pushed, whatever the interleaving.
+ *
+ * A claim is NOT a delivery: `start_released` (or revision 0) is written back when
+ * nothing was actually sent, so a failed attempt never blocks the next one.
+ */
+async function claimStartState(base44, { recipientId, taskId, role, taskStatus, now }) {
+  const existing = await readState(base44, { recipientId, taskId, role });
+  if (existing) {
+    const revision = Number(existing.revision) || 0;
+    if (revision > 0 || existing.terminal) return { claimed: false, revision };
+    // ── A RELEASED SLOT IS FREE AGAIN ──────────────────────────────────────
+    // `start_released` writes revision 0 precisely so the pair is startable
+    // again. Treating that row as "already claimed" would make one failed
+    // attempt permanent, so it is taken over instead.
+    const at = new Date(now).toISOString();
+    const taken = await base44.asServiceRole.entities.LiveActivityState.update(existing.id, {
+      revision: 1,
+      terminal: false,
+      task_status: taskStatus || '',
+      last_decision: 'start_claimed',
+      last_event_at: at,
+    }).catch(() => null);
+    if (!taken?.id) return { claimed: false, revision: 0 };
+    return { claimed: true, state: { ...existing, ...taken } };
+  }
+
+  const created = await base44.asServiceRole.entities.LiveActivityState.create({
+    user_id: recipientId,
+    task_id: taskId,
+    role,
+    revision: 1,
+    phase: '',
+    content_key: '',
+    task_status: taskStatus || '',
+    terminal: false,
+    last_event_at: new Date(now).toISOString(),
+    last_decision: 'start_claimed',
+  }).catch(() => null);
+
+  if (!created?.id) return { claimed: false, revision: 0 };
+
+  // ── The tie-break: one winner, decided the same way by every caller ──────
+  const page = await base44.asServiceRole.entities.LiveActivityState
+    .filter({ user_id: recipientId, task_id: taskId, role }, { limit: 10 })
+    .catch(() => ({ items: [] }));
+  const claims = (page?.items || [])
+    .filter((row) => row?.last_decision === 'start_claimed')
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+
+  if (claims.length > 1 && claims[0].id !== created.id) {
+    // This run lost the race: give the slot back and let the winner start it.
+    await base44.asServiceRole.entities.LiveActivityState.delete(created.id).catch(() => null);
+    return { claimed: false, revision: 1 };
+  }
+
+  return { claimed: true, state: created };
+}
+
+/** Hand a start claim back: nothing was delivered, so the pair may start again. */
+async function releaseStartClaim(base44, state, now) {
+  if (!state?.id) return;
+  await base44.asServiceRole.entities.LiveActivityState.update(state.id, {
+    revision: 0,
+    last_decision: 'start_released',
+    last_event_at: new Date(now).toISOString(),
+  }).catch(() => null);
 }
 
 /**
@@ -294,7 +388,7 @@ export async function dispatchRecipient(input) {
   }
 
   const state = await readState(base44, { recipientId, taskId: task.id, role });
-  const { tokens, timeZone, bundleId, categories, settings } = await loadSnapshotInputs(base44, {
+  const { tokens, startTokens, timeZone, bundleId, categories, settings } = await loadSnapshotInputs(base44, {
     task,
     recipientId,
     config,
@@ -336,17 +430,75 @@ export async function dispatchRecipient(input) {
     };
   }
 
-  if (!tokens.length) {
+  // ── REMOTE START: THE ONLY WAY A CARD CAN APPEAR WITH THE APP CLOSED ────
+  // Every condition below is required:
+  //  • the planner decided this is a CONTENT push (never for an `end`);
+  //  • the operator armed Push-to-Start;
+  //  • this (user, task, role) has NEVER committed a revision. The state row is
+  //    the server's memory of "a card already exists for this pair", so a pair is
+  //    started exactly once and every later event is an update. It is also what
+  //    makes a LOCAL start and a REMOTE start mutually exclusive: the app's
+  //    `begin` writes the row first, after which the server can no longer start
+  //    it, and a remote start commits the row, after which the app finds a
+  //    running card to update instead of requesting a second one;
+  //  • the recipient has a start token — iOS 17.2+ only. An older install never
+  //    registers one, so its behaviour is exactly what it was before.
+  const remoteStart = plan.kind === 'send'
+    && config?.push_to_start === true
+    && !(Number(state?.revision) > 0)
+    && startTokens.length > 0;
+
+  const targetTokens = remoteStart ? startTokens : tokens;
+  if (!targetTokens.length) {
     return { kind: plan.kind, decision: 'no_active_tokens', revision: state?.revision || 0, contactedApns: false };
   }
 
   const credentials = readApnsCredentials();
   const maySend = mode === 'dispatch' && mayContactApnsFor(config, recipientId) && credentials.missing.length === 0;
-  const event = plan.kind === 'end' ? 'end' : 'update';
-  const payload = buildLiveActivityPush({ snapshot: plan.snapshot || { id: task.id, role, revision: plan.revision }, event });
+  const event = plan.kind === 'end' ? 'end' : (remoteStart ? 'start' : 'update');
+  const payload = event === 'start'
+    ? buildPushToStartPayload({ snapshot: plan.snapshot, now })
+    : buildLiveActivityPush({ snapshot: plan.snapshot || { id: task.id, role, revision: plan.revision }, event });
+
+  // A start payload that cannot be built safely is not sent half-formed: the
+  // device starts the card itself the next time the app runs.
+  if (!payload) {
+    return {
+      kind: 'none',
+      decision: 'no_snapshot',
+      reason: 'start_payload_unavailable',
+      revision: state?.revision || 0,
+      contactedApns: false,
+    };
+  }
+
+  // ── ONE START PER PAIR: THE SLOT IS TAKEN BEFORE ANYTHING IS SENT ───────
+  // A task is often written several times within a second (create, translations,
+  // price), and each write triggers a dispatch. Without this, both runs would
+  // read "no state yet" and both would push a start — two cards for one job.
+  let startClaim = null;
+  if (remoteStart) {
+    const claim = await claimStartState(base44, {
+      recipientId,
+      taskId: task.id,
+      role,
+      taskStatus: task.status,
+      now,
+    });
+    if (!claim.claimed) {
+      return {
+        kind: 'none',
+        decision: 'start_claimed',
+        reason: 'another_dispatch_is_starting_it',
+        revision: claim.revision || 0,
+        contactedApns: false,
+      };
+    }
+    startClaim = claim.state;
+  }
 
   const results = [];
-  for (const tokenRow of tokens) {
+  for (const tokenRow of targetTokens) {
     const result = maySend
       ? await sendLiveActivityPush({
           token: tokenRow.token,
@@ -401,11 +553,14 @@ export async function dispatchRecipient(input) {
     dispatched_at: dispatchedAt,
   })));
 
-  // Commit the revision only when something was actually delivered.
+  // Commit the revision only when something was actually delivered. A start
+  // commits onto the row it already claimed, so the pair never ends up with two
+  // state rows.
+  const committedState = startClaim || state;
   const stateFields = stateAfterPlan({ plan, task, committed, sent, now });
   if (stateFields) {
-    if (state?.id) {
-      await base44.asServiceRole.entities.LiveActivityState.update(state.id, stateFields).catch(() => null);
+    if (committedState?.id) {
+      await base44.asServiceRole.entities.LiveActivityState.update(committedState.id, stateFields).catch(() => null);
     } else {
       await base44.asServiceRole.entities.LiveActivityState.create({
         user_id: recipientId,
@@ -416,13 +571,21 @@ export async function dispatchRecipient(input) {
     }
   }
 
+  // A start that took the slot but delivered nothing gives it back, so the next
+  // event can try again instead of the pair being stuck un-startable.
+  if (startClaim && !committed) {
+    await releaseStartClaim(base44, startClaim, now);
+  }
+
   return {
     kind: plan.kind,
     decision: plan.decision,
     event,
+    // True only when this attempt was addressed to the install's start tokens.
+    remoteStart,
     revision: plan.revision,
     phase: plan.snapshot?.phase || null,
-    tokens: tokens.length,
+    tokens: targetTokens.length,
     sent,
     dryRun: results.every((r) => r.result.dryRun),
     failed: results.filter((r) => !r.result.ok).length,

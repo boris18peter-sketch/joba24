@@ -24,6 +24,11 @@
       "default": false,
       "description": "Real APNs delivery FOR THE ALLOWLISTED test users only. Only a literal true permits a network call, and only for a recipient listed in test_user_ids. It can never arm delivery for anybody else, and it never overrides `dry_run` for non-test users."
     },
+    "push_to_start": {
+      "type": "boolean",
+      "default": false,
+      "description": "PUSH-TO-START SWITCH (iOS 17.2+). true = a task becoming active may make a card APPEAR on an allowlisted user's Lock Screen while the app is closed, instead of waiting for the app to open. Only a literal true arms it, and it can never widen the allowlist: delivery still requires isTestUser + test_apns. false = a card can only ever be started by the app itself."
+    },
     "diagnostic_events": {
       "type": "boolean",
       "default": false,

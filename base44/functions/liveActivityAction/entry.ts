@@ -6,7 +6,9 @@ import {
   guardWorkerStep,
   workerStepPatch,
 } from '../../shared/liveActivityActionGuard.ts';
-import { deriveActivityAction } from '../../shared/taskActivitySnapshot.ts';
+import { deriveActivityAction, authorizeActivity } from '../../shared/taskActivitySnapshot.ts';
+import { actionsForRole } from '../../shared/liveActivityActionGuard.ts';
+import { ROLES } from '../../shared/liveActivityAuth.ts';
 import { completeTaskCore } from '../../shared/taskCompletion.ts';
 import { buildBackendSnapshot } from '../../shared/liveActivitySnapshot.ts';
 import { resolveStatusFlow, resolveSchedule, DEFAULT_TIMEZONE } from '../../shared/liveActivityFlow.ts';
@@ -57,18 +59,46 @@ Deno.serve(async (req) => {
     }
     const claims = verified.claims;
 
+    // ── WHICH TASK, AND AS WHOM ────────────────────────────────────────────
+    // A per-card capability NAMES its task and role (that is its whole point).
+    // An install-scoped one does not: the request must name them, and the RECORD
+    // then decides whether this user really is that side of that task. Nothing is
+    // inferred from the token beyond the user id it was signed for.
+    const isUserScope = claims.scope === 'user';
+    const claimedTaskId = isUserScope
+      ? String(body?.task_id || '').trim()
+      : String(claims.tid || '');
+    const role = isUserScope
+      ? (ROLES.includes(body?.role) ? body.role : '')
+      : claims.role;
+    const permitted = isUserScope ? actionsForRole(role) : claims.actions;
+
+    if (isUserScope && (!claimedTaskId || !role)) {
+      return Response.json({ ok: false, error: 'task_and_role_required', decision: 'rejected' }, { status: 400 });
+    }
+
     if (!ACTION_IDS.includes(actionId)) {
       return Response.json({ ok: false, error: 'unknown_action', decision: 'rejected' }, { status: 400 });
     }
-    if (!claims.actions.includes(actionId)) {
-      // A worker's token can never carry publisher_approve, and vice versa.
+    if (!permitted.includes(actionId)) {
+      // A worker's capability can never carry publisher_approve, and vice versa.
       return Response.json({ ok: false, error: 'action_not_permitted', decision: 'rejected' }, { status: 403 });
     }
 
-    const tasks = await base44.asServiceRole.entities.Task.filter({ id: claims.tid });
+    const tasks = await base44.asServiceRole.entities.Task.filter({ id: claimedTaskId });
     const task = tasks?.[0];
     if (!task) {
       return Response.json({ ok: false, error: 'task_missing', decision: 'rejected' }, { status: 404 });
+    }
+
+    // ── AN INSTALL-SCOPED CAPABILITY MUST OWN THIS TASK, IN THIS ROLE ───────
+    // Same rule `authorizeActivity` applies everywhere else, stated explicitly
+    // because this token deliberately names no task of its own.
+    if (isUserScope) {
+      const auth = authorizeActivity(task, role, claims.sub);
+      if (!auth.ok) {
+        return Response.json({ ok: false, error: auth.reason, decision: 'rejected' }, { status: 403 });
+      }
     }
 
     // ── Re-derive eligibility from the CURRENT record ──────────────────────
@@ -83,7 +113,7 @@ Deno.serve(async (req) => {
     const schedule = resolveSchedule(task, { now: Date.now(), settings: settings || {}, timeZone: DEFAULT_TIMEZONE });
     const eligible = deriveActivityAction({
       task,
-      role: claims.role,
+      role,
       flow,
       isEngagement: !!schedule.isEngagement,
       t,
@@ -91,7 +121,7 @@ Deno.serve(async (req) => {
 
     const snapshotFor = (sourceTask: any) => buildBackendSnapshot({
       task: sourceTask,
-      role: claims.role,
+      role,
       userId: claims.sub,
       categories,
       settings: settings || {},

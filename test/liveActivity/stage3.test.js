@@ -229,9 +229,14 @@ describe('capacitor bridge', () => {
 
     const declared = [...plugin.matchAll(/CAPPluginMethod\(name: "([A-Za-z]+)"/g)].map((m) => m[1]);
     // `setActionAuth` hands the Lock Screen button its capability, and
-    // `actionStages` reads back what the button actually did; everything else is
-    // the original lifecycle surface.
-    expect(declared.sort()).toEqual(['actionStages', 'activeActivities', 'end', 'isAvailable', 'setActionAuth', 'start', 'update']);
+    // `actionStages` reads back what the button actually did; `pushToStartToken`
+    // and `setUserActionAuth` are the Push-to-Start pair (the install's token, and
+    // the install-scoped capability a remotely started card's button needs).
+    // Everything else is the original lifecycle surface.
+    expect(declared.sort()).toEqual([
+      'actionStages', 'activeActivities', 'end', 'isAvailable',
+      'pushToStartToken', 'setActionAuth', 'setUserActionAuth', 'start', 'update',
+    ]);
 
     const fromBridge = (bridge.match(/LIVE_ACTIVITY_METHODS = \[([^\]]+)\]/) || [])[1] || '';
     for (const method of declared) expect(fromBridge).toContain(method);

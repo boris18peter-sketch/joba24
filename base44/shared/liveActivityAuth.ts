@@ -21,6 +21,27 @@ export const TOKEN_PATTERN = /^[0-9a-fA-F]{32,400}$/;
 export const ENVIRONMENTS = ['development', 'production'];
 export const ROLES = ['publisher', 'worker'];
 
+/**
+ * Which ActivityKit token an row holds.
+ *
+ *   activity — Apple's per-activity token, issued once a card exists. Updates and
+ *              end go here. It cannot start anything.
+ *   start    — the install's Push-to-Start token (iOS 17.2+). A `start` push makes
+ *              a card APPEAR on a phone whose app is closed. It cannot update one.
+ *
+ * They are different values from different APIs, so they are kept apart at every
+ * step: registration, retirement and dispatch. Mixing them is not a security bug
+ * but a silent delivery failure — APNs rejects a token that is not the type its
+ * payload assumes.
+ */
+export const TOKEN_KINDS = ['activity', 'start'];
+
+/** Missing means `activity`, so every row written before start tokens existed keeps its meaning. */
+export function normalizeTokenKind(raw) {
+  const value = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  return TOKEN_KINDS.includes(value) ? value : 'activity';
+}
+
 /** The server-side recipient identity. Client-supplied ids are never used. */
 export function resolveRecipient(user) {
   if (!user || typeof user.id !== 'string' || !user.id) return null;
@@ -59,6 +80,16 @@ export function planTokenRegistration(input) {
   const token = normalizeToken(body.token);
   if (!TOKEN_PATTERN.test(token)) return { ok: false, status: 400, reason: 'invalid_token' };
 
+  // ── WHICH TOKEN IS THIS ─────────────────────────────────────────────────
+  // Absent means `activity` (every client built before Push-to-Start). A value
+  // that is present but not recognised is refused rather than coerced: silently
+  // filing a start token as an activity token would make every update to it fail
+  // at APNs with no clue why.
+  if (body.kind != null && String(body.kind).trim() && !TOKEN_KINDS.includes(String(body.kind).trim().toLowerCase())) {
+    return { ok: false, status: 400, reason: 'invalid_kind' };
+  }
+  const kind = normalizeTokenKind(body.kind);
+
   const environment = validateEnvironment(body.environment);
   if (!environment) return { ok: false, status: 400, reason: 'invalid_environment' };
 
@@ -82,7 +113,11 @@ export function planTokenRegistration(input) {
   }
 
   // ── Token ownership ─────────────────────────────────────────────────────
-  const owners = existingTokens.filter((row) => row && row.token === token);
+  // Matched on the SAME kind: the same hex value would never be issued for both,
+  // and a mismatch here would let one kind overwrite the other's row.
+  const owners = existingTokens.filter((row) => row
+    && row.token === token
+    && normalizeTokenKind(row.kind) === kind);
   const foreign = owners.find((row) => row.user_id && row.user_id !== who.userId);
   if (foreign) {
     // A token belongs to the device that Apple issued it to. Never move it.
@@ -93,7 +128,9 @@ export function planTokenRegistration(input) {
   let action = 'create';
   if (own) action = own.environment === environment ? 'refresh' : 'rotate';
 
-  // A device that reports the same install id has superseded its older tokens.
+  // A device that reports the same install id has superseded its older tokens —
+  // of the SAME kind only. Rotating a start token must never retire the activity
+  // token of a card that is on screen right now, and vice versa.
   const deviceId = typeof body.device_id === 'string' ? body.device_id.trim() : '';
   const retire = deviceId
     ? existingTokens
@@ -101,6 +138,7 @@ export function planTokenRegistration(input) {
           && row.user_id === who.userId
           && row.device_id === deviceId
           && row.token !== token
+          && normalizeTokenKind(row.kind) === kind
           && row.status === 'active')
         .map((row) => row.id)
     : [];
@@ -109,6 +147,7 @@ export function planTokenRegistration(input) {
   const record = {
     user_id: who.userId,
     token,
+    kind,
     environment,
     bundle_id: typeof body.bundle_id === 'string' ? body.bundle_id.trim() : '',
     platform,
@@ -159,9 +198,14 @@ export function authorizeDispatch({ task, role, userId }) {
  * when the configured environment matches nothing, this recipient's own active
  * tokens are used rather than silence.
  */
-export function eligibleTokens(tokens, { userId, environment, limit = 20 }) {
+export function eligibleTokens(tokens, { userId, environment, limit = 20, kind = 'activity' }) {
   if (!Array.isArray(tokens) || !userId) return [];
-  const own = tokens.filter((row) => row && row.status === 'active' && row.user_id === userId);
+  // Kind first: a `start` push addressed to an activity token (or the reverse)
+  // is rejected by APNs, so the two sets are never allowed to mix.
+  const own = tokens.filter((row) => row
+    && row.status === 'active'
+    && row.user_id === userId
+    && normalizeTokenKind(row.kind) === kind);
   const matched = environment ? own.filter((row) => row.environment === environment) : own;
   const chosen = matched.length > 0 ? matched : own;
   return chosen.slice(0, limit > 0 ? limit : 20);

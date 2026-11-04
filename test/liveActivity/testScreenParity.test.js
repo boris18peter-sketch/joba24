@@ -173,11 +173,12 @@ describe('end is honest about what happened', () => {
     expect(plugin).toContain('let endsEverything = call.getBool("all") ?? false');
     expect(bridge).toContain('export function endAllActivities()');
     expect(bridge).toContain('endTaskActivity({ all: true, dismissAfter: 0 })');
-    // Seven native methods: the original five, `setActionAuth` (stores the
-    // capability the app minted — it sends nothing and reads no task) and
+    // Nine native methods: the original five, `setActionAuth` (stores the
+    // capability the app minted — it sends nothing and reads no task),
     // `actionStages` (reads back what the Lock Screen tap recorded, so the app
-    // can forward it to the diagnostic view). None of them sends anything.
-    expect((plugin.match(/CAPPluginMethod\(name: "/g) || []).length).toBe(7);
+    // can forward it to the diagnostic view), and the Push-to-Start pair
+    // `pushToStartToken` / `setUserActionAuth`. None of them sends anything.
+    expect((plugin.match(/CAPPluginMethod\(name: "/g) || []).length).toBe(9);
   });
 
   it('reports the ActivityKit lifecycle value for every activity', () => {

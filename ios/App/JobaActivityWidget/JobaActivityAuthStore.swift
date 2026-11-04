@@ -29,6 +29,20 @@ enum JobaActivityAuthStore {
     static let appGroup = "group.com.base69e6bdb4986a04a256653a23.app"
     static let endpointKey = "joba24.liveactivity.actionEndpoint"
 
+    /// The action endpoint COMPILED into the app.
+    ///
+    /// ── WHY THIS EXISTS AT ALL ───────────────────────────────────────────────
+    /// The endpoint used to be known only through the stored value, so a stale
+    /// write — the `capacitor://localhost/...` one the old bridge produced — left
+    /// the button permanently dead until the app happened to re-mint it. A
+    /// compiled https default means the intent can always reach the app's own
+    /// function, even on a launch where nothing has been stored yet, and a
+    /// scheme URL can never be used by accident.
+    static let defaultActionEndpoint = "https://joba24.com/functions/liveActivityAction"
+
+    /// The install-scoped capability key (see `storeUserCapability`).
+    static let userTokenKey = "joba24.liveactivity.actionToken.user"
+
     static var defaults: UserDefaults? {
         UserDefaults(suiteName: appGroup)
     }
@@ -42,6 +56,43 @@ enum JobaActivityAuthStore {
         return URL(string: raw)
     }
 
+    /// The endpoint the App Intent posts to. ALWAYS https.
+    ///
+    /// A stored value is used only when it is an https URL; anything else (an
+    /// empty store, a stale `capacitor://localhost` write from an older build)
+    /// falls back to the compiled default rather than being attempted.
+    static func actionEndpoint() -> URL? {
+        if let raw = defaults?.string(forKey: endpointKey),
+           raw.hasPrefix("https://"),
+           let url = URL(string: raw) {
+            return url
+        }
+        return URL(string: defaultActionEndpoint)
+    }
+
+    /// The install-scoped capability, or nil when the app has not minted one.
+    ///
+    /// Stored apart from the per-card tokens on purpose: it names no task, so it
+    /// is the one a card that appeared while the app was closed can still use.
+    static func userToken() -> String? {
+        guard let value = defaults?.string(forKey: userTokenKey), !value.isEmpty else { return nil }
+        return value
+    }
+
+    /// Store (or, when `token` is nil/empty, CLEAR) the install-scoped capability.
+    static func storeUserCapability(endpoint: String?, token: String?) {
+        guard let defaults = defaults else { return }
+        if let endpoint = endpoint, endpoint.hasPrefix("https://") {
+            defaults.set(endpoint, forKey: endpointKey)
+        }
+        if let token = token, !token.isEmpty {
+            defaults.set(token, forKey: userTokenKey)
+        } else {
+            // A cleared capability must never be reused by a later tap.
+            defaults.removeObject(forKey: userTokenKey)
+        }
+    }
+
     static func token(taskId: String, role: String) -> String? {
         guard let value = defaults?.string(forKey: tokenKey(taskId: taskId, role: role)),
               !value.isEmpty else { return nil }
@@ -51,7 +102,10 @@ enum JobaActivityAuthStore {
     /// Store (or, when `token` is nil/empty, CLEAR) this pair's capability.
     static func store(endpoint: String?, token: String?, taskId: String, role: String) {
         guard let defaults = defaults else { return }
-        if let endpoint = endpoint, !endpoint.isEmpty {
+        // Only an https endpoint is ever persisted. A scheme URL (the
+        // `capacitor://localhost` one the old bridge wrote) cannot be requested by
+        // URLSession at all, so storing it would silently break every tap.
+        if let endpoint = endpoint, endpoint.hasPrefix("https://") {
             defaults.set(endpoint, forKey: endpointKey)
         }
         let key = tokenKey(taskId: taskId, role: role)

@@ -33,6 +33,9 @@ export const LIVE_ACTIVITY_METHODS = [
   // without a session, so it can only log into the App Group; the app forwards
   // those stages to the server with its own authorized call.
   'actionStages',
+  // The install's Push-to-Start token (iOS 17.2+) and the wider capability a
+  // remotely started card's button needs. Both send nothing themselves.
+  'pushToStartToken', 'setUserActionAuth',
 ];
 
 const JobaActivity = registerPlugin('JobaActivity');
@@ -328,6 +331,133 @@ export async function registerActivityToken({ token, taskId, role, environment, 
   } catch {
     return { ok: false, reason: 'register_failed' };
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PUSH-TO-START — a card that appears while the app is closed
+   ══════════════════════════════════════════════════════════════════════════
+   iOS 17.2 gives every INSTALL one token that can make a Live Activity appear.
+   It is a different value from the per-activity token used to update one, so it
+   is registered with `kind: 'start'` and stored apart on the server.
+
+   All of it is best effort and never throws. On iOS 16.x `supported` is false, no
+   token is registered, and the app starts cards itself exactly as before — which
+   is the fallback, not a second code path.
+*/
+
+/** The install's Push-to-Start token, or the reason there isn't one. */
+export async function pushToStartToken() {
+  if (!isLiveActivityNative()) return { supported: false, token: '', reason: 'not_native' };
+  try {
+    const result = await JobaActivity.pushToStartToken();
+    return {
+      supported: result?.supported === true,
+      token: typeof result?.token === 'string' ? result.token : '',
+      reason: result?.reason || '',
+      environment: result?.environment === 'production' ? 'production' : 'development',
+      bundleId: result?.bundleId || '',
+    };
+  } catch {
+    return { supported: false, token: '', reason: 'plugin_unavailable' };
+  }
+}
+
+/** Register (or refresh) the install's start token. */
+export async function registerPushToStartToken({ token, environment, bundleId } = {}) {
+  if (!token) return { ok: false, reason: 'missing_token' };
+  try {
+    const response = await base44.functions.invoke('registerLiveActivityToken', {
+      token,
+      kind: 'start',
+      environment: environment === 'production' ? 'production' : 'development',
+      bundle_id: bundleId || '',
+      device_id: deviceId(),
+      timezone: timeZone(),
+    });
+    return { ok: true, action: response?.data?.action || 'unknown' };
+  } catch {
+    return { ok: false, reason: 'register_failed' };
+  }
+}
+
+/**
+ * Read the current token and register it, in one step.
+ *
+ * Run on every launch: a token Apple issued while the app was closed has to
+ * reach the server without waiting for a rotation event.
+ */
+export async function syncPushToStartToken() {
+  const current = await pushToStartToken();
+  if (!current.supported || !current.token) return { ...current, registered: false };
+  const result = await registerPushToStartToken(current);
+  return { ...current, registered: result.ok === true };
+}
+
+const startTokenSubscribers = new Set();
+let startTokenHandle = null;
+
+/** Listen for the start token being issued or ROTATED (attached once, fanned out). */
+export function attachPushToStartTokenListener(onToken) {
+  if (!isLiveActivityNative()) return () => {};
+  if (typeof onToken === 'function') startTokenSubscribers.add(onToken);
+
+  if (!startTokenHandle) {
+    startTokenHandle = JobaActivity.addListener('pushToStartToken', (event) => {
+      const payload = event || {};
+      for (const fn of Array.from(startTokenSubscribers)) {
+        try { fn(payload); } catch { /* a listener must never break the bridge */ }
+      }
+      registerPushToStartToken(payload);
+    });
+  }
+
+  return () => {
+    if (typeof onToken === 'function') startTokenSubscribers.delete(onToken);
+    if (startTokenSubscribers.size === 0 && startTokenHandle) {
+      if (typeof startTokenHandle.remove === 'function') startTokenHandle.remove();
+      startTokenHandle = null;
+    }
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE INSTALL-SCOPED ACTION CAPABILITY
+   ══════════════════════════════════════════════════════════════════════════
+   A card that appeared by push was created while the app was closed, so no
+   session existed to mint the per-card capability its button needs. This is the
+   narrow answer: one capability per install, naming NO task, carrying only the
+   two action ids a card can offer, living twelve hours and refreshed whenever the
+   app runs. Every tap still travels with the card's own task and role, and the
+   server re-derives ownership from the record before doing anything — so this is
+   permission to ASK as one user, not a key to a task. It never appears in a push
+   payload; only in the app's own App Group.
+*/
+export async function syncUserActionCapability() {
+  if (!isLiveActivityNative()) return { ok: false, reason: 'not_native' };
+  try {
+    const response = await base44.functions.invoke('issueLiveActivityActionToken', { scope: 'user' });
+    const token = response?.data?.token;
+    if (!token) return { ok: false, reason: response?.data?.error || 'no_token' };
+    const stored = await JobaActivity.setUserActionAuth({ endpoint: actionEndpoint(), token });
+    return { ok: stored?.stored === true, at: Date.now(), expiresAt: response?.data?.expires_at || null };
+  } catch {
+    return { ok: false, reason: 'mint_failed' };
+  }
+}
+
+/** Refreshed at most every six hours; a failure is never remembered as success. */
+const USER_CAPABILITY_REFRESH_MS = 6 * 60 * 60 * 1000;
+let userCapability = null;
+
+export async function ensureUserActionCapability({ force = false } = {}) {
+  if (!isLiveActivityNative()) return { ok: false, reason: 'not_native' };
+  const stillFresh = userCapability?.ok === true
+    && !force
+    && Date.now() - Number(userCapability.at || 0) < USER_CAPABILITY_REFRESH_MS;
+  if (stillFresh) return userCapability;
+  const result = await syncUserActionCapability();
+  if (result.ok) userCapability = result;
+  return result;
 }
 
 /**

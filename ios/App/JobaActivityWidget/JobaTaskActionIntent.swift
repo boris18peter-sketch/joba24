@@ -125,12 +125,19 @@ struct JobaTaskActionIntent: LiveActivityIntent {
         // ── 4. In flight ─────────────────────────────────────────────────────
         await apply(activity, current.withActionState("pending"))
 
-        guard let endpoint = JobaActivityAuthStore.endpoint() else {
+        guard let endpoint = JobaActivityAuthStore.actionEndpoint() else {
             stage("no_endpoint")
             await fail(activity, current)
             return .result()
         }
-        guard let token = JobaActivityAuthStore.token(taskId: taskId, role: role) else {
+        // ── WHICH CAPABILITY ─────────────────────────────────────────────────
+        // The card's own token first: it names this exact task and role, so it
+        // can only ever do what this card offers. When there is none — a card
+        // that appeared by Push-to-Start, created while the app was closed — the
+        // install-scoped capability stands in, and the task and role below are
+        // what let the server authorize it against the record.
+        guard let token = JobaActivityAuthStore.token(taskId: taskId, role: role)
+            ?? JobaActivityAuthStore.userToken() else {
             // No capability means no verified identity: report the failure on the
             // card instead of acting on an unauthenticated request.
             stage("no_capability")
@@ -147,6 +154,12 @@ struct JobaTaskActionIntent: LiveActivityIntent {
             "token": token,
             "action_id": actionId,
             "expected_step": expectedStep,
+            // Which card this tap belongs to. A per-card capability already
+            // carries both and the server uses its own; an install-scoped one
+            // carries neither, so these are what the server authorizes against
+            // the stored task before anything is written.
+            "task_id": taskId,
+            "role": role,
         ])
         guard request.httpBody != nil else {
             stage("payload_error")

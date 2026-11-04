@@ -40,10 +40,23 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         // can forward it to the diagnostic table with its own session. Draining
         // is deliberate: an entry is forwarded exactly once.
         CAPPluginMethod(name: "actionStages", returnType: CAPPluginReturnPromise),
+        // ── PUSH-TO-START (iOS 17.2+) ────────────────────────────────────────
+        // `pushToStartToken` reports the INSTALL's token — the one that can make
+        // a card appear while the app is closed — and arms the rotation stream.
+        // `setUserActionAuth` stores the install-scoped action capability, so the
+        // button on such a card works before the app has ever been opened for it.
+        CAPPluginMethod(name: "pushToStartToken", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setUserActionAuth", returnType: CAPPluginReturnPromise),
     ]
 
     /// One token listener per (task, role), so a rotation replaces the old one.
     private var tokenListeners: [String: Task<Void, Never>] = [:]
+
+    /// The ONE observer of the install's Push-to-Start token. Attached on the
+    /// first read and kept for the life of the process: Apple rotates this token
+    /// on its own schedule, and a rotation that nobody is listening for means a
+    /// card can no longer be started remotely until the app is relaunched.
+    private var pushToStartTask: Task<Void, Never>?
 
     private func listenerKey(_ taskId: String, _ role: String) -> String {
         "\(taskId)|\(role)"
@@ -88,6 +101,55 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             call.resolve(["activities": items])
         }
+    }
+
+    // MARK: - Push-to-Start
+
+    /**
+     The install's Push-to-Start token (iOS 17.2+), plus a `supported` flag.
+
+     ── WHAT THIS TOKEN IS ───────────────────────────────────────────────────
+     A DIFFERENT token from the per-activity ones (`activityToken` events): this
+     one belongs to the install and lets the server make a card APPEAR while the
+     app is closed. Calling this method also arms the rotation stream, so the web
+     layer learns about a replacement without the user doing anything.
+
+     On iOS 16.x it resolves `supported: false` and no token is ever registered:
+     the app keeps starting cards itself, which is the existing fallback and is
+     untouched by this feature.
+     */
+    @objc public func pushToStartToken(_ call: CAPPluginCall) {
+        guard #available(iOS 17.2, *) else {
+            call.resolve([
+                "supported": false,
+                "token": "",
+                "reason": "unsupported_ios",
+                "environment": Self.pushEnvironment,
+            ])
+            return
+        }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            call.resolve([
+                "supported": true,
+                "token": "",
+                "reason": "activities_disabled",
+                "environment": Self.pushEnvironment,
+            ])
+            return
+        }
+
+        observePushToStartToken()
+        let data = Activity<JobaTaskActivity>.pushType?.pushToStartToken
+        let hex = data.map { $0.map { String(format: "%02x", $0) }.joined() } ?? ""
+        call.resolve([
+            "supported": true,
+            "token": hex,
+            // A token can take a moment to be issued on first launch. Reported as
+            // a reason, never as an error: the caller simply registers later.
+            "reason": hex.isEmpty ? "token_not_ready" : "",
+            "environment": Self.pushEnvironment,
+            "bundleId": Bundle.main.bundleIdentifier ?? "",
+        ])
     }
 
     // MARK: - Lifecycle
@@ -284,6 +346,27 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve(["stages": JobaActivityAuthStore.drainStages()])
     }
 
+    /**
+     Store the INSTALL-scoped action capability and the endpoint, for a card that
+     was started remotely and therefore has no per-card capability yet.
+
+     It is deliberately the wider of the two stored credentials, so it is stored
+     under its own key and cannot be mistaken for a card's: it names no task, it
+     carries only the action ids a card can offer, it lives twelve hours, and the
+     server re-derives ownership of whichever task a tap names. The narrower
+     per-(task, role) token is always preferred by the intent when it exists.
+
+     Like `setActionAuth`, this only writes to the App Group: nothing is sent and
+     nothing leaves the device.
+     */
+    @objc public func setUserActionAuth(_ call: CAPPluginCall) {
+        JobaActivityAuthStore.storeUserCapability(
+            endpoint: call.getString("endpoint"),
+            token: call.getString("token")
+        )
+        call.resolve(["stored": JobaActivityAuthStore.userToken() != nil])
+    }
+
     // MARK: - Push token
 
     @available(iOS 16.2, *)
@@ -299,6 +382,31 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
                 self?.notifyListeners("activityToken", data: [
                     "taskId": taskId,
                     "role": role,
+                    "token": hex,
+                    "environment": Self.pushEnvironment,
+                    "bundleId": Bundle.main.bundleIdentifier ?? "",
+                ])
+            }
+        }
+    }
+
+    /// Observe the install's Push-to-Start token, once per launch.
+    ///
+    /// `pushToStartTokenUpdates` yields the current value immediately (when Apple
+    /// has issued one) and then again whenever it rotates, which is exactly what
+    /// `activityToken` does for a single card. A rotation the app never hears
+    /// about is a card the server can no longer start, so this is armed as soon
+    /// as the web layer asks for the token.
+    @available(iOS 17.2, *)
+    private func observePushToStartToken() {
+        guard pushToStartTask == nil else { return }
+        guard let pushType = Activity<JobaTaskActivity>.pushType else { return }
+        let updates = pushType.pushToStartTokenUpdates
+        pushToStartTask = Task { [weak self] in
+            for await tokenData in updates {
+                let hex = tokenData.map { String(format: "%02x", $0) }.joined()
+                guard !hex.isEmpty else { continue }
+                self?.notifyListeners("pushToStartToken", data: [
                     "token": hex,
                     "environment": Self.pushEnvironment,
                     "bundleId": Bundle.main.bundleIdentifier ?? "",

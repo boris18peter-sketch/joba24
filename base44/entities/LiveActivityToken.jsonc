@@ -10,6 +10,19 @@
       "type": "string",
       "description": "The ActivityKit push token (hex) Apple issued for this app's Live Activity. Stored separately from any FCM token and never reused for notifications."
     },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "activity",
+        "start"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "default": "activity",
+      "description": "WHICH ActivityKit token this is. activity = the per-activity token Apple issues once a card exists (updates and end). start = the Push-to-Start token of the INSTALL (iOS 17.2+), used to make a card APPEAR while the app is closed. The two are different values from different APIs and are never interchangeable: a start token cannot update a card, and an activity token cannot start one. Missing = activity (rows written before Push-to-Start existed)."
+    },
     "environment": {
       "type": "string",
       "enum": [

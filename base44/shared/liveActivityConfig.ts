@@ -32,6 +32,12 @@ export const DEFAULT_CONFIG = {
   test_user_ids: [],
   // Real APNs for the allowlisted testers only. Never a global unlock.
   test_apns: false,
+  // ── PUSH-TO-START ─────────────────────────────────────────────────────────
+  // Off by default. When on, an allowlisted recipient with a start token can
+  // have a card APPEAR while the app is closed. It never widens the allowlist:
+  // `mayContactApnsFor` still decides, per recipient, whether anything may be
+  // sent at all.
+  push_to_start: false,
 };
 
 /** More ids than this and the allowlist stops being a test list. */
@@ -68,6 +74,9 @@ export function normalizeConfig(row) {
   )).slice(0, MAX_TEST_USERS);
   // Only a literal `true` arms real delivery, and only ever for those ids.
   out.test_apns = row.test_apns === true;
+  // Push-to-Start is a separate, literal opt-in. A missing field, a string or a
+  // 1 leaves it off, exactly like the two global locks above.
+  out.push_to_start = row.push_to_start === true;
 
   out.diagnostic_events = row.diagnostic_events === true;
   const days = Number(row.diagnostic_retention_days);

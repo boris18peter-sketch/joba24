@@ -24,10 +24,11 @@
     "event": {
       "type": "string",
       "enum": [
+        "start",
         "update",
         "end"
       ],
-      "description": "update = refresh the Live Activity content-state. end = close it (terminal). Live Activity START is deliberately not supported in this stage."
+      "description": "start = make the card APPEAR, delivered to the install's Push-to-Start token (iOS 17.2+), for a (user, task, role) that has never had a committed revision. update = refresh the content-state of an existing card. end = close it (terminal). One revision is never dispatched twice, and a pair that already has a committed revision is never started again."
     },
     "phase": {
       "type": "string",

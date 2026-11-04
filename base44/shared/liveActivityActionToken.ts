@@ -124,12 +124,43 @@ async function hmacBase64url(secret: string, data: string): Promise<string> {
 export type ActionTokenClaims = {
   v: number;
   sub: string;
-  tid: string;
-  role: 'publisher' | 'worker';
+  /** Absent on a USER-scoped capability, which names no task. */
+  tid?: string;
+  /** Absent on a USER-scoped capability. */
+  role?: 'publisher' | 'worker';
+  /**
+   * 'user' marks a capability minted for the INSTALL rather than for one card.
+   * See `signUserActionToken` for why it exists and what bounds it.
+   */
+  scope?: 'user';
   actions: string[];
   iat: number;
   exp: number;
 };
+
+/**
+ * How long an INSTALL-scoped capability may live.
+ *
+ * ── THE PROBLEM ────────────────────────────────────────────────────────────
+ * A card started by a Push-to-Start push appears while the app is CLOSED, so no
+ * session ever existed to mint the per-card capability the button needs. The
+ * button would then be dead until the user happened to open the app — for every
+ * new task.
+ *
+ * ── THE BOUNDED ANSWER ─────────────────────────────────────────────────────
+ * The app also mints ONE capability per install, whenever it runs, that names no
+ * task and carries only the two action ids a card can offer. When a tap uses it,
+ * the request must ALSO carry the card's own task and role, and the endpoint
+ * re-derives ownership from that record before anything happens — so this token
+ * is not a key to a task, it is permission to ASK about a task as one user.
+ *
+ * Its life is deliberately much shorter than a per-task capability's (twelve
+ * hours, not a week): it is refreshed on every app launch, so a long window buys
+ * nothing, and a stolen value stops being usable the same day. It grants no
+ * reads, no lookups and no other action id, and it is never put in a push
+ * payload — only in the app's own App Group.
+ */
+export const USER_SCOPE_TTL_SECONDS = 12 * 60 * 60;
 
 /**
  * Mint a capability token.
@@ -172,6 +203,45 @@ export async function signActionToken(input: {
 }
 
 /**
+ * Mint an INSTALL-scoped capability: one user, no task, the given action ids.
+ *
+ * The signature and the expiry rules are the per-task token's own — this is the
+ * same format and the same secret, with `scope: 'user'` and no `tid`, so the
+ * verifier can refuse a call that names no task instead of guessing one.
+ */
+export async function signUserActionToken(input: {
+  secret: string;
+  userId: string;
+  actions: string[];
+  ttlSeconds?: number;
+  now?: number;
+}): Promise<{ ok: boolean; token?: string; claims?: ActionTokenClaims; reason?: string }> {
+  const { secret, userId, actions } = input || ({} as any);
+  if (!secret) return { ok: false, reason: 'no_secret' };
+  if (!userId) return { ok: false, reason: 'missing_binding' };
+  if (!Array.isArray(actions) || !actions.length) return { ok: false, reason: 'missing_actions' };
+
+  const nowSeconds = Math.floor((input.now ?? Date.now()) / 1000);
+  // No request = the install default; a request is clamped to that same ceiling,
+  // never above it, so no caller can mint a longer-lived install capability.
+  const requested = Number(input.ttlSeconds) || USER_SCOPE_TTL_SECONDS;
+  const ttl = Math.max(60, Math.min(requested, USER_SCOPE_TTL_SECONDS));
+
+  const claims: ActionTokenClaims = {
+    v: ACTION_TOKEN_VERSION,
+    sub: String(userId),
+    scope: 'user',
+    actions: actions.map(String),
+    iat: nowSeconds,
+    exp: nowSeconds + ttl,
+  };
+
+  const payload = base64url(encoder.encode(JSON.stringify(claims)));
+  const signature = await hmacBase64url(secret, payload);
+  return { ok: true, token: `v${ACTION_TOKEN_VERSION}.${payload}.${signature}`, claims };
+}
+
+/**
  * Verify a token. Never throws; every failure is a named reason so the caller can
  * answer honestly instead of failing open.
  */
@@ -201,7 +271,12 @@ export async function verifyActionToken(input: {
   }
 
   if (!claims || claims.v !== ACTION_TOKEN_VERSION) return { ok: false, reason: 'unsupported_version' };
-  if (!claims.sub || !claims.tid || (claims.role !== 'publisher' && claims.role !== 'worker')) {
+  // An install-scoped capability names NO task: the card's own task arrives with
+  // the request and is authorized against the record. Everything else must carry
+  // its task binding, exactly as before.
+  const userScope = claims.scope === 'user';
+  if (!claims.sub) return { ok: false, reason: 'malformed' };
+  if (!userScope && (!claims.tid || (claims.role !== 'publisher' && claims.role !== 'worker'))) {
     return { ok: false, reason: 'malformed' };
   }
   if (!Array.isArray(claims.actions) || !claims.actions.length) return { ok: false, reason: 'malformed' };

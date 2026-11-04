@@ -7,11 +7,14 @@ import { useJobaSettings } from '@/hooks/useJobaSettings';
 import {
   activeTaskActivities,
   attachActivityTokenListener,
+  attachPushToStartTokenListener,
   clearActivityAction,
   drainActivityActionStages,
   endTaskActivity,
+  ensureUserActionCapability,
   isLiveActivityNative,
   startTaskActivity,
+  syncPushToStartToken,
   updateTaskActivity,
 } from '@/lib/liveActivityNative';
 import {
@@ -158,6 +161,20 @@ export default function RealTaskActivityBridge() {
   useEffect(() => {
     if (!access?.allowed) return undefined;
     return attachActivityTokenListener(() => {});
+  }, [access?.allowed]);
+
+  // ── 2b. PUSH-TO-START: the install token, and the button that appears with it ──
+  // Three things, all for an allowlisted device only:
+  //  • register the token Apple already issued (a launch with no rotation would
+  //    otherwise never send it);
+  //  • keep listening, so a ROTATION re-registers without any user action;
+  //  • mint the install-scoped action capability, so the button on a card that
+  //    appeared while the app was closed is not dead the first time it is tapped.
+  useEffect(() => {
+    if (!access?.allowed) return undefined;
+    syncPushToStartToken().catch(() => {});
+    ensureUserActionCapability().catch(() => {});
+    return attachPushToStartTokenListener(() => {});
   }, [access?.allowed]);
 
   const tracked = useMemo(
