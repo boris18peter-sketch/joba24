@@ -502,7 +502,7 @@ struct ApplicantPill: View {
  came to the Lock Screen to press. The expanded Dynamic Island is a fixed, much
  tighter box, so it passes its own height instead of inheriting 56pt.
 
- ── IT DRAWS FOUR STATES, AND INVENTS NONE OF THEIR WORDS ───────────────────
+ ── IT DRAWS FIVE STATES, AND INVENTS NONE OF THEIR WORDS ───────────────────
   • idle / confirm — the contract's own label; `confirm` adds the contract's own
     confirmation sentence above it when the action is irreversible.
   • pending — the same label with a spinner, and the button disabled, so a second
@@ -510,6 +510,11 @@ struct ApplicantPill: View {
   • failed — a retry glyph. No sentence is invented: the card still carries the
     last confirmed content, and the glyph says this tap did not land.
     (`arrow.clockwise` is a STATE glyph; the app has no icon of its own for it.)
+  • expired capability — the SAME button and the SAME label, but it is a link that
+    opens the task in the app. A capability the app can no longer renew (it has not
+    run for longer than the capability's life) cannot perform anything from the
+    widget, so the card routes the tap somewhere it CAN be completed instead of
+    offering a button whose only outcome is "failed".
 
  Below iOS 17 a Live Activity has no interactive controls, so nothing is drawn:
  a button that did nothing would be worse than no button. The card's own tap
@@ -536,6 +541,13 @@ struct TaskActionRow: View {
     private var isPending: Bool { state.actionState == "pending" }
     private var isFailed: Bool { state.actionState == "failed" }
 
+    /// Where the fallback goes: the task, in the app — the same destination the
+    /// card's own tap already uses (`widgetURL`), never a new route.
+    private var openInAppURL: URL? {
+        if let raw = state.deepLink, !raw.isEmpty, let url = URL(string: raw) { return url }
+        return URL(string: "https://joba24.com/?open_task=\(taskId)")
+    }
+
     var body: some View {
         if let action = action {
             VStack(alignment: .leading, spacing: 6) {
@@ -547,17 +559,34 @@ struct TaskActionRow: View {
                         .minimumScaleFactor(0.85)
                 }
                 if #available(iOS 17.0, *) {
-                    Button(intent: JobaTaskActionIntent(
-                        taskId: taskId,
-                        role: role,
-                        actionId: action.id,
-                        expectedStep: action.step
-                    )) {
-                        label(for: action)
+                    // ── CAN THIS TAP WORK AT ALL? ────────────────────────────
+                    // The capability the intent would send expires on the server's
+                    // clock, and it can only be renewed by the app. When it has
+                    // already expired — the app has not been opened for a while —
+                    // a Button could do nothing but fail after a round trip. So the
+                    // SAME button becomes a link to the task in the app, which mints
+                    // a fresh capability and offers the action there. The label is
+                    // unchanged: the card never invents wording, it only changes
+                    // where the tap goes.
+                    if JobaActivityAuthStore.canAct(taskId: taskId, role: role) {
+                        Button(intent: JobaTaskActionIntent(
+                            taskId: taskId,
+                            role: role,
+                            actionId: action.id,
+                            expectedStep: action.step
+                        )) {
+                            label(for: action)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isPending)
+                        .accessibilityLabel(Text(action.label))
+                    } else if let url = openInAppURL {
+                        Link(destination: url) {
+                            label(for: action)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(action.label))
                     }
-                    .buttonStyle(.plain)
-                    .disabled(isPending)
-                    .accessibilityLabel(Text(action.label))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

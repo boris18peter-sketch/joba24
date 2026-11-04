@@ -329,6 +329,7 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         JobaActivityAuthStore.store(
             endpoint: call.getString("endpoint"),
             token: call.getString("token"),
+            expiresAt: Self.expirySeconds(call),
             taskId: taskId,
             role: role
         )
@@ -362,9 +363,19 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc public func setUserActionAuth(_ call: CAPPluginCall) {
         JobaActivityAuthStore.storeUserCapability(
             endpoint: call.getString("endpoint"),
-            token: call.getString("token")
+            token: call.getString("token"),
+            expiresAt: Self.expirySeconds(call)
         )
         call.resolve(["stored": JobaActivityAuthStore.userToken() != nil])
+    }
+
+    /// The capability's expiry in epoch SECONDS, from the `expiresAtMs` the app
+    /// sends. Absent or unparseable means "no recorded expiry", which the store
+    /// treats as unusable — the card then offers the open-in-app fallback instead
+    /// of a tap that could only fail.
+    private static func expirySeconds(_ call: CAPPluginCall) -> Double? {
+        guard let ms = call.getDouble("expiresAtMs"), ms > 0 else { return nil }
+        return ms / 1000
     }
 
     // MARK: - Push token

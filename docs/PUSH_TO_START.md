@@ -276,3 +276,123 @@ third, non-allowlisted user and repeat T2/T3. Expected: no card, no dispatch row
   wants the module-qualified form.
 * One card at a time on a device: the bridge still tracks the single active task,
   exactly as the banner does.
+
+---
+
+## 11. Capability lifetime — the honest limitation
+
+### What expires, and when
+
+| Capability | Where it lives | Life | Renewed by |
+| --- | --- | --- | --- |
+| Per card (`tid` + `role`) | App Group, written by the app | The task's own horizon + 12h margin, floor 24h, **cap 7 days** | The app, on every successful content pass |
+| Install-scoped (`scope: 'user'`, no task) | App Group, written by the app | **12 hours** | The app, on launch and at least every 6h while it runs |
+
+Only the app holds a session, so only the app can mint. That is the whole
+limitation, and it is structural: the widget extension has no session and must not
+have one.
+
+### The scenario in the brief
+
+> The app is opened once, then not for 48 hours. A new task starts a card remotely.
+> The user taps the action.
+
+**Yes — without the change in this build, that tap failed.** The install capability
+had expired 36 hours earlier, so `verifyActionToken` answered `expired`, and the
+card showed the retry glyph: a failure the user could not fix by retrying.
+
+**What it does now.** The expiry is stored next to the token, so the card answers
+the question *before* anyone taps. With no usable capability the button is drawn
+**unchanged** — same label, same size, same colour — but it is a **link to the
+task** in the app, using the card's existing deep link. The app opens on that task,
+mints a fresh capability and the action is available there. One tap, no dead end,
+no round trip spent proving the obvious.
+
+If the capability expires *between* the render and the tap (a rare race), the
+intent reports `capability_expired` — a named stage, not a generic `http_401` — and
+the card re-draws itself as the link, because the store knows the same expiry.
+
+### Why the life was not simply extended
+
+A longer-lived install capability is a bearer credential for the whole user, held
+on a device, bounded only by time. Extending it trades a security property for
+convenience with no ceiling — and it would still fail at *some* duration (a week,
+a month), just later. The fallback fails gracefully at any duration instead.
+
+Also rejected: carrying the capability in the start push payload. That payload is
+the Live Activity content, and content is **displayed on the Lock Screen**, so a
+credential there is disclosed by showing the card. `payloadLeaks()` refuses to
+build such a payload.
+
+### What is still true while the capability lives (12h)
+
+Unattended taps work fully: worker steps and publisher approval both submit from
+the Lock Screen with the app closed, and the server re-derives authorization from
+the record on every call — an expired task, a cancellation or a reassignment still
+refuses.
+
+---
+
+## 12. Device-state matrix (to be filled by the two-device run)
+
+Each cell must be observed on a physical device and recorded with the row that
+proves it. "Card" = what appears on the Lock Screen; "tap" = the interactive
+action; "update" = a server push changing the card.
+
+| App state | Push-to-Start | Update | Interactive tap |
+| --- | --- | --- | --- |
+| **Foreground** | not used (the app starts the card itself) | applies in place | works; `applied` stage |
+| **Background / suspended** | card appears | card refreshes, same `activityId` | works inside the capability window |
+| **Terminated by iOS** (swiped away by the system, not by the user) | expected: card appears — confirm | expected: refreshes — confirm | expected: works — confirm |
+| **Force-quit by the user** (swipe up in the app switcher) | expected: **no** card, because iOS ends an app's Live Activities on force-quit — confirm the observation, do not rely on it | n/a | n/a |
+| **Capability expired** (app not opened for 13h) | card still appears | card still refreshes (updates need no capability) | **link → opens the task**; no dead tap. Server row shows `expired` if the race is hit |
+| **Multiple devices** | card appears on each allowlisted device independently | each updates independently | works per device; ending on one does not silently close the other without the `end` event |
+
+Proof per cell: `LiveActivityDispatch` (`event`, `status`, `apns_status`),
+`LiveActivityDeviceEvent` (`event`, `reason`, `revision`), and for taps the App
+Group stages forwarded by the app (`applied`, `capability_expired`,
+`no_capability`, `http_409_stale_step`, `network_error`).
+
+The four app states are **not** interchangeable and must be tested separately:
+"terminated by iOS" and "force-quit" are different states to the system, and the
+second is the one where a silently dead card would be undetectable.
+
+---
+
+## 13. Truly unattended actions — the only secure path (deliberately NOT in this build)
+
+The fallback closes the dead tap, but it does not make a tap unattended after the
+capability's life. If full unattended operation across days is required, there is
+exactly one design that satisfies every constraint in the brief at once:
+
+**A device key, in the Secure Enclave.**
+
+1. On first run the app creates a non-exportable P-256 key in the Keychain
+   (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`) and registers the **public**
+   key with the server.
+2. The intent signs a canonical string — `task, role, action, expected_step,
+   timestamp` — with that key. No bearer token exists at all.
+3. The endpoint verifies the signature against the registered public key, checks the
+   timestamp window, then re-derives authorization from the task record exactly as
+   it does today.
+
+It satisfies the brief literally: nothing long-lived is embedded in an APNs payload
+(the key never leaves the device), the capability's life stops mattering (no
+bearer), and server-side authorization is **stronger** — a signature over the exact
+request, on a key that cannot be copied off the device by anyone who reads the
+container.
+
+What it costs: a new Swift file compiled into **both** targets (a generator
+change, with the same membership gate), a new endpoint plus P-256 verification, a
+public-key record per device, key rotation and revocation on sign-out, and its own
+security review.
+
+**Why it is not in this build:** it introduces a second authentication primitive —
+one that outlives every session — in the same release that first puts a remotely
+started card on a Lock Screen. Debugging two credential systems at once is how a
+subtle authorization bug ships. The fallback ships now, keeps the allowlist and
+keeps global rollout off; the device key is its own change, with its own review.
+
+Until then, the honest statement is: **an unattended Lock Screen tap is guaranteed
+for 12 hours after the app last ran; after that the same button opens the task in
+the app.**

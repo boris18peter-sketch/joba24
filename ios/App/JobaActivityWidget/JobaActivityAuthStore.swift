@@ -43,6 +43,60 @@ enum JobaActivityAuthStore {
     /// The install-scoped capability key (see `storeUserCapability`).
     static let userTokenKey = "joba24.liveactivity.actionToken.user"
 
+    static let userExpiryKey = "joba24.liveactivity.actionExpiry.user"
+
+    static func expiryKey(taskId: String, role: String) -> String {
+        "joba24.liveactivity.actionExpiry.\(role).\(taskId)"
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // CAN THIS CARD ACT AT ALL?
+    // ══════════════════════════════════════════════════════════════════════════
+    //
+    // ── WHY THE WIDGET MUST KNOW THE EXPIRY ─────────────────────────────────
+    // A capability expires on the server's clock, and the intent only learns that
+    // AFTER the request — so a card whose capability died hours ago used to offer
+    // a button whose only possible outcome was a retry glyph. The user taps, waits
+    // for a round trip, and is told it failed. Nothing they can do.
+    //
+    // The expiry is stored next to the token, so the Lock Screen can answer the
+    // question BEFORE anyone taps: with no usable capability the card draws the
+    // same button as a LINK that opens the task in the app, where a session mints a
+    // fresh one and the action is available. That is the safe fallback — never a
+    // dead tap, never a wider credential.
+    //
+    // ── WHY A MISSING EXPIRY COUNTS AS UNUSABLE ─────────────────────────────
+    // A token written before this field existed has no recorded expiry. Treating
+    // "unknown" as "still valid" would keep the dead-tap behaviour forever; treating
+    // it as unusable costs one tap that opens the app — which then mints a fresh,
+    // fully described capability. The fallback is the safe direction.
+    static func isUsable(token: String?, expiresAt: Double?, now: Date = Date()) -> Bool {
+        guard let token = token, !token.isEmpty else { return false }
+        guard let expiresAt = expiresAt, expiresAt > 0 else { return false }
+        return expiresAt > now.timeIntervalSince1970
+    }
+
+    static func userCapabilityExpiry() -> Double? {
+        guard let value = defaults?.object(forKey: userExpiryKey) as? Double else { return nil }
+        return value
+    }
+
+    static func expiry(taskId: String, role: String) -> Double? {
+        guard let value = defaults?.object(forKey: expiryKey(taskId: taskId, role: role)) as? Double else {
+            return nil
+        }
+        return value
+    }
+
+    /// Whether ANY capability this card can use is still valid — the card's own
+    /// first, then the install's, exactly the order the intent selects them in.
+    static func canAct(taskId: String, role: String, now: Date = Date()) -> Bool {
+        if isUsable(token: token(taskId: taskId, role: role), expiresAt: expiry(taskId: taskId, role: role), now: now) {
+            return true
+        }
+        return isUsable(token: userToken(), expiresAt: userCapabilityExpiry(), now: now)
+    }
+
     static var defaults: UserDefaults? {
         UserDefaults(suiteName: appGroup)
     }
@@ -80,16 +134,24 @@ enum JobaActivityAuthStore {
     }
 
     /// Store (or, when `token` is nil/empty, CLEAR) the install-scoped capability.
-    static func storeUserCapability(endpoint: String?, token: String?) {
+    static func storeUserCapability(endpoint: String?, token: String?, expiresAt: Double? = nil) {
         guard let defaults = defaults else { return }
         if let endpoint = endpoint, endpoint.hasPrefix("https://") {
             defaults.set(endpoint, forKey: endpointKey)
         }
         if let token = token, !token.isEmpty {
             defaults.set(token, forKey: userTokenKey)
+            // The expiry travels with the token so the card can tell, without a
+            // round trip, whether tapping it could work at all.
+            if let expiresAt = expiresAt, expiresAt > 0 {
+                defaults.set(expiresAt, forKey: userExpiryKey)
+            } else {
+                defaults.removeObject(forKey: userExpiryKey)
+            }
         } else {
             // A cleared capability must never be reused by a later tap.
             defaults.removeObject(forKey: userTokenKey)
+            defaults.removeObject(forKey: userExpiryKey)
         }
     }
 
@@ -100,7 +162,7 @@ enum JobaActivityAuthStore {
     }
 
     /// Store (or, when `token` is nil/empty, CLEAR) this pair's capability.
-    static func store(endpoint: String?, token: String?, taskId: String, role: String) {
+    static func store(endpoint: String?, token: String?, expiresAt: Double? = nil, taskId: String, role: String) {
         guard let defaults = defaults else { return }
         // Only an https endpoint is ever persisted. A scheme URL (the
         // `capacitor://localhost` one the old bridge wrote) cannot be requested by
@@ -109,16 +171,24 @@ enum JobaActivityAuthStore {
             defaults.set(endpoint, forKey: endpointKey)
         }
         let key = tokenKey(taskId: taskId, role: role)
+        let expKey = expiryKey(taskId: taskId, role: role)
         if let token = token, !token.isEmpty {
             defaults.set(token, forKey: key)
+            if let expiresAt = expiresAt, expiresAt > 0 {
+                defaults.set(expiresAt, forKey: expKey)
+            } else {
+                defaults.removeObject(forKey: expKey)
+            }
         } else {
             // A cleared capability must never be reused by a later tap.
             defaults.removeObject(forKey: key)
+            defaults.removeObject(forKey: expKey)
         }
     }
 
     static func clear(taskId: String, role: String) {
         defaults?.removeObject(forKey: tokenKey(taskId: taskId, role: role))
+        defaults?.removeObject(forKey: expiryKey(taskId: taskId, role: role))
     }
 
     // ══════════════════════════════════════════════════════════════════════════

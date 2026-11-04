@@ -96,6 +96,19 @@ function timeZone() {
   }
 }
 
+/**
+ * An ISO expiry as epoch milliseconds, or undefined.
+ *
+ * The native side stores it beside the capability so the Lock Screen can answer
+ * "can this tap work?" without a round trip. An unparseable value is passed as
+ * undefined rather than 0: the store then records no expiry, which it treats as
+ * unusable — the safe direction, because the card falls back to opening the app.
+ */
+function expiryMs(value) {
+  const ms = Date.parse(String(value || ''));
+  return Number.isFinite(ms) ? ms : undefined;
+}
+
 /** Whether this device can show a Live Activity at all, and why not. */
 export async function liveActivityAvailability() {
   if (!isLiveActivityNative()) return { available: false, reason: 'not_native' };
@@ -163,6 +176,10 @@ export async function syncActivityAction({ taskId, role = 'publisher' } = {}) {
       role,
       endpoint: actionEndpoint(),
       token,
+      // The expiry, so the Lock Screen can tell BEFORE a tap whether this card can
+      // still act. Without it the card would offer a button whose only possible
+      // outcome is "failed" — see the store's `canAct`.
+      expiresAtMs: expiryMs(response?.data?.expires_at),
     });
     return { ok: stored?.stored === true, expiresAt: response?.data?.expires_at || null };
   } catch {
@@ -438,7 +455,13 @@ export async function syncUserActionCapability() {
     const response = await base44.functions.invoke('issueLiveActivityActionToken', { scope: 'user' });
     const token = response?.data?.token;
     if (!token) return { ok: false, reason: response?.data?.error || 'no_token' };
-    const stored = await JobaActivity.setUserActionAuth({ endpoint: actionEndpoint(), token });
+    const stored = await JobaActivity.setUserActionAuth({
+      endpoint: actionEndpoint(),
+      token,
+      // Same reason as the per-card capability: the card must be able to tell
+      // whether this install's capability is still alive before it offers a tap.
+      expiresAtMs: expiryMs(response?.data?.expires_at),
+    });
     return { ok: stored?.stored === true, at: Date.now(), expiresAt: response?.data?.expires_at || null };
   } catch {
     return { ok: false, reason: 'mint_failed' };

@@ -199,6 +199,19 @@ struct JobaTaskActionIntent: LiveActivityIntent {
                 return .result()
             }
 
+            // ── THE CAPABILITY, NOT THE ACTION, WAS REFUSED ──────────────────
+            // Named apart from a generic refusal: this is the one failure a retry
+            // cannot fix, and the one an operator must be able to see (a card whose
+            // capability expired before anyone tapped it — the app has not run for
+            // longer than the capability's life). The card is left as failed, which
+            // is also what makes the widget re-draw this button as the open-in-app
+            // link, because the store knows the same expiry.
+            if Self.isCredentialRefusal(decoded?.error, status: status) {
+                stage("capability_expired", decoded?.error ?? "")
+                await fail(activity, current)
+                return .result()
+            }
+
             // A refusal against a card that already matched the server is a real
             // failure. The card keeps the last confirmed content and shows that
             // this tap did not land.
@@ -220,6 +233,17 @@ struct JobaTaskActionIntent: LiveActivityIntent {
     /// Record one stage of this attempt. Never contains the token or a body.
     private func stage(_ name: String, _ detail: String = "") {
         JobaActivityAuthStore.record(stage: name, taskId: taskId, role: role, detail: detail)
+    }
+
+    /// Did the endpoint refuse the CAPABILITY rather than the action?
+    /// A retry cannot fix any of these; opening the app can.
+    private static func isCredentialRefusal(_ error: String?, status: Int) -> Bool {
+        let named = [
+            "expired", "missing_token", "bad_signature", "malformed",
+            "unsupported_version", "not_yet_valid", "no_secret",
+        ]
+        if let error = error, named.contains(error) { return true }
+        return status == 401
     }
 
     /// Did the server's answer show that the card — not the tap — was out of date?
