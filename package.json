@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.58",
+    "@base44/sdk": "^0.8.59",
     "@base44/vite-plugin": "^1.0.51",
     "@capacitor-firebase/analytics": "^8.5.2",
     "@capacitor-firebase/messaging": "^8.4.0",
