@@ -50,6 +50,15 @@ Two independent guarantees, so a duplicate card is not possible even if one of
 them is bypassed: the plugin's `start` also ends any existing activity for the
 same (task, role) before requesting a new one.
 
+A third one covers the case the state row alone cannot: **a start is claimed
+before it is sent.** A task is usually written several times within a second
+(create, then translations, then a price), and each write triggers a dispatch. A
+start first writes revision 1 with `last_decision: 'start_claimed'`, so the second
+run backs off by name; if two runs still claim at the same instant, the lower row
+id wins and the other deletes its own claim. A claim that delivered nothing is
+released (`start_released`, revision 0) and can be taken again, so a failed attempt
+never leaves a pair un-startable.
+
 ## 3. What was added
 
 | Layer | Change |
