@@ -725,3 +725,61 @@ extension"), so the pipeline stayed green while shipping a dead button.
 5. A tap that cannot proceed now appears as `action_failed` with the stage:
    `no_capability` (no mint yet), `no_endpoint`, `network_error`,
    `http_409:stale_step`, `http_401:expired`, `activity_missing`, `action_missing`.
+
+## 13. Visual identity = ActiveTaskBanner (2026-11-04)
+
+The Lock Screen card now copies the in-app task banner instead of carrying its own
+native visual language. `src/components/ActiveTaskBanner.jsx` is the reference and
+is unchanged; `test/liveActivity/widgetDesign.test.js` (24 tests) pins the parity,
+reading the banner and `src/index.css` as the source of truth.
+
+### 13.1 Assets reused — no approximations
+
+| In-app (lucide, via `ICON_MAP`) | Lock Screen |
+| --- | --- |
+| `Navigation` (step `navigation`, action `on_the_way`) | `JobaGlyph.navigation` |
+| `MapPin` (step `map_pin`, action `arrived`) | `JobaGlyph.map_pin` |
+| `CheckCircle` (`check`, done + publisher approve, action `done`) | `JobaGlyph.check` |
+| `Package` / `Truck` / `Heart` / `BookOpen` / `Camera` | same names |
+| `Calendar` (engagement hero) | `JobaGlyph.calendar` |
+| `person` (applicant count, was SF `person.2.fill`) | `JobaGlyph.person` |
+
+The shapes are lucide's **own path data** (v0.475.0, the version the app installs),
+reproduced verbatim: same 24×24 box, stroke 2, round caps and joins, circles and
+arcs pre-flattened to cubics. Nothing is re-drawn by eye.
+
+### 13.2 Native assets created
+
+None. No asset catalog, no PDF/SVG resources, no Resources build phase — so the
+generated project needs no new plumbing and the icons stay vector at every size.
+
+### 13.3 SF Symbols removed
+
+`location.north.fill`, `mappin.and.ellipse`, `checkmark.circle.fill`,
+`shippingbox.fill`, `dot.radiowaves.left.and.right`, `person.2.fill`, and the
+`calendar` symbol are gone. **One** remains: `arrow.clockwise`, for the "this tap
+did not land" state — the app has no icon of its own for it, and it is a state
+rather than an action.
+
+### 13.4 What changed visually
+
+- **Hero** is the banner's rounded **square** (44×44 / radius 14 ratio), filled
+  `--brand-primary-light` with a `--border-2` outline, glyph in brand blue (or
+  success green when the work is done) — it was a tinted circle.
+- **Progress** is the banner's 3-step rail: circles holding each step's own glyph,
+  filled brand blue with a white glyph when reached, the light-blue halo on the
+  current one, a label under each circle, and the connector filling from the first
+  circle to the current one (the banner's 16% / 50% / 84%).
+- **Action** is the banner's primary button: full width, 14pt radius, the approved
+  green gradient (`#059669 → #047857`), 46pt tall, with the same icon as the
+  in-app button.
+- **Colours** are the app tokens themselves (`--brand-primary`, `--color-success`,
+  `--brand-accent-dark`, `--text-1/2/3`, `--border-1/2`, `--surface-2`).
+- **Contrast**: the card is pinned white with the app's dark type; the Dynamic
+  Island keeps `.primary`/`.secondary`, because its own surface is black. Same
+  components on both.
+
+### 13.5 Untouched
+
+`TaskActionRow`'s intent wiring, confirmation step, pending/failed states and the
+whole action path from §12 are unchanged; the banner file itself is not modified.
