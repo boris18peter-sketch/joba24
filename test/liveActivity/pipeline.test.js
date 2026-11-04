@@ -21,15 +21,15 @@ import { fileURLToPath } from 'node:url';
  * sentence. Every test in the "output contract" block below runs the real
  * command line and would have failed before the fix.
  *
- * The rest covers the other stages that can only be proven by executing the
- * shipped scripts: project generation, the report the workflow reads, and the
- * profile → export-options mapping that decides which profile signs what.
+ * The rest covers the other stage that can only be proven by executing the
+ * shipped script: project generation, and the report the workflow reads back.
+ * The signing pipeline (profile audit, selection, export options and the .ipa
+ * check) lives in test/liveActivity/signing.test.js.
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(here, '../..');
 const PATCHER = join(ROOT, 'scripts/patch-ios-live-activity.py');
-const EXPORT_OPTIONS = join(ROOT, 'scripts/ios-export-options.py');
 const PROJECT = join(ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
 const APP_INFO = join(ROOT, 'ios/App/App/Info.plist');
 const WIDGET_INFO = join(ROOT, 'ios/App/JobaActivityWidget/Info.plist');
@@ -37,7 +37,6 @@ const CODEMAGIC = join(ROOT, 'codemagic.yaml');
 
 const APP_BUNDLE_ID = 'com.joba24.preflight.app';
 const WIDGET_BUNDLE_ID = `${APP_BUNDLE_ID}.JobaActivityWidget`;
-const TEAM_ID = 'TEAM123456';
 
 const read = (path) => readFileSync(path, 'utf8');
 
@@ -221,281 +220,13 @@ describe('the report proves what the archive needs', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
-   3. SIGNING — profile → export options, by bundle id
-   ══════════════════════════════════════════════════════════════════════════ */
-function profileXml(name, bundleId, team = TEAM_ID) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>Name</key>
-	<string>${name}</string>
-	<key>TeamIdentifier</key>
-	<array>
-		<string>${team}</string>
-	</array>
-	<key>Entitlements</key>
-	<dict>
-		<key>application-identifier</key>
-		<string>${team}.${bundleId}</string>
-	</dict>
-</dict>
-</plist>
-`;
-}
-
-/** A directory holding the given profiles as .mobileprovision files. */
-function profileDir(profiles) {
-  const dir = mkdtempSync(join(tmpdir(), 'joba-profiles-'));
-  for (const [name, bundleId] of profiles) {
-    writeFileSync(join(dir, `${name}.mobileprovision`), profileXml(name, bundleId));
-  }
-  return dir;
-}
-
-function exportOptions(args) {
-  return run(EXPORT_OPTIONS, args);
-}
-
-const APP_GROUP = `group.${APP_BUNDLE_ID}`;
-
-/** A profile that also states its App Group and its expiry. */
-function profileXmlFull(name, bundleId, { groups = [], expires = null } = {}) {
-  const groupXml = groups.length
-    ? `\t\t<key>com.apple.security.application-groups</key>\n\t\t<array>\n${groups.map((g) => `\t\t\t<string>${g}</string>`).join('\n')}\n\t\t</array>\n`
-    : '';
-  const expiresXml = expires ? `\t<key>ExpirationDate</key>\n\t<date>${expires}</date>\n` : '';
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<plist version="1.0">
-<dict>
-	<key>Name</key>
-	<string>${name}</string>
-	<key>TeamIdentifier</key>
-	<array>
-		<string>${TEAM_ID}</string>
-	</array>
-${expiresXml}	<key>Entitlements</key>
-	<dict>
-		<key>application-identifier</key>
-		<string>${TEAM_ID}.${bundleId}</string>
-${groupXml}	</dict>
-</dict>
-</plist>
-`;
-}
-
-/** A directory of profiles: [{file, name, bundleId, groups, expires}]. */
-function profileFiles(entries) {
-  const dir = mkdtempSync(join(tmpdir(), 'joba-profiles-'));
-  for (const entry of entries) {
-    writeFileSync(join(dir, `${entry.file}.mobileprovision`),
-      profileXmlFull(entry.name, entry.bundleId, entry));
-  }
-  return dir;
-}
-
-describe('export options map one profile per bundle id', () => {
-  it('names a profile for the app AND the extension when the widget is on', () => {
-    const dir = profileDir([['Joba24 AppStore', APP_BUNDLE_ID], ['Joba24 Widget', WIDGET_BUNDLE_ID]]);
-    const out = join(dir, 'export_options.plist');
-    const report = join(dir, 'export-options.json');
-
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--widget-bundle-id', WIDGET_BUNDLE_ID, '--require-widget', 'True',
-      '--out', out, '--report', report,
-    ]);
-
-    expect(result.status).toBe(0);
-    const options = read(out);
-    expect(options).toContain('<string>manual</string>');
-    expect(options).toContain('<string>app-store-connect</string>');
-    expect(options).toContain('<string>Joba24 AppStore</string>');
-    expect(options).toContain('<string>Joba24 Widget</string>');
-    // The team id comes from the profile itself - no hardcoded value in the step.
-    expect(options).toContain(TEAM_ID);
-    // Same contract as the generator: one JSON document in its own file.
-    expect(JSON.parse(read(report)).ok).toBe(true);
-  });
-
-  it('leaves the shipping build as a single-profile export', () => {
-    const dir = profileDir([['Joba24 AppStore', APP_BUNDLE_ID]]);
-    const out = join(dir, 'export_options.plist');
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--widget-bundle-id', WIDGET_BUNDLE_ID, '--require-widget', 'false',
-      '--out', out,
-    ]);
-
-    expect(result.status).toBe(0);
-    const options = read(out);
-    expect(options).toContain('<string>Joba24 AppStore</string>');
-    expect(options).not.toContain(WIDGET_BUNDLE_ID);
-  });
-
-  it('keeps the legacy single-profile fallback, and only when there is one', () => {
-    const single = profileDir([['Only Profile On Disk', 'com.something.else']]);
-    const singleOut = join(single, 'eo.plist');
-    const singleRun = exportOptions([
-      '--profiles-dir', single, '--app-bundle-id', APP_BUNDLE_ID, '--out', singleOut,
-    ]);
-    expect(singleRun.status).toBe(0);          // no widget profile required
-    expect(read(singleOut)).toContain('Only Profile On Disk');
-
-    // With two profiles on disk an unmatched app id is an error: the old shell
-    // loop silently exported the app with whichever profile sorted first.
-    const two = profileDir([['Widget Only', WIDGET_BUNDLE_ID], ['Someone Else', 'com.other.app']]);
-    const twoRun = exportOptions([
-      '--profiles-dir', two, '--app-bundle-id', APP_BUNDLE_ID, '--out', join(two, 'eo.plist'),
-    ]);
-    expect(twoRun.status).toBe(1);
-    expect(twoRun.stderr).toContain('no provisioning profile matches the app bundle id');
-  });
-
-  it('refuses to export a widget build without the extension profile', () => {
-    const dir = profileDir([['Joba24 AppStore', APP_BUNDLE_ID]]);
-    const out = join(dir, 'eo.plist');
-    const report = join(dir, 'eo.json');
-
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--widget-bundle-id', WIDGET_BUNDLE_ID, '--require-widget', 'true',
-      '--out', out, '--report', report,
-    ]);
-
-    expect(result.status).toBe(1);
-    expect(existsSync(out)).toBe(false);
-    const parsed = JSON.parse(read(report));
-    expect(parsed.ok).toBe(false);
-    expect(parsed.error).toContain(WIDGET_BUNDLE_ID);
-  });
-
-  it('refuses an unresolvable widget flag instead of defaulting to off', () => {
-    const dir = profileDir([['Joba24 AppStore', APP_BUNDLE_ID]]);
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--require-widget', 'maybe', '--out', join(dir, 'eo.plist'),
-    ]);
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('must be true or false');
-  });
-
-  it('fails clearly when no profiles were downloaded at all', () => {
-    const empty = mkdtempSync(join(tmpdir(), 'joba-no-profiles-'));
-    const result = exportOptions([
-      '--profiles-dir', empty, '--app-bundle-id', APP_BUNDLE_ID, '--out', join(empty, 'eo.plist'),
-    ]);
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('no provisioning profiles found');
-  });
-});
-
-/* ── SEVERAL PROFILES FOR ONE BUNDLE ID ─────────────────────────────────────
-   App Store Connect often holds more than one profile for the same bundle id:
-   an old one minted before a capability existed, and the current one. Both
-   report the SAME bundle id, so matching on it alone would be a coin flip and
-   could sign the build with a profile that has no App Group. These tests pin
-   the rule that decides between them. */
-describe('profile selection prefers the profile that carries the App Group', () => {
-  it('skips an older profile for the same bundle id that has no App Group', () => {
-    const dir = profileFiles([
-      { file: 'OLD', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, expires: '2027-06-01T00:00:00Z' },
-      { file: 'NEW', name: 'Joba24 AppStore 2026', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2026-12-01T00:00:00Z' },
-    ]);
-    const out = join(dir, 'eo.plist');
-    const report = join(dir, 'eo.json');
-
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--require-app-group', APP_GROUP, '--out', out, '--report', report,
-    ]);
-
-    expect(result.status).toBe(0);
-    const options = read(out);
-    // The newer NAME is on the older file, so a "pick the newest expiry" rule
-    // alone would get this wrong: the entitlement decides first.
-    expect(options).toContain('Joba24 AppStore 2026');
-    const parsed = JSON.parse(read(report));
-    expect(parsed.app.groups).toEqual([APP_GROUP]);
-    expect(parsed.app.file).toBe('NEW.mobileprovision');
-  });
-
-  it('refuses a bundle id whose only profile lacks the App Group', () => {
-    const dir = profileFiles([
-      { file: 'OLD', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, expires: '2027-06-01T00:00:00Z' },
-    ]);
-    const out = join(dir, 'eo.plist');
-
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--require-app-group', APP_GROUP, '--out', out,
-    ]);
-
-    expect(result.status).toBe(1);
-    expect(existsSync(out)).toBe(false);
-    expect(result.stderr).toContain(APP_GROUP);
-    expect(result.stderr).toContain('no App Group');
-  });
-
-  it('refuses two valid profiles that share a name, because Xcode picks by name', () => {
-    const dir = profileFiles([
-      { file: 'A', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2027-01-01T00:00:00Z' },
-      { file: 'B', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2026-11-01T00:00:00Z' },
-    ]);
-    const out = join(dir, 'eo.plist');
-
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--require-app-group', APP_GROUP, '--out', out,
-    ]);
-
-    expect(result.status).toBe(1);
-    expect(existsSync(out)).toBe(false);
-    expect(result.stderr).toContain('share the name');
-  });
-
-  it('prefers the later expiry when both are equally valid, and deterministically', () => {
-    const dir = profileFiles([
-      { file: 'A', name: 'Joba24 App A', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2026-12-01T00:00:00Z' },
-      { file: 'B', name: 'Joba24 App B', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP], expires: '2027-12-01T00:00:00Z' },
-    ]);
-    const out = join(dir, 'eo.plist');
-
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--require-app-group', APP_GROUP, '--out', out,
-    ]);
-
-    expect(result.status).toBe(0);
-    expect(read(out)).toContain('Joba24 App B');
-  });
-
-  it('applies the same rule to the widget extension', () => {
-    const dir = profileFiles([
-      { file: 'APP', name: 'Joba24 AppStore', bundleId: APP_BUNDLE_ID, groups: [APP_GROUP] },
-      { file: 'W_OLD', name: 'Joba24 Widget', bundleId: WIDGET_BUNDLE_ID },
-      { file: 'W_NEW', name: 'Joba24 Widget 2026', bundleId: WIDGET_BUNDLE_ID, groups: [APP_GROUP] },
-    ]);
-    const out = join(dir, 'eo.plist');
-
-    const result = exportOptions([
-      '--profiles-dir', dir, '--app-bundle-id', APP_BUNDLE_ID,
-      '--widget-bundle-id', WIDGET_BUNDLE_ID, '--require-widget', 'true',
-      '--require-app-group', APP_GROUP, '--out', out,
-    ]);
-
-    expect(result.status).toBe(0);
-    const options = read(out);
-    expect(options).toContain('Joba24 Widget 2026');
-    expect(options).not.toContain('<string>Joba24 Widget</string>');
-  });
-
-  it('is required by the workflow, so a stale profile can never be exported', () => {
-    const workflow = read(CODEMAGIC);
-    const step = workflow.slice(workflow.indexOf('python3 scripts/ios-export-options.py'));
-    expect(step.slice(0, 700)).toContain('--require-app-group "group.$BUNDLE_ID"');
-  });
-});
+   3. SIGNING
+   ══════════════════════════════════════════════════════════════════════════
+   The profile → export-options mapping that used to live here moved to
+   `scripts/ios-signing.py`, together with the audit, the deduplication and the
+   certificate check that decide WHICH profile that mapping may use at all.
+   test/liveActivity/signing.test.js owns all of it, and exercises the real
+   contract end to end: select → export-options → verify-ipa. */
 
 /* ══════════════════════════════════════════════════════════════════════════
    3b. THE REAL STEP, EXECUTED — both build modes
@@ -621,17 +352,22 @@ describe('ios-workflow wiring', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('builds the export options with the tested script, then exports', () => {
-    expect(yaml).toContain('python3 scripts/ios-export-options.py');
+  it('selects the signing profiles, then builds the export options from them', () => {
+    // One script decides which profile signs what: it audits, dedupes, verifies
+    // and prunes, and the export consumes that decision instead of rescanning.
+    expect(yaml).toContain('scripts/ios-signing.py select');
     expect(yaml).toContain('--app-bundle-id "$BUNDLE_ID"');
     expect(yaml).toContain('--widget-bundle-id "$WIDGET_BUNDLE_ID"');
     expect(yaml).toContain('--require-widget "${ENABLE_LIVE_ACTIVITY_WIDGET:-false}"');
+    expect(yaml).toContain('scripts/ios-signing.py export-options');
     expect(yaml).toContain('--out "$CM_BUILD_DIR/export_options.plist"');
     // The export itself is unchanged and still uses that file.
     expect(yaml).toMatch(/- name: Export ipa\n        script: \|\n(?:.*\n)*?          xcodebuild -exportArchive/);
     expect(yaml).toContain('-exportOptionsPlist "$CM_BUILD_DIR/export_options.plist"');
     // No inline heredoc plist can drift from the script's contract.
     expect(yaml).not.toContain('<key>provisioningProfiles</key>');
+    // The script that used to scan the directory on its own is gone for good.
+    expect(yaml).not.toContain('scripts/ios-export-options.py');
   });
 
   it('gates every widget step on the resolved flag', () => {

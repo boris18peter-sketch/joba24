@@ -198,7 +198,7 @@ That is the whole error. The project itself was fine — the log's own
 dependency and the compilation condition were all present.
 
 The contract is now split by purpose, in the generator and in
-`scripts/ios-export-options.py` alike:
+`scripts/ios-signing.py` alike:
 
 | stream | carries |
 | --- | --- |
@@ -222,12 +222,28 @@ Under `set -e` that aborts the step, so the export would have died before
 `xcodebuild` was called. It was also untestable: it needed macOS, a keychain and
 real profiles, so nothing could prove which profile a bundle id would receive.
 
-`scripts/ios-export-options.py` replaces it: the mapping is a pure function over
-decoded profiles, the team id is taken from the app profile itself instead of a
-hardcoded string, a widget build fails loudly when the extension's profile is
-missing, and a *single* profile on disk still works exactly as before (the
-widget-disabled path is byte-identical in behaviour). Covered by
-`test/liveActivity/pipeline.test.js`.
+That step is gone. Signing is now decided in exactly ONE place —
+`scripts/ios-signing.py` — and it does more than map a bundle id to a name,
+because App Store Connect can hold several profiles for the same bundle id (a
+valid one and historical ones reported *Invalid*), and Xcode resolves a profile
+by **name**.
+
+| subcommand | what it guarantees |
+| --- | --- |
+| `select` | decodes every `.mobileprovision` (UUID, name, bundle id, team, creation + expiry, entitlements, App Groups, device lists, certificates), deduplicates identical copies by UUID, rejects expired / development / ad-hoc / enterprise / wildcard / wrong-team / missing-App-Group profiles **and** any profile whose certificate is not a valid Distribution identity in this build's keychain, then picks one profile per bundle id. It refuses when two different profiles share a name, and it **moves** every other profile for these bundle ids out of Xcode's directory (into `Superseded Profiles/<timestamp>` — nothing is deleted, no Apple profile is revoked). |
+| `export-options` | writes `export_options.plist` from that report. It never rescans the directory, so the archive and the `.ipa` cannot disagree. |
+| `verify-ipa` | opens the finished `.ipa` and compares the UUIDs embedded in `App.app` and in the `.appex` with the selection, then re-checks the App Group. This is the proof, not the intention. |
+
+Why the certificate check matters: a profile reported *Invalid* in the portal
+usually has a perfectly good expiration date — its certificate was revoked. The
+SHA-1 of each `DeveloperCertificate` in the profile is matched against
+`security find-identity -v -p codesigning`, so "can this build actually sign with
+it" is answered locally, before the archive.
+
+Covered end to end by `test/liveActivity/signing.test.js` (multiple valid
+profiles, invalid historical ones, identical duplicate downloads, same-name
+conflicts, entitlement mismatches, and a real zipped `.ipa` whose embedded
+profiles are compared against the selection).
 
 ## 5g. Running the preflight locally
 
@@ -548,16 +564,20 @@ new wording arrives in the next snapshot — no archive, no TestFlight.
   auth store in **both** targets, intent in the **widget only**, plugin in the app,
   `LIVE_ACTIVITY_WIDGET` on both app configurations.
 * Codemagic: widget profile fetched with `fetch-signing-files … --create` (gated on
-  the flag), export options built by `scripts/ios-export-options.py` with
-  `--require-widget`.
+  the flag), one profile per bundle id chosen by `scripts/ios-signing.py select`
+  (which also prunes the directory Xcode reads), export options built from that
+  same report, and the finished `.ipa` verified against it by `verify-ipa`.
 
 ### 10.5 What only a human can do (Apple side)
 
 1. App Group created — **done by the owner**.
-2. **Delete the old provisioning profiles** for both bundle ids in App Store
-   Connect → Profiles, so the next `fetch-signing-files` mints profiles that carry
-   the App Group. A profile created before the capability existed does not include
-   it, and signing then fails with a mismatch.
+2. Optionally tidy App Store Connect → Profiles: it may hold several App Store
+   profiles per bundle id, including ones shown as *Invalid*. The build no longer
+   depends on that (it ignores anything it cannot verify, and moves superseded
+   downloads out of the way locally), but deleting the stale ones keeps the
+   portal honest. **Nothing in this pipeline deletes or revokes an Apple
+   profile** — if a bundle id has no usable profile left, `select` stops with the
+   list of candidates and the reason each was refused.
 3. Start the build with the `liveActivityWidget` input ticked.
 
 ### 10.6 Dry-run evidence recorded here

@@ -488,6 +488,39 @@ workflows:
         script: |
           echo "Contents of profiles directory:"
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || echo "Directory does not exist or is empty"
+      # ── THE ONE PLACE A PROFILE IS CHOSEN ──────────────────────────────────
+      # App Store Connect accumulates profiles for one bundle id: `--create`
+      # mints another, and older ones go Invalid. Every one of them reports the
+      # SAME bundle id, and Xcode resolves a profile BY NAME — so whoever scans
+      # this directory can pick a revoked or entitlement-less profile by luck.
+      #
+      # This step is the single authority. It decodes every downloaded profile
+      # (UUID, name, bundle id, team, dates, entitlements, App Groups, device
+      # lists, certificates), drops identical copies by UUID, rejects anything
+      # that cannot legally sign this build, requires the App Group, and picks
+      # ONE profile per bundle id — never by file name.
+      #
+      # Then it MOVES every other profile for these bundle ids out of the folder
+      # Xcode reads, so `xcode-project use-profiles` and the archive below can
+      # only ever see the selected one. Nothing is deleted and no Apple profile
+      # is revoked: the moved files land in "Superseded Profiles/<timestamp>"
+      # and every one is named in the report.
+      #
+      # RUNS AFTER `keychain add-certificates`: matching each profile's
+      # certificate against the installed identities is what catches an Invalid
+      # profile whose certificate was revoked — a future expiry date cannot.
+      - name: Audit and select the signing profiles (iOS)
+        script: |
+          set -e
+          python3 scripts/ios-signing.py select \
+            --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            --app-bundle-id "$BUNDLE_ID" \
+            --widget-bundle-id "$WIDGET_BUNDLE_ID" \
+            --require-widget "${ENABLE_LIVE_ACTIVITY_WIDGET:-false}" \
+            --app-group "group.$BUNDLE_ID" \
+            --report "$CM_BUILD_DIR/signing-report.json"
+          echo "=== signing-report.json (audit + the selection) ==="
+          cat "$CM_BUILD_DIR/signing-report.json"
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles --verbose
@@ -695,38 +728,17 @@ workflows:
           else
             echo "SKIPPED: TikTok credentials not provided - TikTok is WAITING FOR CREDENTIAL."
           fi
-      - name: Build export options from the downloaded profiles
+      - name: Build export options from the selected profiles (iOS)
         script: |
-          # ── ONE PROFILE PER BUNDLE ID, CHOSEN BY BUNDLE ID ──────────────────
-          # With the widget enabled there are two profiles on disk, and the
-          # export list must name one for EVERY bundle id in the archive.
-          #
-          # This was a shell loop inside this file, and it had a fault that only
-          # appears in exactly that two-profile case: the line
-          #     [ -z "$PROFILE_PATH" ] && PROFILE_PATH="$CANDIDATE"
-          # returns 1 on every iteration after the first, so under `set -e` the
-          # step aborted before xcodebuild ever ran. It was also impossible to
-          # test, because it needed macOS, a keychain and real profiles.
-          #
-          # scripts/ios-export-options.py does the same mapping as a pure function
-          # over decoded profiles, derives the team id from the app's own profile
-          # instead of hardcoding it, and is covered by
-          # test/liveActivity/pipeline.test.js. Its JSON report goes to its own
-          # file and its diagnostics go to stderr.
-          # ── AND THE PROFILE MUST CARRY THE APP GROUP ────────────────────────
-          # App Store Connect may hold several profiles for one bundle id: an old
-          # one minted before the App Group existed, and the current one. Both
-          # report the same bundle id, so a bundle-id match alone cannot tell
-          # them apart and the export could be signed with the invalid one. The
-          # App Group entitlement is what distinguishes them, so it is REQUIRED
-          # here for both ids: the step refuses an old profile by name instead of
-          # exporting a build that fails at install or loses its entitlements.
-          python3 scripts/ios-export-options.py \
-            --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles" \
-            --app-bundle-id "$BUNDLE_ID" \
-            --widget-bundle-id "$WIDGET_BUNDLE_ID" \
-            --require-app-group "group.$BUNDLE_ID" \
-            --require-widget "${ENABLE_LIVE_ACTIVITY_WIDGET:-false}" \
+          set -e
+          # ── THE EXPORT READS THE SELECTION, IT DOES NOT SCAN THE DIRECTORY ──
+          # Scanning again here was how the archive and the .ipa could end up on
+          # different profiles: `xcode-project use-profiles` writes a NAME into
+          # the project, and a second, independent scan could resolve that name
+          # to a different UUID. This step consumes the exact report the select
+          # step wrote, so the two stages cannot disagree.
+          python3 scripts/ios-signing.py export-options \
+            --selection "$CM_BUILD_DIR/signing-report.json" \
             --out "$CM_BUILD_DIR/export_options.plist" \
             --report "$CM_BUILD_DIR/export-options.json"
           echo "=== export_options.plist ==="
@@ -739,8 +751,31 @@ workflows:
             -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
             -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
             -exportOptionsPlist "$CM_BUILD_DIR/export_options.plist"
+      # ── THE PROOF, READ OUT OF THE FILE THAT SHIPS ────────────────────────
+      # Everything above asserts what we INTENDED to sign with. This opens the
+      # finished .ipa and reads the profile embedded in App.app and in the
+      # .appex, so "archive and export used the same profile" stops being a
+      # claim about configuration and becomes a fact about the artifact: each
+      # embedded UUID must equal the selected one, and each must still carry
+      # the App Group.
+      - name: Verify the exported .ipa used the selected profiles (iOS)
+        script: |
+          set -e
+          IPA=$(ls -1 "$CM_BUILD_DIR"/build/ios/ipa/*.ipa 2>/dev/null | head -1)
+          if [ -z "$IPA" ]; then
+            echo "ERROR: no .ipa was produced by the export."
+            ls -la "$CM_BUILD_DIR/build/ios/ipa" || true
+            exit 1
+          fi
+          echo "Verifying the signatures embedded in $IPA"
+          python3 scripts/ios-signing.py verify-ipa \
+            --selection "$CM_BUILD_DIR/signing-report.json" \
+            --ipa "$IPA"
     artifacts:
       - build/ios/ipa/*.ipa
+      # The decoded audit of every downloaded profile, plus the selection: this is
+      # the evidence for which profile signed what, kept with the build.
+      - build/signing-report.json
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:

@@ -349,10 +349,10 @@ describe('codemagic pipeline', () => {
 
   it('fetches the extension profile and names it in the export', () => {
     expect(yaml).toContain('app-store-connect fetch-signing-files "$WIDGET_BUNDLE_ID"');
-    // The export list is produced by the tested script (it maps one profile per
-    // bundle id), so the wiring is checked through what it is handed rather than
-    // through an inline heredoc that nothing could verify.
-    expect(yaml).toContain('python3 scripts/ios-export-options.py');
+    // The export list is produced by the tested script (it maps one verified
+    // profile per bundle id), so the wiring is checked through what it is handed
+    // rather than through an inline heredoc that nothing could verify.
+    expect(yaml).toContain('scripts/ios-signing.py export-options');
     expect(yaml).toContain('--widget-bundle-id "$WIDGET_BUNDLE_ID"');
   });
 
