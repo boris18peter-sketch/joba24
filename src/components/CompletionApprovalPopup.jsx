@@ -185,8 +185,7 @@ export default function CompletionApprovalPopup({ task, onClose }) {
           items={proofItems}
           initialIndex={lightbox}
           onClose={() => setLightbox(null)}
-        />
-        ,
+        />,
         document.body
       )}
     </>

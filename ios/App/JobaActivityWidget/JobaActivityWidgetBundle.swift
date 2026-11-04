@@ -275,7 +275,7 @@ struct StepRail: View {
     // The island keeps its compressed rail on purpose: it is a fixed box, read
     // as a position counter rather than as a flow, and its own counter line
     // carries the wording there.
-    private var diameter: CGFloat { compact ? 20 : 30 }
+    private var baseDiameter: CGFloat { compact ? 20 : 30 }
     private var glyphSize: CGFloat { compact ? 10 : 18 }
     /// The label under a step — iOS' own weight for detail text.
     private var labelSize: CGFloat { 11.5 }
@@ -291,11 +291,34 @@ struct StepRail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 0) {
-                ForEach(Array(progress.steps.enumerated()), id: \.offset) { index, step in
-                    column(index: index, step: step)
+            // ── THE RAIL IS SIZED FROM ITS OWN BOX, SO IT CANNOT BREAK ───────
+            // Each step owns an equal slot and the circle is derived FROM that
+            // slot instead of being a fixed 30pt. A flow with four or five steps,
+            // a long category label, or a large Dynamic Type setting could each
+            // push a fixed-width row past the card's edge — the circles then
+            // overlapped, the connector was cut and the last step fell outside the
+            // card. Bounded by its slot, the widest thing in the rail is always
+            // something that fits in it, whatever the step count.
+            GeometryReader { geo in
+                let count = max(progress.steps.count, 1)
+                let slot = geo.size.width / CGFloat(count)
+                // 0.52 keeps a visible gap between two neighbouring circles;
+                // 16pt is the floor at which the glyph is still recognisable.
+                let circle = min(baseDiameter, max(16, slot * 0.52))
+                HStack(spacing: 0) {
+                    ForEach(Array(progress.steps.enumerated()), id: \.offset) { index, step in
+                        column(
+                            index: index,
+                            step: step,
+                            circle: circle,
+                            glyphSide: min(glyphSize, circle * 0.6)
+                        )
+                    }
                 }
             }
+            // Declared here so the GeometryReader never takes height from the
+            // label row or the button below it.
+            .frame(height: baseDiameter + 6)
             if compact {
                 HStack(spacing: 6) {
                     if !currentLabel.isEmpty {
@@ -321,7 +344,12 @@ struct StepRail: View {
     }
 
     @ViewBuilder
-    private func column(index: Int, step: JobaTaskActivity.ContentState.StepProgress.Step) -> some View {
+    private func column(
+        index: Int,
+        step: JobaTaskActivity.ContentState.StepProgress.Step,
+        circle: CGFloat,
+        glyphSide: CGFloat
+    ) -> some View {
         let reached = index <= progress.step
         let active = index == progress.step
         // More air between a circle and its label than before: the label is
@@ -336,18 +364,20 @@ struct StepRail: View {
                         .strokeBorder(reached ? JobaPalette.brand : theme.idleBorder, lineWidth: 2)
                     JobaGlyphView(
                         glyph: JobaGlyph.forIconKey(step.icon),
-                        size: glyphSize,
+                        size: glyphSide,
                         color: reached ? .white : theme.idleGlyph
                     )
                 }
-                .frame(width: diameter, height: diameter)
-                // The banner's `0 0 0 4px --brand-primary-light` halo. Drawn as an
-                // overlay so it never changes the column's width.
+                .frame(width: circle, height: circle)
+                // The banner's `0 0 0 4px --brand-primary-light` halo: a ring just
+                // OUTSIDE the circle, never a 1.34 scale. Scaling made the halo
+                // reach into the neighbouring slot, where it sat on top of the next
+                // circle's connector and read as a broken rail.
                 .overlay {
                     if active {
                         Circle()
                             .strokeBorder(JobaPalette.brandLight, lineWidth: 3)
-                            .scaleEffect(1.34)
+                            .padding(-3)
                     }
                 }
                 halfLine(filled: index < progress.step, hidden: index == progress.steps.count - 1)
@@ -364,8 +394,15 @@ struct StepRail: View {
                 Text(step.label)
                     .font(.system(size: labelSize, weight: active ? .heavy : .semibold))
                     .foregroundStyle(active ? JobaPalette.brand : (reached ? theme.activeLabel : theme.label))
+                    // ── ONE LINE, ENDING IN DOTS ────────────────────────────────
+                    // A long label must never wrap (a second line pushes the button
+                    // out of the card) and must never widen its column (that is what
+                    // broke the rail). It scales down a little, then truncates with
+                    // an ellipsis — the app's own "there is more text here" cue.
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .truncationMode(.tail)
+                    .allowsTightening(true)
+                    .minimumScaleFactor(0.65)
                     .frame(maxWidth: .infinity)
             }
         }

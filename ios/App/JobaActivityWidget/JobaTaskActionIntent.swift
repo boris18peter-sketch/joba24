@@ -1,6 +1,7 @@
 import Foundation
 import ActivityKit
 import AppIntents
+import UIKit
 
 /**
  JobaTaskActionIntent — the Lock Screen button, as an Apple App Intent.
@@ -94,6 +95,14 @@ struct JobaTaskActionIntent: LiveActivityIntent {
     }
 
     func perform() async throws -> some IntentResult {
+        // ── FEEL THE TAP AT ONCE ─────────────────────────────────────────────
+        // This is the first line on purpose. A cold launch of an App Intent can
+        // take a second or two before anything on the card changes, and with no
+        // feedback at all the natural reaction is to press again — which is read
+        // as a second, duplicate tap. A short impact the instant the button is
+        // touched answers "did it register?" before the network is even reached.
+        await Self.feedback(.tap)
+
         // ── 1. The card this tap belongs to ──────────────────────────────────
         guard let activity = Activity<JobaTaskActivity>.activities.first(where: {
             $0.attributes.taskId == taskId && $0.attributes.role == role
@@ -180,6 +189,7 @@ struct JobaTaskActionIntent: LiveActivityIntent {
 
             if decoded?.ok == true {
                 stage(decoded?.terminal == true ? "applied_terminal" : "applied", decoded?.decision ?? "")
+                await Self.feedback(.success)
                 // A completed task has no live card left to show.
                 if decoded?.terminal == true || decoded?.snapshot == nil {
                     await activity.end(nil, dismissalPolicy: .immediate)
@@ -267,7 +277,31 @@ struct JobaTaskActionIntent: LiveActivityIntent {
     /// Leave the card carrying the server's truth, marked as a failed tap.
     private func fail(_ activity: Activity<JobaTaskActivity>, _ state: JobaTaskActivity.ContentState) async {
         await apply(activity, state.withActionState("failed"))
+        // A different pattern from the success one: the tap landed, the action did
+        // not, and the user knows that without unlocking anything to look.
+        await Self.feedback(.error)
     }
+
+    // MARK: - Touch feedback
+
+    /// The tap, as something the hand feels rather than something the eye waits for.
+    ///
+    /// `@MainActor` because UIKit's feedback generators are main-actor isolated on
+    /// current SDKs while `perform()` is nonisolated, so each call hops there.
+    @MainActor private static func feedback(_ kind: FeedbackKind) {
+        switch kind {
+        case .tap:
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.prepare()
+            generator.impactOccurred()
+        case .success:
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        case .error:
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+        }
+    }
+
+    private enum FeedbackKind { case tap, success, error }
 }
 
 /// The action endpoint's answer. Optional everywhere: a refusal, a timeout and a
