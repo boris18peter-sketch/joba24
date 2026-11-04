@@ -64,7 +64,8 @@ import { resolveUserAccess } from '@/lib/userAccess';
 import { bootMark } from '@/lib/bootTrace';
 
 import BoostOverlay from '@/components/BoostOverlay';
-import { myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery } from '@/lib/queries';
+import { myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery, selectActiveWorkerTask, selectActiveClientTask } from '@/lib/queries';
+import { reconcileActiveTask } from '@/lib/activeTaskCache';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -305,23 +306,34 @@ export default function Layout() {
   // The user's own three lists. Defined once in @/lib/queries and shared with
   // the feed and the inbox, so all of them collapse onto a SINGLE request each
   // instead of downloading the same records under several different keys.
-  const { data: workerTasks = [] } = useQuery(workerTasksQuery(me?.id));
+  const { data: workerTasks = [], isSuccess: workerTasksLoaded } = useQuery(workerTasksQuery(me?.id));
 
-  // Seed activeWorkerTask cache on load
+  // ── RECONCILED, NOT SEEDED ────────────────────────────────────────────────
+  // These caches used to be written ONCE (`old !== undefined ? old : takenTask`),
+  // so the first task placed in them stayed there for the life of the page no
+  // matter what the server said afterwards. A job completed from the Lock Screen
+  // therefore kept its Active Task Banner on screen and kept being treated as
+  // live work by the Live Activity bridge. The list is the authority and is
+  // refetched on resume, patched by the realtime layer and polled, so the cache
+  // is derived from it on every result — including the result that says there is
+  // no TAKEN task any more.
   useEffect(() => {
-    if (!me?.id || workerTasks.length === 0) return;
-    const takenTask = workerTasks.find((t) => t.status === 'TAKEN') || null;
-    queryClient.setQueryData(['activeWorkerTask', me.id], (old) => old !== undefined ? old : takenTask);
-  }, [workerTasks, me?.id]);
+    if (!me?.id || !workerTasksLoaded) return;
+    queryClient.setQueryData(['activeWorkerTask', me.id], (old) => (
+      reconcileActiveTask(old, selectActiveWorkerTask(workerTasks))
+    ));
+  }, [workerTasks, workerTasksLoaded, me?.id]);
 
-  const { data: myPublishedTasks = [] } = useQuery(myPublishedTasksQuery(me?.id));
+  const { data: myPublishedTasks = [], isSuccess: publishedLoaded } = useQuery(myPublishedTasksQuery(me?.id));
 
-  // Seed activeClientTask cache on load — ensures TaskDetail banner works from first render
+  // Same reconcile for the publisher side — this is what removes the banner and
+  // releases the card when the job is closed from the widget.
   useEffect(() => {
-    if (!me?.id || myPublishedTasks.length === 0) return;
-    const takenTask = myPublishedTasks.find((t) => t.status === 'TAKEN') || null;
-    queryClient.setQueryData(['activeClientTask', me.id], (old) => old !== undefined ? old : takenTask);
-  }, [myPublishedTasks, me?.id]);
+    if (!me?.id || !publishedLoaded) return;
+    queryClient.setQueryData(['activeClientTask', me.id], (old) => (
+      reconcileActiveTask(old, selectActiveClientTask(myPublishedTasks))
+    ));
+  }, [myPublishedTasks, publishedLoaded, me?.id]);
 
   const { data: myApplications = [] } = useQuery(myApplicationsQuery(me?.id));
 

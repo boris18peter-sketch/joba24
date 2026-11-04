@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { notificationStore } from '@/lib/notificationStore';
 import { taskAlertStore } from '@/lib/taskAlertStore';
+import { invalidateTaskCaches } from '@/lib/taskSync';
+import { ACTION_ALERT_KINDS, alertTaskId, isAlertResolved } from '@/lib/taskAlertValidity';
 import { isPopupBlocked, subscribePopupGate } from '@/lib/popupGate';
 import { useAuth } from '@/lib/AuthContext';
 import { useVerificationCelebration } from '@/hooks/useVerificationCelebration';
@@ -93,6 +97,44 @@ export default function GlobalPopups() {
   useEffect(() => {
     return taskAlertStore.subscribe(setTaskAlert);
   }, []);
+
+  // ── AN ALERT THAT OUTLIVED ITS REASON IS CLOSED HERE ──────────────────────
+  // An alert is raised at the instant an event arrives and then lives in memory
+  // until it is dismissed. A backgrounded app receives no realtime events, so the
+  // ONE event that would have closed it — the publisher approving the completion
+  // from the Lock Screen — never arrives. Reopening the app showed the completion
+  // confirmation for a job that was already closed, and tapping it could only
+  // fail. The record is the authority, so every actionable alert is re-checked
+  // against a fresh read when it appears and every time the app is brought back
+  // to the foreground, and cleared if the record has moved on.
+  const queryClient = useQueryClient();
+  const alertKind = taskAlert?.kind;
+  const alertTaskKey = alertTaskId(taskAlert);
+
+  useEffect(() => {
+    if (!user?.id || !alertTaskKey || !ACTION_ALERT_KINDS.includes(alertKind)) return undefined;
+    let alive = true;
+
+    const verify = async () => {
+      // A failed read keeps the alert: this is a correction, not a gate, and the
+      // popups that act on an alert re-check the record themselves.
+      const record = await base44.entities.Task.get(alertTaskKey).catch(() => null);
+      if (!alive || !record) return;
+      if (!isAlertResolved(alertKind, record, user.id)) return;
+      invalidateTaskCaches(queryClient, { taskId: alertTaskKey, meId: user.id });
+      taskAlertStore.clear();
+    };
+
+    verify();
+    const onWake = () => { if (document.visibilityState === 'visible') verify(); };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('focus', onWake);
+    return () => {
+      alive = false;
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('focus', onWake);
+    };
+  }, [alertKind, alertTaskKey, user?.id, queryClient]);
 
   // ── NEVER A FULL-SCREEN ALERT OVER ANOTHER FULL-SCREEN SHEET ────────────
   // The rating sheet holds the shared popup gate while it is open, and every

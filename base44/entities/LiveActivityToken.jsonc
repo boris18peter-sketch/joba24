@@ -23,6 +23,18 @@
       "default": "activity",
       "description": "WHICH ActivityKit token this is. activity = the per-activity token Apple issues once a card exists (updates and end). start = the Push-to-Start token of the INSTALL (iOS 17.2+), used to make a card APPEAR while the app is closed. The two are different values from different APIs and are never interchangeable: a start token cannot update a card, and an activity token cannot start one. Missing = activity (rows written before Push-to-Start existed)."
     },
+    "task_id": {
+      "type": "string",
+      "description": "The Task whose card this activity token belongs to. An activity token is issued PER CARD, so without this the server could only address every card a user has \u2014 which is how one task's content reached another task's card on a device showing two. Empty = unbound (a row registered before binding existed); an unbound row stays eligible so those installs keep working."
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "publisher",
+        "worker"
+      ],
+      "description": "Which side of task_id this card shows. A publisher card and a worker card can be on the same phone at the same time, so the pair (task_id, role) \u2014 never the task alone \u2014 identifies a card."
+    },
     "environment": {
       "type": "string",
       "enum": [

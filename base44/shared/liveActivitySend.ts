@@ -243,15 +243,40 @@ export function readApnsCredentials() {
   return { keyId, teamId, privateKeyPem, bundleId, missing };
 }
 
-/** The category chain (service → root) that resolveStatusFlow needs. */
-export async function loadCategoryChain(base44, categoryKey) {
+/**
+ * The category chain (service → root) that resolveStatusFlow needs.
+ *
+ * ── ONE READ INSTEAD OF ONE PER LEVEL ──────────────────────────────────────
+ * This walked the tree with a query PER LEVEL (up to six), and it ran for every
+ * recipient of every dispatch. The Task already stores `parent_category_key`, so
+ * the service and its parent — the only two levels that carry wording in
+ * practice — are fetched together in a single read. A deeper parent is still
+ * resolved, but only when it is genuinely missing from that first read.
+ *
+ * This is the largest single reduction in the dispatch path: six sequential
+ * round-trips became one.
+ */
+export async function loadCategoryChain(base44, categoryKey, parentKey = '') {
+  const keys = [...new Set([categoryKey, parentKey].filter(Boolean))];
+  if (!keys.length) return [];
+
+  const page = await base44.asServiceRole.entities.GlobalCategory
+    .filter({ category_key: { $in: keys } }, { limit: 8 })
+    .catch(() => ({ items: [] }));
+  const byKey = new Map((page?.items || []).map((row) => [row.category_key, row]));
+
   const rows = [];
+  const seen = new Set();
   let current = categoryKey;
-  for (let depth = 0; depth < 6 && current; depth += 1) {
-    const page = await base44.asServiceRole.entities.GlobalCategory
-      .filter({ category_key: current }, { limit: 1 })
-      .catch(() => ({ items: [] }));
-    const row = (page?.items || [])[0];
+  for (let depth = 0; depth < 6 && current && !seen.has(current); depth += 1) {
+    seen.add(current);
+    let row = byKey.get(current);
+    if (!row) {
+      const one = await base44.asServiceRole.entities.GlobalCategory
+        .filter({ category_key: current }, { limit: 1 })
+        .catch(() => ({ items: [] }));
+      row = (one?.items || [])[0];
+    }
     if (!row) break;
     rows.push(row);
     current = row.parent_key || '';
@@ -267,18 +292,33 @@ export async function loadCategoryChain(base44, categoryKey) {
  * composed from different inputs (different timezone, different category chain).
  */
 export async function loadSnapshotInputs(base44, input) {
-  const { task, recipientId, config, categories: preloaded = null } = input || {};
+  const {
+    task,
+    role = '',
+    recipientId,
+    config,
+    categories: preloaded = null,
+    settings: preloadedSettings = null,
+  } = input || {};
 
   const tokenPage = await base44.asServiceRole.entities.LiveActivityToken
     .filter({ user_id: recipientId }, { limit: 50 })
     .catch(() => ({ items: [] }));
+
+  // ── ADDRESS THIS CARD, NOT EVERY CARD THIS USER HAS ──────────────────────
+  // A phone can show the publisher's card and the worker's card at once (and a
+  // second job alongside either), so an activity token is selected by the card
+  // it belongs to — (task, role) — never by "any active token of this user".
   const tokens = eligibleTokens(tokenPage?.items || [], {
     userId: recipientId,
     environment: config?.environment,
     limit: config?.max_tokens_per_dispatch,
+    taskId: task?.id || '',
+    role,
   });
   // The install's Push-to-Start tokens, from the same read. Only a `start` push
-  // goes here; every update and end stays on the activity tokens above.
+  // goes here; every update and end stays on the activity tokens above. A start
+  // token belongs to the install rather than to a card, so it is not scoped.
   const startTokens = eligibleTokens(tokenPage?.items || [], {
     userId: recipientId,
     environment: config?.environment,
@@ -287,8 +327,12 @@ export async function loadSnapshotInputs(base44, input) {
   });
 
   const [categories, settingsPage] = await Promise.all([
-    preloaded ? Promise.resolve(preloaded) : loadCategoryChain(base44, task?.category),
-    base44.asServiceRole.entities.JobaSettings.list({ sort: '-updated_date', limit: 1 }).catch(() => ({ items: [] })),
+    preloaded
+      ? Promise.resolve(preloaded)
+      : loadCategoryChain(base44, task?.category, task?.parent_category_key || ''),
+    preloadedSettings
+      ? Promise.resolve({ items: [preloadedSettings] })
+      : base44.asServiceRole.entities.JobaSettings.list({ sort: '-updated_date', limit: 1 }).catch(() => ({ items: [] })),
   ]);
 
   const firstToken = tokens[0] || startTokens[0];
@@ -550,7 +594,15 @@ export async function dispatchRecipient(input) {
     eventRevision = null,
     now = Date.now(),
     categories: preloadedCategories = null,
+    settings: preloadedSettings = null,
   } = input || {};
+
+  // ── WHERE THE TIME GOES, MEASURED ────────────────────────────────────────
+  // The run duration of the calling workflow is not the same thing as the time
+  // until Apple is contacted, and the two were being read as one. These two
+  // probes separate "our reads" from "the push" from "everything after it", so a
+  // slow dispatch can be attributed instead of guessed at.
+  const startedAt = Date.now();
 
   // ── WHO THIS RUN IS FOR ───────────────────────────────────────────────────
   // A recipient the configuration does not cover is refused before any read, so
@@ -602,10 +654,13 @@ export async function dispatchRecipient(input) {
   const state = await readState(base44, { recipientId, taskId: task.id, role });
   const { tokens, startTokens, timeZone, bundleId, categories, settings } = await loadSnapshotInputs(base44, {
     task,
+    role,
     recipientId,
     config,
     categories: preloadedCategories,
+    settings: preloadedSettings,
   });
+  const readsDoneAt = Date.now();
 
   const snapshot = buildBackendSnapshot({
     task,
@@ -816,6 +871,7 @@ export async function dispatchRecipient(input) {
     }
   }
 
+  const afterSendAt = Date.now();
   const sent = results.filter((r) => r.result.ok && !r.result.dryRun).length;
   const committed = sent > 0;
 
@@ -880,6 +936,22 @@ export async function dispatchRecipient(input) {
   if (startClaim && !committed) {
     await releaseStartClaim(base44, startClaim, now);
   }
+
+  // One line per dispatch, with the phases separated: `readsMs` is our own
+  // datastore work before Apple is contacted, `pushMs` is the APNs call itself,
+  // `afterMs` is the audit rows and the revision commit. A workflow run that
+  // takes 100s while `pushMs` is 200ms is not a slow dispatch.
+  console.info('[liveActivity] dispatch timings', {
+    task: task.id,
+    role,
+    event,
+    tokens: targetTokens.length,
+    sent,
+    readsMs: readsDoneAt - startedAt,
+    pushMs: afterSendAt - readsDoneAt,
+    afterMs: Date.now() - afterSendAt,
+    totalMs: Date.now() - startedAt,
+  });
 
   return {
     kind: plan.kind,

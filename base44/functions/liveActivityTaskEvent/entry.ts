@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { normalizeConfig, isTrackedRecipient, isRoleTracked, testModeActive } from '../../shared/liveActivityConfig.ts';
 import { TERMINAL_TASK_STATUSES } from '../../shared/liveActivityDispatch.ts';
-import { dispatchRecipient, recordDispatchOutcome } from '../../shared/liveActivitySend.ts';
+import { dispatchRecipient, loadCategoryChain, recordDispatchOutcome } from '../../shared/liveActivitySend.ts';
 import { requireInternalOperator } from '../../shared/internalAuth.ts';
 
 /**
@@ -128,7 +128,21 @@ export default async function handler(req) {
       });
     }
 
-    // ── 4. The shared sender does the rest ──────────────────────────────────
+    // ── 4. READ ONCE PER EVENT, NOT ONCE PER RECIPIENT ─────────────────────
+    // The category chain and the platform settings are the same for both sides
+    // of one task, yet every recipient used to re-read them — the category chain
+    // at one round-trip per level. Under a burst of task events those duplicated
+    // sequential reads are what turned a dispatch into a 20-second one.
+    const [categories, settingsPage] = await Promise.all([
+      subject.category
+        ? loadCategoryChain(base44, subject.category, subject.parent_category_key || '')
+        : Promise.resolve([]),
+      base44.asServiceRole.entities.JobaSettings.list({ sort: '-updated_date', limit: 1 })
+        .catch(() => ({ items: [] })),
+    ]);
+    const settings = (settingsPage?.items || [])[0] || null;
+
+    // ── 5. The shared sender does the rest ──────────────────────────────────
     const results = await Promise.all(targets.map(async ({ userId, role }) => {
       const outcome = await dispatchRecipient({
         base44,
@@ -137,6 +151,8 @@ export default async function handler(req) {
         role,
         recipientId: userId,
         mode: 'dispatch',
+        categories,
+        settings,
       }).catch((error) => ({ decision: 'error', reason: error?.message || 'dispatch_failed' }));
 
       return {

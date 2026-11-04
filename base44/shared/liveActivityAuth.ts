@@ -101,7 +101,14 @@ export function planTokenRegistration(input) {
 
   // ── Optional task binding ───────────────────────────────────────────────
   // Registering "I am tracking this task" is authorized against the record.
+  //
+  // The binding is STORED, not merely validated. An ActivityKit token is issued
+  // per CARD, so a token with no binding can only be addressed as "one of this
+  // user's cards" — which is how a dispatch for one task was delivered to another
+  // task's card on a device showing two. The pair (task_id, role) is the card's
+  // identity from here on, and dispatch uses it to address exactly that card.
   let boundRole = null;
+  let boundTaskId = '';
   if (body.task_id || body.taskId) {
     const taskId = String(body.task_id || body.taskId);
     boundRole = body.role;
@@ -110,6 +117,7 @@ export function planTokenRegistration(input) {
 
     const auth = authorizeActivity(task, boundRole, who.userId);
     if (!auth.ok) return { ok: false, status: 403, reason: 'unauthorized_task', detail: auth.reason };
+    boundTaskId = taskId;
   }
 
   // ── Token ownership ─────────────────────────────────────────────────────
@@ -132,6 +140,22 @@ export function planTokenRegistration(input) {
   // of the SAME kind only. Rotating a start token must never retire the activity
   // token of a card that is on screen right now, and vice versa.
   const deviceId = typeof body.device_id === 'string' ? body.device_id.trim() : '';
+  // ── ROTATION IS SCOPED TO THE CARD, NOT THE INSTALL ────────────────────────
+  // Retiring every active token of this kind on the install was correct only
+  // while a phone could show ONE card. It now shows two at once (the publisher's
+  // and the worker's, and a second job alongside either), so the publisher's app
+  // starting a card retired the WORKER card's token of a different task — that
+  // card then stopped updating although nothing was wrong with it.
+  //
+  // Only the previous incarnation of THIS card is retired: the same (task, role)
+  // binding. A row with no binding predates binding entirely and is still
+  // superseded by this install's newer token of the same kind.
+  const sameCard = (row) => {
+    const rowTask = String(row.task_id || '').trim();
+    if (!rowTask) return true;
+    if (!boundTaskId) return false;
+    return rowTask === boundTaskId && String(row.role || '') === String(boundRole || '');
+  };
   const retire = deviceId
     ? existingTokens
         .filter((row) => row
@@ -139,7 +163,8 @@ export function planTokenRegistration(input) {
           && row.device_id === deviceId
           && row.token !== token
           && normalizeTokenKind(row.kind) === kind
-          && row.status === 'active')
+          && row.status === 'active'
+          && sameCard(row))
         .map((row) => row.id)
     : [];
 
@@ -148,6 +173,11 @@ export function planTokenRegistration(input) {
     user_id: who.userId,
     token,
     kind,
+    // The card this token addresses. OMITTED — never written as an empty string
+    // — when the client registered without a task (a legacy build, or a token
+    // minted before a task existed), so the enum field is only ever given one of
+    // its own values. An absent binding reads as "unbound".
+    ...(boundTaskId ? { task_id: boundTaskId, role: boundRole } : {}),
     environment,
     bundle_id: typeof body.bundle_id === 'string' ? body.bundle_id.trim() : '',
     platform,
@@ -198,7 +228,7 @@ export function authorizeDispatch({ task, role, userId }) {
  * when the configured environment matches nothing, this recipient's own active
  * tokens are used rather than silence.
  */
-export function eligibleTokens(tokens, { userId, environment, limit = 20, kind = 'activity' }) {
+export function eligibleTokens(tokens, { userId, environment, limit = 20, kind = 'activity', taskId = '', role = '' }) {
   if (!Array.isArray(tokens) || !userId) return [];
   // Kind first: a `start` push addressed to an activity token (or the reverse)
   // is rejected by APNs, so the two sets are never allowed to mix.
@@ -206,7 +236,28 @@ export function eligibleTokens(tokens, { userId, environment, limit = 20, kind =
     && row.status === 'active'
     && row.user_id === userId
     && normalizeTokenKind(row.kind) === kind);
-  const matched = environment ? own.filter((row) => row.environment === environment) : own;
-  const chosen = matched.length > 0 ? matched : own;
+
+  // ── ONE CARD, NOT EVERY CARD ──────────────────────────────────────────────
+  // An activity token belongs to ONE card, and a phone can show two at the same
+  // time. Selecting "every active activity token this user has" therefore pushed
+  // task A's content-state to task B's card, which is exactly how the Lock
+  // Screen and the app ended up disagreeing about the same job.
+  //
+  //   • a token bound to this (task, role) is the card being addressed;
+  //   • a row with NO binding predates binding and is still eligible, so an
+  //     install that has not re-registered keeps updating as before — but only
+  //     when this card has no bound token of its own, so a bound card is never
+  //     shadowed by a legacy row;
+  //   • a token bound to a DIFFERENT task is never used, whatever else is found.
+  let forCard = own;
+  if (taskId && role) {
+    const bound = own.filter((row) => String(row.task_id || '').trim() === taskId
+      && String(row.role || '') === role);
+    const unbound = own.filter((row) => !String(row.task_id || '').trim());
+    forCard = bound.length > 0 ? bound : unbound;
+  }
+
+  const matched = environment ? forCard.filter((row) => row.environment === environment) : forCard;
+  const chosen = matched.length > 0 ? matched : forCard;
   return chosen.slice(0, limit > 0 ? limit : 20);
 }
