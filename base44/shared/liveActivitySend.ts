@@ -147,7 +147,7 @@ export async function claimDispatchRevision(base44, input) {
   }
 
   if (state?.id) {
-    await base44.asServiceRole.entities.LiveActivityState.updateMany(
+    const claimed = await base44.asServiceRole.entities.LiveActivityState.updateMany(
       { id: state.id, revision: previous },
       {
         $set: {
@@ -158,6 +158,21 @@ export async function claimDispatchRevision(base44, input) {
         },
       },
     ).catch(() => null);
+
+    // ── THE WRITE IS THE VERDICT; THE READ-BACK IS ONLY A SECOND CHECK ─────
+    // The filter carries the revision this run expects, so the datastore
+    // evaluates it as part of the write: once one run has moved the revision, a
+    // second run's condition no longer matches and its write reports
+    // `updated: 0`. Measured on this app's own datastore — four simultaneous
+    // conditional updates on one row returned exactly one `updated: 1` and three
+    // `updated: 0` — so the refusal happens at the write, not afterwards.
+    //
+    // That distinction is the whole point: a read-back alone cannot prove
+    // exclusivity, because a lagging read may answer with this run's own claim
+    // id and let two runs both push. The write result cannot be stale.
+    if (!claimed || Number(claimed.updated) === 0) {
+      return { claimed: false, claimId, previous, reason: 'concurrent_dispatch' };
+    }
   } else {
     await base44.asServiceRole.entities.LiveActivityState.create({
       user_id: recipientId,

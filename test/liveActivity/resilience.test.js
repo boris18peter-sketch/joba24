@@ -295,6 +295,38 @@ describe('concurrent dispatches for the same revision', () => {
     expect(store.rows()[0].revision).toBe(5);
   });
 
+  it('decides on the write result, never on a stale read-back', async () => {
+    // The one interleaving a read-back cannot catch: the write was REFUSED
+    // (updated: 0) yet the next read still answers with this run's own claim id.
+    // Trusting the read would let two runs both push, so the refusal must win.
+    let askedClaimId = '';
+    const base44 = {
+      asServiceRole: {
+        entities: {
+          LiveActivityState: {
+            updateMany: async (query, operation) => {
+              askedClaimId = operation.$set.claim_id;
+              return { updated: 0 };
+            },
+            filter: async () => ({ items: [{ id: 'state_1', revision: 5, claim_id: askedClaimId }] }),
+          },
+        },
+      },
+    };
+
+    const result = await claimDispatchRevision(base44, {
+      state: { id: 'state_1', revision: 4, claim_id: '' },
+      recipientId: PUBLISHER,
+      taskId: 'task_1',
+      role: 'publisher',
+      targetRevision: 5,
+      now: NOW,
+    });
+
+    expect(result.claimed).toBe(false);
+    expect(result.reason).toBe('concurrent_dispatch');
+  });
+
   it('lets a newer revision through immediately afterwards', async () => {
     const store = makeStateStore([{
       id: 'state_1', user_id: PUBLISHER, task_id: 'task_1', role: 'publisher',
