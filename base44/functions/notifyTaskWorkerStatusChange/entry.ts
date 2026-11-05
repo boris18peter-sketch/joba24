@@ -25,6 +25,40 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'Missing client or title' });
     }
 
+    // ── THE STATUS IN THE EVENT IS A CLAIM; THE RECORD IS THE TRUTH ─────────
+    // A Task update triggers this through a workflow, and the workflow queue can
+    // hand the event over tens of seconds late. By then the worker has often
+    // moved on again, so "arrived" would be pushed AFTER "done" — or after the
+    // task was already completed, which is exactly the burst of obsolete
+    // notifications that appeared around completion.
+    //
+    // The stored record is read here and compared with the event's own status:
+    //   • the task is already terminal and this is not its final stage → skip;
+    //   • the record has moved PAST this stage → skip (a newer stage owns the
+    //     conversation, and sending this one would break the chronology).
+    // Nothing is silently discarded: every skip names its reason, and a
+    // notification that is still the CURRENT stage is always sent.
+    const STAGE_ORDER = { on_the_way: 1, arrived: 2, done: 3 };
+    const taskId = data.id || event?.entity_id;
+    let current = null;
+    if (taskId) {
+      const page = await base44.asServiceRole.entities.Task
+        .filter({ id: taskId }, { limit: 1 })
+        .catch(() => ({ items: [] }));
+      current = (page?.items || [])[0] || null;
+    }
+    if (current) {
+      const terminal = ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(current.status);
+      const liveStage = STAGE_ORDER[current.worker_status] || 0;
+      const eventStage = STAGE_ORDER[newStatus] || 0;
+      if (terminal && newStatus !== 'done') {
+        return Response.json({ sent: 0, skipped: 'task_terminal', status: current.status, stage: newStatus });
+      }
+      if (liveStage > eventStage) {
+        return Response.json({ sent: 0, skipped: 'superseded_by_newer_status', current_stage: current.worker_status });
+      }
+    }
+
     // Get client's tokens
     const users = await base44.asServiceRole.entities.User.filter({ id: data.client_id });
     const client = users[0];

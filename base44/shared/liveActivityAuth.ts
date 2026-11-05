@@ -156,17 +156,30 @@ export function planTokenRegistration(input) {
     if (!boundTaskId) return false;
     return rowTask === boundTaskId && String(row.role || '') === String(boundRole || '');
   };
-  const retire = deviceId
-    ? existingTokens
-        .filter((row) => row
-          && row.user_id === who.userId
-          && row.device_id === deviceId
-          && row.token !== token
-          && normalizeTokenKind(row.kind) === kind
-          && row.status === 'active'
-          && sameCard(row))
-        .map((row) => row.id)
-    : [];
+  // ── A CARD HAS ONE TOKEN, WHOEVER REGISTERED IT ───────────────────────────
+  // Matching on `device_id` retired a rotated token only when the client kept
+  // the same install id, and a build that omitted it (or generated a new one)
+  // left the previous token ACTIVE beside the new one. Both then received every
+  // dispatch — two audit rows per push, twice the APNs traffic, and a stale token
+  // kept "succeeding" long after the card it belonged to was gone.
+  //
+  // A token that is bound to a card is therefore superseded by ANY newer active
+  // token of the same kind for that SAME card, whatever install id it carries.
+  // An unbound token keeps the install-scoped rule, which is all it can be
+  // matched on.
+  const sameBoundCard = (row) => String(row.task_id || '').trim() === boundTaskId
+    && String(row.role || '') === String(boundRole || '');
+
+  const retire = existingTokens
+    .filter((row) => row
+      && row.user_id === who.userId
+      && row.token !== token
+      && normalizeTokenKind(row.kind) === kind
+      && row.status === 'active'
+      && (boundTaskId
+        ? sameBoundCard(row)
+        : (!!deviceId && row.device_id === deviceId && sameCard(row))))
+    .map((row) => row.id);
 
   const platform = 'ios';
   const record = {
