@@ -326,6 +326,24 @@ export async function loadSnapshotInputs(base44, input) {
     kind: 'start',
   });
 
+  // ── NO TOKEN, NO SNAPSHOT ────────────────────────────────────────────────
+  // A recipient holding neither an activity nor a start token cannot be reached
+  // by anything, yet the category chain and the platform settings — the two most
+  // expensive reads in the whole pipeline — used to be fetched for them anyway,
+  // on EVERY task event, before the dispatcher discovered there was nothing to
+  // address. That is the steady state of a phone that has not registered yet,
+  // and it ran for both sides of every task.
+  if (!tokens.length && !startTokens.length) {
+    return {
+      tokens: [],
+      startTokens: [],
+      timeZone: undefined,
+      bundleId: readApnsCredentials().bundleId,
+      categories: [],
+      settings: {},
+    };
+  }
+
   const [categories, settingsPage] = await Promise.all([
     preloaded
       ? Promise.resolve(preloaded)
@@ -661,6 +679,23 @@ export async function dispatchRecipient(input) {
     settings: preloadedSettings,
   });
   const readsDoneAt = Date.now();
+
+  // The one outcome reachable with no snapshot work at all, audited exactly like
+  // every other: without it, "why did nothing arrive on my Lock Screen" has no
+  // row to answer it.
+  if (!tokens.length && !startTokens.length) {
+    await recordDispatchOutcome(base44, {
+      recipientId,
+      taskId: task.id,
+      role,
+      revision: state?.revision || 0,
+      decision: 'no_active_tokens',
+      status: 'skipped',
+      reason: 'no_tokens_of_any_kind',
+      environment: config?.environment,
+    });
+    return { kind: 'none', decision: 'no_active_tokens', revision: state?.revision || 0, contactedApns: false };
+  }
 
   const snapshot = buildBackendSnapshot({
     task,

@@ -56,7 +56,19 @@ import { myPublishedTasksQuery } from '@/lib/queries';
  * reported to the diagnostic table and swallowed: a Lock Screen must never be
  * able to break a task action.
  */
-const ACCESS_CACHE = { value: null };
+/* ── NO PROCESS-WIDE ACCESS CACHE ────────────────────────────────────────────
+   This used to be a module-level `{ value }` that was never keyed by user and
+   never refreshed. Two consequences, both reported by testers as "it only works
+   after I open the app again":
+
+   • an answer of `allowed: false` — correct at the time, because the allowlist
+     had not included that user yet — stayed cached for the whole life of the
+     process, so the bridge never registered a token and never started a card;
+   • switching accounts in the same process kept the PREVIOUS user's answer.
+
+   The question is one cheap function call, asked on start, on account change and
+   on every return to the foreground (see `probe` below). Asking again is what
+   makes a newly allowlisted device begin working without a relaunch. */
 
 /**
  * Forward the Lock Screen's own account of its taps.
@@ -158,32 +170,43 @@ export default function RealTaskActivityBridge() {
     [publishedTasks, me?.id],
   );
 
-  const [access, setAccess] = useState(ACCESS_CACHE.value);
+  const [access, setAccess] = useState(null);
   const [tick, setTick] = useState(0);
+  // Bumped every time the app returns to the foreground.
+  const [probe, setProbe] = useState(0);
   const appliedRef = useRef(null);
   const busyRef = useRef(false);
 
-  // ── 1. Am I allowed at all? One question per app run ──────────────────────
   useEffect(() => {
-    if (!isLiveActivityNative() || !me?.id || access) return undefined;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setProbe((n) => n + 1);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
+  // ── 1. Am I allowed at all? ───────────────────────────────────────────────
+  // Asked on start, on account change, and on every foreground — so a device
+  // added to the allowlist starts reporting within seconds of coming back to the
+  // app instead of after a cold relaunch.
+  useEffect(() => {
+    if (!isLiveActivityNative() || !me?.id) return undefined;
     let alive = true;
     base44.functions.invoke('liveActivityRealTask', { action: 'access' })
       .then((response) => {
-        const value = response?.data || { allowed: false };
-        ACCESS_CACHE.value = value;
-        if (alive) setAccess(value);
+        if (alive) setAccess({ ...(response?.data || { allowed: false }), userId: me.id });
       })
-      .catch(() => { if (alive) setAccess({ allowed: false }); });
+      .catch(() => { if (alive) setAccess({ allowed: false, userId: me.id }); });
     return () => { alive = false; };
-  }, [me?.id, access]);
+  }, [me?.id, probe]);
 
   // ── 2. Register the push token whenever iOS issues one ────────────────────
   // Without this the server has nowhere to send an update while the app is
   // closed. It runs only for an allowlisted device.
   useEffect(() => {
-    if (!access?.allowed) return undefined;
+    if (!access?.allowed || access.userId !== me?.id) return undefined;
     return attachActivityTokenListener(() => {});
-  }, [access?.allowed]);
+  }, [access?.allowed, access?.userId, me?.id, probe]);
 
   // ── 2b. PUSH-TO-START: the install token, and the button that appears with it ──
   // Three things, all for an allowlisted device only:
@@ -193,11 +216,11 @@ export default function RealTaskActivityBridge() {
   //  • mint the install-scoped action capability, so the button on a card that
   //    appeared while the app was closed is not dead the first time it is tapped.
   useEffect(() => {
-    if (!access?.allowed) return undefined;
+    if (!access?.allowed || access.userId !== me?.id) return undefined;
     syncPushToStartToken().catch(() => {});
     ensureUserActionCapability().catch(() => {});
     return attachPushToStartTokenListener(() => {});
-  }, [access?.allowed]);
+  }, [access?.allowed, access?.userId, me?.id, probe]);
 
   const tracked = useMemo(
     () => selectTrackedTask({

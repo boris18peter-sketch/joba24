@@ -446,7 +446,9 @@ describe('the native bridge reads, registers and rotates the install token', () 
 
   it('the bridge does all three, only for an allowlisted device', () => {
     const effect = bridge.slice(bridge.indexOf('// ── 2b. PUSH-TO-START'));
-    expect(effect).toContain('if (!access?.allowed) return undefined;');
+    // The gate is the access answer — and now also the answer's OWNER, so a
+    // stale answer from a previous account can never arm this device.
+    expect(effect).toContain('if (!access?.allowed || access.userId !== me?.id) return undefined;');
     expect(effect).toContain('syncPushToStartToken()');
     expect(effect).toContain('ensureUserActionCapability()');
     expect(effect).toContain('attachPushToStartTokenListener');

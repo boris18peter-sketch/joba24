@@ -42,6 +42,31 @@ export function useLoyaltyBonus(user) {
       setBonus({ amount: next.amount, kind: next.kind });
     };
 
+    // ── ASK THE SERVER AGAIN, DO NOT WAIT FOR A RELAUNCH ────────────────────
+    // The bonus is granted by the SERVER the moment a rating is submitted, and
+    // two things can stop that reaching this screen while the app is open:
+    //   • the realtime socket is down (the app was backgrounded, or the phone
+    //     dropped the connection) — the credit is created and no event arrives;
+    //   • the popup gate was held by the rating sheet itself.
+    // In both cases the reward was marked as owed and simply never announced, and
+    // it only surfaced on the next cold start — which is exactly what testers saw
+    // ("the bonus popup appears only after I close and reopen the app").
+    // A gate release and a return to the foreground are precisely the two moments
+    // when the answer can have changed, so both re-read the newest reward.
+    const catchUp = async () => {
+      const res = await base44.entities.CreditTransaction
+        .filter({ user_id: userId, type: 'Loyalty_Reward' }, '-created_date', 1)
+        .catch(() => null);
+      const rows = Array.isArray(res) ? res : res?.items;
+      if (!cancelled) offer(rows?.[0]);
+    };
+
+    const refresh = () => {
+      flush();
+      if (isPopupBlocked() || pendingRef.current) return;
+      catchUp();
+    };
+
     const offer = async (tx) => {
       if (!tx?.id) return;
       // The popup announces THIS transaction's bonus and nothing else. A record
@@ -81,7 +106,11 @@ export function useLoyaltyBonus(user) {
       flush();
     };
 
-    const unsubGate = subscribePopupGate(flush);
+    const unsubGate = subscribePopupGate(refresh);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
     const unsub = base44.entities.CreditTransaction.subscribe((event) => {
       if (event.type !== 'create' || !event.data) return;
@@ -90,18 +119,16 @@ export function useLoyaltyBonus(user) {
       offer(tx);
     });
 
-    base44.entities.CreditTransaction
-      .filter({ user_id: userId, type: 'Loyalty_Reward' }, '-created_date', 1)
-      // Newest first. The SDK can hand back either a plain array or a page
-      // object depending on the call form, so both shapes are read — otherwise
-      // the catch-up silently finds nothing and the bonus is never announced.
-      .then((res) => {
-        const rows = Array.isArray(res) ? res : res?.items;
-        if (!cancelled) offer(rows?.[0]);
-      })
-      .catch(() => {});
+    // Newest first (both shapes handled inside catchUp: the SDK can hand back a
+    // plain array or a page object, and a missed shape is a bonus never shown).
+    catchUp();
 
-    return () => { cancelled = true; unsub(); unsubGate(); };
+    return () => {
+      cancelled = true;
+      unsub();
+      unsubGate();
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user?.id]);
 
   return { bonus, clearBonus: () => setBonus(null) };
