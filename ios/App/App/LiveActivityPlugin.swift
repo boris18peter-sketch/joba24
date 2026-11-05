@@ -62,6 +62,28 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         "\(taskId)|\(role)"
     }
 
+    // ── WHICH CARDS THIS APP ITSELF CREATED ──────────────────────────────────
+    // A card iOS created from a Push-to-Start push appears in `Activity.activities`
+    // exactly like one the app requested, so the app cannot tell them apart — and
+    // therefore could never answer the only question that matters when a remote
+    // start seems to fail: did iOS create a card, or did the app?
+    //
+    // The ids of the activities THIS app requested are remembered here, so every
+    // card can be labelled "local" or "remote". Only ids are stored: no token, no
+    // capability, no user data.
+    private static let ownedIdsKey = "joba.liveactivity.owned.activity.ids.v1"
+
+    private static func ownedActivityIds() -> Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: ownedIdsKey) ?? [])
+    }
+
+    private static func rememberOwned(_ id: String) {
+        var ids = ownedActivityIds()
+        ids.insert(id)
+        // Bounded: the ids of cards that are long gone carry no information.
+        UserDefaults.standard.set(Array(ids.suffix(40)), forKey: ownedIdsKey)
+    }
+
     // MARK: - Queries
 
     @objc public func isAvailable(_ call: CAPPluginCall) {
@@ -86,6 +108,13 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             for activity in Activity<JobaTaskActivity>.activities {
                 items.append([
                     "activityId": activity.id,
+                    // "local" = this app requested it; "remote" = the system
+                    // created it from a Push-to-Start push while the app was
+                    // closed. This one word is the ONLY reliable evidence that
+                    // remote start worked: an accepted push and a registered
+                    // start token are equally true of a start that never
+                    // happened.
+                    "createdBy": Self.ownedActivityIds().contains(activity.id) ? "local" : "remote",
                     "taskId": activity.attributes.taskId,
                     "role": activity.attributes.role,
                     "phase": activity.content.state.phase,
@@ -185,9 +214,22 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         Task { @MainActor in
-            // A device shows at most one activity per (task, role): replace it.
-            for existing in Activity<JobaTaskActivity>.activities
-            where existing.attributes.taskId == taskId && existing.attributes.role == role {
+            // ── INSPECT THE CARD THAT IS ALREADY THERE, BEFORE REPLACING IT ──
+            // A device shows at most one activity per (task, role), so anything
+            // matching is about to be replaced. It is read first because it is
+            // the answer to "did the push already work?": a matching card whose
+            // id this app never requested was created by iOS from a remote start.
+            // `origin` is returned to the web layer and logged, so the next build
+            // can prove which process created the card instead of guessing.
+            let owned = Self.ownedActivityIds()
+            let prior = Activity<JobaTaskActivity>.activities.filter {
+                $0.attributes.taskId == taskId && $0.attributes.role == role
+            }
+            let origin = prior.isEmpty
+                ? "none"
+                : (prior.contains(where: { owned.contains($0.id) }) ? "local" : "remote")
+            NSLog("[JobaActivity] start origin=%@ prior=%d role=%@", origin, prior.count, role)
+            for existing in prior {
                 await existing.end(nil, dismissalPolicy: .immediate)
             }
             do {
@@ -196,8 +238,14 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
                     content: ActivityContent(state: state, staleDate: Self.staleDate(from: state)),
                     pushType: .token
                 )
+                Self.rememberOwned(activity.id)
                 self.observePushToken(activity)
-                call.resolve(["started": true, "activityId": activity.id])
+                call.resolve([
+                    "started": true,
+                    "activityId": activity.id,
+                    "origin": origin,
+                    "priorCount": prior.count,
+                ])
             } catch {
                 call.resolve(["started": false, "reason": error.localizedDescription])
             }

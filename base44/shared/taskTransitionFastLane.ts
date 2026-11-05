@@ -57,8 +57,11 @@ export async function runTaskTransition({ base44, task, previousWorkerStatus = '
       liveActivitySkipped = '';
       // Read once per transition, not once per recipient.
       const [categories, settingsPage] = await Promise.all([
+        // Nothing here may throw: this module is reached from a Lock Screen tap
+        // that has ALREADY committed the task transition, so an exception would
+        // turn a successful approval into a reported failure.
         task.category
-          ? loadCategoryChain(base44, task.category, task.parent_category_key || '')
+          ? loadCategoryChain(base44, task.category, task.parent_category_key || '').catch(() => [])
           : Promise.resolve([]),
         base44.asServiceRole.entities.JobaSettings.list({ sort: '-updated_date', limit: 1 })
           .catch(() => ({ items: [] })),

@@ -182,12 +182,13 @@ Deno.serve(async (req) => {
       const fresh = (await base44.asServiceRole.entities.Task.filter({ id: task.id }))[0] || task;
       // FAST LANE — the same call the in-app banner makes, so a Lock Screen tap
       // reaches the counterpart's card now instead of after the workflow queue.
+      // It is never allowed to change the outcome reported for the transition.
       await runTaskTransition({
         base44,
         task: fresh,
         previousWorkerStatus: task.worker_status || '',
         notifyStage: true,
-      });
+      }).catch(() => null);
       return Response.json({
         ok: true,
         decision: 'applied',
@@ -235,7 +236,9 @@ Deno.serve(async (req) => {
       const fresh = (await base44.asServiceRole.entities.Task.filter({ id: task.id }))[0] || task;
       // FAST LANE — approval from the Lock Screen arms the worker's card through
       // the same shared code an in-app approval uses.
-      await runTaskTransition({ base44, task: fresh });
+      // A delivery problem must never be reported as a failed approval: the
+      // transition above has already been committed by `approveWorkerCore`.
+      await runTaskTransition({ base44, task: fresh }).catch(() => null);
       const applied = result.status < 400;
       // `already_assigned` is a SUCCESS: the tap landed and this worker is the
       // task's worker. Anything else is a real refusal and is reported as one.
@@ -282,7 +285,9 @@ Deno.serve(async (req) => {
     const fresh = (await base44.asServiceRole.entities.Task.filter({ id: task.id }))[0] || task;
     // FAST LANE — completion from the Lock Screen closes BOTH cards now; the
     // terminal planner can only ever produce an `end`, never a start.
-    await runTaskTransition({ base44, task: fresh });
+    // Same separation as above: the task IS completed at this point, so a card
+    // or notification that fails to send cannot be allowed to answer 'failed'.
+    await runTaskTransition({ base44, task: fresh }).catch(() => null);
     return Response.json({
       ok: true,
       decision: result.body?.already_completed ? 'duplicate' : 'applied',
