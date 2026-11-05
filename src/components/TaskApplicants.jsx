@@ -12,6 +12,7 @@ import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 import { useLanguage } from '@/lib/LanguageContext';
 import { selectTask, patchTaskCache } from '@/lib/taskCache';
+import { dispatchTaskTransition } from '@/lib/taskTransition';
 
 export default function TaskApplicants({ task, onApprove }) {
   const { t, isRTL } = useLanguage();
@@ -67,6 +68,9 @@ export default function TaskApplicants({ task, onApprove }) {
         workerName: applicantProfiles[app.worker_id]?.full_name || app.worker_name,
       });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה באישור');
+      // Approval is what arms the worker's card, so it takes the fast lane: the
+      // workflow that used to do it is measured at 30–84 s behind a burst.
+      await dispatchTaskTransition(task.id, '');
       // Marketplace — the publisher selected a worker. Deduped per task, so the
       // worker-self-take path in TaskDetail never double-counts this.
       trackEvent('worker_selected', { category: task?.category, city: task?.city, value: task?.price }, { dedupeKey: task.id });

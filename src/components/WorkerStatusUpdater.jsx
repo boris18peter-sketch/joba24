@@ -5,6 +5,7 @@ import { Navigation, MapPin, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import useTaskStatusFlow from '@/hooks/useTaskStatusFlow';
 import { nextCta } from '@/lib/taskStatusFlow';
+import { dispatchTaskTransition } from '@/lib/taskTransition';
 
 const CTA_ICONS = { navigation: Navigation, map_pin: MapPin, check: CheckCircle2 };
 
@@ -38,16 +39,21 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
           (pos) => {
             update.worker_lat = pos.coords.latitude;
             update.worker_lng = pos.coords.longitude;
-            onUpdate(update);
+            Promise.resolve(onUpdate(update))
+              .then(() => dispatchTaskTransition(task.id, task.worker_status));
             toast.success(cta.toast);
           },
           () => {
-            onUpdate(update);
+            Promise.resolve(onUpdate(update))
+              .then(() => dispatchTaskTransition(task.id, task.worker_status));
             toast.success(cta.toast);
           }
         );
       } else {
         await onUpdate(update);
+        // Fast lane: hand the stage to the server now instead of waiting for the
+        // workflow engine, which is measured at 30–84 s under a burst.
+        await dispatchTaskTransition(task.id, task.worker_status);
         toast.success(cta.toast);
       }
     } catch (err) {

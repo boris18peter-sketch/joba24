@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 import MediaLightbox from '@/components/MediaLightbox';
 import StatusConfirmSheet from '@/components/StatusConfirmSheet';
+import { dispatchTaskTransition } from '@/lib/taskTransition';
 
 /**
  * CompletionApprovalPopup — the worker marked MY task as done, so the approval
@@ -113,6 +114,9 @@ export default function CompletionApprovalPopup({ task, onClose }) {
       if (!res.data?.success && res.data?.error !== 'already_completed') {
         throw new Error(res.data?.error || 'שגיאה');
       }
+      // Both cards are closed from the completion itself; take the fast lane so
+      // neither sits on the Lock Screen waiting for the workflow queue.
+      await dispatchTaskTransition(current.id);
       queryClient.invalidateQueries({ queryKey: ['task', current.id] });
       queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myPublishedTasks'] });
