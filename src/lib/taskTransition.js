@@ -20,7 +20,7 @@ import { base44 } from '@/api/base44Client';
  * @param {string|{id: string}} taskOrId
  * @param {string} [previousWorkerStatus] the stage the caller replaced
  */
-export async function dispatchTaskTransition(taskOrId, previousWorkerStatus = '') {
+export async function dispatchTaskTransition(taskOrId, previousWorkerStatus = '', { notifyStage = false } = {}) {
   const taskId = typeof taskOrId === 'string' ? taskOrId : taskOrId?.id;
   if (!taskId) return null;
 
@@ -28,6 +28,9 @@ export async function dispatchTaskTransition(taskOrId, previousWorkerStatus = ''
     const response = await base44.functions.invoke('taskTransitionDispatch', {
       task_id: taskId,
       previous_worker_status: previousWorkerStatus || '',
+      // Only a caller that actually moved a WORKER STAGE asks for the stage
+      // notification, because approval and completion already own theirs.
+      notify_stage: notifyStage === true,
     });
     return response?.data || null;
   } catch {

@@ -128,7 +128,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           base44.entities.Task.update(task.id, { ...update, worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude })
             .then(() => {
               queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-              return dispatchTaskTransition(task.id, task.worker_status);
+              return dispatchTaskTransition(task.id, task.worker_status, { notifyStage: true });
             })
             .catch(() => {});
         },
@@ -136,7 +136,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           base44.entities.Task.update(task.id, update)
             .then(() => {
               queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-              return dispatchTaskTransition(task.id, task.worker_status);
+              return dispatchTaskTransition(task.id, task.worker_status, { notifyStage: true });
             })
             .catch(() => {});
         },
@@ -146,7 +146,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
         await base44.entities.Task.update(task.id, update);
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         // Fast lane — see src/lib/taskTransition.js. Awaited, never fire-and-forget.
-        await dispatchTaskTransition(task.id, task.worker_status);
+        await dispatchTaskTransition(task.id, task.worker_status, { notifyStage: true });
       }
     } catch {
       toast.error(t('error_saving') || 'Error saving — try again');

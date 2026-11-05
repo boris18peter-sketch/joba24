@@ -123,7 +123,16 @@ export default async function handler(req) {
     // never invents a notification they do not already own.
     let notification = null;
     const stage = task.worker_status || '';
-    if (['on_the_way', 'arrived', 'done'].includes(stage) && stage !== previousWorkerStatus && task.client_id) {
+    // OPT-IN ONLY. Approval and completion have their own notification
+    // workflows; running this branch for them sent a "worker is on the way /
+    // done" push for a stage nobody had just changed (proven by a live test of
+    // this function against a completed task). Only a caller that actually moved
+    // a worker stage asks for the notification, and it always sends the stage it
+    // replaced — so an unchanged stage is refused twice over.
+    if (body?.notify_stage === true
+      && ['on_the_way', 'arrived', 'done'].includes(stage)
+      && stage !== previousWorkerStatus
+      && task.client_id) {
       notification = await base44.asServiceRole.functions.invoke('notifyTaskWorkerStatusChange', {
         // The same payload shape the workflow builds, so the function's own
         // stage guard runs on the current record — not on a stale snapshot.

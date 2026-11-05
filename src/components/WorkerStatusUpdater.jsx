@@ -40,12 +40,12 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
             update.worker_lat = pos.coords.latitude;
             update.worker_lng = pos.coords.longitude;
             Promise.resolve(onUpdate(update))
-              .then(() => dispatchTaskTransition(task.id, task.worker_status));
+              .then(() => dispatchTaskTransition(task.id, task.worker_status, { notifyStage: true }));
             toast.success(cta.toast);
           },
           () => {
             Promise.resolve(onUpdate(update))
-              .then(() => dispatchTaskTransition(task.id, task.worker_status));
+              .then(() => dispatchTaskTransition(task.id, task.worker_status, { notifyStage: true }));
             toast.success(cta.toast);
           }
         );
@@ -53,7 +53,7 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
         await onUpdate(update);
         // Fast lane: hand the stage to the server now instead of waiting for the
         // workflow engine, which is measured at 30–84 s under a burst.
-        await dispatchTaskTransition(task.id, task.worker_status);
+        await dispatchTaskTransition(task.id, task.worker_status, { notifyStage: true });
         toast.success(cta.toast);
       }
     } catch (err) {
