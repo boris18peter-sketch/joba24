@@ -59,6 +59,33 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── AT MOST ONE PUSH PER (TASK, STAGE), WHATEVER ASKS FOR IT ────────────
+    // Two paths can now carry the same stage to this function: the fast lane
+    // (an awaited call from whichever button performed the transition) and the
+    // entity workflow that still fires for the same write. The cooldown inside
+    // notificationManager cannot answer this: it is keyed per user+event and
+    // only applies when a cooldown is configured, and the workflow can arrive
+    // minutes later — past any cooldown. The (task, stage) pair is the real
+    // identity of this notification, and a stage happens once per task, so a
+    // 'sent' log row for it is final proof that it must not be sent again.
+    //
+    // This is also what makes the fast lane SAFE TO FAIL: if it never reached
+    // the send, no row was written and the workflow still delivers it later.
+    if (taskId) {
+      const sentBefore = await base44.asServiceRole.entities.NotificationLog
+        .filter({ task_id: taskId, event_key: `worker_status_${newStatus}`, status: 'sent' }, { limit: 1 })
+        .catch(() => null);
+      const rows = Array.isArray(sentBefore) ? sentBefore : (sentBefore?.items || []);
+      if (rows.length) {
+        return Response.json({
+          sent: 0,
+          skipped: 'already_sent_for_task_stage',
+          stage: newStatus,
+          task_id: taskId,
+        });
+      }
+    }
+
     // Get client's tokens
     const users = await base44.asServiceRole.entities.User.filter({ id: data.client_id });
     const client = users[0];

@@ -15,6 +15,7 @@ import { completeTaskCore } from '../../shared/taskCompletion.ts';
 import { buildBackendSnapshot } from '../../shared/liveActivitySnapshot.ts';
 import { resolveStatusFlow, resolveSchedule, DEFAULT_TIMEZONE } from '../../shared/liveActivityFlow.ts';
 import { t } from '../../shared/liveActivityStrings.ts';
+import { runTaskTransition } from '../../shared/taskTransitionFastLane.ts';
 
 /**
  * liveActivityAction — the ONE endpoint a Lock Screen button may call.
@@ -179,6 +180,14 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Task.update(task.id, workerStepPatch(task, eligible.step));
 
       const fresh = (await base44.asServiceRole.entities.Task.filter({ id: task.id }))[0] || task;
+      // FAST LANE — the same call the in-app banner makes, so a Lock Screen tap
+      // reaches the counterpart's card now instead of after the workflow queue.
+      await runTaskTransition({
+        base44,
+        task: fresh,
+        previousWorkerStatus: task.worker_status || '',
+        notifyStage: true,
+      });
       return Response.json({
         ok: true,
         decision: 'applied',
@@ -224,6 +233,9 @@ Deno.serve(async (req) => {
       });
 
       const fresh = (await base44.asServiceRole.entities.Task.filter({ id: task.id }))[0] || task;
+      // FAST LANE — approval from the Lock Screen arms the worker's card through
+      // the same shared code an in-app approval uses.
+      await runTaskTransition({ base44, task: fresh });
       const applied = result.status < 400;
       // `already_assigned` is a SUCCESS: the tap landed and this worker is the
       // task's worker. Anything else is a real refusal and is reported as one.
@@ -268,6 +280,9 @@ Deno.serve(async (req) => {
     }
 
     const fresh = (await base44.asServiceRole.entities.Task.filter({ id: task.id }))[0] || task;
+    // FAST LANE — completion from the Lock Screen closes BOTH cards now; the
+    // terminal planner can only ever produce an `end`, never a start.
+    await runTaskTransition({ base44, task: fresh });
     return Response.json({
       ok: true,
       decision: result.body?.already_completed ? 'duplicate' : 'applied',
