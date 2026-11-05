@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { APP_URL, formatFacebookPost } from '../../shared/facebookPost.ts';
 
 const GRAPH_API = 'https://graph.facebook.com/v25.0';
 
@@ -31,8 +32,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   it_support: 'תמיכת IT',
   other: 'אחר',
 };
-
-const APP_URL = 'https://joba24.com';
 
 export default async function(req: Request): Promise<Response> {
   try {
@@ -101,8 +100,18 @@ export default async function(req: Request): Promise<Response> {
       const pageToken = await getPageAccessToken(accessToken, settings.facebook_page_id);
       if (!pageToken) return Response.json({ error: 'Selected page no longer accessible — reconnect Facebook' }, { status: 400 });
 
+      // ── ONE POST PER TASK, WHATEVER ASKS FOR IT AGAIN ─────────────────────
+      // The workflow fires on create, but a retried or re-delivered run would
+      // publish the same task a second time — and a duplicate on a public Page
+      // is worse than a late post. The task's own link is the identity, so a
+      // recent post carrying it means the job is already done.
+      const existingPost = await findExistingPost(settings.facebook_page_id, pageToken, task.id);
+      if (existingPost) {
+        return Response.json({ skipped: true, reason: 'already_posted', post_url: existingPost.url });
+      }
+
       // Format and post
-      const message = formatPost(task);
+      const message = formatFacebookPost(task);
 
       // ── Upload media if the task has images or video ──
       const taskImages = Array.isArray(task.images) ? task.images.filter(Boolean) : [];
@@ -275,52 +284,31 @@ async function getPageAccessToken(userToken: string, pageId: string): Promise<st
   return null;
 }
 
-// Extracts only the user's free-text description, stripping the structured
-// form-field block (which starts with "--- emoji label ---") that some
-// categories append to the description field.
-function extractMainDescription(description: string): string {
-  if (!description) return '';
-  const separatorMatch = description.match(/---[^-].*?---/);
-  if (!separatorMatch) return description.trim();
-  const separatorIdx = description.indexOf(separatorMatch[0]);
-  return description.slice(0, separatorIdx).trim();
-}
-
-// Renders the task as a tidy, card-like post: a rule, a headline, the task
-// title and description, then an aligned label/value block, then one clean
-// call to action with the link on its own line.
-const CARD_RULE = '━━━━━━━━━━━━━━━━━━━';
-const CARD_DIVIDER = '┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈';
-
-function formatPost(task: any): string {
-  const lines: string[] = [];
-
-  // ── Card header ──
-  lines.push(CARD_RULE);
-  lines.push('🔔  עבודה חדשה ב-Joba24');
-  lines.push(CARD_RULE);
-  lines.push('');
-
-  // ── Title ──
-  if (task.title) {
-    lines.push(`📌  ${task.title}`);
-    lines.push('');
+/**
+ * Is this task already on the Page?
+ *
+ * Reads the Page's recent posts and looks for the task's own deep link. Any
+ * failure returns null, so the check can never block a legitimate post — it only
+ * ever answers "yes, and here it is".
+ */
+async function findExistingPost(
+  pageId: string,
+  pageToken: string,
+  taskId: string,
+): Promise<{ url?: string } | null> {
+  if (!taskId) return null;
+  try {
+    const resp = await fetch(
+      `${GRAPH_API}/${pageId}/posts?fields=message,permalink_url&limit=25&access_token=${pageToken}`,
+    );
+    const data = await resp.json();
+    if (data?.error) return null;
+    const marker = `/task/${taskId}`;
+    const hit = (data?.data || []).find(
+      (p: any) => typeof p?.message === 'string' && p.message.includes(marker),
+    );
+    return hit ? { url: hit.permalink_url } : null;
+  } catch {
+    return null;
   }
-
-  // ── Description (only the user's free text, not the structured form fields) ──
-  const desc = extractMainDescription(task.description);
-  if (desc && desc !== task.title) {
-    lines.push(desc);
-    lines.push('');
-  }
-
-  // ── Call to action + clean link on its own line (no trailing text) ──
-  lines.push(CARD_DIVIDER);
-  lines.push('👇  מתאים לך? כל הפרטים והגשה כאן:');
-  // Link on its own line with no trailing punctuation/spaces — Facebook
-  // sometimes concatenates trailing characters into the URL, breaking the
-  // deep link. A clean line ensures the link is parsed correctly.
-  lines.push(`${APP_URL}/task/${task.id}?utm_source=facebook`);
-
-  return lines.join('\n');
 }
