@@ -68,6 +68,7 @@ export const zh = {
   create_first_task: '发布第一个任务',
   loading: '加载中...',
   tasks_near_you: '您附近的任务',
+  ben_ai_heading: '受够高价了吗？',
   ben_fixed_heading: '需要帮忙做点什么？',
   ben_s1_title: '5,000+ 位专业人士',
   ben_s1_body: '随时为你提供帮助。',

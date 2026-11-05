@@ -68,6 +68,7 @@ export const hi = {
   create_first_task: 'पहला टास्क पोस्ट करें',
   loading: 'लोड हो रहा है...',
   tasks_near_you: 'आपके पास के टास्क',
+  ben_ai_heading: 'ऊंची कीमतों से थक गए?',
   ben_fixed_heading: 'किसी काम में मदद चाहिए?',
   ben_s1_title: '5,000+ पेशेवर',
   ben_s1_body: 'आपकी मदद के लिए तैयार।',

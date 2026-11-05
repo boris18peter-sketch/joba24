@@ -639,6 +639,7 @@ export const fr = {
     popup_publisher_cancelled: "L'annonceur a annulé la tâche",
     popup_returning_soon: 'Retour dans quelques secondes...',
     popup_task_cancelled: "Tâche annulée par l'annonceur",
+    ben_ai_heading: 'Marre des prix élevés ?',
     ben_fixed_heading: 'Besoin d\'aide pour quelque chose ?',
     ben_s1_title: 'Plus de 5 000 pros',
     ben_s1_body: 'Prêts à vous aider.',

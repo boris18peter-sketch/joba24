@@ -533,6 +533,7 @@ export const en = {
     mtempty_video_title: 'How does Joba24 work?',
     mtempty_video_sub: 'Watch a short explainer video',
     // Benefits banner in the empty state — the approved copy, numbers included
+    ben_ai_heading: 'Tired of high prices?',
     ben_fixed_heading: 'Need a hand with something?',
     ben_s1_title: '5,000+ professionals',
     ben_s1_body: 'Ready to help you.',

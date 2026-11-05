@@ -553,7 +553,8 @@ export const he = {
     mtempty_video_title: 'איך Joba24 עובדת?',
     mtempty_video_sub: 'צפה בסרטון הסבר קצר',
     // באנר היתרונות במסך הריק — הניסוחים המאושרים, כולל שני הנתונים
-    ben_fixed_heading: 'נמאס לך ממחירים גבוהים?',
+    ben_ai_heading: 'נמאס לך ממחירים גבוהים?',
+    ben_fixed_heading: 'צריך עזרה במשהו?',
     ben_s1_title: '5,000+ בעלי מקצוע',
     ben_s1_body: 'מוכנים לעזור לך.',
     ben_s2_title: '10 דקות בממוצע',

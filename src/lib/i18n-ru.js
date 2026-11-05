@@ -642,6 +642,7 @@ export const ru = {
     popup_publisher_cancelled: 'Публикатор отменил задачу',
     popup_returning_soon: 'Возврат через несколько секунд...',
     popup_task_cancelled: 'Задача отменена публикатором',
+    ben_ai_heading: 'Надоели высокие цены?',
     ben_fixed_heading: 'Нужна помощь с чем-то?',
     ben_s1_title: '5 000+ специалистов',
     ben_s1_body: 'Готовы вам помочь.',

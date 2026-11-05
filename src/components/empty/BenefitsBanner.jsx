@@ -42,6 +42,10 @@ const SLIDES = [
   {
     n: 3,
     art: 'https://base44.app/api/apps/69e6bdb4986a04a256653a23/files/mp/public/69e6bdb4986a04a256653a23/9bb7b2713_hero-ai.png',
+    // The AI slide alone carries its own eyebrow. The request named ONE banner:
+    // the other two keep the general question, so the price line lives here and
+    // nowhere else.
+    headingKey: 'ben_ai_heading',
   },
 ];
 
@@ -243,8 +247,10 @@ export default function BenefitsBanner() {
       role="group"
       aria-roledescription="carousel"
     >
-      {/* The one fixed line of the whole hero — it never transitions. */}
-      <div className="j-ben-eyebrow">{t('ben_fixed_heading')}</div>
+      {/* The small line above the headline. General question on the two general
+          slides; the AI slide brings its own (see SLIDES). It sits outside the
+          slide stage, so it swaps with the slide instead of travelling. */}
+      <div className="j-ben-eyebrow">{t(slide.headingKey || 'ben_fixed_heading')}</div>
 
       <div className="j-ben-stage">
         <div

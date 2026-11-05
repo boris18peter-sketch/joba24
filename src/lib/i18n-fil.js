@@ -68,6 +68,7 @@ export const fil = {
   create_first_task: 'I-post ang Unang Task',
   loading: 'Naglo-load...',
   tasks_near_you: 'Mga task malapit sa iyo',
+  ben_ai_heading: 'Sawa ka na ba sa mataas na presyo?',
   ben_fixed_heading: 'Kailangan ng tulong sa isang bagay?',
   ben_s1_title: '5,000+ propesyonal',
   ben_s1_body: 'Handa kang tulungan.',

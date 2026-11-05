@@ -677,6 +677,7 @@ export const es = {
     popup_publisher_cancelled: 'El publicador canceló la tarea',
     popup_returning_soon: 'Volviendo en segundos...',
     popup_task_cancelled: 'Tarea cancelada por el publicador',
+    ben_ai_heading: '¿Cansado de los precios altos?',
     ben_fixed_heading: '¿Necesitas ayuda con algo?',
     ben_s1_title: '+5.000 profesionales',
     ben_s1_body: 'Listos para ayudarte.',

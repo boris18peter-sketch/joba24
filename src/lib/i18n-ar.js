@@ -699,6 +699,7 @@ export const ar = {
     popup_publisher_cancelled: 'ألغى الناشر المهمة',
     popup_returning_soon: 'العودة خلال ثوانٍ...',
     popup_task_cancelled: 'تم إلغاء المهمة من قبل الناشر',
+    ben_ai_heading: 'سئمت من الأسعار المرتفعة؟',
     ben_fixed_heading: 'تحتاج مساعدة في شيء ما؟',
     ben_s1_title: '+5,000 محترف',
     ben_s1_body: 'جاهزون لمساعدتك.',

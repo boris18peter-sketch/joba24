@@ -368,11 +368,33 @@ export default function Layout() {
   // the user. See TaskCompletedCongratsPopup for why the order matters.
   const [congratsTask, setCongratsTask] = useState(null);
   const shownRatingRef = useRef(new Set());
+  const shownCongratsRef = useRef(new Set());
+
+  // ── THE CLOSING NOTE STANDS ON ITS OWN ────────────────────────────────────
+  // It used to be handed over by the rating's own onClose, so a completion the
+  // user had already rated (or already reviewed) ended in silence: no rating was
+  // eligible, therefore nothing ever closed one, therefore nothing was thanked.
+  // It can now be raised directly, once per task per user, by the same key that
+  // dedupes the rating.
+  const showCongrats = useCallback((task) => {
+    if (!me?.id || !task?.id) return;
+    if (me.id !== task.client_id && me.id !== task.worker_id) return;
+    const key = `congrats_${task.id}_${me.id}`;
+    if (localStorage.getItem(key) || shownCongratsRef.current.has(task.id)) return;
+    shownCongratsRef.current.add(task.id);
+    // Same rule as the rating: the sheet steps aside, so the note is never
+    // underneath the details the user happened to have open.
+    if (sheetTaskId === task.id) closeTaskSheet();
+    setCongratsTask({ task, role: me.id === task.worker_id ? 'worker' : 'client' });
+  }, [me?.id, sheetTaskId, closeTaskSheet]);
+
   const maybeShowRating = useCallback((task) => {
     if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
     if (me.id !== task.client_id && me.id !== task.worker_id) return;
     const key = `rated_${task.id}_${me.id}`;
-    if (localStorage.getItem(key) || shownRatingRef.current.has(task.id)) return;
+    // Already rated on this device / in this session: there is no ask to make,
+    // so the note is the only thing left to show.
+    if (localStorage.getItem(key) || shownRatingRef.current.has(task.id)) { showCongrats(task); return; }
     // Check if a review already exists — don't show the modal for already-reviewed tasks.
     // NOTE: getQueryData returns the RAW queryFn result (an array), NOT the
     // `select`-transformed value. When TaskDetail is open, its myReview query
@@ -383,7 +405,7 @@ export default function Layout() {
     const hasReview = Array.isArray(existingReview)
       ? existingReview.length > 0
       : !!existingReview?.id;
-    if (hasReview) return;
+    if (hasReview) { showCongrats(task); return; }
     // ── THE ASK ALWAYS OUTRANKS THE THANK-YOU ──────────────────────────────
     // If the closing note is on screen when a rating arrives, the note steps
     // aside first. Between this and the `!ratingTask` guard on the note below,
@@ -406,7 +428,7 @@ export default function Layout() {
       if (sheetTaskId === task.id) closeTaskSheet();
       setRatingTask(task);
     }, 800);
-  }, [me?.id, queryClient, sheetTaskId, closeTaskSheet]);
+  }, [me?.id, queryClient, sheetTaskId, closeTaskSheet, showCongrats]);
 
   useEffect(() => {
     const handler = (e) => maybeShowRating(e.detail?.task);
@@ -772,6 +794,10 @@ export default function Layout() {
       {ratingTask && me && createPortal(
         <RatingModal task={ratingTask} me={me} onClose={() => {
           localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');
+          // The note that follows is this task's last word: marking it here is
+          // what stops the eligible-fallback in showCongrats from raising the
+          // same note a second time once the rating is gone.
+          localStorage.setItem(`congrats_${ratingTask.id}_${me.id}`, '1');
           // ── THE THANK-YOU COMES AFTER THE ASK ────────────────────────────
           // Completion is three moments, in this order: the ✓ on the task card,
           // then the rating sheet, then this. Asking and then thanking is a
