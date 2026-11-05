@@ -56,6 +56,7 @@ import usePermissionStatus from '@/hooks/usePermissionStatus';
 import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { readPendingTask } from '@/lib/pendingTask';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import AppLoading from '@/components/AppLoading';
@@ -136,6 +137,9 @@ export default function Layout() {
   }, []);
 
   // Notification popups are now managed globally via notificationStore (rendered by GlobalPopups in App.jsx)
+  // The task sheet is a full-screen layer of the very job whose rating is about
+  // to be asked for, so the rating has to be able to step it aside.
+  const { sheetTaskId, closeTaskSheet } = useTaskSheet();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [navHiddenByModal, setNavHiddenByModal] = useState(false);
   const [boostOverlayData, setBoostOverlayData] = useState(null);
@@ -391,8 +395,18 @@ export default function Layout() {
     // Don't persist the localStorage key yet — only when the user actually
     // closes the modal (onClose below). Otherwise a navigation that unmounts
     // Layout before the 800ms timeout would mark the task "rated" forever.
-    setTimeout(() => setRatingTask(task), 800);
-  }, [me?.id, queryClient]);
+    setTimeout(() => {
+      // ── THE SHEET MUST STEP ASIDE FOR THE CELEBRATION ────────────────────
+      // A completion made on the Lock Screen opens the app straight into this
+      // task's detail sheet. With that sheet left open, the rating (and the
+      // closing note after it) were only seen once the user closed the sheet by
+      // hand — the flow read as "nothing happened". Closing it here means the
+      // card's ✓ and then the rating are what the user sees, which is the order
+      // the rest of the completion flow already uses.
+      if (sheetTaskId === task.id) closeTaskSheet();
+      setRatingTask(task);
+    }, 800);
+  }, [me?.id, queryClient, sheetTaskId, closeTaskSheet]);
 
   useEffect(() => {
     const handler = (e) => maybeShowRating(e.detail?.task);

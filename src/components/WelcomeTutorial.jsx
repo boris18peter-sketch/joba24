@@ -243,11 +243,21 @@ export default function WelcomeTutorial() {
     if (stepIdx > 0) setStepIdx(stepIdx - 1);
   };
 
-  // Spotlight rectangle (with padding), clamped to viewport
-  const spotLeft = Math.max(PAD, rect.left - PAD);
-  const spotTop = Math.max(PAD, rect.top - PAD);
-  const spotWidth = Math.min(rect.width + PAD * 2, window.innerWidth - spotLeft - PAD);
-  const spotHeight = Math.min(rect.height + PAD * 2, window.innerHeight - spotTop - PAD);
+  // ── THE FRAME IS BUILT AROUND THE ELEMENT'S CENTRE, NEVER FROM ITS EDGES ──
+  // Clamping the left edge first (as it used to) shifted the frame off the
+  // element whenever that edge sat near the screen edge — the coins pill is
+  // exactly there, so the highlighted box and the arrow were not centred on the
+  // thing they pointed at. Growing the box symmetrically from the centre keeps
+  // the padding equal on all four sides; only when the box would leave the
+  // screen does it shrink, and it then shrinks equally on both sides.
+  const centreX = rect.left + rect.width / 2;
+  const centreY = rect.top + rect.height / 2;
+  const halfW = Math.max(0, Math.min((rect.width + PAD * 2) / 2, centreX - 4, window.innerWidth - centreX - 4));
+  const halfH = Math.max(0, Math.min((rect.height + PAD * 2) / 2, centreY - 4, window.innerHeight - centreY - 4));
+  const spotLeft = centreX - halfW;
+  const spotTop = centreY - halfH;
+  const spotWidth = halfW * 2;
+  const spotHeight = halfH * 2;
 
   // Card position
   const cardWidth = Math.min(340, window.innerWidth - 32);
@@ -265,7 +275,16 @@ export default function WelcomeTutorial() {
   // Arrow
   const arrowAtBottom = cardPlacement === 'above';
   const arrowAtTop = cardPlacement === 'below';
-  const arrowLeft = Math.max(40, Math.min(spotLeft + spotWidth / 2 - cardLeft, cardWidth - 40));
+  // ── THE TIP POINTS AT THE ELEMENT, NOT AT A GUESS ────────────────────────
+  // `left` places the arrow's LEFT EDGE while its tip sits in the middle of it,
+  // so forgetting the half-width left every arrow a full 11px to the RIGHT of
+  // the element it was pointing at — the offset visible under the coins pill.
+  // The clamp keeps the arrow inside the card's rounded corners.
+  const ARROW_W = 22;
+  const arrowLeft = Math.max(
+    18,
+    Math.min(centreX - cardLeft - ARROW_W / 2, cardWidth - ARROW_W - 18),
+  );
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 999999, pointerEvents: 'none' }} dir="rtl">

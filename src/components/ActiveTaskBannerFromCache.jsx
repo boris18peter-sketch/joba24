@@ -56,8 +56,12 @@ export default function ActiveTaskBannerFromCache({ taskId, isWorker, extraInfo,
 
   const cached = isWorker ? activeWorkerTask : activeClientTask;
   // The cache wins when it holds THIS task; otherwise the record already on
-  // screen keeps the banner there instead of leaving a hole.
-  const liveTask = cached?.id === taskId ? cached : (task?.id === taskId ? task : null);
+  // screen keeps the banner there instead of leaving a hole — but ONLY while
+  // that job is still live. A finished task (a Lock Screen completion opening
+  // its own details, for example) has no active state to report, so asking the
+  // banner to draw it produced an empty banner frame above the details.
+  const stillActive = task?.status && !['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status);
+  const liveTask = cached?.id === taskId ? cached : (task?.id === taskId && stillActive ? task : null);
 
   if (!liveTask) return null;
 

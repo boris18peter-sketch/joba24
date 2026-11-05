@@ -101,6 +101,20 @@ export function buildPushToStartPayload(input) {
     'content-state': snapshot,
     'attributes-type': type,
     attributes: { taskId: snapshot.id, role: snapshot.role },
+    // ── `alert` IS NOT DECORATION: WITHOUT IT iOS THROWS THE START AWAY ─────
+    // A start push was accepted by APNs (HTTP 200) and no card appeared, because
+    // `liveactivitiesd` refuses a start payload that carries no alert — it logs
+    // "Incoming message does not contain usable attributes / could not be parsed"
+    // and drops it silently, so the only visible symptom is a card that never
+    // shows. Apple's own start payload includes `alert`, and APNs answering 200
+    // says nothing about whether the device could read the message.
+    //
+    // Its text is the snapshot's own two lines — the same words the card shows —
+    // and `sound` is deliberately omitted, so the card arrives quietly.
+    alert: {
+      title: String(snapshot.title || 'Joba24'),
+      body: String(snapshot.subtitle || snapshot.title || ''),
+    },
     // A live card goes stale the same way a pushed update does, so a card left on
     // the Lock Screen after the work moved on cannot read as current.
     'stale-date': Math.floor((now + staleAfterMinutes * 60000) / 1000),
@@ -108,10 +122,6 @@ export function buildPushToStartPayload(input) {
     // middle of, and it is what the Lock Screen should show first.
     'relevance-score': relevanceScore,
   };
-
-  // A card, not a banner: no `alert`, no sound. The user already knows about the
-  // task from the app's own notifications, and a start push that also alerts
-  // would double every job.
   const payload = {
     aps,
     joba: {

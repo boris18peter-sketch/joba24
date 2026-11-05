@@ -85,9 +85,16 @@ describe('the start payload makes a card appear, and nothing else', () => {
     expect(payload.aps.timestamp).toBe(Math.floor(NOW / 1000));
   });
 
-  it('never alerts, and goes stale like any other card', () => {
-    // A card, not a banner: the user already gets the app's own notification.
-    expect(payload.aps.alert).toBeUndefined();
+  it('carries the alert iOS requires to accept a start, and stays silent', () => {
+    // ── THE ONE FIELD WHOSE ABSENCE COSTS THE WHOLE PUSH ───────────────────
+    // iOS refuses a start payload with no `alert` (it cannot parse it) while
+    // APNs still answers 200, so this is pinned: a card that never appeared
+    // looked exactly like a card that had. `sound` stays absent on purpose —
+    // the card arrives quietly.
+    expect(payload.aps.alert).toEqual({
+      title: SNAPSHOT.title,
+      body: SNAPSHOT.subtitle,
+    });
     expect(payload.aps.sound).toBeUndefined();
     expect(payload.aps['stale-date']).toBeGreaterThan(payload.aps.timestamp);
   });
