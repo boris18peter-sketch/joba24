@@ -22,6 +22,17 @@ INTENT_FILTER = """        <intent-filter android:autoVerify="false">
             <data android:scheme="joba24" android:host="auth-callback" />
         </intent-filter>"""
 
+# ── THE NOTIFICATION TAP ────────────────────────────────────────────────────
+# Every Joba24 push sets `click_action` to the action below. Android treats that
+# value as an INTENT ACTION and looks for an activity that declares it; with no
+# activity declaring it, the tap resolved to nothing and pressing a notification
+# never opened the app. @capacitor-firebase/messaging delivers the tap (and the
+# notification's data) to this activity once this filter exists.
+FCM_INTENT_FILTER = """        <intent-filter>
+            <action android:name="FCM_PLUGIN_ACTIVITY" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>"""
+
 def main():
     if not MANIFEST.exists():
         print(f"ERROR: {MANIFEST} not found. Run `npx cap add android` first.")
@@ -84,27 +95,31 @@ def main():
             content = content.replace('<application', modify_perm + '<application', 1)
             print("[manifest] added MODIFY_AUDIO_SETTINGS permission.")
 
-    if 'android:scheme="joba24"' in content:
-        # The permissions above are written even on this early exit. Returning
-        # without writing would silently discard every permission this script
-        # just ensured, on any re-run where the deep link already exists.
-        MANIFEST.write_text(content)
-        print("[manifest] joba24:// intent-filter already present — permissions written — skipping.")
-        return
+    # Both filters are added INDEPENDENTLY: an app that already had the deep-link
+    # filter must still receive the notification-tap one (and the reverse), so
+    # neither can be behind the other's early exit.
+    for marker, block, label in (
+        ('android:scheme="joba24"', INTENT_FILTER, "joba24://auth-callback"),
+        ('FCM_PLUGIN_ACTIVITY', FCM_INTENT_FILTER, "FCM_PLUGIN_ACTIVITY (notification tap)"),
+    ):
+        if marker in content:
+            print("[manifest] %s intent-filter already present — skipping." % label)
+            continue
 
-    idx = content.find('android:name=".MainActivity"')
-    if idx == -1:
-        print("ERROR: .MainActivity not found in AndroidManifest.xml")
-        sys.exit(1)
+        idx = content.find('android:name=".MainActivity"')
+        if idx == -1:
+            print("ERROR: .MainActivity not found in AndroidManifest.xml")
+            sys.exit(1)
 
-    close = content.find("</activity>", idx)
-    if close == -1:
-        print("ERROR: closing </activity> for MainActivity not found")
-        sys.exit(1)
+        close = content.find("</activity>", idx)
+        if close == -1:
+            print("ERROR: closing </activity> for MainActivity not found")
+            sys.exit(1)
 
-    new_content = content[:close] + INTENT_FILTER + "\n        " + content[close:]
-    MANIFEST.write_text(new_content)
-    print("[manifest] injected joba24://auth-callback intent-filter into MainActivity.")
+        content = content[:close] + block + "\n        " + content[close:]
+        print("[manifest] injected %s intent-filter into MainActivity." % label)
+
+    MANIFEST.write_text(content)
 
 if __name__ == "__main__":
     main()

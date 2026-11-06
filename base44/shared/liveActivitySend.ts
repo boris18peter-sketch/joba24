@@ -319,12 +319,23 @@ export async function loadSnapshotInputs(base44, input) {
   // The install's Push-to-Start tokens, from the same read. Only a `start` push
   // goes here; every update and end stays on the activity tokens above. A start
   // token belongs to the install rather than to a card, so it is not scoped.
+  //
+  // ── ONE TOKEN, NOT EVERY TOKEN THE INSTALL EVER HAD ──────────────────────
+  // A start token rotates (a reinstall, an app update), and a retired row can
+  // stay `active` until APNs rejects it. Sending the start to BOTH the current
+  // token and the previous one made iOS create TWO cards for one task, which is
+  // exactly the doubled Lock Screen widget that was reported: the older token
+  // still delivered, so the device was told to start the same activity twice.
+  // A start is an INSTALL-level event, so it is addressed to the freshest token
+  // only — the one the device reported most recently.
   const startTokens = eligibleTokens(tokenPage?.items || [], {
     userId: recipientId,
     environment: config?.environment,
     limit: config?.max_tokens_per_dispatch,
     kind: 'start',
-  });
+  }).sort((a, b) => (
+    new Date(b?.last_seen_at || 0).getTime() - new Date(a?.last_seen_at || 0).getTime()
+  )).slice(0, 1);
 
   // ── NO TOKEN, NO SNAPSHOT ────────────────────────────────────────────────
   // A recipient holding neither an activity nor a start token cannot be reached

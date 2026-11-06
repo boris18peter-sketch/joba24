@@ -436,6 +436,38 @@ export default function Layout() {
     return () => window.removeEventListener('show_rating_modal', handler);
   }, [maybeShowRating]);
 
+  // ── A COMPLETION THE APP NEVER WATCHED STILL GETS ITS TWO MOMENTS ────────
+  // Approval can happen while the app is CLOSED — the Lock Screen's own button
+  // does exactly that. No WebSocket event arrives, no task screen was open, so
+  // nothing announced it: the publisher approved the work, opened Joba24, and
+  // the rating and the closing note never came.
+  //
+  // The finished task is already in the lists this screen keeps live, so the
+  // flow is driven from them instead of from an event that cannot exist. Only
+  // the NEWEST recent completion is offered, and only once per session: a
+  // history of old jobs must never start asking for ratings, and a task whose
+  // rating was already given has its key and is skipped here.
+  const autoPromptedRef = useRef(new Set());
+  useEffect(() => {
+    if (!me?.id) return;
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const stamp = (task) => new Date(task.completed_at || task.updated_date || 0).getTime();
+    const candidates = [...(myPublishedTasks || []), ...(workerTasks || [])]
+      .filter((task) => task
+        && task.status === 'COMPLETED'
+        && (task.client_id === me.id || task.worker_id === me.id))
+      .filter((task) => {
+        if (autoPromptedRef.current.has(task.id)) return false;
+        if (localStorage.getItem(`rated_${task.id}_${me.id}`)) return false;
+        const at = stamp(task);
+        return Number.isFinite(at) && Date.now() - at < DAY_MS;
+      })
+      .sort((a, b) => stamp(b) - stamp(a));
+    if (!candidates.length) return;
+    autoPromptedRef.current.add(candidates[0].id);
+    maybeShowRating(candidates[0]);
+  }, [myPublishedTasks, workerTasks, me?.id, maybeShowRating]);
+
   // Notification popups managed globally via notificationStore — works on ALL pages (not just Layout)
   const addNotification = useCallback((notification) => {
     notificationStore.addNotification(notification);

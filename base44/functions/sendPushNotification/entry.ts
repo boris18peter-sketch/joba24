@@ -207,7 +207,17 @@ Deno.serve(async (req) => {
                 body: body || '',
                 icon: 'ic_launcher',
                 channelId: 'joba24',
-                clickAction: url || '/',
+                // ── THE TAP MUST OPEN THE APP, NOT SEARCH FOR A ROUTE ────────
+                // `clickAction` is an ANDROID INTENT ACTION, not a URL. It was
+                // given the notification's deep link ("/task/abc"), which matches
+                // no intent-filter on any installed activity — so the OS could
+                // not resolve the tap and simply did nothing: the notification
+                // arrived, and pressing it never opened Joba24. It is now the
+                // action Capacitor's messaging activity declares, which is what
+                // makes the tap launch the app. The deep link still travels in
+                // `data.url` (below) and is what the app navigates to once it is
+                // open — the destination never lived in click_action anyway.
+                clickAction: 'FCM_PLUGIN_ACTIVITY',
                 tag: tag || 'joba24',
               },
             },

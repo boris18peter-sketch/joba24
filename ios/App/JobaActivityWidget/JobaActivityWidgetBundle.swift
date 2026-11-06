@@ -1,6 +1,7 @@
 import WidgetKit
 import SwiftUI
 import ActivityKit
+import UIKit
 
 /**
  The widget extension entry point. One widget: the task Live Activity.
@@ -185,7 +186,15 @@ struct LockScreenCard: View {
                     }
                 }
                 Spacer(minLength: 6)
-                StatusChip(state: state, onDark: false)
+                // ── THE BRAND'S OWN MARK, AT THE CARD'S FAR EDGE ────────────
+                // A small, rounded rendition of the app icon — the same artwork
+                // the phone's home screen shows, so the card is recognisably
+                // Joba24 at a glance. Deliberately small and quiet: it signs the
+                // card, it does not compete with the status or the action.
+                HStack(spacing: 8) {
+                    StatusChip(state: state, onDark: false)
+                    JobaBrandMark(size: 20)
+                }
             }
 
             // A rail with no current step is a row of empty dashes — the OPEN
@@ -993,5 +1002,66 @@ struct JobaGlyphView: View {
             )
             .frame(width: size, height: size)
             .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Brand mark
+
+/**
+ The official Joba24 logo, drawn on the card.
+
+ ── WHY THE BYTES ARE BAKED IN ──────────────────────────────────────────────
+ A widget extension cannot read the app's asset catalog, and adding a second
+ catalog to a project whose widget target is generated at build time would have
+ meant hand-surgery on the Xcode project for a 20pt mark. Instead the icon's own
+ PNG is encoded into this file by `scripts/patch-ios-live-activity.py` — the same
+ script that builds the widget target — from the COMMITTED app icon, so there is
+ one source of truth for the artwork and nothing is re-drawn by hand.
+
+ The block below is regenerated on every iOS build; it is empty in a checkout
+ that has not been patched (a plain Xcode run, a preview), which is why the view
+ has a quiet fallback instead of a hole.
+ */
+enum JobaBrandMarkSource {
+    // >>> joba24-widget-logo (generated from the app icon — do not edit)
+    static let pngBase64 = ""
+    // <<< joba24-widget-logo
+}
+
+/// The app icon as a small rounded badge: the card's signature.
+struct JobaBrandMark: View {
+    var size: CGFloat = 20
+
+    /// Decoded once per process — the payload is a constant.
+    private static let image: UIImage? = {
+        let encoded = JobaBrandMarkSource.pngBase64.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !encoded.isEmpty,
+              let data = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters)
+        else { return nil }
+        return UIImage(data: data)
+    }()
+
+    var body: some View {
+        ZStack {
+            if let image = Self.image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                // Unpatched build: the brand's own navy and its initial, so the
+                // corner still reads as a mark rather than an empty box.
+                JobaPalette.text1
+                Text("J")
+                    .font(.system(size: size * 0.56, weight: .black))
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .strokeBorder(JobaPalette.border2, lineWidth: 0.5)
+        )
+        .accessibilityHidden(true)
     }
 }

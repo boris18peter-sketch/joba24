@@ -57,6 +57,7 @@ plugin and signing setting is left exactly as it was.
 """
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -80,6 +81,17 @@ DEPLOYMENT_TARGET = "16.1"  # ActivityKit + WidgetKit Live Activities
 DEFAULT_PROJECT = "ios/App/App.xcodeproj/project.pbxproj"
 DEFAULT_INFO_PLIST = "ios/App/App/Info.plist"
 DEFAULT_PLUGIN = "ios/App/App/LiveActivityPlugin.swift"
+
+# ── The brand mark on the Lock Screen card ──────────────────────────────────
+# The widget extension cannot read the app's asset catalog, and this project's
+# widget target is GENERATED here, so a second catalog would mean hand-surgery on
+# the Xcode project for a 20pt logo. Instead the committed app icon is encoded
+# into the widget source between these markers, on every iOS build: one source of
+# truth for the artwork, no project changes, and nothing re-drawn by hand.
+WIDGET_SWIFT = "ios/App/JobaActivityWidget/JobaActivityWidgetBundle.swift"
+LOGO_PNG = "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-40x40@2x.png"
+LOGO_BEGIN = "    // >>> joba24-widget-logo (generated from the app icon — do not edit)"
+LOGO_END = "    // <<< joba24-widget-logo"
 
 
 def uid(seed):
@@ -923,6 +935,39 @@ def emit_report(report, path):
     os.replace(tmp, path)
 
 
+def inject_widget_logo():
+    """Bake the committed app icon into the widget's brand-mark block.
+
+    The block is delimited by markers, so re-running is byte-identical and a
+    hand-edit inside it is simply overwritten. Deterministic: the same PNG always
+    produces the same file, which is what lets CI diff a run against itself.
+    """
+    if not os.path.exists(WIDGET_SWIFT):
+        return ["widget logo: %s not found - skipped" % WIDGET_SWIFT]
+    if not os.path.exists(LOGO_PNG):
+        # The icon set is verified by its own step; a missing PNG must not stop a
+        # build that is otherwise complete, so the view's fallback carries the card.
+        return ["widget logo: %s not found - card keeps its fallback mark" % LOGO_PNG]
+
+    with open(LOGO_PNG, "rb") as fh:
+        encoded = base64.b64encode(fh.read()).decode("ascii")
+    wrapped = "\n".join(encoded[i:i + 100] for i in range(0, len(encoded), 100))
+    block = '%s\n    static let pngBase64 = """\n%s\n"""\n%s' % (LOGO_BEGIN, wrapped, LOGO_END)
+
+    with open(WIDGET_SWIFT, "r", encoding="utf-8") as fh:
+        src = fh.read()
+    pattern = re.compile(re.escape(LOGO_BEGIN) + r".*?" + re.escape(LOGO_END), re.S)
+    if not pattern.search(src):
+        return ["widget logo: marker block not found in %s - skipped" % WIDGET_SWIFT]
+
+    updated = pattern.sub(lambda _m: block, src, count=1)
+    if updated == src:
+        return ["widget logo: already up to date"]
+    with open(WIDGET_SWIFT, "w", encoding="utf-8") as fh:
+        fh.write(updated)
+    return ["widget logo: %d characters of icon baked into the card" % len(encoded)]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Wire the Live Activity widget extension into the Xcode project")
     parser.add_argument("--check", action="store_true", help="report the project's structure as JSON")
@@ -1057,6 +1102,9 @@ def main():
     # The source this run just wired is repaired in the same run, so an older
     # checkout cannot be archived against an ActivityKit API that never existed.
     notes.extend(repair_swift(args.plugin))
+    # The logo is part of the widget's source, so it is refreshed in the same run
+    # that wires the target — a checkout that never runs this keeps its fallback.
+    notes.extend(inject_widget_logo())
 
     if not args.quiet:
         for note in notes:

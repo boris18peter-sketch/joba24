@@ -104,8 +104,35 @@ public class JobaActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         Task { @MainActor in
+            // ── ONE CARD PER (TASK, ROLE), ALWAYS ────────────────────────────
+            // A device can end up showing the SAME card twice: two start pushes
+            // that both reached a rotated token, or a card the system created
+            // remotely while the app was also starting one. iOS keeps both, and
+            // the user sees a doubled widget. The list read is the one moment
+            // the app can see all of them at once, so duplicates are closed here
+            // — keeping the most advanced revision (the freshest card) and
+            // ending the rest immediately. Nothing else about a card changes.
+            let all = Activity<JobaTaskActivity>.activities
+            var newest: [String: Activity<JobaTaskActivity>] = [:]
+            for activity in all {
+                let key = "\(activity.attributes.taskId)|\(activity.attributes.role)"
+                if let current = newest[key] {
+                    if activity.content.state.revision > current.content.state.revision {
+                        newest[key] = activity
+                    }
+                } else {
+                    newest[key] = activity
+                }
+            }
+            for activity in all {
+                let key = "\(activity.attributes.taskId)|\(activity.attributes.role)"
+                guard let winner = newest[key], winner.id != activity.id else { continue }
+                NSLog("[JobaActivity] closing duplicate card %@ for %@", activity.id, key)
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+
             var items: [[String: Any]] = []
-            for activity in Activity<JobaTaskActivity>.activities {
+            for activity in newest.values {
                 items.append([
                     "activityId": activity.id,
                     // "local" = this app requested it; "remote" = the system

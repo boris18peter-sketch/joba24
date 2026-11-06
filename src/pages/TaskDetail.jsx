@@ -17,6 +17,7 @@ import BoostOverlay from '@/components/BoostOverlay';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
 import TaskApplicants from '@/components/TaskApplicants';
+import TaskUnavailablePopup from '@/components/TaskUnavailablePopup';
 import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import TaskImage from '@/components/TaskImage';
@@ -741,7 +742,9 @@ export default function TaskDetail(props) {
       </div>);
 
   }
-  if (!task) return <div className="p-8 text-center text-muted-foreground">{t('task_not_found')}</div>;
+  // No record to show — the task was deleted, expired, or belongs to another
+  // Brand. A branded card with a way forward, never a bare line of grey text.
+  if (!task) return <TaskUnavailablePopup kind="missing" />;
 
   const distKm = (() => {
     if (!userLocation || !task.lat || !task.lng) return null;
@@ -776,6 +779,14 @@ export default function TaskDetail(props) {
   const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
   const statusLabel = getStatusLabel(task.status, isOwner, t);
   const isExpired = task.status === 'EXPIRED';
+
+  // ── A TASK THAT IS NO LONGER HIS TO SEE ──────────────────────────────────
+  // Somebody else took it between the push and the tap. There is no action this
+  // person can take on it and no details he may see, so the sheet answers the
+  // question he actually has ("what happened?") and sends him to the tasks that
+  // are still open — instead of opening onto an empty screen.
+  const takenByOther = task.status === 'TAKEN' && !!task.worker_id && me?.id !== task.worker_id && me?.id !== task.client_id;
+  if (takenByOther) return <TaskUnavailablePopup kind="taken" />;
 
   // hasApplied (local state) + myApp (server state) — both prevent showing the apply button
   const alreadyApplied = hasApplied || !!myApp;
