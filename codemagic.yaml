@@ -851,6 +851,24 @@ workflows:
       - name: Add Android platform
         script: |
           npx cap add android
+      # ── THE PUSH-TAP INTENT FILTER ─────────────────────────────────────────
+      # `npx cap add android` regenerates AndroidManifest.xml from the Capacitor
+      # template, which declares NO activity for the action Joba24's pushes set
+      # as `click_action` (FCM_PLUGIN_ACTIVITY). Android therefore had nothing to
+      # resolve a notification tap to: the notification opened the app onto
+      # nothing. The script adds that filter (plus the notification/location
+      # permissions) and is idempotent, so re-running it changes nothing.
+      #
+      # It MUST run here — after the platform is added and before the manifest is
+      # read by anything else. Until now the script existed but no step called it,
+      # so the fix never reached a build while the payload already sent the action.
+      - name: Patch Android manifest (push taps, deep links, permissions)
+        script: |
+          python3 scripts/patch-android-manifest.py
+          if ! grep -q "FCM_PLUGIN_ACTIVITY" android/app/src/main/AndroidManifest.xml; then
+            echo "ERROR: FCM_PLUGIN_ACTIVITY intent-filter missing — notification taps will open nothing"
+            exit 1
+          fi
       - name: Inject Meta App Events SDK for Android
         script: |
           python3 << 'PYEOF'
