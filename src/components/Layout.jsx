@@ -67,6 +67,7 @@ import BoostOverlay from '@/components/BoostOverlay';
 import { myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery, selectActiveWorkerTask, selectActiveClientTask } from '@/lib/queries';
 import { reconcileActiveTask } from '@/lib/activeTaskCache';
 import { hasAskedCompletionPrompt, markCompletionPromptAsked } from '@/lib/completionPrompt';
+import { isPopupBlocked, setPopupBlock } from '@/lib/popupGate';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -367,6 +368,10 @@ export default function Layout() {
   // The closing note of the completion flow — shown once the rating is behind
   // the user. See TaskCompletedCongratsPopup for why the order matters.
   const [congratsTask, setCongratsTask] = useState(null);
+  // The note WAITS here until its turn (see the effect below). Completion is one
+  // sequence — rate → the bonus the rating earned → the closing note — and each
+  // step owns the screen alone.
+  const [pendingCongrats, setPendingCongrats] = useState(null);
   // Tasks whose rating sheet is raised or on screen. The ask is raised on a short
   // delay, and several triggers fire in that window (a realtime update, the task
   // screen, the newest-completed fallback). Without this, the second one would
@@ -393,8 +398,31 @@ export default function Layout() {
     // Same rule as the rating: the sheet steps aside, so the note is never
     // underneath the details the user happened to have open.
     if (sheetTaskId === task.id) closeTaskSheet();
-    setCongratsTask({ task, role: me.id === task.worker_id ? 'worker' : 'client' });
+    setPendingCongrats({ task, role: me.id === task.worker_id ? 'worker' : 'client' });
   }, [me?.id, sheetTaskId, closeTaskSheet]);
+
+  // ── THE NOTE TAKES ITS TURN, LAST ─────────────────────────────────────────
+  // Order after a completed job: the rating ask, then the bonus that rating
+  // earned (if any), then this note. The rating sheet and the bonus each hold
+  // the popup gate while they are on screen, and the bonus also holds it while
+  // its reward is being checked — so the note simply waits for the screen to be
+  // free. The settle window matters: the note is queued a moment BEFORE the
+  // bonus has claimed anything, and without it the note took the screen and the
+  // bonus landed on top of it, which is the jumble this fixes.
+  useEffect(() => {
+    if (!pendingCongrats) return undefined;
+    let ticks = 0;
+    const timer = setInterval(() => {
+      ticks += 1;
+      // A settle window first (the bonus is found by a short server read that
+      // starts the moment the rating closes), then the note waits as long as
+      // anything still owns the screen.
+      if (ticks < 4 || isPopupBlocked()) return;
+      setPendingCongrats(null);
+      setCongratsTask(pendingCongrats);
+    }, 300);
+    return () => clearInterval(timer);
+  }, [pendingCongrats]);
 
   const maybeShowRating = useCallback((task) => {
     if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
@@ -426,9 +454,24 @@ export default function Layout() {
     // and only once it is closed does the note appear. They can never overlap,
     // and the rating can never land on top of the note.
     setCongratsTask(null);
+    setPendingCongrats(null);
     markCompletionPromptAsked(me.id, task.id, 'rating');
     ratingPendingRef.current.add(task.id);
-    setTimeout(() => {
+    // ── THE ASK CLAIMS THE GATE BEFORE IT IS ON SCREEN ───────────────────────
+    // The sheet holds the gate, but it opens on a short delay so the ✓ on the
+    // card is seen first — and in that window a bonus arriving from the server
+    // took the screen in front of the ask. Claiming it here, the moment the ask
+    // is decided, keeps the order (rate first, then the bonus the rating earned)
+    // whatever lands during those 800ms.
+    setPopupBlock('rating', true);
+    const open = () => {
+      // ── NEVER ON TOP OF ANOTHER SHEET ────────────────────────────────────
+      // A bonus can already be on screen when the worker opens the app after a
+      // completed job. Opening the ask over it is exactly the pile the user
+      // reported: a bonus, and a rating sheet on top of the bonus. The ask waits
+      // its turn instead — it never covers anything, and it is always the thing
+      // that ends first, so the note behind it keeps its place in the order.
+      if (isPopupBlocked('rating')) { setTimeout(open, 300); return; }
       // ── THE SHEET MUST STEP ASIDE FOR THE CELEBRATION ────────────────────
       // A completion made on the Lock Screen opens the app straight into this
       // task's detail sheet. With that sheet left open, the rating (and the
@@ -438,7 +481,8 @@ export default function Layout() {
       // the rest of the completion flow already uses.
       if (sheetTaskId === task.id) closeTaskSheet();
       setRatingTask(task);
-    }, 800);
+    };
+    setTimeout(open, 800);
   }, [me?.id, queryClient, sheetTaskId, closeTaskSheet, showCongrats]);
 
   useEffect(() => {
@@ -848,7 +892,11 @@ export default function Layout() {
           // destination, so keeping both would have told the user the same news
           // twice with one copy underneath the other. The popup carries the
           // destination now (earnings for a worker, the task for a publisher).
-          setCongratsTask({
+          // The gate the ask claimed when it was decided is released here — the
+          // moment the rating is behind the user. What comes next (the bonus it
+          // earned, then the note) is queued behind that release.
+          setPopupBlock('rating', false);
+          setPendingCongrats({
             task: ratingTask,
             role: me.id === ratingTask.worker_id ? 'worker' : 'client',
           });

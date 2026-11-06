@@ -23,8 +23,16 @@ export function setPopupBlock(key, active) {
   listeners.forEach((fn) => fn());
 }
 
-export function isPopupBlocked() {
-  return blockers.size > 0;
+/**
+ * Is the screen taken? `exceptKey` asks the same question on behalf of a holder
+ * that should not count itself — the rating ask claims the gate the moment it is
+ * scheduled, and then has to see whether anything ELSE is still on screen before
+ * it opens.
+ */
+export function isPopupBlocked(exceptKey) {
+  if (!exceptKey) return blockers.size > 0;
+  for (const key of blockers) if (key !== exceptKey) return true;
+  return false;
 }
 
 export function subscribePopupGate(fn) {

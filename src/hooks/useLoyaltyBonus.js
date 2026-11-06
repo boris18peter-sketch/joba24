@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { isPopupBlocked, subscribePopupGate } from '@/lib/popupGate';
+import { isPopupBlocked, setPopupBlock, subscribePopupGate } from '@/lib/popupGate';
 import { hasAnnouncedBonus, rememberBonusAnnounced } from '@/lib/bonusAnnouncement';
 
 /**
@@ -36,6 +36,12 @@ export function useLoyaltyBonus(user) {
       const next = pendingRef.current;
       if (!next) return;
       pendingRef.current = null;
+      // ── THE BONUS HOLDS THE GATE WHILE IT IS ON SCREEN ────────────────────
+      // Taken BEFORE it is shown, so the next thing in the chain (the completion
+      // note) can never be handed the gate in the instant between this popup
+      // being chosen and it actually mounting. Without it the note opened on top
+      // of the bonus it was supposed to follow.
+      setPopupBlock('bonus', true);
       // Marked only once the bonus is actually shown, so a bonus held while the
       // rating sheet was open is never silently lost.
       rememberBonusAnnounced(userId, next.key);
@@ -131,5 +137,10 @@ export function useLoyaltyBonus(user) {
     };
   }, [user?.id]);
 
-  return { bonus, clearBonus: () => setBonus(null) };
+  // Closing the popup releases the gate it held while it was on screen — that
+  // release is what lets the completion note take its turn.
+  return {
+    bonus,
+    clearBonus: () => { setPopupBlock('bonus', false); setBonus(null); },
+  };
 }

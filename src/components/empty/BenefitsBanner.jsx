@@ -436,8 +436,13 @@ export default function BenefitsBanner() {
 
         @media (prefers-color-scheme: dark) {
           .j-ben { border-color: rgba(255,255,255,0.07); }
+          /* Both banners wear the SAME blue at night. The speed slide used to keep
+             its daylight amber, darkened into a brown-charcoal, which read as a
+             different, muddier card than the one beside it — and as a grey block
+             against the app's dark blue surface. In dark mode the family colour
+             carries the slide, exactly as it does on the first one. */
           .j-ben-s1 { background: linear-gradient(105deg, #14243f 0%, #16273f 58%, #121e34 100%); }
-          .j-ben-s2 { background: linear-gradient(105deg, #2a2416 0%, #262218 58%, #1d1b13 100%); }
+          .j-ben-s2 { background: linear-gradient(105deg, #14243f 0%, #16273f 58%, #121e34 100%); }
           .j-ben-s3 { background: linear-gradient(105deg, #1d1f3c 0%, #202244 58%, #181a33 100%); }
           .j-ben-eyebrow { color: #9fb6d8; }
           .j-ben-title { color: #f8fafc; }
