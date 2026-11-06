@@ -66,6 +66,7 @@ import { bootMark } from '@/lib/bootTrace';
 import BoostOverlay from '@/components/BoostOverlay';
 import { myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery, selectActiveWorkerTask, selectActiveClientTask } from '@/lib/queries';
 import { reconcileActiveTask } from '@/lib/activeTaskCache';
+import { hasAskedCompletionPrompt, markCompletionPromptAsked } from '@/lib/completionPrompt';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -366,8 +367,13 @@ export default function Layout() {
   // The closing note of the completion flow — shown once the rating is behind
   // the user. See TaskCompletedCongratsPopup for why the order matters.
   const [congratsTask, setCongratsTask] = useState(null);
-  const shownRatingRef = useRef(new Set());
-  const shownCongratsRef = useRef(new Set());
+  // Tasks whose rating sheet is raised or on screen. The ask is raised on a short
+  // delay, and several triggers fire in that window (a realtime update, the task
+  // screen, the newest-completed fallback). Without this, the second one would
+  // read "already asked" and raise the closing note — which then flashed for a
+  // moment and was replaced by the rating. The note belongs AFTER the ask.
+  const ratingPendingRef = useRef(new Set());
+
 
   // ── THE CLOSING NOTE STANDS ON ITS OWN ────────────────────────────────────
   // It used to be handed over by the rating's own onClose, so a completion the
@@ -378,9 +384,12 @@ export default function Layout() {
   const showCongrats = useCallback((task) => {
     if (!me?.id || !task?.id) return;
     if (me.id !== task.client_id && me.id !== task.worker_id) return;
-    const key = `congrats_${task.id}_${me.id}`;
-    if (localStorage.getItem(key) || shownCongratsRef.current.has(task.id)) return;
-    shownCongratsRef.current.add(task.id);
+    // The note never lands on top of its own ask.
+    if (ratingPendingRef.current.has(task.id)) return;
+    // Asked at most once per task per user, and marked NOW — at show time — so a
+    // remount or a relaunch cannot raise the same note again.
+    if (hasAskedCompletionPrompt(me.id, task.id, 'congrats')) return;
+    markCompletionPromptAsked(me.id, task.id, 'congrats');
     // Same rule as the rating: the sheet steps aside, so the note is never
     // underneath the details the user happened to have open.
     if (sheetTaskId === task.id) closeTaskSheet();
@@ -390,10 +399,15 @@ export default function Layout() {
   const maybeShowRating = useCallback((task) => {
     if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
     if (me.id !== task.client_id && me.id !== task.worker_id) return;
-    const key = `rated_${task.id}_${me.id}`;
-    // Already rated on this device / in this session: there is no ask to make,
-    // so the note is the only thing left to show.
-    if (localStorage.getItem(key) || shownRatingRef.current.has(task.id)) { showCongrats(task); return; }
+    // ── ONE ASK PER TASK, FOR EVER ─────────────────────────────────────────
+    // This used to be a component ref plus a key written only when the sheet was
+    // CLOSED. A ref dies with the mount, and a user who dismissed by closing the
+    // app or navigating away never reached onClose — nothing was recorded, so the
+    // next trigger asked again. And it was asked again: opening the finished
+    // task, any realtime update on it, and the newest-completed fallback all
+    // dispatch this same ask. The mark is written the moment the sheet is raised,
+    // so the ask cannot repeat on any of them.
+    if (hasAskedCompletionPrompt(me.id, task.id, 'rating')) { showCongrats(task); return; }
     // Check if a review already exists — don't show the modal for already-reviewed tasks.
     // NOTE: getQueryData returns the RAW queryFn result (an array), NOT the
     // `select`-transformed value. When TaskDetail is open, its myReview query
@@ -412,10 +426,8 @@ export default function Layout() {
     // and only once it is closed does the note appear. They can never overlap,
     // and the rating can never land on top of the note.
     setCongratsTask(null);
-    shownRatingRef.current.add(task.id);
-    // Don't persist the localStorage key yet — only when the user actually
-    // closes the modal (onClose below). Otherwise a navigation that unmounts
-    // Layout before the 800ms timeout would mark the task "rated" forever.
+    markCompletionPromptAsked(me.id, task.id, 'rating');
+    ratingPendingRef.current.add(task.id);
     setTimeout(() => {
       // ── THE SHEET MUST STEP ASIDE FOR THE CELEBRATION ────────────────────
       // A completion made on the Lock Screen opens the app straight into this
@@ -446,7 +458,6 @@ export default function Layout() {
   // the NEWEST recent completion is offered, and only once per session: a
   // history of old jobs must never start asking for ratings, and a task whose
   // rating was already given has its key and is skipped here.
-  const autoPromptedRef = useRef(new Set());
   useEffect(() => {
     if (!me?.id) return;
     const DAY_MS = 24 * 60 * 60 * 1000;
@@ -456,14 +467,13 @@ export default function Layout() {
         && task.status === 'COMPLETED'
         && (task.client_id === me.id || task.worker_id === me.id))
       .filter((task) => {
-        if (autoPromptedRef.current.has(task.id)) return false;
-        if (localStorage.getItem(`rated_${task.id}_${me.id}`)) return false;
+        // Already asked about this one (now or on any earlier visit) → skip it.
+        if (hasAskedCompletionPrompt(me.id, task.id, 'rating')) return false;
         const at = stamp(task);
         return Number.isFinite(at) && Date.now() - at < DAY_MS;
       })
       .sort((a, b) => stamp(b) - stamp(a));
     if (!candidates.length) return;
-    autoPromptedRef.current.add(candidates[0].id);
     maybeShowRating(candidates[0]);
   }, [myPublishedTasks, workerTasks, me?.id, maybeShowRating]);
 
@@ -824,11 +834,10 @@ export default function Layout() {
       {/* Task alerts (cancelled / revoked / cancel-success) render globally via GlobalPopups */}
       {ratingTask && me && createPortal(
         <RatingModal task={ratingTask} me={me} onClose={() => {
-          localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');
-          // The note that follows is this task's last word: marking it here is
-          // what stops the eligible-fallback in showCongrats from raising the
-          // same note a second time once the rating is gone.
-          localStorage.setItem(`congrats_${ratingTask.id}_${me.id}`, '1');
+          // Both prompts were marked as asked the moment they were raised (see
+          // completionPrompt), so nothing needs recording here — closing the
+          // sheet only has to hand over to the note below.
+          ratingPendingRef.current.delete(ratingTask.id);
           // ── THE THANK-YOU COMES AFTER THE ASK ────────────────────────────
           // Completion is three moments, in this order: the ✓ on the task card,
           // then the rating sheet, then this. Asking and then thanking is a
