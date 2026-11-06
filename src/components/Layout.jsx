@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
@@ -53,7 +53,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import usePermissionStatus from '@/hooks/usePermissionStatus';
-import GuestBlockPopup from '@/components/GuestBlockPopup';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { readPendingTask } from '@/lib/pendingTask';
 import { useTaskSheet } from '@/lib/TaskSheetContext';

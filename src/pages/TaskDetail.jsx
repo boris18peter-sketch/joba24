@@ -2,32 +2,23 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { trackEvent } from '@/lib/analytics';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users } from 'lucide-react';
+import { MapPin, Clock, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
-import BoostOverlay from '@/components/BoostOverlay';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
-import TaskExpiry from '@/components/TaskExpiry';
 import TaskApplicants from '@/components/TaskApplicants';
 import TaskUnavailablePopup from '@/components/TaskUnavailablePopup';
-import BackButton from '@/components/BackButton';
-import NavButtons from '@/components/NavButtons';
 import TaskImage from '@/components/TaskImage';
 import CreditIcon from '@/components/CreditIcon';
-import { getCategoryLabel } from '@/lib/categories';
-import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
-import { getActiveRequirements } from '@/lib/requirements';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
-import CategoryDetailsView from '@/components/CategoryDetailsView';
-import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
+import { calculateCurrentPrice, formatHourlySublabel } from '@/lib/priceCalculator';
 import { isUserVerified, hasSocialVerified, copyToClipboard } from '@/lib/utils';
 import { raiseAppOffer } from '@/lib/appOffer';
 import { selectTask, patchTaskCache } from '@/lib/taskCache';
@@ -43,7 +34,6 @@ const CATEGORY_EMOJI = {
 import VerifyModal from '@/components/VerifyModal';
 import VerificationRequiredModal from '@/components/VerificationRequiredModal';
 import VerificationPendingModal from '@/components/VerificationPendingModal';
-import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
@@ -52,17 +42,14 @@ import MediaLightbox from '@/components/MediaLightbox';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import ReportModal from '@/components/ReportModal';
 import PageHeader from '@/components/PageHeader';
-import TrustBadges from '@/components/TrustBadges';
 import { parseDescription } from '@/lib/descriptionParser';
 import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 import BoostPill from '@/components/BoostPill';
-import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import ActiveTaskBannerFromCache from '@/components/ActiveTaskBannerFromCache';
 import ScheduleChangeCard from '@/components/schedule/ScheduleChangeCard';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import { fetchPublicTasks, fetchApplicantStats } from '@/lib/publicTasks';
-import { actionableCategoryKey } from '@/lib/brand/categoryRegistry';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 
 const getScanningTexts = (t) => t('scanning_texts');
@@ -103,10 +90,8 @@ const TaskLocationMap = lazy(() => import('@/components/TaskLocationMap'));
 const BuyCreditsModal = lazy(() => import('@/components/BuyCreditsModal'));
 
 
-import ApplySheet from '@/components/ApplySheet';
 import { chatThreadKey } from '@/lib/chatThread';
 import { invalidateTaskCaches } from '@/lib/taskSync';
-import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner, t) => {
