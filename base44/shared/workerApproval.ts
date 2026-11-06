@@ -13,6 +13,7 @@
  */
 
 import { scheduleSignature, hasSchedule, occurrencesOf, formatOccurrenceHe } from './scheduling.ts';
+import { runTaskTransition } from './taskTransitionFastLane.ts';
 
 export type ApprovalResult = { status: number; body: Record<string, any> };
 
@@ -179,5 +180,29 @@ export async function approveWorkerCore(base44: any, actor: ApprovalActor): Prom
   }
 
   console.log('✅ APPROVAL COMPLETE - DATA VERIFIED');
-  return { status: 200, body: { success: true, task: updatedTask } };
+
+  // ── THE WORKER'S CARD IS ARMED HERE, BY THE APPROVAL ITSELF ──────────────
+  // Approval used to leave the Live Activity to two other things: the client
+  // calling `taskTransitionDispatch` afterwards (only the applicants list did),
+  // and the entity workflow. The workflow is measured at 30–84 s behind a burst
+  // — the runs of this very event took 66 s and 80 s today — so the card's
+  // start push arrived long after the worker had already opened the app, whose
+  // own bridge then started the card locally. The result was exactly what was
+  // reported: the widget only appeared once the app was opened.
+  //
+  // Running the ONE shared sender here makes the approval itself start the
+  // card, immediately and for EVERY entry point (applicants list, new-applicant
+  // popup, task screen, simulator, Lock Screen) — there is no second
+  // implementation and nothing new to keep in sync. A repeat is refused by the
+  // planner's own revision claim, so this can never produce a second card.
+  let liveActivity = null;
+  try {
+    liveActivity = await runTaskTransition({ base44, task: updatedTask, previousWorkerStatus: '' });
+  } catch (dispatchError) {
+    // A Lock Screen or a push may never break an approval that is already
+    // written; the durable workflow still carries the same event.
+    console.log('[approveWorker] live activity dispatch failed:', dispatchError?.message);
+  }
+
+  return { status: 200, body: { success: true, task: updatedTask, live_activity: liveActivity?.live_activity || [] } };
 }
