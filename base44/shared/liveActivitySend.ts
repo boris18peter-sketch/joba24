@@ -403,30 +403,12 @@ async function readState(base44, { recipientId, taskId, role }) {
  * A claim is NOT a delivery: `start_released` (or revision 0) is written back when
  * nothing was actually sent, so a failed attempt never blocks the next one.
  */
-async function claimStartState(base44, { recipientId, taskId, role, taskStatus, now, restart = false }) {
+async function claimStartState(base44, { recipientId, taskId, role, taskStatus, now }) {
   const existing = await readState(base44, { recipientId, taskId, role });
   if (existing) {
     const revision = Number(existing.revision) || 0;
-    // ── A CARD-LESS PAIR MAY BE STARTED AGAIN ────────────────────────────
-    // `restart` is only ever passed when the recipient has NO active activity
-    // token for this card (see dispatchRecipient), so this takeover can never
-    // take the slot from a card that is on a phone. The revision restarts at 1
-    // because the new activity is a NEW card: ActivityKit compares revisions
-    // within one activity, and a card starting at 1 that later receives 2, 3…
-    // is exactly the sequence every other card follows.
-    if (restart && !existing.terminal) {
-      const at = new Date(now).toISOString();
-      const taken = await base44.asServiceRole.entities.LiveActivityState.update(existing.id, {
-        revision: 1,
-        terminal: false,
-        task_status: taskStatus || '',
-        last_decision: 'restart_claimed',
-        last_event_at: at,
-        claim_id: '',
-      }).catch(() => null);
-      if (!taken?.id) return { claimed: false, revision };
-      return { claimed: true, state: { ...existing, ...taken } };
-    }
+    // Never take the slot back from a pair that has already been started —
+    // see the note on `remoteStart` in dispatchRecipient.
     if (revision > 0 || existing.terminal) return { claimed: false, revision };
     // ── A RELEASED SLOT IS FREE AGAIN ──────────────────────────────────────
     // `start_released` writes revision 0 precisely so the pair is startable
@@ -507,10 +489,29 @@ export async function beginRecipientState(base44, input) {
 
   const existing = await readState(base44, { recipientId, taskId: task.id, role });
   if (existing) {
+    const revision = Math.max(1, Math.floor(Number(existing.revision) || 1));
+    // ── A RELEASED ROW MUST BE RE-CLAIMED BY THE DEVICE THAT STARTS A CARD ──
+    // A start push that delivered nothing gives its claim back as revision 0, so
+    // the pair stays startable. The device then starts the card itself and asks
+    // here — and this used to answer `revision: 1` WITHOUT writing it, leaving the
+    // row at 0. The server therefore still believed no card existed and sent a
+    // Push-to-Start on the next event, which iOS answered with a SECOND card
+    // beside the live one: the doubled Lock Screen widget. Claiming the row here
+    // is what makes "the device owns a card" durable.
+    if (revision === 1 && Number(existing.revision) === 0) {
+      await base44.asServiceRole.entities.LiveActivityState.update(existing.id, {
+        revision: 1,
+        terminal: false,
+        task_status: task.status || '',
+        last_decision: 'device_start',
+        last_event_at: new Date(now).toISOString(),
+        claim_id: '',
+      }).catch(() => null);
+    }
     return {
       ok: true,
       decision: 'existing',
-      revision: Math.max(1, Math.floor(Number(existing.revision) || 1)),
+      revision,
       terminal: existing.terminal === true,
     };
   }
@@ -814,31 +815,30 @@ export async function dispatchRecipient(input) {
   //    running card to update instead of requesting a second one;
   //  • the recipient has a start token — iOS 17.2+ only. An older install never
   //    registers one, so its behaviour is exactly what it was before.
-  // ── AND WHEN THE CARD IS GONE, A START IS THE ONLY WAY BACK ──────────────
-  // `revision > 0` used to mean "a card exists", so a start was never sent
-  // again for that pair. But the revision says a card once DID exist — not that
-  // it still does. A card the user swiped away, or one iOS dropped, leaves the
-  // state row behind at revision 5 while the device has no activity at all; the
-  // next status update was then addressed to tokens that no longer reach
-  // anything, APNs answered 410, and the card never came back until the app was
-  // opened by hand. That is the "it does not open by itself" report.
+  // ── A SECOND CARD IS A BUG, SO A PAIR IS STARTED EXACTLY ONCE ────────────
+  // This must stay a HARD rule: revision > 0 means a start was already sent for
+  // this (user, task, role), and iOS does NOT deduplicate a Push-to-Start — every
+  // start push creates ANOTHER card next to the one already on the Lock Screen.
   //
-  // A pair with NO usable activity token and a start token is a pair with no
-  // card, so the update is delivered as a start. The 90-second floor is what
-  // keeps this from racing a card the DEVICE is starting right now: a local
-  // `begin`/`sync` writes `last_event_at`, and its token reaches the server
-  // seconds later — inside that window the pair looks card-less too.
-  const lastEventAt = state?.last_event_at ? Date.parse(state.last_event_at) : NaN;
-  const quietForMs = Number.isFinite(lastEventAt) ? (now - lastEventAt) : Infinity;
-  const cardless = tokens.length === 0 && !state?.terminal;
-  const restartStart = cardless
-    && Number(state?.revision || 0) > 0
-    && quietForMs > 90000;
-
+  // A "the card is gone, so start it again" path was tried and removed: a missing
+  // activity token is NOT proof that the card is gone. A token can be missing
+  // because it is still travelling to the server, because registration failed on
+  // an older build, or because a failed dispatch released its claim — and in every
+  // one of those cases the card IS on the phone. Sending a start then produced the
+  // exact doubled widget that was reported, so the pairing stays one-way.
+  // ── …AND NEVER NEXT TO A CARD THAT IS PROVABLY ALREADY THERE ─────────────
+  // A registered activity token is issued BY a card, so a recipient holding one
+  // for this (user, task, role) is direct proof that the card exists. iOS does NOT
+  // deduplicate Push-to-Start, so a start sent then lands a SECOND card beside the
+  // live one — the doubled Lock Screen widget. That is reachable whenever a card
+  // exists while the server has no committed revision for it (a build that never
+  // called `begin`, or a state row released after a failed dispatch), so the token
+  // check — not only the revision — is what actually prevents it.
   const remoteStart = plan.kind === 'send'
     && config?.push_to_start === true
     && startTokens.length > 0
-    && (!(Number(state?.revision) > 0) || restartStart);
+    && tokens.length === 0
+    && !(Number(state?.revision) > 0);
 
   const targetTokens = remoteStart ? startTokens : tokens;
   if (!targetTokens.length) {
@@ -937,8 +937,6 @@ export async function dispatchRecipient(input) {
       role,
       taskStatus: task.status,
       now,
-      // Only a pair with no card on any device may take the slot back.
-      restart: restartStart,
     });
     if (!claim.claimed) {
       return {
