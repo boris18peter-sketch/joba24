@@ -537,6 +537,7 @@ def parse_bool(raw, name):
 def cmd_select(args):
     now = datetime.datetime.utcnow()
     require_widget = parse_bool(args.require_widget, "--require-widget")
+    require_clip = parse_bool(args.require_clip, "--require-clip")
     app_group = [g for g in (args.app_group or []) if g]
 
     profiles_dir = os.path.expanduser(args.profiles_dir or "")
@@ -591,10 +592,23 @@ def cmd_select(args):
         if not args.widget_bundle_id:
             raise SigningError("the widget is enabled but --widget-bundle-id is empty")
         wanted.append(("widget", args.widget_bundle_id))
+    if require_clip:
+        if not args.clip_bundle_id:
+            raise SigningError("the App Clip is enabled but --clip-bundle-id is empty")
+        wanted.append(("clip", args.clip_bundle_id))
+
+    # ── THE APP GROUP IS AN APP/WIDGET REQUIREMENT, NOT A CLIP ONE ──────────
+    # The app and its widget share the App Group on purpose (that is how the
+    # widget reads its auth). A clip shares no container with the app unless it
+    # asks to, so demanding the group of the clip's profile would reject the
+    # only profile Apple can legally issue for it — and fail the whole build
+    # over a group nothing needs.
+    role_groups = {"app": app_group, "widget": app_group, "clip": []}
 
     targets, rejected, notes = {}, {}, []
     for role, bundle_id in wanted:
-        chosen, evaluated = choose(profiles, bundle_id, identities, app_group, expected_team, now)
+        chosen, evaluated = choose(profiles, bundle_id, identities, role_groups[role],
+                                   expected_team, now)
         identity = matching_identity(chosen, identities)
         targets[bundle_id] = {
             "role": role,
@@ -738,13 +752,22 @@ def cmd_verify_ipa(args):
     report = read_selection(args.selection)
     app_bundle_id, app_target = selected_target(report, "app")
     widget_bundle_id, widget_target = selected_target(report, "widget")
+    clip_bundle_id, clip_target = selected_target(report, "clip")
     entries = embedded_profiles(args.ipa)
     if not entries:
         raise SigningError("the .ipa embeds no provisioning profile — it is not a signed build")
 
     seen = {}
     for name, profile in entries:
-        if ".appex/" in name:
+        # ── A CLIP SITS ONE LEVEL DEEPER THAN AN EXTENSION ──────────────────
+        # An App Clip is embedded at App.app/AppClips/<Clip>.app, so its path
+        # has one more component than the app's own profile. Without this branch
+        # it fell through to "other" — where every profile for a child of the
+        # app's bundle id is reported as an unselected profile, i.e. the clip
+        # would have looked like a signature nobody chose.
+        if "/AppClips/" in name:
+            role = "clip"
+        elif ".appex/" in name:
             role = "widget"
         elif name.count("/") == 2:
             role = "app"
@@ -752,18 +775,21 @@ def cmd_verify_ipa(args):
             role = "other"
         seen.setdefault(role, []).append((name, profile))
 
+    labels = {"app": "app", "widget": "widget", "clip": "App Clip"}
     failures = []
     for role, expected_bundle, target in (("app", app_bundle_id, app_target),
-                                          ("widget", widget_bundle_id, widget_target)):
+                                          ("widget", widget_bundle_id, widget_target),
+                                          ("clip", clip_bundle_id, clip_target)):
         found = seen.get(role) or []
         if target is None:
             if found:
-                failures.append("the .ipa embeds an extension profile but the widget was not part "
-                                "of this build: %s" % ", ".join(n for n, _ in found))
+                failures.append("the .ipa embeds an %s profile but the %s was not part of this "
+                                "build: %s" % (labels[role], labels[role],
+                                               ", ".join(n for n, _ in found)))
             continue
         if not found:
             failures.append("no %s provisioning profile is embedded in the .ipa "
-                            "(expected UUID %s)" % (role, target["uuid"]))
+                            "(expected UUID %s)" % (labels[role], target["uuid"]))
             continue
         for name, profile in found:
             if profile["bundle_id"] != expected_bundle:
@@ -817,6 +843,10 @@ def build_parser():
     select.add_argument("--widget-bundle-id", default="")
     select.add_argument("--require-widget", default="false",
                         help="true when this build embeds the widget extension")
+    select.add_argument("--clip-bundle-id", default="",
+                        help="the App Clip's bundle id (the app's id plus .Clip)")
+    select.add_argument("--require-clip", default="false",
+                        help="true when this build embeds the App Clip")
     select.add_argument("--app-group", action="append", default=[],
                         help="an App Group the selected profiles must carry (repeatable)")
     select.add_argument("--team-id", default="",

@@ -41,6 +41,7 @@ const CODEMAGIC = join(ROOT, 'codemagic.yaml');
 
 const APP = 'com.joba24.preflight.app';
 const WIDGET = `${APP}.JobaActivityWidget`;
+const CLIP = `${APP}.Clip`;
 const TEAM = 'TEAM123456';
 const GROUP = `group.${APP}`;
 
@@ -467,6 +468,64 @@ describe('the export and the .ipa are proven to use the selected profiles', () =
     expect(exported.status).toBe(1);
     expect(exported.plist).toBe('');
     expect(exported.stderr).toContain('one profile name');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4b. THE APP CLIP — a child bundle id, a profile of its own,
+       and NO App Group demanded of it
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('the App Clip is signed like its own bundle, not like an extension', () => {
+  const withClip = () => {
+    const dir = profilesDir([
+      { file: 'app', uuid: 'UUID-APP', name: 'Joba24 AppStore', groups: [GROUP] },
+      // A real clip profile carries no App Group: a clip shares no container
+      // with the app unless it asks to.
+      { file: 'clip', uuid: 'UUID-CLIP', name: 'Joba24 App Clip', bundleId: CLIP },
+    ]);
+    return select(dir, ['--clip-bundle-id', CLIP, '--require-clip', 'true']);
+  };
+
+  it('selects the clip profile even though it has no App Group', () => {
+    const selection = withClip();
+    expect(selection.status).toBe(0);
+    expect(selection.report.targets[CLIP].role).toBe('clip');
+    expect(selection.report.targets[CLIP].uuid).toBe('UUID-CLIP');
+    expect(selection.report.targets[APP].uuid).toBe('UUID-APP');
+    // …and the app still has to carry the group its widget depends on.
+    expect(selection.report.targets[APP].groups).toContain(GROUP);
+  });
+
+  it('puts the clip into export_options.plist by name', () => {
+    const selection = withClip();
+    const exported = exportedFrom(selection.reportPath, selection.work);
+    expect(exported.status).toBe(0);
+    expect(exported.plist).toContain('<string>Joba24 App Clip</string>');
+    expect(exported.plist).toContain(CLIP);
+  });
+
+  it('accepts an .ipa that embeds the selected clip profile', () => {
+    const selection = withClip();
+    const ipa = makeIpa([
+      ['Payload/App.app/embedded.mobileprovision', profileXml({
+        uuid: 'UUID-APP', name: 'Joba24 AppStore', groups: [GROUP] })],
+      ['Payload/App.app/AppClips/JobaClip.app/embedded.mobileprovision', profileXml({
+        uuid: 'UUID-CLIP', name: 'Joba24 App Clip', bundleId: CLIP })],
+    ]);
+    const result = run(['verify-ipa', '--selection', selection.reportPath, '--ipa', ipa]);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain('archive and export agree');
+  });
+
+  it('fails when the clip is enabled but missing from the .ipa', () => {
+    const selection = withClip();
+    const ipa = makeIpa([
+      ['Payload/App.app/embedded.mobileprovision', profileXml({
+        uuid: 'UUID-APP', name: 'Joba24 AppStore', groups: [GROUP] })],
+    ]);
+    const result = run(['verify-ipa', '--selection', selection.reportPath, '--ipa', ipa]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('no App Clip provisioning profile');
   });
 });
 

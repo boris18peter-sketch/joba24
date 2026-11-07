@@ -385,15 +385,19 @@ describe('codemagic pipeline', () => {
     expect(yaml).toContain('widgetkit-extension point present');
   });
 
-  it('proves BOTH targets are signed before archiving', () => {
+  it('proves every embedded target is signed before archiving', () => {
     // A profile is looked up BY bundle id, so the patched project and
     // WIDGET_BUNDLE_ID are compared before anything is fetched...
     expect(yaml).toContain('project widget bundle id matches WIDGET_BUNDLE_ID');
     // ...and the project is inspected after use-profiles, so a target left
     // without a profile fails fast instead of at the end of a long archive.
-    expect(yaml).toContain('Verify BOTH targets are signed (iOS)');
+    expect(yaml).toContain('Verify every target is signed (iOS)');
     expect(yaml).toContain('no provisioning profile was applied');
-    expect(yaml).toContain('"JobaActivityWidgetExtension" => ENV["WIDGET_BUNDLE_ID"]');
+    expect(yaml).toContain('wanted["JobaActivityWidgetExtension"] = ENV["WIDGET_BUNDLE_ID"]');
+    // The App Clip is a target of its own, so it is checked in the same pass —
+    // and it runs even when only the clip is ticked.
+    expect(yaml).toContain('wanted["JobaClip"] = app_bundle + ".Clip"');
+    expect(yaml).toContain('ENABLE_APP_CLIP:-}" != "true" ]');
   });
 
   it('refuses to build when the flag could not be resolved', () => {

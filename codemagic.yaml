@@ -605,6 +605,8 @@ workflows:
             --app-bundle-id "$BUNDLE_ID" \
             --widget-bundle-id "$WIDGET_BUNDLE_ID" \
             --require-widget "${ENABLE_LIVE_ACTIVITY_WIDGET:-false}" \
+            --clip-bundle-id "${BUNDLE_ID}.Clip" \
+            --require-clip "${ENABLE_APP_CLIP:-false}" \
             --app-group "group.$BUNDLE_ID" \
             --report "$CM_BUILD_DIR/signing-report.json"
           echo "=== signing-report.json (audit + the selection) ==="
@@ -612,24 +614,28 @@ workflows:
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles --verbose
-      - name: Verify BOTH targets are signed (iOS)
+      - name: Verify every target is signed (iOS)
         script: |
-          # An extension is signed with a profile for ITS OWN bundle id. If
-          # use-profiles did not resolve one for the widget, Xcode only says so
-          # at the end of a long archive. This checks the written project up
-          # front and names exactly which target/configuration is unresolved.
-          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" != "true" ]; then
-            echo "SKIPPED: widget target not enabled - single-target signing, unchanged."
+          # An extension or a clip is signed with a profile for ITS OWN bundle id.
+          # If use-profiles did not resolve one, Xcode only says so at the end of
+          # a long archive. This checks the written project up front and names
+          # exactly which target/configuration is unresolved.
+          #
+          # The gate is "either extra target enabled", not "widget enabled": the
+          # App Clip alone must be checked too, and a build with only the clip
+          # ticked would otherwise have skipped this step entirely.
+          if [ "${ENABLE_LIVE_ACTIVITY_WIDGET:-}" != "true" ] && [ "${ENABLE_APP_CLIP:-}" != "true" ]; then
+            echo "SKIPPED: no extension or clip target enabled - single-target signing, unchanged."
             exit 0
           fi
           ruby - "${XCODE_PROJECT:-ios/App/App.xcodeproj}" <<'RB'
           require "xcodeproj"
 
           project = Xcodeproj::Project.open(ARGV[0])
-          wanted = {
-            "App" => ENV["BUNDLE_ID"],
-            "JobaActivityWidgetExtension" => ENV["WIDGET_BUNDLE_ID"],
-          }
+          app_bundle = ENV["BUNDLE_ID"].to_s
+          wanted = { "App" => app_bundle }
+          wanted["JobaActivityWidgetExtension"] = ENV["WIDGET_BUNDLE_ID"] if ENV["ENABLE_LIVE_ACTIVITY_WIDGET"] == "true"
+          wanted["JobaClip"] = app_bundle + ".Clip" if ENV["ENABLE_APP_CLIP"] == "true"
 
           failures = []
           wanted.each do |name, expected_bundle|
@@ -663,7 +669,7 @@ workflows:
             failures.each { |f| puts "  - #{f}" }
             exit 1
           end
-          puts "OK: app + widget extension are both signed, each with its own profile"
+          puts "OK: #{wanted.size} target(s) signed, each with its own profile (#{wanted.keys.join(', ')})"
           RB
       - name: Verify FACEBOOK_CLIENT_TOKEN is available (iOS)
         script: |
