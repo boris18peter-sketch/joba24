@@ -403,10 +403,30 @@ async function readState(base44, { recipientId, taskId, role }) {
  * A claim is NOT a delivery: `start_released` (or revision 0) is written back when
  * nothing was actually sent, so a failed attempt never blocks the next one.
  */
-async function claimStartState(base44, { recipientId, taskId, role, taskStatus, now }) {
+async function claimStartState(base44, { recipientId, taskId, role, taskStatus, now, restart = false }) {
   const existing = await readState(base44, { recipientId, taskId, role });
   if (existing) {
     const revision = Number(existing.revision) || 0;
+    // ── A CARD-LESS PAIR MAY BE STARTED AGAIN ────────────────────────────
+    // `restart` is only ever passed when the recipient has NO active activity
+    // token for this card (see dispatchRecipient), so this takeover can never
+    // take the slot from a card that is on a phone. The revision restarts at 1
+    // because the new activity is a NEW card: ActivityKit compares revisions
+    // within one activity, and a card starting at 1 that later receives 2, 3…
+    // is exactly the sequence every other card follows.
+    if (restart && !existing.terminal) {
+      const at = new Date(now).toISOString();
+      const taken = await base44.asServiceRole.entities.LiveActivityState.update(existing.id, {
+        revision: 1,
+        terminal: false,
+        task_status: taskStatus || '',
+        last_decision: 'restart_claimed',
+        last_event_at: at,
+        claim_id: '',
+      }).catch(() => null);
+      if (!taken?.id) return { claimed: false, revision };
+      return { claimed: true, state: { ...existing, ...taken } };
+    }
     if (revision > 0 || existing.terminal) return { claimed: false, revision };
     // ── A RELEASED SLOT IS FREE AGAIN ──────────────────────────────────────
     // `start_released` writes revision 0 precisely so the pair is startable
@@ -598,6 +618,30 @@ export async function closeRecipientState(base44, input) {
     }).catch(() => null);
   }
 
+  // ── THE CARD IS GONE, SO ITS TOKEN IS TOO ────────────────────────────────
+  // An ActivityKit token is issued per CARD. Once the device has ended the card
+  // — the job finished, or the user swiped it away — that token can never be
+  // delivered to again: APNs answers 410 and the token is retired anyway. Until
+  // this, nothing did the retiring, so every card a user had ever shown stayed
+  // `active` in the table for good. A dispatch then addressed the LIVE card
+  // together with every corpse of it, which is how one status change turned into
+  // two or three identical pushes (and, with the provider-token rate limit, into
+  // 403s that dropped the update entirely).
+  //
+  // Only this pair's activity tokens are touched, and only the ones still
+  // marked active: a `start` token belongs to the install and outlives every
+  // card, and a token created by a NEW card after this moment is untouched.
+  const stale = await base44.asServiceRole.entities.LiveActivityToken
+    .filter({ user_id: recipientId, task_id: task.id, role, status: 'active' }, { limit: 20 })
+    .catch(() => ({ items: [] }));
+  await Promise.allSettled(((stale?.items) || [])
+    .filter((row) => (row?.kind || 'activity') === 'activity')
+    .map((row) => base44.asServiceRole.entities.LiveActivityToken.update(row.id, {
+      status: 'invalid',
+      invalidated_at: at,
+      invalidated_reason: 'activity_closed',
+    }).catch(() => null)));
+
   return { ok: true, decision: 'closed', revision };
 }
 
@@ -770,10 +814,31 @@ export async function dispatchRecipient(input) {
   //    running card to update instead of requesting a second one;
   //  • the recipient has a start token — iOS 17.2+ only. An older install never
   //    registers one, so its behaviour is exactly what it was before.
+  // ── AND WHEN THE CARD IS GONE, A START IS THE ONLY WAY BACK ──────────────
+  // `revision > 0` used to mean "a card exists", so a start was never sent
+  // again for that pair. But the revision says a card once DID exist — not that
+  // it still does. A card the user swiped away, or one iOS dropped, leaves the
+  // state row behind at revision 5 while the device has no activity at all; the
+  // next status update was then addressed to tokens that no longer reach
+  // anything, APNs answered 410, and the card never came back until the app was
+  // opened by hand. That is the "it does not open by itself" report.
+  //
+  // A pair with NO usable activity token and a start token is a pair with no
+  // card, so the update is delivered as a start. The 90-second floor is what
+  // keeps this from racing a card the DEVICE is starting right now: a local
+  // `begin`/`sync` writes `last_event_at`, and its token reaches the server
+  // seconds later — inside that window the pair looks card-less too.
+  const lastEventAt = state?.last_event_at ? Date.parse(state.last_event_at) : NaN;
+  const quietForMs = Number.isFinite(lastEventAt) ? (now - lastEventAt) : Infinity;
+  const cardless = tokens.length === 0 && !state?.terminal;
+  const restartStart = cardless
+    && Number(state?.revision || 0) > 0
+    && quietForMs > 90000;
+
   const remoteStart = plan.kind === 'send'
     && config?.push_to_start === true
-    && !(Number(state?.revision) > 0)
-    && startTokens.length > 0;
+    && startTokens.length > 0
+    && (!(Number(state?.revision) > 0) || restartStart);
 
   const targetTokens = remoteStart ? startTokens : tokens;
   if (!targetTokens.length) {
@@ -872,6 +937,8 @@ export async function dispatchRecipient(input) {
       role,
       taskStatus: task.status,
       now,
+      // Only a pair with no card on any device may take the slot back.
+      restart: restartStart,
     });
     if (!claim.claimed) {
       return {

@@ -2,6 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { isPopupBlocked, setPopupBlock, subscribePopupGate } from '@/lib/popupGate';
 import { hasAnnouncedBonus, rememberBonusAnnounced } from '@/lib/bonusAnnouncement';
+import { hasAskedCompletionPrompt } from '@/lib/completionPrompt';
+
+/**
+ * How long a task-earned bonus waits for that task's rating sheet.
+ *
+ * The bonus and the ask are one flow, and the ask always comes first: a worker
+ * who is told "you got a bonus" before being asked to rate has been paid for a
+ * review he is then asked to write, which reads as a bribe and buries the sheet
+ * he is actually supposed to answer. The wait is generous because it only costs
+ * the worker a few seconds — and it expires so a bonus is never lost if the
+ * rating can never be raised (the task was already reviewed, or the sheet was
+ * dismissed through a path that recorded no ask).
+ */
+const RATING_WAIT_MS = 45000;
 
 /**
  * useLoyaltyBonus — detects a Joba bonus for the current user and raises it as a
@@ -35,6 +49,22 @@ export function useLoyaltyBonus(user) {
       if (isPopupBlocked()) return;
       const next = pendingRef.current;
       if (!next) return;
+      // ── THE RATING ASK ALWAYS COMES FIRST ─────────────────────────────────
+      // A bonus earned by a task waits for that task's rating sheet to be
+      // raised. Both are triggered by the same completion, and both used to be
+      // decided independently: the bonus catch-up read finished first and
+      // celebrated, and the rating sheet then had to wait behind it — the exact
+      // order the user reported ("the bonus popped before the rating").
+      //
+      // The mark is written the moment the ask is DECIDED (see completionPrompt),
+      // so this releases the instant the sheet is on its way — and the gate then
+      // holds the bonus until the sheet is closed, which is the order:
+      // rating → bonus → closing note.
+      if (
+        next.taskId
+        && !hasAskedCompletionPrompt(userId, next.taskId, 'rating')
+        && Date.now() - next.since < RATING_WAIT_MS
+      ) return;
       pendingRef.current = null;
       // ── THE BONUS HOLDS THE GATE WHILE IT IS ON SCREEN ────────────────────
       // Taken BEFORE it is shown, so the next thing in the chain (the completion
@@ -108,11 +138,29 @@ export function useLoyaltyBonus(user) {
 
       if (await hasAnnouncedBonus(userId, key)) return;
       if (cancelled) return;
-      pendingRef.current = { key, amount: Math.round(value), kind: isProfile ? 'profile' : 'rating' };
+      pendingRef.current = {
+        key,
+        amount: Math.round(value),
+        kind: isProfile ? 'profile' : 'rating',
+        // Which task earned it — the rating ask for THIS task is what the bonus
+        // waits behind. A profile bonus has no task and is never held.
+        taskId: isProfile ? '' : (tx.task_id || ''),
+        since: Date.now(),
+      };
       flush();
     };
 
     const unsubGate = subscribePopupGate(refresh);
+    // ── THE WAIT IS POLLED, NOT ONLY EVENT-DRIVEN ────────────────────────────
+    // A held bonus waits for a change of STATE (the rating ask being raised),
+    // which raises no popup-gate event of its own — the gate is already held by
+    // the sheet, so a second event would never come. Without this tick the
+    // bonus would sit until the next gate change, i.e. until the sheet closed
+    // and something else happened. It runs only while a bonus is actually
+    // pending, so it costs nothing in the ordinary case.
+    const holdTick = setInterval(() => {
+      if (pendingRef.current) flush();
+    }, 700);
     const onVisible = () => {
       if (document.visibilityState === 'visible') refresh();
     };
@@ -133,6 +181,7 @@ export function useLoyaltyBonus(user) {
       cancelled = true;
       unsub();
       unsubGate();
+      clearInterval(holdTick);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [user?.id]);

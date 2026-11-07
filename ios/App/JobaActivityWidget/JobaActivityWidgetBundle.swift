@@ -193,7 +193,9 @@ struct LockScreenCard: View {
                 // card, it does not compete with the status or the action.
                 HStack(spacing: 8) {
                     StatusChip(state: state, onDark: false)
-                    JobaBrandMark(size: 20)
+                    // The official mark, sized so it reads as the app's own
+                    // signature at arm's length rather than as a detail.
+                    JobaBrandMark(size: 24)
                 }
             }
 
