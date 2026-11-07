@@ -128,9 +128,11 @@ describe('the fallback is a link, never a wider credential', () => {
     expect(widget).not.toMatch(/state\.(token|actionToken)/);
   });
 
-  it('the install capability still exists only for allowlisted testers', () => {
+  it('the install capability still exists only for a tracked recipient', () => {
     const minter = read('base44/functions/issueLiveActivityActionToken/entry.ts');
-    expect(minter).toMatch(/scope === 'user'[\s\S]{0,600}isTestUser\(config, user\.id\)/);
-    expect(minter).toContain("return Response.json({ error: 'not_allowlisted' }, { status: 403 })");
+    // Test allowlist while the pipeline is off, every user once it is enabled —
+    // and never a recipient the config does not track.
+    expect(minter).toMatch(/scope === 'user'[\s\S]{0,600}isTrackedRecipient\(config, user\.id\)/);
+    expect(minter).toContain("return Response.json({ error: 'not_tracked' }, { status: 403 })");
   });
 });

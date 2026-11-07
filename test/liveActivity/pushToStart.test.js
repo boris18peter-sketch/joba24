@@ -399,10 +399,10 @@ describe('an install-scoped capability, bounded and re-authorized', () => {
     expect(endpoint).toContain('actionsForRole(role)');
   });
 
-  it('is minted only for an allowlisted tester', () => {
+  it('is minted only for a tracked recipient', () => {
     const mint = read('base44/functions/issueLiveActivityActionToken/entry.ts');
     expect(mint).toContain("body?.scope === 'user'");
-    expect(mint).toContain('isTestUser(config, user.id)');
+    expect(mint).toContain('isTrackedRecipient(config, user.id)');
     expect(mint).toContain('signUserActionToken');
   });
 });

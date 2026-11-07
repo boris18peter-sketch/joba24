@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { authorizeActivity } from '../../shared/taskActivitySnapshot.ts';
 import { actionsForRole } from '../../shared/liveActivityActionGuard.ts';
 import { signActionToken, signUserActionToken, ttlForTask, USER_SCOPE_TTL_SECONDS } from '../../shared/liveActivityActionToken.ts';
-import { normalizeConfig, isTestUser } from '../../shared/liveActivityConfig.ts';
+import { normalizeConfig, isTrackedRecipient } from '../../shared/liveActivityConfig.ts';
 
 /**
  * issueLiveActivityActionToken — mint the NARROW capability a Lock Screen button
@@ -51,8 +51,11 @@ Deno.serve(async (req) => {
         .list({ sort: '-updated_date', limit: 1 })
         .catch(() => ({ items: [] }));
       const config = normalizeConfig((configPage?.items || [])[0]);
-      if (!isTestUser(config, user.id)) {
-        return Response.json({ error: 'not_allowlisted' }, { status: 403 });
+      // Same rule as the start push it exists for: a tracked recipient (the test
+      // allowlist, or every user once the pipeline is enabled) may mint it, so a
+      // card cannot appear for someone whose button would be dead.
+      if (!isTrackedRecipient(config, user.id)) {
+        return Response.json({ error: 'not_tracked' }, { status: 403 });
       }
 
       const actions = Array.from(new Set([...actionsForRole('worker'), ...actionsForRole('publisher')]));

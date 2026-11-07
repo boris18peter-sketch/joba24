@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { normalizeConfig, isTestUser, testModeActive, sendGateFor } from '../../shared/liveActivityConfig.ts';
+import { normalizeConfig, isTrackedRecipient, testModeActive, sendGateFor } from '../../shared/liveActivityConfig.ts';
 import { beginRecipientState, syncRecipientState, closeRecipientState } from '../../shared/liveActivitySend.ts';
 
 /**
@@ -60,7 +60,12 @@ export default async function (req) {
     // ── ACCESS: the one answer every device needs at launch ─────────────────
     // Only ever about the CALLER. It reveals no id, no allowlist and no task.
     if (action === 'access') {
-      const allowed = isTestUser(config, user.id);
+      // ── WHO MAY RUN A CARD ────────────────────────────────────────────────
+      // Everyone the config tracks: the test allowlist while the pipeline is
+      // off, and EVERY user once the master flag is on. This used to be the
+      // allowlist alone, so a build shipped to all users only ever started a
+      // card on the testers' phones.
+      const allowed = isTrackedRecipient(config, user.id);
       return Response.json({
         allowed,
         test_mode: testModeActive(config),
@@ -71,9 +76,11 @@ export default async function (req) {
 
     if (!action) return Response.json({ error: 'unknown_action' }, { status: 400 });
 
-    // ── EVERY OTHER ACTION IS ALLOWLIST-ONLY ────────────────────────────────
-    if (!isTestUser(config, user.id)) {
-      return Response.json({ error: 'not_allowlisted', test_mode: testModeActive(config) }, { status: 403 });
+    // ── EVERY OTHER ACTION FOLLOWS THE SAME RULE AS `access` ────────────────
+    // A recipient the config tracks (allowlisted, or anyone once the pipeline is
+    // enabled) is served; anybody else is refused, exactly as before.
+    if (!isTrackedRecipient(config, user.id)) {
+      return Response.json({ error: 'not_tracked', test_mode: testModeActive(config) }, { status: 403 });
     }
 
     const taskId = clip(body?.task_id, 200);

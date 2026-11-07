@@ -572,10 +572,11 @@ describe('the real task lifecycle is wired, and nothing else moved', () => {
     expect(fn).not.toMatch(/entities\.Task\.(update|create|deleteMany|updateMany)/);
   });
 
-  it('refuses every device call from a user who is not allowlisted', () => {
+  it('refuses every device call from a user the config does not track', () => {
     const fn = read('base44/functions/liveActivityRealTask/entry.ts');
-    expect(fn).toContain('isTestUser(config, user.id)');
-    expect(fn).toContain('not_allowlisted');
+    // Allowlisted while the pipeline is off; every user once it is enabled.
+    expect(fn).toContain('isTrackedRecipient(config, user.id)');
+    expect(fn).toContain('not_tracked');
     expect(fn).toContain('base44.asServiceRole.entities.Task.get');
     expect(fn).not.toMatch(/entities\.Task\.(update|create|deleteMany|updateMany)/);
     // The identity is the session, never a body field.
