@@ -104,6 +104,35 @@ export function planLiveActivityDispatch(input) {
       return { ...base, ...skip('unauthorized', { reason: role === 'worker' ? 'not_assigned' : 'not_owner' }) };
     }
     if (state?.terminal) return { ...base, ...skip('terminal_already_sent') };
+
+    // ── A FINISHED CARD HAS ONE LAST JOB: THE RATING ────────────────────────
+    // Ending the card the instant a job is approved threw away the moment the
+    // answer is easiest to give: the person has just approved the work, with the
+    // phone already in their hand. The rating then only reached them through a
+    // popup they met if they happened to open the app afterwards.
+    //
+    // A COMPLETED task may therefore carry ONE snapshot that is not an ending —
+    // the star row (`phase: 'rate'`). It is planned like any other content
+    // update, so an unchanged ask is suppressed as a duplicate and a repeated
+    // terminal event can never push it twice. The caller only builds that
+    // snapshot for a participant who has NOT rated yet, which means the card
+    // closes the moment the answer is in; cancelled, expired, and an
+    // already-rated participant all end exactly as they always did.
+    if (snapshot && snapshot.phase === RATING_PHASE && snapshot.rating) {
+      const ratingKey = snapshotContentKey(snapshot);
+      if (state && state.content_key === ratingKey && state.phase === snapshot.phase) {
+        return { ...base, ...skip('duplicate') };
+      }
+      return {
+        ...base,
+        kind: 'send',
+        decision: 'send',
+        revision: nextRevision(state),
+        contentKey: ratingKey,
+        snapshot,
+      };
+    }
+
     return { ...base, kind: 'end', decision: 'terminal', revision: nextRevision(state) };
   }
 

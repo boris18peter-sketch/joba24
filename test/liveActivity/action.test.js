@@ -150,7 +150,10 @@ describe('what a role may ever do', () => {
   });
 
   it('keeps the action ids stable', () => {
-    expect(ACTION_IDS).toEqual(['worker_step', 'publisher_approve', 'publisher_assign']);
+    // The rating is a fourth id, but deliberately NOT in `actionsForRole`: it
+    // belongs to a FINISHED task and to both sides, so it is authorized from the
+    // stored task rather than from a role's flow capability (see the guard).
+    expect(ACTION_IDS).toEqual(['worker_step', 'publisher_approve', 'publisher_assign', 'rate_counterpart']);
   });
 });
 

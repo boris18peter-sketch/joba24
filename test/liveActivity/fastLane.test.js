@@ -78,8 +78,13 @@ describe('a finished task can never be STARTED, remotes included', () => {
     const src = read(PLANNER);
     const terminalIndex = src.indexOf('TERMINAL_TASK_STATUSES.includes(task.status)');
     expect(terminalIndex).toBeGreaterThan(-1);
-    const branch = src.slice(terminalIndex, terminalIndex + 600);
+    const branch = src.slice(terminalIndex, terminalIndex + 2600);
+    // The default for a finished task is still the END…
     expect(branch).toContain("kind: 'end'");
+    // …with exactly ONE exception, and it is narrow on purpose: a finished card
+    // may carry only the star row — a `rate` phase that actually has stars for
+    // this recipient. Anything else on a terminal task still ends the card.
+    expect(branch).toContain("snapshot.phase === RATING_PHASE && snapshot.rating");
     // The terminal rule is applied before authorization and before revisions.
     const authIndex = src.indexOf('authorizeActivity(task, role, userId)');
     expect(terminalIndex).toBeLessThan(authIndex);

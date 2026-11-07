@@ -115,7 +115,9 @@ describe('build flag resolver', () => {
     expect(step).toBeGreaterThan(-1);
 
     const body = yaml.slice(step, yaml.indexOf('- name: Install npm dependencies', step));
-    expect(body).toContain('bash scripts/resolve-live-activity-flag.sh "${{ inputs.liveActivityWidget }}"');
+    // The App Clip switch rides through the SAME script, as an optional second
+    // argument: one tested normalisation decides both flags.
+    expect(body).toContain('bash scripts/resolve-live-activity-flag.sh "${{ inputs.liveActivityWidget }}" "${{ inputs.appClip }}"');
     // The raw comparison that broke on "True" must be gone.
     expect(body).not.toContain('case "$WANT" in');
     expect(body).not.toContain('WANT="${{ inputs.liveActivityWidget }}"');

@@ -34,3 +34,8 @@ base44/.app.jsonc
 # Python bytecode (the build scripts are run with python3)
 __pycache__/
 *.pyc
+
+# The App Clip entitlement file is GENERATED on every iOS build from
+# JobaClip.entitlements.template — it carries the app's own bundle id, so it is
+# written by scripts/patch-ios-app-clip.py rather than committed.
+ios/App/JobaClip/JobaClip.entitlements

@@ -15,10 +15,11 @@ const he = translations.he;
 
 describe('backend Hebrew copy IS the app copy', () => {
   it('carries every key the contract reads', () => {
-    // 29: the Lock Screen assignment button joined the set — `la_assign_worker`
-    // and `la_assign_sub` are read from the app's own dictionary like every other
-    // string here, never invented for the Lock Screen.
-    expect(REQUIRED_KEYS.length).toBe(29);
+    // 32: the Lock Screen assignment button (`la_assign_worker`, `la_assign_sub`)
+    // and then the finished card's star row (`cm_how_was`, `tda_rate_person`,
+    // `review_saved`) joined the set — every one read from the app's own
+    // dictionary, never invented for the Lock Screen.
+    expect(REQUIRED_KEYS.length).toBe(32);
     for (const key of REQUIRED_KEYS) {
       expect(HE[key], `missing key: ${key}`).toBeDefined();
       expect(he[key], `key not in the app dictionary: ${key}`).toBeDefined();

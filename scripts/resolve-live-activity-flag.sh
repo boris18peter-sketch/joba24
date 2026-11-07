@@ -29,9 +29,14 @@
 set -euo pipefail
 
 raw="${1-}"
+# The App Clip switch is OPTIONAL. Without a second argument nothing about this
+# script's behaviour or output changes — which is why the existing tests, and the
+# shipping build, are untouched by its addition.
+clip_raw="${2-}"
 
 # One normalisation: drop carriage returns, case-fold, trim the edges.
-normalised="$(printf '%s' "$raw" | tr -d '\r' | tr '[:upper:]' '[:lower:]' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+normalise() { printf '%s' "${1-}" | tr -d '\r' | tr '[:upper:]' '[:lower:]' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+normalised="$(normalise "$raw")"
 
 case "$normalised" in
   true)
@@ -52,9 +57,36 @@ case "$normalised" in
     ;;
 esac
 
+# ── The App Clip switch (optional second argument) ──────────────────────────
+# Same contract, same normalisation: only a real boolean is accepted, and an
+# unresolvable value stops the build rather than quietly producing an archive
+# that claims to contain a clip and does not.
+if [ -n "$clip_raw" ]; then
+  case "$(normalise "$clip_raw")" in
+    true)
+      clip_flag="true"
+      clip_message="enabled for this build."
+      ;;
+    false)
+      clip_flag="false"
+      clip_message="disabled - no App Clip target added."
+      ;;
+    *)
+      printf "ERROR: appClip resolved to '%s' (expected true or false).\n" "$clip_raw"
+      printf 'Refusing to build: the App Clip flag could not be resolved.\n'
+      exit 1
+      ;;
+  esac
+fi
+
 if [ -n "${CM_ENV:-}" ]; then
   printf 'ENABLE_LIVE_ACTIVITY_WIDGET=%s\n' "$flag" >> "$CM_ENV"
+  if [ -n "$clip_raw" ]; then printf 'ENABLE_APP_CLIP=%s\n' "$clip_flag" >> "$CM_ENV"; fi
 fi
 
 printf 'ENABLE_LIVE_ACTIVITY_WIDGET=%s\n' "$flag"
 printf 'Live Activity widget: %s\n' "$message"
+if [ -n "$clip_raw" ]; then
+  printf 'ENABLE_APP_CLIP=%s\n' "$clip_flag"
+  printf 'App Clip: %s\n' "$clip_message"
+fi

@@ -13,6 +13,18 @@ workflows:
         description: "Include the Live Activity widget extension (TestFlight test build)"
         type: boolean
         default: false
+      # ── THE APP CLIP SWITCH ──────────────────────────────────────────────
+      # Apple releases App Clip metadata (and therefore the whole App Clip
+      # experience) only for a build that CONTAINS a clip. Ticking this adds the
+      # JobaClip target, embeds it in the app and signs it.
+      #
+      # OFF by default and on purpose: the clip's App ID must exist in the Apple
+      # Developer portal with the App Clips capability before a profile can be
+      # fetched for it. Until that is done, this switch would only fail a build.
+      appClip:
+        description: "Include the App Clip target (needed to unlock App Clip metadata in App Store Connect)"
+        type: boolean
+        default: false
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: Joba24
@@ -59,7 +71,7 @@ workflows:
       - name: Resolve build flags
         script: |
           set -e
-          bash scripts/resolve-live-activity-flag.sh "${{ inputs.liveActivityWidget }}"
+          bash scripts/resolve-live-activity-flag.sh "${{ inputs.liveActivityWidget }}" "${{ inputs.appClip }}"
       - name: Install npm dependencies
         script: |
           npm install
@@ -456,6 +468,57 @@ workflows:
             exit 1
           fi
           echo "OK: NSSupportsLiveActivities present"
+      - name: Wire the App Clip target (opt-in)
+        script: |
+          # GATED, exactly like the widget step above. Unticked, nothing here
+          # runs and the archive is the app as it ships today.
+          if [ "${ENABLE_APP_CLIP:-}" != "true" ]; then
+            echo "SKIPPED: ENABLE_APP_CLIP is not true - no App Clip target added."
+            exit 0
+          fi
+          set -e
+          # The clip's bundle id is a CHILD of the app's, so it is derived from
+          # the same BUNDLE_ID the app itself is signed with — never typed twice.
+          export CLIP_BUNDLE_ID="${BUNDLE_ID}.Clip"
+          echo "App Clip bundle id: $CLIP_BUNDLE_ID"
+          # cap sync ios can regenerate native parts of ios/App; the clip sources
+          # are committed, so assert they survived before patching.
+          for F in ios/App/JobaClip/JobaClipApp.swift \
+                   ios/App/JobaClip/ClipRootView.swift \
+                   ios/App/JobaClip/ClipVideoPlayer.swift \
+                   ios/App/JobaClip/Info.plist \
+                   ios/App/JobaClip/JobaClip.entitlements.template; do
+            if [ ! -f "$F" ]; then
+              echo "ERROR: $F is missing - the App Clip sources did not survive cap sync."
+              exit 1
+            fi
+          done
+          echo "=== Adding the App Clip target to project.pbxproj ==="
+          python3 scripts/patch-ios-app-clip.py
+          echo "=== Verifying the patched project, structurally ==="
+          python3 scripts/patch-ios-app-clip.py --check --require --report "$CM_BUILD_DIR/clip-check.json"
+          cat "$CM_BUILD_DIR/clip-check.json"
+          # The profile fetched later is looked up BY BUNDLE ID, so a project
+          # patched with a different id would fail minutes later with a message
+          # that never names the mismatch. Compared here, before anything is
+          # fetched or archived.
+          python3 - "$CM_BUILD_DIR/clip-check.json" <<'PYEOF'
+          import json, os, sys
+          with open(sys.argv[1], "r", encoding="utf-8") as fh:
+              report = json.load(fh)
+          if not report.get("ok"):
+              print("ERROR: the project report is not ok")
+              sys.exit(1)
+          if not report.get("embed") or not report.get("dependency"):
+              print("ERROR: the clip is not embedded in the app (copy phase / dependency)")
+              sys.exit(1)
+          got = report.get("bundle_id") or ""
+          want = os.environ.get("CLIP_BUNDLE_ID", "")
+          if got != want:
+              print("ERROR: project clip bundle id is %r but CLIP_BUNDLE_ID is %r" % (got, want))
+              sys.exit(1)
+          print("OK: the App Clip target is wired and its bundle id matches")
+          PYEOF
       - name: Validate Xcode project file syntax
         script: |
           ruby -e 'require "xcodeproj"; Xcodeproj::Project.open("ios/App/App.xcodeproj")' && echo "project.pbxproj is valid" || (echo "ERROR: project.pbxproj has a syntax error - it was likely corrupted during copy-paste. Re-copy the full file carefully." && exit 1)
@@ -484,6 +547,22 @@ workflows:
               --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles"
           else
             echo "SKIPPED: widget profile not fetched (ENABLE_LIVE_ACTIVITY_WIDGET is not true)"
+          fi
+          # ── App Clip: its own profile ───────────────────────────────────────
+          # A clip is a bundle of its own with a CHILD bundle id, so the app's
+          # profile cannot sign it. The App ID must already exist in the Apple
+          # Developer portal with the App Clips capability — creating it here
+          # would produce an identifier without that capability and fail later,
+          # at signing, with an entitlement error that names neither.
+          if [ "${ENABLE_APP_CLIP:-}" = "true" ]; then
+            echo "App Clip enabled - fetching a profile for ${BUNDLE_ID}.Clip"
+            app-store-connect fetch-signing-files "${BUNDLE_ID}.Clip" \
+              --type IOS_APP_STORE \
+              --p12-password "$CERTIFICATE_P12_PASSWORD" \
+              --certificates-dir "$HOME/Library/MobileDevice/Certificates" \
+              --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles"
+          else
+            echo "SKIPPED: App Clip profile not fetched (ENABLE_APP_CLIP is not true)"
           fi
       - name: Set up signing certificate
         script: |

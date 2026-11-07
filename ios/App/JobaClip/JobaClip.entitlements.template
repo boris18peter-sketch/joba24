@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		THE TWO THINGS THAT MAKE THIS BUNDLE AN APP CLIP FOR APPLE'S SERVERS.
+
+		1. parent-application-identifiers — proof that this bundle belongs to the
+		   Joba24 app. The value is written by scripts/patch-ios-app-clip.py from
+		   the APP target's own PRODUCT_BUNDLE_IDENTIFIER, so it can never drift
+		   from the app it is embedded in. `$(AppIdentifierPrefix)` is the team
+		   prefix Xcode fills in at signing time.
+
+		2. appclips: associated domain — the host that is allowed to launch this
+		   clip. It must match the App Clip experience URL registered in App Store
+		   Connect, and it is why a clip is opened by a LINK rather than by the
+		   App Store.
+	-->
+	<key>com.apple.developer.parent-application-identifiers</key>
+	<array>
+		<string>$(AppIdentifierPrefix)__PARENT_BUNDLE_ID__</string>
+	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>appclips:joba24.com</string>
+	</array>
+</dict>
+</plist>
