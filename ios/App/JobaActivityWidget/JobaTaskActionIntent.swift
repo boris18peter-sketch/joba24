@@ -106,7 +106,7 @@ struct JobaTaskActionIntent: LiveActivityIntent {
             $0.attributes.taskId == taskId && $0.attributes.role == role
         }) else {
             stage("activity_missing")
-            Self.feedback(.error)
+            await JobaTapFeedback.play(.error)
             return .result()
         }
 
@@ -137,7 +137,7 @@ struct JobaTaskActionIntent: LiveActivityIntent {
             // A confirmation is not the action — it is the card asking a
             // question, so it gets a light tick and the sound, never the success
             // pattern that would say the job was already done.
-            Self.feedback(.confirm)
+            await JobaTapFeedback.play(.confirm)
             stage("confirm_requested")
             return .result()
         }
@@ -147,7 +147,7 @@ struct JobaTaskActionIntent: LiveActivityIntent {
         // press has an answer even on a slow network — and the sound lands with
         // the visible state change instead of before it.
         await apply(activity, current.withActionState("pending"))
-        Self.feedback(.tap)
+        await JobaTapFeedback.play(.tap)
 
         guard let endpoint = JobaActivityAuthStore.actionEndpoint() else {
             stage("no_endpoint")
@@ -204,7 +204,7 @@ struct JobaTaskActionIntent: LiveActivityIntent {
 
             if decoded?.ok == true {
                 stage(decoded?.terminal == true ? "applied_terminal" : "applied", decoded?.decision ?? "")
-                await Self.feedback(.success)
+                await JobaTapFeedback.play(.success)
                 // A completed task has no live card left to show.
                 if decoded?.terminal == true || decoded?.snapshot == nil {
                     await activity.end(nil, dismissalPolicy: .immediate)
@@ -294,32 +294,32 @@ struct JobaTaskActionIntent: LiveActivityIntent {
         await apply(activity, state.withActionState("failed"))
         // A different pattern from the success one: the tap landed, the action did
         // not, and the user knows that without unlocking anything to look.
-        await Self.feedback(.error)
+        await JobaTapFeedback.play(.error)
     }
 
-    // MARK: - Touch feedback
+}
 
-    /// The tap, as something the hand and the ear both feel.
-    ///
-    /// ── WHY THERE IS SOUND AS WELL AS HAPTICS ────────────────────────────────
-    /// A Lock Screen card is usually pressed while the phone is lying down or
-    /// held in one hand, and the haptic is the only confirmation that the press
-    /// registered — except iOS does not always deliver it for an intent that runs
-    /// outside the app's own UI (and never when the device is on silent, or on a
-    /// device without a Taptic Engine). A short system sound is the feedback that
-    /// always arrives, and together they turn the tap into a small, definite
-    /// event: press → tick + state change → success chime when the job really
-    /// moved forward. That is the "progress" feeling, made out of the system's
-    /// own vocabulary rather than an invented one.
-    ///
-    /// The three sounds are Apple's standard system tones, chosen to match the
-    /// three outcomes: a quiet tick for the press, the notification chime for a
-    /// confirmed action, and the low alert tone for a failure.
-    ///
-    /// `@MainActor` because UIKit's feedback generators and the audio call are
-    /// main-actor isolated on current SDKs while `perform()` is nonisolated, so
-    /// each call hops there.
-    @MainActor private static func feedback(_ kind: FeedbackKind) {
+// MARK: - Touch feedback
+
+/// The tap, as something the hand and the ear both feel.
+///
+/// ── ONE COPY, TWO INTENTS ────────────────────────────────────────────────────
+/// The star row submits through its OWN intent (`JobaRatingIntent`), and a star
+/// tap has to feel exactly like the action button's tap. This lives at file scope
+/// so both intents share ONE implementation rather than a second copy that would
+/// drift — and so the haptics are written once, in the app's own vocabulary.
+///
+/// ── THE ACTOR RULE THAT BROKE THE BUILD ─────────────────────────────────────
+/// `@MainActor` is required: UIKit's feedback generators and the audio call are
+/// main-actor isolated on current SDKs, while `perform()` is nonisolated. Every
+/// call site therefore HOPS here explicitly with `await`. Omitting that `await`
+/// is exactly what Xcode 26 rejects with "main actor-isolated static method
+/// 'play' cannot be called from outside of the actor".
+public enum JobaTapFeedback {
+
+    public enum Kind { case tap, confirm, success, error }
+
+    @MainActor public static func play(_ kind: Kind) {
         switch kind {
         case .tap:
             let generator = UIImpactFeedbackGenerator(style: .medium)
@@ -345,8 +345,161 @@ struct JobaTaskActionIntent: LiveActivityIntent {
     private static let successSound: SystemSoundID = 1057
     /// `1053` — the low alert tone, for a tap that did not land.
     private static let errorSound: SystemSoundID = 1053
+}
 
-    private enum FeedbackKind { case tap, confirm, success, error }
+// MARK: - The rating card's tap
+
+/**
+ JobaRatingIntent — one star, tapped on the card itself.
+
+ ── THE CARD ASKS, AND THE TAP ANSWERS IT, WITHOUT OPENING THE APP ─────────
+ A finished job's card used to vanish the instant it was approved, and the only
+ way to rate the other side was to open the app and wait for its popup. The card
+ now stays for one last question — the stars — and this intent is what a star tap
+ runs.
+
+ It carries exactly three things: the task, the role and the star. Everything
+ else — who may rate, whether the task is really completed, whether a review
+ already exists — is re-derived by the server from the stored Task and the
+ capability token's own user. A card can therefore never rate a job that is not
+ finished, rate twice, or rate somebody else's task.
+
+ ── THE STARS FILL BEFORE THE REQUEST LEAVES ───────────────────────────────
+ The chosen value is written into the card first, so the tap is answered in the
+ same frame it happened; the request follows. A refusal (an expired capability, no
+ network, a duplicate) puts the ask back and reports the failure, so a tap never
+ silently does nothing.
+
+ ── AND THEN THE CARD GOES ─────────────────────────────────────────────────
+ Once the review is stored, the card has nothing left to show: it is ended here,
+ immediately, exactly as a completed card always was.
+ */
+@available(iOS 17.0, *)
+struct JobaRatingIntent: LiveActivityIntent {
+
+    // Shown only in Shortcuts / the intents metadata — never on the Lock Screen.
+    static var title: LocalizedStringResource = "Joba24 rate task"
+
+    /// The task whose card was tapped.
+    @Parameter(title: "Task")
+    var taskId: String
+
+    /// Which side of the task the card belongs to (and therefore who is rated).
+    @Parameter(title: "Role")
+    var role: String
+
+    /// The star that was tapped: 1…5.
+    @Parameter(title: "Stars")
+    var stars: Int
+
+    init() {}
+
+    init(taskId: String, role: String, stars: Int) {
+        self.taskId = taskId
+        self.role = role
+        self.stars = stars
+    }
+
+    func perform() async throws -> some IntentResult {
+        // Clamped here as well as on the server: a malformed parameter must never
+        // become a rating outside the scale the app understands.
+        let stars = min(5, max(1, self.stars))
+
+        guard let activity = Activity<JobaTaskActivity>.activities.first(where: {
+            $0.attributes.taskId == taskId && $0.attributes.role == role
+        }) else {
+            record("rating_missing")
+            await JobaTapFeedback.play(.error)
+            return .result()
+        }
+
+        let current = activity.content.state
+
+        // ── ONE ANSWER PER CARD ──────────────────────────────────────────────
+        // A second tap (two quick taps, or a tap on a card that is already
+        // answered) is ignored here and idempotent on the server: a review is
+        // written once per reviewer per task.
+        if let value = current.rating?.value, value > 0 { return .result() }
+        guard current.rating != nil else {
+            record("rating_not_asked")
+            return .result()
+        }
+
+        guard let endpoint = JobaActivityAuthStore.actionEndpoint() else {
+            record("no_endpoint")
+            await revert(activity, current)
+            return .result()
+        }
+        guard let token = JobaActivityAuthStore.token(taskId: taskId, role: role)
+            ?? JobaActivityAuthStore.userToken() else {
+            record("no_capability")
+            await revert(activity, current)
+            return .result()
+        }
+
+        // ── The stars fill NOW ───────────────────────────────────────────────
+        await activity.update(ActivityContent(state: current.withRating(stars), staleDate: nil))
+        await JobaTapFeedback.play(.tap)
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 20
+        request.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "token": token,
+            "action_id": "rate_counterpart",
+            "stars": stars,
+            // The card's own pair, so an install-scoped capability is authorized
+            // against this exact task and side.
+            "task_id": taskId,
+            "role": role,
+        ])
+        guard request.httpBody != nil else {
+            record("payload_error")
+            await revert(activity, current)
+            return .result()
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let decoded = try? JSONDecoder().decode(JobaActionResponse.self, from: data)
+
+            if decoded?.ok == true {
+                record(decoded?.decision == "duplicate" ? "rating_duplicate" : "rating_applied")
+                // The server's own thank-you state, then the card goes.
+                if let snapshot = decoded?.snapshot {
+                    await activity.update(ActivityContent(state: snapshot, staleDate: nil))
+                }
+                await JobaTapFeedback.play(.success)
+                await activity.end(nil, dismissalPolicy: .immediate)
+                JobaActivityAuthStore.clear(taskId: taskId, role: role)
+                return .result()
+            }
+
+            record("rating_http_\(status)", decoded?.error ?? "")
+            await revert(activity, current)
+            return .result()
+        } catch {
+            record("rating_network_error", String(describing: type(of: error)))
+            await revert(activity, current)
+            return .result()
+        }
+    }
+
+    /// Put the question back, so a tap that did not land leaves no false answer.
+    private func revert(
+        _ activity: Activity<JobaTaskActivity>,
+        _ state: JobaTaskActivity.ContentState
+    ) async {
+        await activity.update(ActivityContent(state: state.withRating(nil), staleDate: nil))
+        await JobaTapFeedback.play(.error)
+    }
+
+    /// Record one stage of this attempt. Never contains the token or a body.
+    private func record(_ name: String, _ detail: String = "") {
+        JobaActivityAuthStore.record(stage: name, taskId: taskId, role: role, detail: detail)
+    }
 }
 
 /// The action endpoint's answer. Optional everywhere: a refusal, a timeout and a

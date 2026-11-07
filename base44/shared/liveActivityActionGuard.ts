@@ -23,11 +23,26 @@
  */
 
 import { CANONICAL_STEPS } from './liveActivityFlow.ts';
+import { RATING_ACTION_ID } from './liveActivityRating.ts';
 
 /** The only ids a token may carry. Stable forever — labels are display only. */
-export const ACTION_IDS = ['worker_step', 'publisher_approve', 'publisher_assign'];
+export const ACTION_IDS = ['worker_step', 'publisher_approve', 'publisher_assign', RATING_ACTION_ID];
 
-/** Which action ids a role may ever perform on a task. */
+/**
+ * Which action ids a role may ever perform on a task.
+ *
+ * ── THE RATING IS DELIBERATELY NOT HERE ────────────────────────────────────
+ * This list describes what a role's capability may do to a task that is still
+ * ALIVE — the flow, step by step. Rating happens after the flow is over, on a
+ * COMPLETED task, and it is available to BOTH sides; it is therefore authorized
+ * from the stored task in `liveActivityAction` (the rater must be one of the
+ * task's two people, the task must be completed, the star must be 1…5, and only
+ * one review per person exists).
+ *
+ * Leaving it out also keeps old capabilities working: a token minted before the
+ * star row existed lists only `worker_step`, and it must still be able to rate
+ * the finished job it belongs to.
+ */
 export function actionsForRole(role: string): string[] {
   if (role === 'worker') return ['worker_step'];
   if (role === 'publisher') return ['publisher_approve', 'publisher_assign'];

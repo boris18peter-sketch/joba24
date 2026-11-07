@@ -52,6 +52,11 @@ export const REQUIRED_KEYS = [
   'confirm_done_work',
   'la_assign_worker',
   'la_assign_sub',
+  // The rating card's two sentences — the completion flow's own words, reused so
+  // the Lock Screen asks and thanks in exactly the app's voice.
+  'cm_how_was',
+  'tda_rate_person',
+  'review_saved',
 ];
 
 export const HE = {
@@ -90,6 +95,10 @@ export const HE = {
   confirm_done_work: 'אשר סיום עבודה',
   la_assign_worker: 'אשר את',
   la_assign_sub: 'העובד יקבל את המשימה',
+  // The star row: what is asked, who is asked about, and the thank-you.
+  cm_how_was: 'איך היה לעבוד עם {name}?',
+  tda_rate_person: 'דרג את {name}',
+  review_saved: 'הביקורת נשמרה! תודה ⭐',
 };
 
 /**

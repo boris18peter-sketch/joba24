@@ -109,17 +109,26 @@ struct JobaTaskLiveActivity: Widget {
                             // carries the position instead.
                             StepRail(progress: progress, theme: .island, compact: true, showsCounter: false)
                         }
-                        // The same button the Lock Screen offers, so the island
-                        // can complete the task without opening it — at the
-                        // height the expanded island's own fixed bottom region
-                        // allows, not the Lock Screen's 56pt, and on one line.
-                        TaskActionRow(
-                            state: context.state,
-                            taskId: context.attributes.taskId,
-                            role: context.attributes.role,
-                            minHeight: 46,
-                            maxLines: 1
-                        )
+                        // The same control the Lock Screen offers, so the island
+                        // can complete the task — or rate it — without opening
+                        // it. At the height the expanded island's own fixed
+                        // bottom region allows, not the Lock Screen's 56pt.
+                        if context.state.rating != nil {
+                            TaskRatingRow(
+                                state: context.state,
+                                taskId: context.attributes.taskId,
+                                role: context.attributes.role,
+                                compact: true
+                            )
+                        } else {
+                            TaskActionRow(
+                                state: context.state,
+                                taskId: context.attributes.taskId,
+                                role: context.attributes.role,
+                                minHeight: 46,
+                                maxLines: 1
+                            )
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     // Direction is set on the CONTENT, never on the DynamicIsland
@@ -206,11 +215,21 @@ struct LockScreenCard: View {
                 StepRail(progress: progress, theme: .card, compact: false, showsCounter: true)
             }
 
-            // ── The one action this role may take ────────────────────────────
-            // Its label is the server's, so it is the same words the banner uses
-            // for this category. Absent when the contract offers no action, in
-            // which case the card is purely informational.
-            TaskActionRow(state: state, taskId: taskId, role: role)
+            // ── The one thing this card can do ───────────────────────────────
+            // Two mutually exclusive rows, and which one appears is the server's
+            // decision, carried in the content state:
+            //
+            //   rating present  → the job is finished and this person still has
+            //                     to rate the other side, so the card asks here,
+            //                     on the Lock Screen, with five stars.
+            //   otherwise       → the flow's own action, labelled with the
+            //                     server's words (absent when there is none, in
+            //                     which case the card is informational).
+            if state.rating != nil {
+                TaskRatingRow(state: state, taskId: taskId, role: role)
+            } else {
+                TaskActionRow(state: state, taskId: taskId, role: role)
+            }
         }
         .padding(.horizontal, 15)
         .padding(.vertical, 11)
@@ -734,6 +753,111 @@ struct TaskActionRow: View {
     }
 }
 
+// MARK: - The rating ask
+
+/**
+ The star row — the last thing a finished job's card does.
+
+ ── WHY THE CARD STAYS FOR THIS ────────────────────────────────────────────
+ The card used to disappear the moment the work was approved, and the rating was
+ left to a popup the user only met if they happened to open the app. That is the
+ one moment the honest answer is easiest to give: the person has just approved
+ the work and is holding the phone. So the card stays for exactly one more
+ question, and the stars are ON it — five taps, no app, no sheet.
+
+ ── WHO OWNS WHAT ──────────────────────────────────────────────────────────
+ The QUESTION is the server's (`rating.prompt`, the app's own sentence), the
+ ANSWER is the server's too: a tap posts to the same capability endpoint every
+ other card action uses, and the review is written by the same code the in-app
+ sheet calls. The card only draws. A tapped star fills at once, so the press is
+ answered before the network is; a refused tap puts the question back.
+
+ ── ONCE ANSWERED, IT STOPS BEING A CONTROL ────────────────────────────────
+ With `rating.value` set the stars are drawn, not offered: filled up to the chosen
+ value, no buttons, no second tap, no second review.
+ */
+struct TaskRatingRow: View {
+    let state: JobaTaskActivity.ContentState
+    let taskId: String
+    let role: String
+    /// The Dynamic Island's bottom region is shorter than the Lock Screen card,
+    /// so the stars come in two sizes and the prompt loses a line.
+    var compact: Bool = false
+
+    private var rating: JobaTaskActivity.ContentState.Rating? { state.rating }
+    private var chosen: Int { rating?.value ?? 0 }
+    private var answered: Bool { chosen > 0 }
+
+    /// Where a star goes when the capability has already expired: the task, in
+    /// the app — the same destination the card's own tap uses.
+    private var openInAppURL: URL? {
+        if let raw = state.deepLink, !raw.isEmpty, let url = URL(string: raw) { return url }
+        return URL(string: "https://joba24.com/?open_task=\(taskId)")
+    }
+
+    var body: some View {
+        if let rating = rating {
+            VStack(alignment: .leading, spacing: compact ? 4 : 7) {
+                if !rating.prompt.isEmpty && !answered {
+                    Text(rating.prompt)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(JobaPalette.text2)
+                        .lineLimit(compact ? 1 : 2)
+                        .minimumScaleFactor(0.85)
+                }
+                HStack(spacing: compact ? 8 : 12) {
+                    ForEach(1...5, id: \.self) { star in
+                        starControl(star)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // The fill travels a hair as the value changes, so the answer reads
+            // as one gesture rather than five independent buttons.
+            .animation(.spring(response: 0.3, dampingFraction: 0.72), value: chosen)
+        }
+    }
+
+    @ViewBuilder
+    private func starControl(_ star: Int) -> some View {
+        if #available(iOS 17.0, *) {
+            if answered {
+                starGlyph(star)
+            } else if JobaActivityAuthStore.canAct(taskId: taskId, role: role) {
+                Button(intent: JobaRatingIntent(taskId: taskId, role: role, stars: star)) {
+                    starGlyph(star)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("\(star)"))
+            } else if let url = openInAppURL {
+                // Same rule as the action button: a capability that has already
+                // expired cannot rate, so the star opens the task — where a fresh
+                // one is minted — instead of failing after a round trip.
+                Link(destination: url) { starGlyph(star) }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("\(star)"))
+            } else {
+                starGlyph(star)
+            }
+        } else {
+            starGlyph(star)
+        }
+    }
+
+    private func starGlyph(_ star: Int) -> some View {
+        let filled = star <= chosen
+        return Image(systemName: filled ? "star.fill" : "star")
+            .font(.system(size: compact ? 16 : 23, weight: .semibold))
+            .foregroundStyle(filled ? JobaPalette.star : JobaPalette.text3)
+            .scaleEffect(filled ? 1 : 0.94)
+            // A finger-sized target around a small glyph: the star IS the point of
+            // this card, and a 23pt symbol is not a tap target on its own.
+            .frame(minWidth: compact ? 26 : 38, minHeight: compact ? 26 : 38)
+            .contentShape(Rectangle())
+    }
+}
+
 // MARK: - Palette
 
 /**
@@ -750,6 +874,9 @@ enum JobaPalette {
     static let success = Color(red: 0.02, green: 0.59, blue: 0.41)          // #059669
     static let successDark = Color(red: 0.02, green: 0.47, blue: 0.34)      // #047857
     static let accent = Color(red: 0.85, green: 0.47, blue: 0.02)           // #d97706
+    /// The rating star — the brand's own accent gold (`--brand-accent` #fbbf24),
+    /// so a filled star is the same colour as the app's stars, not a system tint.
+    static let star = Color(red: 0.98, green: 0.75, blue: 0.14)             // #fbbf24
     static let text1 = Color(red: 0.05, green: 0.12, blue: 0.25)            // #0d1e40
     static let text2 = Color(red: 0.29, green: 0.38, blue: 0.51)            // #4b6083
     static let text3 = Color(red: 0.58, green: 0.64, blue: 0.72)            // #94a3b8

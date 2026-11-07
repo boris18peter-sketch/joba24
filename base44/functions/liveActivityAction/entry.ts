@@ -16,6 +16,12 @@ import { buildBackendSnapshot } from '../../shared/liveActivitySnapshot.ts';
 import { resolveStatusFlow, resolveSchedule, DEFAULT_TIMEZONE } from '../../shared/liveActivityFlow.ts';
 import { t } from '../../shared/liveActivityStrings.ts';
 import { runTaskTransition } from '../../shared/taskTransitionFastLane.ts';
+import {
+  RATING_ACTION_ID,
+  buildCompletionRatingCard,
+  buildRatingSnapshot,
+} from '../../shared/liveActivityRating.ts';
+import { submitTaskReviewCore } from '../../shared/reviewSubmission.ts';
 
 /**
  * liveActivityAction — the ONE endpoint a Lock Screen button may call.
@@ -83,15 +89,92 @@ Deno.serve(async (req) => {
     if (!ACTION_IDS.includes(actionId)) {
       return Response.json({ ok: false, error: 'unknown_action', decision: 'rejected' }, { status: 400 });
     }
-    if (!permitted.includes(actionId)) {
-      // A worker's capability can never carry publisher_approve, and vice versa.
-      return Response.json({ ok: false, error: 'action_not_permitted', decision: 'rejected' }, { status: 403 });
-    }
 
     const tasks = await base44.asServiceRole.entities.Task.filter({ id: claimedTaskId });
     const task = tasks?.[0];
     if (!task) {
       return Response.json({ ok: false, error: 'task_missing', decision: 'rejected' }, { status: 404 });
+    }
+
+    const revisionOf = (sourceTask: any) => Math.max(
+      1,
+      Math.floor((Date.parse(sourceTask?.updated_date || '') || Date.now()) / 1000)
+    );
+
+    // ══════════════════════════════════════════════════════════════════════
+    // THE STARS ON THE CARD — a rating, not a flow step
+    // ══════════════════════════════════════════════════════════════════════
+    // A finished card asks the two participants to rate each other, and a star
+    // tap arrives here. It is deliberately handled BEFORE the flow checks:
+    //
+    //   • `deriveActivityAction` describes what a LIVE task may do next, and a
+    //     completed task has nothing next — so it would refuse every rating;
+    //   • a capability minted before the rating card existed lists only that
+    //     role's flow actions, so requiring the id in `permitted` would let an
+    //     older card fail for no reason the user could understand.
+    //
+    // Nothing is loosened by that: the rater is re-derived from the STORED task
+    // (never from the request), the task must be COMPLETED, the star must be 1…5,
+    // and a second rating is refused by the review that already exists. The review
+    // itself is written by the same shared code the in-app sheet uses.
+    if (actionId === RATING_ACTION_ID) {
+      const stars = Math.round(Number(body?.stars));
+      if (!Number.isFinite(stars) || stars < 1 || stars > 5) {
+        return Response.json({ ok: false, error: 'invalid_rating', decision: 'rejected' }, { status: 400 });
+      }
+      if (task.status !== 'COMPLETED') {
+        return Response.json({
+          ok: false,
+          error: 'not_completed',
+          decision: 'rejected',
+          task_status: task.status,
+        }, { status: 409 });
+      }
+
+      const isPublisher = task.client_id === claims.sub;
+      const isWorker = task.worker_id === claims.sub;
+      if (!isPublisher && !isWorker) {
+        return Response.json({ ok: false, error: 'not_participant', decision: 'rejected' }, { status: 403 });
+      }
+      const callerRole = isPublisher ? 'publisher' : 'worker';
+
+      const reviewed = await submitTaskReviewCore(base44, {
+        task,
+        reviewerId: claims.sub,
+        rating: stars,
+      });
+
+      if (!reviewed.ok) {
+        const status = reviewed.reason === 'not_participant' ? 403 : 400;
+        return Response.json({
+          ok: false,
+          error: reviewed.reason || 'review_failed',
+          decision: 'rejected',
+        }, { status });
+      }
+
+      // ── AND THE CARD SAYS THANK YOU, THEN GOES ─────────────────────────
+      // The thanks state carries the star that was actually recorded (a duplicate
+      // reports the review that already existed), so the card can never show a
+      // rating that is not in the database.
+      return Response.json({
+        ok: true,
+        decision: reviewed.duplicate ? 'duplicate' : 'applied',
+        action_id: actionId,
+        rating: reviewed.rating,
+        terminal: true,
+        snapshot: buildRatingSnapshot({
+          task,
+          role: callerRole,
+          revision: revisionOf(task),
+          ratedStars: reviewed.rating || stars,
+        }),
+      });
+    }
+
+    if (!permitted.includes(actionId)) {
+      // A worker's capability can never carry publisher_approve, and vice versa.
+      return Response.json({ ok: false, error: 'action_not_permitted', decision: 'rejected' }, { status: 403 });
     }
 
     // ── AN INSTALL-SCOPED CAPABILITY MUST OWN THIS TASK, IN THIS ROLE ───────
@@ -258,6 +341,19 @@ Deno.serve(async (req) => {
     const guard = guardPublisherApproval({ task, userId: claims.sub });
     if (!guard.ok) {
       const httpStatus = guard.reason === 'already_completed' ? 200 : guard.status;
+      // ── A JOB ALREADY APPROVED STILL OWES ITS RATING ─────────────────────
+      // The usual cause is a second tap, or a card that was still on the Lock
+      // Screen after the work was approved elsewhere. The card must not simply
+      // vanish: if this person has not rated the worker yet, it turns into the
+      // ask, exactly as it does on the first approval.
+      const ratingCard = guard.reason === 'already_completed'
+        ? await buildCompletionRatingCard(base44, {
+            task,
+            role: 'publisher',
+            recipientId: claims.sub,
+            revision: revisionOf(task),
+          })
+        : null;
       return Response.json({
         ok: guard.reason === 'already_completed',
         decision: guard.reason === 'already_completed' ? 'duplicate' : 'rejected',
@@ -266,7 +362,8 @@ Deno.serve(async (req) => {
         task_status: task.status,
         worker_status: task.worker_status || null,
         detail: guard.detail || null,
-        snapshot: snapshotFor(task),
+        terminal: guard.reason === 'already_completed' && !ratingCard,
+        snapshot: ratingCard || snapshotFor(task),
       }, { status: httpStatus });
     }
 
@@ -288,16 +385,35 @@ Deno.serve(async (req) => {
     // Same separation as above: the task IS completed at this point, so a card
     // or notification that fails to send cannot be allowed to answer 'failed'.
     await runTaskTransition({ base44, task: fresh }).catch(() => null);
+
+    // ── THE FINISHED CARD ASKS FOR ITS RATING BEFORE IT GOES ───────────────
+    // Completion used to close the card on the spot, which threw away the one
+    // moment the answer is easiest to give: the person has just approved the
+    // work, with the phone already in their hand. The card now returns the ASK
+    // (`phase: 'rate'` + five stars) and stays until it is answered — the same
+    // state the other participant's card receives from the terminal dispatch.
+    //
+    // The caller's own side is re-derived from the record, never from the
+    // request, so a card can only ever ask its owner to rate THEIR counterpart.
+    const callerRole = fresh.client_id === claims.sub ? 'publisher' : 'worker';
+    const ratingCard = await buildCompletionRatingCard(base44, {
+      task: fresh,
+      role: callerRole,
+      recipientId: claims.sub,
+      revision: revisionOf(fresh),
+    });
+
     return Response.json({
       ok: true,
       decision: result.body?.already_completed ? 'duplicate' : 'applied',
       action_id: actionId,
       task_status: fresh.status,
-      // A completed task has no live card: the caller ends the activity.
-      terminal: fresh.status === 'COMPLETED',
-      // COMPLETED is not trackable, so there is no snapshot — that absence is
-      // exactly what tells the intent to close the activity.
-      snapshot: snapshotFor(fresh),
+      // A completed task has no live card LEFT — unless it still owes a rating,
+      // in which case the card is kept and the stars are drawn on it.
+      terminal: fresh.status === 'COMPLETED' && !ratingCard,
+      // COMPLETED is not trackable, so there is no flow snapshot; `ratingCard`
+      // is the one state a finished card is allowed to show.
+      snapshot: ratingCard || snapshotFor(fresh),
     });
   } catch (error) {
     return Response.json({ ok: false, decision: 'rejected', error: error.message }, { status: 500 });

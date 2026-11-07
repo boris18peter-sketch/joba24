@@ -58,6 +58,38 @@ public struct JobaTaskActivity: ActivityAttributes {
         public var action: Action?
         /// idle | pending | failed — owned by the App Intent, never by the server.
         public var actionState: String?
+        /// The rating ask, once the job is done. Nil on every other card.
+        public var rating: Rating?
+
+        /// ── THE STAR ROW ON THE CARD ─────────────────────────────────────────
+        /// A finished job's card does not disappear any more: it turns into the
+        /// rating ask, so the person who just approved the work can rate the
+        /// other side with one tap, without opening the app.
+        ///
+        /// `prompt` is the server's own sentence (the same one the in-app
+        /// completion flow uses), so the card invents no wording. `value` is the
+        /// star that was chosen: nil while the card is ASKING, set once it has
+        /// been answered — either locally by the tap, or by the server's thanks
+        /// state. A card with `value` set draws filled stars and no buttons, which
+        /// is what makes a second tap impossible.
+        ///
+        /// Absent (nil) means "this card is not asking for a rating", which is
+        /// every card before the job is completed.
+        public struct Rating: Codable, Hashable {
+            public var prompt: String
+            public var value: Int?
+
+            public init(prompt: String, value: Int? = nil) {
+                self.prompt = prompt
+                self.value = value
+            }
+
+            public init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                prompt = (try? c.decode(String.self, forKey: .prompt)) ?? ""
+                value = try? c.decodeIfPresent(Int.self, forKey: .value)
+            }
+        }
 
         /// `progress` in the contract: which flow step the work is on.
         public struct StepProgress: Codable, Hashable {
@@ -166,7 +198,8 @@ public struct JobaTaskActivity: ActivityAttributes {
             stepProgress: StepProgress? = nil,
             counters: Counters? = nil,
             action: Action? = nil,
-            actionState: String? = nil
+            actionState: String? = nil,
+            rating: Rating? = nil
         ) {
             self.title = title
             self.subtitle = subtitle
@@ -183,6 +216,7 @@ public struct JobaTaskActivity: ActivityAttributes {
             self.counters = counters
             self.action = action
             self.actionState = actionState
+            self.rating = rating
         }
 
         /// A copy with only the action state changed — how the intent shows
@@ -205,7 +239,33 @@ public struct JobaTaskActivity: ActivityAttributes {
                 stepProgress: stepProgress,
                 counters: counters,
                 action: action,
-                actionState: state
+                actionState: state,
+                rating: rating
+            )
+        }
+
+        /// A copy with the chosen star written into the rating ask — how the card
+        /// shows the tap IMMEDIATELY, before the server has agreed to it. Only the
+        /// rating is touched, so a card that was asking still says exactly what it
+        /// said a moment ago.
+        public func withRating(_ value: Int?) -> ContentState {
+            ContentState(
+                title: title,
+                subtitle: subtitle,
+                phase: phase,
+                role: role,
+                revision: revision,
+                contractVersion: contractVersion,
+                iconKey: iconKey,
+                colorKey: colorKey,
+                categoryLabel: categoryLabel,
+                deepLink: deepLink,
+                updatedAt: updatedAt,
+                stepProgress: stepProgress,
+                counters: counters,
+                action: action,
+                actionState: actionState,
+                rating: Rating(prompt: rating?.prompt ?? "", value: value)
             )
         }
 
@@ -215,6 +275,7 @@ public struct JobaTaskActivity: ActivityAttributes {
             case stepProgress = "progress"
             case counters
             case action, actionState
+            case rating
         }
 
         public init(from decoder: Decoder) throws {
@@ -234,6 +295,7 @@ public struct JobaTaskActivity: ActivityAttributes {
             counters = try? c.decodeIfPresent(Counters.self, forKey: .counters)
             action = try? c.decodeIfPresent(Action.self, forKey: .action)
             actionState = try? c.decodeIfPresent(String.self, forKey: .actionState)
+            rating = try? c.decodeIfPresent(Rating.self, forKey: .rating)
         }
     }
 }
