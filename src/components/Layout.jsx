@@ -378,6 +378,9 @@ export default function Layout() {
   // read "already asked" and raise the closing note — which then flashed for a
   // moment and was replaced by the rating. The note belongs AFTER the ask.
   const ratingPendingRef = useRef(new Set());
+  // Tasks this session has PROVEN already reviewed, so the server is asked once
+  // per task instead of on every trigger.
+  const reviewedRef = useRef(new Set());
 
 
   // ── THE CLOSING NOTE STANDS ON ITS OWN ────────────────────────────────────
@@ -443,46 +446,68 @@ export default function Layout() {
     // `if (existingReview) return` blocked the modal from ever showing. Check
     // length / object identity instead.
     const existingReview = queryClient.getQueryData(['myReview', task.id, me.id]);
-    const hasReview = Array.isArray(existingReview)
+    const cachedReview = Array.isArray(existingReview)
       ? existingReview.length > 0
       : !!existingReview?.id;
-    if (hasReview) { showCongrats(task); return; }
-    // ── THE ASK ALWAYS OUTRANKS THE THANK-YOU ──────────────────────────────
-    // If the closing note is on screen when a rating arrives, the note steps
-    // aside first. Between this and the `!ratingTask` guard on the note below,
-    // the order is fixed no matter which trigger fired: the rating is shown,
-    // and only once it is closed does the note appear. They can never overlap,
-    // and the rating can never land on top of the note.
-    setCongratsTask(null);
-    setPendingCongrats(null);
-    markCompletionPromptAsked(me.id, task.id, 'rating');
-    ratingPendingRef.current.add(task.id);
-    // ── THE ASK CLAIMS THE GATE BEFORE IT IS ON SCREEN ───────────────────────
-    // The sheet holds the gate, but it opens on a short delay so the ✓ on the
-    // card is seen first — and in that window a bonus arriving from the server
-    // took the screen in front of the ask. Claiming it here, the moment the ask
-    // is decided, keeps the order (rate first, then the bonus the rating earned)
-    // whatever lands during those 800ms.
-    setPopupBlock('rating', true);
-    const open = () => {
-      // ── NEVER ON TOP OF ANOTHER SHEET ────────────────────────────────────
-      // A bonus can already be on screen when the worker opens the app after a
-      // completed job. Opening the ask over it is exactly the pile the user
-      // reported: a bonus, and a rating sheet on top of the bonus. The ask waits
-      // its turn instead — it never covers anything, and it is always the thing
-      // that ends first, so the note behind it keeps its place in the order.
-      if (isPopupBlocked('rating')) { setTimeout(open, 300); return; }
-      // ── THE SHEET MUST STEP ASIDE FOR THE CELEBRATION ────────────────────
-      // A completion made on the Lock Screen opens the app straight into this
-      // task's detail sheet. With that sheet left open, the rating (and the
-      // closing note after it) were only seen once the user closed the sheet by
-      // hand — the flow read as "nothing happened". Closing it here means the
-      // card's ✓ and then the rating are what the user sees, which is the order
-      // the rest of the completion flow already uses.
-      if (sheetTaskId === task.id) closeTaskSheet();
-      setRatingTask(task);
+    if (cachedReview || reviewedRef.current.has(task.id)) { showCongrats(task); return; }
+
+    const raise = () => {
+      // ── THE ASK ALWAYS OUTRANKS THE THANK-YOU ────────────────────────────
+      // If the closing note is on screen when a rating arrives, the note steps
+      // aside first. Between this and the `!ratingTask` guard on the note below,
+      // the order is fixed no matter which trigger fired: the rating is shown,
+      // and only once it is closed does the note appear. They can never overlap,
+      // and the rating can never land on top of the note.
+      setCongratsTask(null);
+      setPendingCongrats(null);
+      markCompletionPromptAsked(me.id, task.id, 'rating');
+      ratingPendingRef.current.add(task.id);
+      // ── THE ASK CLAIMS THE GATE BEFORE IT IS ON SCREEN ─────────────────────
+      // The sheet holds the gate, but it opens on a short delay so the ✓ on the
+      // card is seen first — and in that window a bonus arriving from the server
+      // took the screen in front of the ask. Claiming it here, the moment the ask
+      // is decided, keeps the order (rate first, then the bonus the rating earned)
+      // whatever lands during those 800ms.
+      setPopupBlock('rating', true);
+      const open = () => {
+        // ── NEVER ON TOP OF ANOTHER SHEET ──────────────────────────────────
+        // A bonus can already be on screen when the worker opens the app after a
+        // completed job. Opening the ask over it is exactly the pile the user
+        // reported: a bonus, and a rating sheet on top of the bonus. The ask waits
+        // its turn instead — it never covers anything, and it is always the thing
+        // that ends first, so the note behind it keeps its place in the order.
+        if (isPopupBlocked('rating')) { setTimeout(open, 300); return; }
+        // ── THE SHEET MUST STEP ASIDE FOR THE CELEBRATION ──────────────────
+        // A completion made on the Lock Screen opens the app straight into this
+        // task's detail sheet. With that sheet left open, the rating (and the
+        // closing note after it) were only seen once the user closed the sheet by
+        // hand — the flow read as "nothing happened". Closing it here means the
+        // card's ✓ and then the rating are what the user sees, which is the order
+        // the rest of the completion flow already uses.
+        if (sheetTaskId === task.id) closeTaskSheet();
+        setRatingTask(task);
+      };
+      setTimeout(open, 800);
     };
-    setTimeout(open, 800);
+
+    // ── THE REVIEW RECORD IS THE AUTHORITY, WHOEVER WROTE IT ────────────────
+    // The cache above only holds a review if this session happened to open the
+    // task screen, so a rating given on ANOTHER DEVICE — or handed to the server
+    // from the Lock Screen — was invisible here and the popup asked again for a
+    // rating that already existed. One read of the Review entity settles it, and
+    // the answer is remembered for the session so a task is never checked twice.
+    base44.entities.Review
+      .filter({ task_id: task.id, reviewer_id: me.id })
+      .then((rows) => (Array.isArray(rows) ? rows : (rows?.items || [])))
+      .catch(() => null)
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          reviewedRef.current.add(task.id);
+          showCongrats(task);
+          return;
+        }
+        raise();
+      });
   }, [me?.id, queryClient, sheetTaskId, closeTaskSheet, showCongrats]);
 
   useEffect(() => {

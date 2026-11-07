@@ -3,6 +3,7 @@
     "completion_worker_title": "You're done!",
     "completion_worker_body": "Your report went to the publisher. Once the completion is approved, the payment lands in your balance.",
     "completion_worker_cta": "Go to earnings",
+    "completion_worker_skip": "Not now",
     "completion_client_title": "Task completed!",
     "completion_client_body": "The worker reported the job is done. All that is left is to close the task.",
     "completion_client_cta": "Great, thanks",

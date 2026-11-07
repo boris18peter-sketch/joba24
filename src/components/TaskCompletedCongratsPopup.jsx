@@ -96,23 +96,52 @@ export default function TaskCompletedCongratsPopup({ task, role, onClose }) {
           </div>
         </div>
 
-        <button
-          onClick={handleContinue}
-          style={{
-            width: '100%', height: 52, borderRadius: 16, border: 'none', cursor: 'pointer',
-            background: isWorker
-              ? 'linear-gradient(135deg, var(--brand-modal-cta-bg, var(--brand-primary)), var(--brand-modal-cta-bg, var(--brand-primary-dark)))'
-              : 'var(--surface-3)',
-            color: isWorker ? 'var(--brand-modal-cta-text, #ffffff)' : 'var(--text-1)',
-            fontSize: 15.5, fontWeight: 900,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            boxShadow: isWorker ? '0 4px 16px rgba(26,111,212,0.3)' : 'none',
-          }}
-        >
-          {isWorker
-            ? <>{t('completion_worker_cta')} <ChevronLeft size={17} strokeWidth={2.4} /></>
-            : <><Check size={17} strokeWidth={2.6} /> {t('completion_client_cta')}</>}
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={handleContinue}
+            style={{
+              flex: 1,
+              height: 52, borderRadius: 16, border: 'none', cursor: 'pointer',
+              background: isWorker
+                ? 'linear-gradient(135deg, var(--brand-modal-cta-bg, var(--brand-primary)), var(--brand-modal-cta-bg, var(--brand-primary-dark)))'
+                : 'var(--surface-3)',
+              color: isWorker ? 'var(--brand-modal-cta-text, #ffffff)' : 'var(--text-1)',
+              fontSize: 15.5, fontWeight: 900,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: isWorker ? '0 4px 16px rgba(26,111,212,0.3)' : 'none',
+            }}
+          >
+            {isWorker
+              ? <>{t('completion_worker_cta')} <ChevronLeft size={17} strokeWidth={2.4} /></>
+              : <><Check size={17} strokeWidth={2.6} /> {t('completion_client_cta')}</>}
+          </button>
+
+          {/* ── AND THE WAY OUT, BESIDE IT ────────────────────────────────────
+              The earnings dashboard is an offer, not the only thing a worker can
+              want right after a job. Until now the single button was the only
+              path out of this note, so someone who simply wanted to close it had
+              to go to a screen they had not asked for. A plain second button
+              keeps the primary CTA the obvious one and makes "not now" a real,
+              one-tap answer. Colour and weight are deliberately quieter than the
+              CTA, so nothing competes with it. */}
+          {isWorker && (
+            <button
+              onClick={() => onClose?.()}
+              style={{
+                flexShrink: 0,
+                paddingInline: 18,
+                height: 52, borderRadius: 16, cursor: 'pointer',
+                background: 'var(--surface-3)',
+                border: '1px solid var(--border-1)',
+                color: 'var(--text-2)',
+                fontSize: 14.5, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {t('completion_worker_skip')}
+            </button>
+          )}
+        </div>
       </div>
     </div>,
     document.body

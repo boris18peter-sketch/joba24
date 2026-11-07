@@ -77,6 +77,7 @@ export default function CreditBalancePill({ credits, locked = 0, onClick, onLock
           height: 42,
           minHeight: 42,
           minWidth: 'unset',
+          boxSizing: 'border-box',
           paddingInlineStart: 11,
           paddingInlineEnd: 6,
           borderRadius: 14,

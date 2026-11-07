@@ -177,6 +177,7 @@ struct LockScreenCard: View {
                         .foregroundStyle(JobaPalette.text1)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
+                        .contentTransition(.opacity)
                     if !state.subtitle.isEmpty {
                         Text(state.subtitle)
                             .font(.caption.weight(.semibold))
@@ -216,6 +217,22 @@ struct LockScreenCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.layoutDirection, .rightToLeft)
         .dynamicTypeSize(.xSmall ... .accessibility1)
+        // ── THE CARD MOVES WHEN THE JOB MOVES ────────────────────────────────
+        // A Live Activity redraws only when its content-state changes, and a
+        // redraw used to land as a hard cut: the words and the rail were replaced
+        // between two frames, which read as a still image being swapped rather
+        // than as work progressing. These four bindings give each kind of change
+        // its own short motion, so the card answers the tap that caused it:
+        //   • the phase (set out → arrived → done) settles the whole card;
+        //   • the title cross-fades, because it is the sentence that changed;
+        //   • `actionState` is the tap itself — pending, then confirmed;
+        //   • the step index drives the rail's fill.
+        // All of them are short and finite: a Live Activity may not animate
+        // forever, and a card that never settles is worse than a static one.
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: state.phase)
+        .animation(.easeInOut(duration: 0.22), value: state.title)
+        .animation(.easeInOut(duration: 0.2), value: state.actionState)
+        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: state.stepProgress?.step)
     }
 }
 
@@ -326,6 +343,11 @@ struct StepRail: View {
                         )
                     }
                 }
+                // The connector fills, and a circle turns blue, as an ANIMATED
+                // consequence of the step moving — so a status change reads as the
+                // work advancing along the rail instead of the rail jumping to a
+                // new picture. Bound to the step index, never to time.
+                .animation(.spring(response: 0.42, dampingFraction: 0.86), value: progress.step)
             }
             // Declared here so the GeometryReader never takes height from the
             // label row or the button below it.
@@ -345,6 +367,7 @@ struct StepRail: View {
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(theme.label)
                             .monospacedDigit()
+                            .contentTransition(.numericText())
                     }
                 }
             }
@@ -380,6 +403,13 @@ struct StepRail: View {
                     )
                 }
                 .frame(width: circle, height: circle)
+                // ── THE STEP THE WORK JUST REACHED STEPS FORWARD ─────────────
+                // A 6% lift on the current circle only: enough for the eye to
+                // follow the rail as it advances, small enough that the row never
+                // jumps or overlaps its neighbours. It animates with the rail's
+                // own spring (see the HStack above), so it is a consequence of the
+                // step changing rather than a decoration running on its own.
+                .scaleEffect(active && !compact ? 1.06 : 1)
                 // The banner's `0 0 0 4px --brand-primary-light` halo: a ring just
                 // OUTSIDE the circle, never a 1.34 scale. Scaling made the halo
                 // reach into the neighbouring slot, where it sat on top of the next
@@ -465,6 +495,12 @@ struct IconBubble: View {
             )
         }
         .frame(width: size, height: size)
+        // The hero sits slightly proud of the white card instead of looking
+        // pasted on, and its glyph cross-fades when the step's icon changes — the
+        // one motion that says "the card I was looking at is still here, and it
+        // has moved on".
+        .shadow(color: tint.opacity(0.16), radius: 5, y: 2)
+        .contentTransition(.opacity)
         .accessibilityHidden(true)
     }
 }
@@ -688,6 +724,13 @@ struct TaskActionRow: View {
         )
         .shadow(color: JobaPalette.success.opacity(isPending ? 0 : 0.28), radius: 8, x: 0, y: 4)
         .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        // ── THE PRESS, DRAWN ───────────────────────────────────────────────────
+        // While the request is in flight the button presses in a hair and its
+        // gradient dims (both animated), so the card visibly shows work happening
+        // from the very first frame — the spinner becomes the detail rather than
+        // the only signal. It springs back to full size on the server's answer.
+        .scaleEffect(isPending ? 0.985 : 1)
+        .animation(.easeOut(duration: 0.18), value: isPending)
     }
 }
 

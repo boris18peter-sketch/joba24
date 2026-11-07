@@ -2,6 +2,7 @@ import Foundation
 import ActivityKit
 import AppIntents
 import UIKit
+import AudioToolbox
 
 /**
  JobaTaskActionIntent — the Lock Screen button, as an Apple App Intent.
@@ -95,19 +96,17 @@ struct JobaTaskActionIntent: LiveActivityIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        // ── FEEL THE TAP AT ONCE ─────────────────────────────────────────────
-        // This is the first line on purpose. A cold launch of an App Intent can
-        // take a second or two before anything on the card changes, and with no
-        // feedback at all the natural reaction is to press again — which is read
-        // as a second, duplicate tap. A short impact the instant the button is
-        // touched answers "did it register?" before the network is even reached.
-        await Self.feedback(.tap)
-
         // ── 1. The card this tap belongs to ──────────────────────────────────
+        // Everything below now happens in the order the hand expects: the card
+        // changes and the phone answers the tap FIRST, and only then does the
+        // request go out. The haptic used to be the first line, which meant a
+        // MainActor hop before anything visible happened — part of why a press
+        // felt like it took a moment to register.
         guard let activity = Activity<JobaTaskActivity>.activities.first(where: {
             $0.attributes.taskId == taskId && $0.attributes.role == role
         }) else {
             stage("activity_missing")
+            Self.feedback(.error)
             return .result()
         }
 
@@ -135,12 +134,20 @@ struct JobaTaskActionIntent: LiveActivityIntent {
         let awaitingConfirmation = (current.actionState == "confirm")
         if requiresConfirm && !awaitingConfirmation {
             await apply(activity, current.withActionState("confirm"))
+            // A confirmation is not the action — it is the card asking a
+            // question, so it gets a light tick and the sound, never the success
+            // pattern that would say the job was already done.
+            Self.feedback(.confirm)
             stage("confirm_requested")
             return .result()
         }
 
         // ── 4. In flight ─────────────────────────────────────────────────────
+        // The card shows "working" before the request leaves the phone, so the
+        // press has an answer even on a slow network — and the sound lands with
+        // the visible state change instead of before it.
         await apply(activity, current.withActionState("pending"))
+        Self.feedback(.tap)
 
         guard let endpoint = JobaActivityAuthStore.actionEndpoint() else {
             stage("no_endpoint")
@@ -292,24 +299,54 @@ struct JobaTaskActionIntent: LiveActivityIntent {
 
     // MARK: - Touch feedback
 
-    /// The tap, as something the hand feels rather than something the eye waits for.
+    /// The tap, as something the hand and the ear both feel.
     ///
-    /// `@MainActor` because UIKit's feedback generators are main-actor isolated on
-    /// current SDKs while `perform()` is nonisolated, so each call hops there.
+    /// ── WHY THERE IS SOUND AS WELL AS HAPTICS ────────────────────────────────
+    /// A Lock Screen card is usually pressed while the phone is lying down or
+    /// held in one hand, and the haptic is the only confirmation that the press
+    /// registered — except iOS does not always deliver it for an intent that runs
+    /// outside the app's own UI (and never when the device is on silent, or on a
+    /// device without a Taptic Engine). A short system sound is the feedback that
+    /// always arrives, and together they turn the tap into a small, definite
+    /// event: press → tick + state change → success chime when the job really
+    /// moved forward. That is the "progress" feeling, made out of the system's
+    /// own vocabulary rather than an invented one.
+    ///
+    /// The three sounds are Apple's standard system tones, chosen to match the
+    /// three outcomes: a quiet tick for the press, the notification chime for a
+    /// confirmed action, and the low alert tone for a failure.
+    ///
+    /// `@MainActor` because UIKit's feedback generators and the audio call are
+    /// main-actor isolated on current SDKs while `perform()` is nonisolated, so
+    /// each call hops there.
     @MainActor private static func feedback(_ kind: FeedbackKind) {
         switch kind {
         case .tap:
             let generator = UIImpactFeedbackGenerator(style: .medium)
             generator.prepare()
-            generator.impactOccurred()
+            generator.impactOccurred(intensity: 0.9)
+            AudioServicesPlaySystemSound(tapSound)
+        case .confirm:
+            // Lighter than a submit: the card is asking, not doing.
+            UISelectionFeedbackGenerator().selectionChanged()
+            AudioServicesPlaySystemSound(tapSound)
         case .success:
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+            AudioServicesPlaySystemSound(successSound)
         case .error:
             UINotificationFeedbackGenerator().notificationOccurred(.error)
+            AudioServicesPlaySystemSound(errorSound)
         }
     }
 
-    private enum FeedbackKind { case tap, success, error }
+    /// `1104` — a short, quiet "tock": a press, acknowledged.
+    private static let tapSound: SystemSoundID = 1104
+    /// `1057` — the same chime iOS uses for a positive notification.
+    private static let successSound: SystemSoundID = 1057
+    /// `1053` — the low alert tone, for a tap that did not land.
+    private static let errorSound: SystemSoundID = 1053
+
+    private enum FeedbackKind { case tap, confirm, success, error }
 }
 
 /// The action endpoint's answer. Optional everywhere: a refusal, a timeout and a

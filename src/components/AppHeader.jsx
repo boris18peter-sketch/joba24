@@ -100,7 +100,10 @@ export default function AppHeader({ onOpenMenu }) {
         {/* Left: Joba balance pill + Menu */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {isAuthenticated && (
-            <span id="onboarding-credits-pill">
+            // A flex ITEM, not an inline box: an inline wrapper sits on the text
+            // baseline, which pushed the pill a few pixels down inside the row and
+            // made it look out of line with the button beside it.
+            <span id="onboarding-credits-pill" style={{ display: 'flex', alignItems: 'center' }}>
               <CreditBalancePill
                 credits={me?.worker_credits ?? 0}
                 locked={lockedJobas}
@@ -127,7 +130,15 @@ export default function AppHeader({ onOpenMenu }) {
           <button
             onClick={onOpenMenu}
             style={{
-              width: 42, height: 42, borderRadius: 'var(--r-sm)',
+              // ── ONE HEIGHT FOR THE WHOLE ROW ────────────────────────────────
+              // The balance pill is 42 tall. This button had no min sizes of its
+              // own, so the global 44×44 tap-target rule stretched it to 44 — two
+              // pixels taller than the pill next to it, centred on the same line,
+              // which is exactly the asymmetry the header was showing. Declared
+              // here, both controls are 42 and line up to the pixel.
+              width: 42, height: 42, minWidth: 42, minHeight: 42,
+              boxSizing: 'border-box',
+              borderRadius: 'var(--r-sm)',
               background: 'var(--brand-header-active, var(--brand-primary))', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, boxShadow: 'var(--shadow-sm)',

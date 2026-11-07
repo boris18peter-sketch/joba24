@@ -334,6 +334,14 @@ export default function Chat() {
       style={{
         position: 'fixed', top: 0, left: 0, right: 0,
         height: '100dvh',
+        // A cap in the app's OWN box: on a tablet or a desktop the surface is
+        // zoomed (see src/lib/desktopScale.js), and a `100dvh` shell inside a
+        // zoomed surface is painted taller than the window — its last child, the
+        // composer, then sits below the bottom of the screen and there is nowhere
+        // to type. `--app-h` is the window already divided by that scale, so the
+        // shell always ends exactly at the visible edge. The viewport hook below
+        // writes the same geometry in px while the keyboard is open.
+        maxHeight: 'var(--app-h, 100dvh)',
         display: 'flex', flexDirection: 'column',
         background: 'var(--surface-1)',
         // Deliberately BELOW the task-detail sheet (1000000). A full-screen page

@@ -718,11 +718,38 @@ export default function HomeFeed() {
               <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', ...(isRTL ? { right: activeTab === 'available' ? 3 : 'calc(50%)' } : { left: activeTab === 'available' ? 3 : 'calc(50%)' }), background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary-dark)))', borderRadius: 99, transition: 'all 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
               <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
                 {t('all_tasks')}
-                {availableDot && activeTab !== 'available' && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid var(--surface-3)', animation: 'pulseRedDot 1.5s infinite' }} />}
+                {/* ── THE LIVE-TASK MARK ──────────────────────────────────────
+                    It used to be an 8px dot at 1.5× pulse on a light surface:
+                    at arm's length it read as a dust speck, so the one thing
+                    that says "you have a job in progress" was the easiest thing
+                    on the screen to miss. It is now clearly a badge — bigger,
+                    ringed in white so it stands off the segmented control, with
+                    a soft red glow — and it breathes instead of blinking. */}
+                {availableDot && activeTab !== 'available' && (
+                  <span style={{
+                    position: 'absolute', top: '50%', left: 9,
+                    transform: 'translateY(-50%)',
+                    width: 11, height: 11, borderRadius: '50%',
+                    background: '#ef4444',
+                    border: '2px solid var(--surface-2, #fff)',
+                    boxShadow: '0 0 0 3px rgba(239,68,68,0.28), 0 2px 8px rgba(239,68,68,0.45)',
+                    animation: 'pulseRedDot 1.4s ease-in-out infinite',
+                  }} />
+                )}
               </button>
               <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
                 {myPubLabel}
-                {myPubDot && activeTab !== 'my_published' && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid var(--surface-3)', animation: 'pulseRedDot 1.5s infinite' }} />}
+                {myPubDot && activeTab !== 'my_published' && (
+                  <span style={{
+                    position: 'absolute', top: '50%', left: 9,
+                    transform: 'translateY(-50%)',
+                    width: 11, height: 11, borderRadius: '50%',
+                    background: '#ef4444',
+                    border: '2px solid var(--surface-2, #fff)',
+                    boxShadow: '0 0 0 3px rgba(239,68,68,0.28), 0 2px 8px rgba(239,68,68,0.45)',
+                    animation: 'pulseRedDot 1.4s ease-in-out infinite',
+                  }} />
+                )}
               </button>
             </div>
 
@@ -1082,7 +1109,7 @@ export default function HomeFeed() {
         }
         @keyframes pulseRedDot {
           0%, 100% { transform: translateY(-50%) scale(1); opacity: 1; }
-          50% { transform: translateY(-50%) scale(1.5); opacity: 0.5; }
+          50% { transform: translateY(-50%) scale(1.35); opacity: 0.72; }
         }
         @keyframes newTaskGlow {
           0%, 100% { box-shadow: 0 0 0 2px rgba(26,111,212,0.18), 0 4px 24px rgba(26,111,212,0.08); }

@@ -51,6 +51,30 @@ export function useViewportHeight() {
  * `--safe-bottom`, so the composer doesn't float above the keyboard with a
  * phantom home-indicator gap.
  */
+/**
+ * The surface scale, as a number.
+ *
+ * On a tablet or a desktop the whole app is painted inside a `zoom` (see
+ * src/lib/desktopScale.js, which publishes the factor as `--ui-scale`). `zoom`
+ * multiplies every length written into that surface — INCLUDING a px height set
+ * from JavaScript. So a shell measured at 900px and then magnified 1.3× became
+ * 1170px tall on a 900px screen, and the composer — its last child — was simply
+ * off the bottom of the window. That is why the chat had no input on a computer
+ * while working perfectly on a phone.
+ *
+ * Every measurement below is therefore divided by this factor before it is
+ * written, so the geometric result after zooming is exactly the visible viewport.
+ */
+function surfaceScale() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return 1;
+  const root = document.documentElement;
+  const declared = parseFloat(root.style.getPropertyValue('--ui-scale'));
+  if (Number.isFinite(declared) && declared > 0) return declared;
+  const computed = parseFloat(window.getComputedStyle(root).zoom);
+  if (Number.isFinite(computed) && computed > 0) return computed;
+  return 1;
+}
+
 export function useChatViewport(ref, onGeometryChange) {
   // Held in a ref so a new callback identity never re-subscribes the listeners.
   const callbackRef = useRef(onGeometryChange);
@@ -75,8 +99,11 @@ export function useChatViewport(ref, onGeometryChange) {
       lastH = h;
       lastY = y;
 
-      el.style.height = `${h}px`;
-      el.style.transform = y ? `translateY(${y}px)` : '';
+      // ÷ the surface scale: the viewport is reported in the window's own px,
+      // while everything written into the zoomed surface is multiplied by it.
+      const scale = surfaceScale();
+      el.style.height = `${Math.round(h / scale)}px`;
+      el.style.transform = y ? `translateY(${Math.round(y / scale)}px)` : '';
 
       // iOS keeps the home-indicator inset while the keyboard is up, which
       // would push the composer off the keyboard by ~34px.
