@@ -14,8 +14,12 @@ the uploaded binary can quietly undo either fix.
   2. Warning 90876 — the SIGNED parent app must carry
      `com.apple.developer.associated-appclip-app-identifiers` naming this clip,
      prefixed with the team that signed it.
+  3. The App Clip experience URL check — the SIGNED parent app must declare the
+     invocation domain as BOTH `applinks:` and `appclips:`. Apple requires the
+     domain on the app and the clip; carried only on the clip, App Store Connect
+     answers "This URL is not contained in your app's associated domains".
 
-Both checks are read from the build's own artifacts and need no arguments
+Every check is read from the build's own artifacts and needs no arguments
 beyond the archive path: the team comes from the signature and the clip id comes
 from the clip bundle, so nothing can be compared against a stale constant.
 
@@ -36,6 +40,8 @@ ORIENTATIONS = [
     "UIInterfaceOrientationLandscapeRight",
 ]
 APPCLIP_ENTITLEMENT = "com.apple.developer.associated-appclip-app-identifiers"
+ASSOCIATED_DOMAINS_KEY = "com.apple.developer.associated-domains"
+APP_ENTITLEMENTS = "ios/App/App/App.entitlements"
 
 
 class VerifyError(Exception):
@@ -77,6 +83,16 @@ def signed_entitlements(app_path):
         return plistlib.loads(raw[start:])
     except plistlib.InvalidFileException as exc:
         raise VerifyError("codesign returned unreadable entitlements for %s (%s)" % (app_path, exc))
+
+
+def associated_domain_hosts(entitlements):
+    """{host: {service, ...}} from the SIGNED Associated Domains entitlement."""
+    hosts = {}
+    for value in (entitlements.get(ASSOCIATED_DOMAINS_KEY) or []):
+        service, _, host = str(value).partition(":")
+        if host:
+            hosts.setdefault(host, set()).add(service)
+    return hosts
 
 
 def team_of(entitlements):
@@ -176,6 +192,35 @@ def verify(archive, entitlements_path=""):
             "then regenerate that profile)."
             % (APPCLIP_ENTITLEMENT, identifiers or "nothing", expected))
 
+    # ── 3. The invocation domain, on the APP as well as the clip ────────────
+    # App Store Connect reads this from the SIGNED app when an App Clip
+    # experience URL is entered, and answers "This URL is not contained in your
+    # app's associated domains" when the app carries the domain only as
+    # applinks:. Apple requires both service entries on both targets, so the
+    # archive is where that has to be true — a correct source file cannot
+    # rescue a binary signed without it.
+    hosts = associated_domain_hosts(entitlements)
+    if not hosts:
+        raise VerifyError(
+            "the signed parent app declares no Associated Domains at all, so the App Clip "
+            "invocation domain cannot be confirmed.\n"
+            "       Fix: %s must declare applinks:<domain> and appclips:<domain>."
+            % APP_ENTITLEMENTS)
+    for host in sorted(hosts):
+        absent = [service for service in ("applinks", "appclips")
+                  if service not in hosts[host]]
+        if absent:
+            present = sorted(hosts[host])[0]
+            raise VerifyError(
+                "the signed parent app declares %s:%s but not %s:%s.\n"
+                "       Apple requires the App Clip invocation domain in the Associated Domains "
+                "entitlement on BOTH the app and the App Clip target. Without appclips: on the "
+                "app, App Store Connect refuses an App Clip experience URL with\n"
+                "       \"This URL is not contained in your app's associated domains\".\n"
+                "       Fix: %s must declare both applinks:%s and appclips:%s — "
+                "scripts/patch-ios-app-clip.py writes them on every build."
+                % (present, host, absent[0], host, APP_ENTITLEMENTS, host, host))
+
     return {
         "ok": True,
         "app": os.path.basename(app),
@@ -185,6 +230,10 @@ def verify(archive, entitlements_path=""):
         "orientations_ipad": ipad,
         "parent_appclip_identifiers": identifiers,
         "parent_appclip_expected": expected,
+        "parent_associated_domains": sorted(
+            str(v) for v in (entitlements.get(ASSOCIATED_DOMAINS_KEY) or [])),
+        "parent_associated_hosts": {host: sorted(services)
+                                    for host, services in hosts.items()},
         "team_id": team,
     }
 
@@ -213,6 +262,8 @@ def main(argv=None):
             json.dump(report, handle, indent=2, ensure_ascii=False)
     diag("OK: clip %s declares all four orientations (90474)" % report["clip_bundle_id"])
     diag("OK: parent app declares %s (90876)" % report["parent_appclip_expected"])
+    diag("OK: parent app declares applinks + appclips for %s"
+         % ", ".join(sorted(report["parent_associated_hosts"])))
     return 0
 
 

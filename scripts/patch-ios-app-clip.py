@@ -52,6 +52,7 @@ CLIP_INFO_PLIST = "ios/App/JobaClip/Info.plist"
 APP_ENTITLEMENTS = "ios/App/App/App.entitlements"
 
 APPCLIP_ENTITLEMENT = "com.apple.developer.associated-appclip-app-identifiers"
+ASSOCIATED_DOMAINS_KEY = "com.apple.developer.associated-domains"
 
 # Error 90474: a clip that supports iPad (TARGETED_DEVICE_FAMILY = "1,2") must
 # declare every orientation, because iPad can rotate.
@@ -241,6 +242,60 @@ def set_block(text, key, values):
     return text.replace(anchor, block + anchor, 1)
 
 
+def clip_appclip_hosts():
+    """The `appclips:` hosts the App Clip itself claims, from its own entitlements.
+
+    Read from the CLIP, never typed here twice, so the parent's entry can never
+    name a different domain than the clip that is embedded in it."""
+    for path in (ENTITLEMENTS, TEMPLATE):
+        if not os.path.exists(path):
+            continue
+        hosts = []
+        for value in block_values(read_text(path), ASSOCIATED_DOMAINS_KEY):
+            service, _, host = value.partition(":")
+            if service == "appclips" and host and host not in hosts:
+                hosts.append(host)
+        if hosts:
+            return hosts
+    return []
+
+
+def associated_domains_required(hosts=None):
+    """Both service entries Apple requires for one invocation host."""
+    hosts = clip_appclip_hosts() if hosts is None else hosts
+    return ["%s:%s" % (service, host)
+            for host in hosts for service in ("applinks", "appclips")]
+
+
+def ensure_parent_associated_domains(hosts=None, path=None):
+    """Declare the clip's invocation domain on the PARENT app as well.
+
+    Apple requires the domain in the Associated Domains entitlement on BOTH the
+    app and the App Clip target. Carried only on the clip, App Store Connect
+    rejects the App Clip experience URL with "This URL is not contained in your
+    app's associated domains" — a SIGNED-ENTITLEMENTS fault that no AASA file
+    and no ASC setting can cure, because App Store Connect reads it out of the
+    uploaded binary.
+
+    Existing entries are kept in their existing order; only what is missing is
+    appended, so this is safe to run on every build."""
+    path = path or APP_ENTITLEMENTS
+    required = associated_domains_required(hosts)
+    if not required:
+        raise SystemExit(
+            "ERROR: the App Clip declares no appclips: associated domain, so the\n"
+            "       parent app's invocation domain cannot be derived.\n"
+            "       Expected it in %s or %s." % (ENTITLEMENTS, TEMPLATE))
+    text = read_text(path)
+    existing = block_values(text, ASSOCIATED_DOMAINS_KEY)
+    missing = [value for value in required if value not in existing]
+    if not missing:
+        return "%s: declares %s" % (path, ", ".join(required))
+    with open(path, "w") as handle:
+        handle.write(set_block(text, ASSOCIATED_DOMAINS_KEY, existing + missing))
+    return "%s: added %s" % (path, ", ".join(missing))
+
+
 def ensure_clip_plist(path=None):
     """Declare all four orientations, on both the generic and the iPad key."""
     path = path or CLIP_INFO_PLIST
@@ -282,7 +337,8 @@ def apply(project_text, team_id=DEFAULT_TEAM_ID, clip_plist=None, app_entitlemen
     # about them. Both are rewritten (idempotently) before anything else, and
     # `--check --require` proves the result instead of trusting an earlier run.
     notes = [ensure_clip_plist(clip_plist),
-             ensure_parent_entitlements(project_text, team_id, app_entitlements)]
+             ensure_parent_entitlements(project_text, team_id, app_entitlements),
+             ensure_parent_associated_domains(path=app_entitlements)]
 
     if CLIP_TARGET_NAME in project_text:
         return project_text, notes + ["already applied - project untouched"]
@@ -512,6 +568,11 @@ def inspect(project_text, team_id=DEFAULT_TEAM_ID, clip_plist=None, app_entitlem
     entitlements_text = read_text(app_entitlements)
     orientations = block_values(plist_text, "UISupportedInterfaceOrientations")
     declared = block_values(entitlements_text, APPCLIP_ENTITLEMENT)
+    # The App Clip experience URL check reads the APP's signed associated
+    # domains, so both service entries for the invocation host are part of the
+    # report and of the strict gate.
+    domains = block_values(entitlements_text, ASSOCIATED_DOMAINS_KEY)
+    required_domains = associated_domains_required()
     report = {"target_present": False, "embed": False, "dependency": False,
               "product_type": None, "bundle_id": None, "sources": [],
               "entitlements": os.path.exists(ENTITLEMENTS),
@@ -520,7 +581,11 @@ def inspect(project_text, team_id=DEFAULT_TEAM_ID, clip_plist=None, app_entitlem
               "clip_orientations_complete": orientations == ORIENTATIONS,
               "parent_appclip_identifiers": declared,
               "parent_appclip_expected": expected,
-              "parent_appclip_ok": expected in declared}
+              "parent_appclip_ok": expected in declared,
+              "parent_associated_domains": domains,
+              "parent_associated_required": required_domains,
+              "parent_associated_ok": bool(required_domains)
+              and all(value in domains for value in required_domains)}
     if CLIP_TARGET_NAME not in project_text:
         return report
     report["target_present"] = True
@@ -570,7 +635,8 @@ def main(argv=None):
             # before an hour of archive, instead of at upload.
             if not (report["target_present"] and report["embed"] and report["dependency"]
                     and report["entitlements"]
-                    and report["clip_orientations_complete"] and report["parent_appclip_ok"]):
+                    and report["clip_orientations_complete"] and report["parent_appclip_ok"]
+                    and report["parent_associated_ok"]):
                 report["ok"] = False
             report["missing"] = [name for name, ok in (
                 ("target", report["target_present"]),
@@ -579,6 +645,7 @@ def main(argv=None):
                 ("clip entitlements file", report["entitlements"]),
                 ("all four clip orientations (error 90474)", report["clip_orientations_complete"]),
                 ("parent appclip identifier (warning 90876)", report["parent_appclip_ok"]),
+                ("applinks + appclips on the parent app", report["parent_associated_ok"]),
             ) if not ok]
             for item in report["missing"]:
                 sys.stderr.write("MISSING: %s\n" % item)

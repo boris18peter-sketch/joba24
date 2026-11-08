@@ -30,6 +30,7 @@ const TEAM = '322DV2PB9V';
 const APP_BUNDLE = 'com.base69e6bdb4986a04a256653a23.app';
 const CLIP_BUNDLE = `${APP_BUNDLE}.Clip`;
 const APPCLIP_KEY = 'com.apple.developer.associated-appclip-app-identifiers';
+const ASSOCIATED_KEY = 'com.apple.developer.associated-domains';
 
 const ORIENTATIONS = [
   'UIInterfaceOrientationPortrait',
@@ -134,6 +135,25 @@ describe('the parent app clip entitlement', () => {
     expect(text).toContain('applinks:joba24.com');
     expect(text).toContain('<key>com.apple.security.application-groups</key>');
   });
+
+  it('declares the invocation domain for the clip, not only for links', () => {
+    // Apple requires the App Clip's invocation domain in the Associated Domains
+    // entitlement on BOTH the app and the clip target. Carried here as
+    // `applinks:` alone, App Store Connect refuses an App Clip experience URL
+    // with "This URL is not contained in your app's associated domains" — read
+    // from THIS file's signature, so no AASA and no ASC setting can cure it.
+    expect(values(text, ASSOCIATED_KEY).sort())
+      .toEqual(['appclips:joba24.com', 'applinks:joba24.com']);
+  });
+
+  it('claims the same host as the clip itself', () => {
+    const clip = read(join(ROOT, 'ios/App/JobaClip/JobaClip.entitlements'));
+    const clipHosts = values(clip, ASSOCIATED_KEY)
+      .filter((entry) => entry.startsWith('appclips:')).map((entry) => entry.split(':')[1]);
+    expect(clipHosts).toEqual(['joba24.com']);
+    expect(values(text, ASSOCIATED_KEY)).toEqual(
+      expect.arrayContaining([`appclips:${clipHosts[0]}`]));
+  });
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -194,10 +214,90 @@ describe('the patcher normalises both files', () => {
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
+   3b. The invocation domain, on the PARENT app, on every build
+   ══════════════════════════════════════════════════════════════════════════
+   The clip carried `appclips:joba24.com` from the start; the app never did, and
+   the app's signed entitlements are what App Store Connect reads when an App
+   Clip experience URL is entered. These prove the patcher REPAIRS the parent
+   file on an ordinary run and REFUSES a build where the entry is missing. */
+describe('the parent invocation domain', () => {
+  /** The app entitlements as build 41 signed them: applinks only. */
+  const linksOnly = () => plistDoc(
+    plistString('aps-environment', 'production')
+    + plistArray(ASSOCIATED_KEY, ['applinks:joba24.com'])
+    + plistArray('com.apple.security.application-groups',
+      ['group.com.base69e6bdb4986a04a256653a23.app'])
+    + plistArray(APPCLIP_KEY, [`${TEAM}.${CLIP_BUNDLE}`]));
+
+  it('adds appclips: beside applinks:, keeping everything else', () => {
+    const files = sandbox();
+    writeFileSync(files.entitlements, linksOnly());
+
+    const result = patch(files);
+    expect(result.code, result.stderr).toBe(0);
+    const repaired = read(files.entitlements);
+    expect(values(repaired, ASSOCIATED_KEY)).toEqual([
+      'applinks:joba24.com',
+      'appclips:joba24.com',
+    ]);
+    // Nothing else is disturbed: push, the App Group and the clip id survive.
+    expect(values(repaired, 'com.apple.security.application-groups'))
+      .toEqual(['group.com.base69e6bdb4986a04a256653a23.app']);
+    expect(values(repaired, APPCLIP_KEY)).toEqual([`${TEAM}.${CLIP_BUNDLE}`]);
+    expect(repaired).toContain('<key>aps-environment</key>');
+  });
+
+  it('never duplicates an entry it already wrote', () => {
+    const files = sandbox();
+    writeFileSync(files.entitlements, linksOnly());
+    patch(files);
+    const once = read(files.entitlements);
+    patch(files);
+    expect(read(files.entitlements)).toBe(once);
+    expect(values(read(files.entitlements), ASSOCIATED_KEY)).toHaveLength(2);
+  });
+
+  it('keeps an unrelated service entry it did not add', () => {
+    const files = sandbox();
+    writeFileSync(files.entitlements, plistDoc(
+      plistArray(ASSOCIATED_KEY, ['applinks:joba24.com', 'webcredentials:joba24.com'])));
+    patch(files);
+    expect(values(read(files.entitlements), ASSOCIATED_KEY)).toEqual([
+      'applinks:joba24.com',
+      'webcredentials:joba24.com',
+      'appclips:joba24.com',
+    ]);
+  });
+
+  it('fails the strict gate when the app loses appclips:', () => {
+    const files = sandbox();
+    patch(files);
+    const wired = check(files);
+    expect(wired.code, wired.stderr).toBe(0);
+
+    // A build that strips it must stop here, not reach App Store Connect.
+    writeFileSync(files.entitlements, linksOnly());
+    const gate = check(files);
+    expect(gate.code).toBe(1);
+    expect(gate.stderr).toContain('applinks + appclips on the parent app');
+  });
+
+  it('derives the required pair from the clip, and reports it', () => {
+    const files = sandbox();
+    patch(files);
+    const report = JSON.parse(check(files).stdout);
+    expect(report.parent_associated_required)
+      .toEqual(['applinks:joba24.com', 'appclips:joba24.com']);
+    expect(report.parent_associated_ok).toBe(true);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
    4. The archive verifier reads the BUILT product
    ══════════════════════════════════════════════════════════════════════════ */
 function archive({ orientations = ORIENTATIONS, clipBundle = CLIP_BUNDLE,
-  appclip = [`${TEAM}.${CLIP_BUNDLE}`] } = {}) {
+  appclip = [`${TEAM}.${CLIP_BUNDLE}`],
+  domains = ['applinks:joba24.com', 'appclips:joba24.com'] } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'joba-clip-archive-'));
   const clipDir = join(root, 'build/App.xcarchive/Products/Applications/App.app/AppClips/JobaClip.app');
   mkdirSync(clipDir, { recursive: true });
@@ -209,7 +309,8 @@ function archive({ orientations = ORIENTATIONS, clipBundle = CLIP_BUNDLE,
   writeFileSync(entitlements, plistDoc(
     plistString('com.apple.developer.team-identifier', TEAM)
     + plistString('application-identifier', `${TEAM}.${APP_BUNDLE}`)
-    + plistArray(APPCLIP_KEY, appclip)));
+    + plistArray(APPCLIP_KEY, appclip)
+    + plistArray(ASSOCIATED_KEY, domains)));
 
   return { archive: join(root, 'build/App.xcarchive'), entitlements };
 }
@@ -224,6 +325,28 @@ describe('the archive verifier', () => {
     expect(report.ok).toBe(true);
     expect(report.clip_bundle_id).toBe(CLIP_BUNDLE);
     expect(report.parent_appclip_expected).toBe(`${TEAM}.${CLIP_BUNDLE}`);
+    // Both service entries are proven from the SIGNED app, which is where App
+    // Store Connect reads them for an App Clip experience URL.
+    expect(report.parent_associated_hosts).toEqual({
+      'joba24.com': ['appclips', 'applinks'],
+    });
+  });
+
+  it('rejects a signed app that carries the domain only as applinks:', () => {
+    const fixture = archive({ domains: ['applinks:joba24.com'] });
+    const result = run(VERIFIER, ['--archive', fixture.archive,
+      '--entitlements', fixture.entitlements]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('but not appclips:joba24.com');
+    expect(result.stderr).toContain('not contained in your app');
+  });
+
+  it('rejects a signed app with no associated domains at all', () => {
+    const fixture = archive({ domains: [] });
+    const result = run(VERIFIER, ['--archive', fixture.archive,
+      '--entitlements', fixture.entitlements]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('no Associated Domains at all');
   });
 
   it('rejects a built clip that lost an orientation (90474)', () => {

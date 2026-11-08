@@ -4,9 +4,24 @@
 <dict>
 	<key>aps-environment</key>
 	<string>production</string>
+	<!--
+		THE INVOCATION DOMAIN BELONGS ON BOTH TARGETS.
+
+		applinks: — universal links for the full app.
+		appclips: — the App Clip invocation domain. Apple requires it on the APP
+		            *and* on the App Clip target; the clip declares the same host
+		            in JobaClip.entitlements.
+
+		With applinks: alone, App Store Connect refuses an App Clip experience
+		URL with "This URL is not contained in your app's associated domains".
+		That message is read from these SIGNED entitlements — no AASA file and no
+		ASC setting can cure it. scripts/patch-ios-app-clip.py preserves and
+		verifies both entries on every build.
+	-->
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:joba24.com</string>
+		<string>appclips:joba24.com</string>
 	</array>
 	<!-- Shared with the Live Activity widget extension ONLY, so the widget's App
 	     Intent can read the short-lived action capability the app mints while a
