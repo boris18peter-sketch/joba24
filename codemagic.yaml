@@ -2,6 +2,26 @@ workflows:
   ios-workflow:
     name: Joba24 iOS Workflow
     max_build_duration: 120
+    # ── SWIFT PACKAGE DOWNLOADS SURVIVE BETWEEN BUILDS ───────────────────────
+    # Resolving Swift packages is the most network-dependent step in this
+    # workflow: Capacitor 8.5.0 and the Facebook 17.x SDK are BINARY
+    # XCFrameworks fetched from GitHub releases, and two builds in a row died
+    # there on a 504 and a request timeout. Codemagic's dependency cache keeps
+    # those downloads on the build machine, so a green build means the next one
+    # has nothing left to fetch.
+    #
+    # The path is Codemagic's documented Swift Package Manager cache, and it is
+    # the SAME directory the resolver clones into (`-clonedSourcePackagesDirPath`
+    # in the "Resolve SPM dependencies" step) — a cache of a directory nothing
+    # writes to would be dead weight. org.swift.swiftpm holds the bare
+    # repository mirrors, so even a cold clone directory reuses them.
+    #
+    # Deliberately NOT cached: DerivedData. It carries build products and stale
+    # indexes, and a poisoned one produces failures that look like source bugs.
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/SourcePackages
+        - $HOME/Library/Caches/org.swift.swiftpm
     # ── ONE SWITCH, ASKED FOR AT BUILD TIME ──────────────────────────────────
     # Codemagic shows this as a field in "Start new build". Left unticked, the
     # build is exactly the app that ships today. Ticked, this one build also
@@ -687,9 +707,28 @@ workflows:
           echo "=== Package.swift used for this build ==="
           cat ios/App/CapApp-SPM/Package.swift
           echo "=== Resolving Swift Package dependencies (type-checks the manifest) ==="
-          xcodebuild -resolvePackageDependencies \
-            -project "$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME"
+          # ── TRANSIENT DOWNLOADS ARE RETRIED; REAL ERRORS ARE NOT ───────────
+          # This step died twice in a row on GitHub's release CDN rather than on
+          # anything in the manifest: HTTP 504, then
+          # downloadError("The request timed out.") for the Facebook 17.4.0 and
+          # Capacitor 8.5.0 binary frameworks. A single un-retried attempt
+          # therefore threw away a whole archive slot over a bad minute on the
+          # network.
+          #
+          # The resolver retries ONLY what means "the network was unwell" (HTTP
+          # 5xx, timeouts, downloadError, NSURLError, connection reset, DNS,
+          # unexpected EOF, TLS), with exponential backoff and a hard ceiling of
+          # 4 attempts. A version-resolution error, an unparseable Package.swift
+          # or a Swift compile error stops the build on the FIRST attempt — a
+          # retry loop that cannot tell those apart would repeat a broken build
+          # four times and then report it as "flaky", burying the real cause.
+          #
+          # It resolves into $CM_BUILD_DIR/SourcePackages, the directory the
+          # workflow's `cache:` block persists, so a successful build leaves the
+          # next one with nothing to download. If every attempt fails while that
+          # cache is in use, it is cleared ONCE and retried cold — a truncated
+          # artifact from an interrupted run otherwise fails identically for ever.
+          bash scripts/resolve-spm-deps.sh
           echo "OK: Package.swift resolved - Facebook + TikTok + all Capacitor plugins linked"
       - name: Archive the app
         script: |
