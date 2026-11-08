@@ -298,3 +298,49 @@ describe('the build wiring', () => {
     expect(yaml).toContain('name: Verify the Live Activity extension in the archive (iOS)');
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. THE DOMAIN CHECK — "Invalid Entitlement: Missing Section"
+   ══════════════════════════════════════════════════════════════════════════
+   Build 41 uploaded with the clip inside it and both entitlement sides correct,
+   and App Store Connect still failed the DOMAIN validation. The fault was on the
+   web server, not in the app: the association file carried `applinks` only, so
+   Apple found no `appclips` section naming the clip and reported a missing
+   section. The clip's entitlement was right all along — it had nothing to point
+   at. These pin the file Apple actually downloads. */
+describe('the association file the App Clip domain check reads', () => {
+  const FILES = [
+    'public/.well-known/apple-app-site-association',
+    'public/apple-app-site-association',
+  ];
+
+  it.each(FILES)('%s names the clip in an appclips section', (rel) => {
+    const doc = JSON.parse(read(join(ROOT, rel)));
+
+    // The parent app's own links keep working exactly as before.
+    expect(doc.applinks.details.map((entry) => entry.appID)).toEqual([`${TEAM}.${APP_BUNDLE}`]);
+    expect(doc.applinks.details[0].paths).toEqual(['*']);
+
+    // Without this key Apple answers "Invalid Entitlement: Missing Section" and
+    // the App Clip experience never validates. It is the CLIP's identifier — the
+    // full app id plus the .Clip suffix — and no new .ipa can substitute for it.
+    expect(doc.appclips).toBeTruthy();
+    expect(doc.appclips.apps).toEqual([`${TEAM}.${CLIP_BUNDLE}`]);
+  });
+
+  it('is raw JSON at the well-known path', () => {
+    // Apple fetches this path directly, following no wrapper: a body that is not
+    // the JSON document itself is silently unreadable to it.
+    const raw = read(join(ROOT, 'public/.well-known/apple-app-site-association'));
+    expect(raw.trim().startsWith('{')).toBe(true);
+    expect(raw).not.toContain('<');
+  });
+
+  it('claims the same domain the clip entitlement claims', () => {
+    // The host is matched by Apple: the clip's `appclips:` host and the domain
+    // serving that section must be the same one.
+    const template = read(join(ROOT, 'ios/App/JobaClip/JobaClip.entitlements.template'));
+    const hosts = [...template.matchAll(/<string>appclips:([^<]+)<\/string>/g)].map((m) => m[1]);
+    expect(hosts).toEqual(['joba24.com']);
+  });
+});
