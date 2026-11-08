@@ -6,6 +6,16 @@
     <meta name="apple-mobile-web-app-capable" content="true" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Joba24" />
+    <!-- ── APP CLIP INVOCATION ─────────────────────────────────────────────
+         Apple's Smart App Banner tag. It is what makes Safari show the App Clip
+         card for https://joba24.com (and lets a link shared in Messages carry a
+         rich preview that can launch the clip), so it MUST be in the static HTML
+         head: iOS reads it from the HTML response itself, during the parse —
+         injected from JavaScript it would arrive too late and do nothing.
+         app-id is the live App Store id; app-clip-bundle-id is the clip's own
+         bundle id (the parent app bundle + ".Clip"), the same one the App Clip
+         experience and the AASA `appclips` section name. -->
+    <meta name="apple-itunes-app" content="app-id=6793680290, app-clip-bundle-id=com.base69e6bdb4986a04a256653a23.app.Clip, app-clip-display=card" />
     <meta name="mobile-web-app-capable" content="true" />
     <meta name="theme-color" content="#f2f5fb" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
