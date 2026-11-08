@@ -41,9 +41,32 @@
 	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<!--
+		ALL FOUR ORIENTATIONS — this is App Store Connect error 90474.
+
+		A clip that declares iPhone AND iPad (TARGETED_DEVICE_FAMILY = "1,2",
+		which this target sets) must support every orientation, because an iPad
+		can rotate and the system refuses to install a clip that would pin it to
+		one. Portrait alone passed the archive and was rejected at upload.
+
+		The `~ipad` key repeats the same four on purpose: iPad reads the
+		device-specific key first, and declaring it explicitly is what states the
+		multitasking support Apple is checking for, instead of relying on the
+		fallback to the generic key.
+	-->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

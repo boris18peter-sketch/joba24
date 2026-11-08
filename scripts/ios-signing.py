@@ -103,6 +103,9 @@ REASON_TEXT = {
 }
 REASON_PREFIX_TEXT = {
     "missing_app_group:": "it does not carry the required App Group",
+    "missing_appclip_entitlement:":
+        "its profile does not carry the App Clip identifier the app declares "
+        "(enable App Clips on the parent App ID, then regenerate this profile):",
 }
 
 
@@ -192,6 +195,12 @@ def describe(info, path="", size=0):
         "created": _iso(info.get("CreationDate")),
         "expires": _iso(info.get("ExpirationDate")),
         "groups": [str(g) for g in (ent.get("com.apple.security.application-groups") or [])],
+        # The App Clip ids the PARENT app is allowed to contain. Present only
+        # once the App Clips capability is on the parent App ID — an older
+        # profile simply has none, which is what the clip build checks for.
+        "appclip_identifiers": [
+            str(v) for v in (ent.get("com.apple.developer.associated-appclip-app-identifiers") or [])
+        ],
         "get_task_allow": ent.get("get-task-allow") is True,
         "beta_reports_active": ent.get("beta-reports-active") is True,
         "aps_environment": str(ent.get("aps-environment") or ""),
@@ -268,7 +277,8 @@ def wildcard_matches(pattern, bundle_id):
     return bundle_id == prefix or bundle_id.startswith(prefix + ".")
 
 
-def evaluate(profile, bundle_id, identities, require_groups, expected_team, now):
+def evaluate(profile, bundle_id, identities, require_groups, expected_team, now,
+             require_appclip=""):
     """Every reason this profile cannot sign `bundle_id`. Empty list = compatible."""
     reasons = []
     if not profile["uuid"]:
@@ -309,6 +319,16 @@ def evaluate(profile, bundle_id, identities, require_groups, expected_team, now)
         if group and group not in profile["groups"]:
             reasons.append("missing_app_group:%s" % group)
 
+    # ── THE CLIP'S PARENT ENTITLEMENT IS A PROFILE REQUIREMENT TOO ───────────
+    # Warning 90876 is only resolved when the app's PROFILE carries the same
+    # identifier: entitlements and profile must agree, or signing fails. Checked
+    # here so the build stops BEFORE archiving, with a message naming the
+    # capability to enable rather than an opaque codesign error at upload.
+    if require_appclip:
+        expected = "%s.%s" % (profile["team_id"], require_appclip)
+        if expected not in profile["appclip_identifiers"]:
+            reasons.append("missing_appclip_entitlement:%s" % expected)
+
     if not profile["certificates"]:
         reasons.append("no_developer_certificate")
     else:
@@ -328,7 +348,8 @@ def matching_identity(profile, identities):
     return None
 
 
-def choose(profiles, bundle_id, identities, require_groups, expected_team, now):
+def choose(profiles, bundle_id, identities, require_groups, expected_team, now,
+           require_appclip=""):
     """(chosen, evaluated) for one bundle id. Raises when nothing is usable.
 
     `evaluated` is [(profile, reasons)] for every candidate for THIS bundle id,
@@ -336,7 +357,8 @@ def choose(profiles, bundle_id, identities, require_groups, expected_team, now):
     """
     considered = [p for p in profiles
                   if p["bundle_id"] == bundle_id or wildcard_matches(p["bundle_id"], bundle_id)]
-    evaluated = [(p, evaluate(p, bundle_id, identities, require_groups, expected_team, now))
+    evaluated = [(p, evaluate(p, bundle_id, identities, require_groups, expected_team, now,
+                              require_appclip))
                  for p in considered]
     usable = [p for p, reasons in evaluated if not reasons]
 
@@ -538,6 +560,7 @@ def cmd_select(args):
     now = datetime.datetime.utcnow()
     require_widget = parse_bool(args.require_widget, "--require-widget")
     require_clip = parse_bool(args.require_clip, "--require-clip")
+    require_appclip = parse_bool(args.require_appclip, "--require-appclip")
     app_group = [g for g in (args.app_group or []) if g]
 
     profiles_dir = os.path.expanduser(args.profiles_dir or "")
@@ -568,6 +591,8 @@ def cmd_select(args):
         diag("    dates     created %s   expires %s"
              % ((profile["created"] or "(none)")[:19], (profile["expires"] or "(none)")[:19]))
         diag("    groups    %s" % (", ".join(profile["groups"]) or "none"))
+        if profile["appclip_identifiers"]:
+            diag("    appclip   %s" % ", ".join(profile["appclip_identifiers"]))
         diag("    flags     %s" % (", ".join(filter(None, [
             "dev(get-task-allow)" if profile["get_task_allow"] else "",
             "all-devices" if profile["all_devices"] else "",
@@ -605,10 +630,20 @@ def cmd_select(args):
     # over a group nothing needs.
     role_groups = {"app": app_group, "widget": app_group, "clip": []}
 
+    # ── THE PARENT APP MUST NAME ITS CLIP IN ITS PROFILE, NOT ONLY IN ITS
+    #    ENTITLEMENTS ─────────────────────────────────────────────────────────
+    # That is the half of warning 90876 the signature enforces: the app's
+    # entitlements and its profile must carry the same identifier. Only the APP
+    # role is held to it — the clip's own profile legitimately has no such key.
+    if require_appclip and not args.clip_bundle_id:
+        raise SigningError("the App Clip parent entitlement is required but --clip-bundle-id is empty")
+    appclip_for_role = {"app": args.clip_bundle_id if require_appclip else ""}
+
     targets, rejected, notes = {}, {}, []
     for role, bundle_id in wanted:
         chosen, evaluated = choose(profiles, bundle_id, identities, role_groups[role],
-                                   expected_team, now)
+                                   expected_team, now,
+                                   require_appclip=appclip_for_role.get(role, ""))
         identity = matching_identity(chosen, identities)
         targets[bundle_id] = {
             "role": role,
@@ -847,6 +882,9 @@ def build_parser():
                         help="the App Clip's bundle id (the app's id plus .Clip)")
     select.add_argument("--require-clip", default="false",
                         help="true when this build embeds the App Clip")
+    select.add_argument("--require-appclip", default="false",
+                        help="true when the APP profile must carry the App Clip identifier "
+                             "(warning 90876); uses --clip-bundle-id")
     select.add_argument("--app-group", action="append", default=[],
                         help="an App Group the selected profiles must carry (repeatable)")
     select.add_argument("--team-id", default="",

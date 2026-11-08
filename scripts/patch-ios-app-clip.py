@@ -45,6 +45,27 @@ DEFAULT_PROJECT = "ios/App/App.xcodeproj/project.pbxproj"
 TEMPLATE = "ios/App/JobaClip/JobaClip.entitlements.template"
 ENTITLEMENTS = "ios/App/JobaClip/JobaClip.entitlements"
 
+# ── The two files App Store Connect validated the first clip build against ──
+# They are NOT part of project.pbxproj, which is exactly why they were missed:
+# the clip archive could be wired perfectly and still be rejected at upload.
+CLIP_INFO_PLIST = "ios/App/JobaClip/Info.plist"
+APP_ENTITLEMENTS = "ios/App/App/App.entitlements"
+
+APPCLIP_ENTITLEMENT = "com.apple.developer.associated-appclip-app-identifiers"
+
+# Error 90474: a clip that supports iPad (TARGETED_DEVICE_FAMILY = "1,2") must
+# declare every orientation, because iPad can rotate.
+ORIENTATIONS = [
+    "UIInterfaceOrientationPortrait",
+    "UIInterfaceOrientationPortraitUpsideDown",
+    "UIInterfaceOrientationLandscapeLeft",
+    "UIInterfaceOrientationLandscapeRight",
+]
+
+# Warning 90876: the PARENT app names the clip it contains, prefixed with the
+# Apple Team ID. Same team the app is signed with; APPLE_TEAM_ID overrides it.
+DEFAULT_TEAM_ID = "322DV2PB9V"
+
 CLIP_SOURCES = ["JobaClipApp.swift", "ClipRootView.swift", "ClipVideoPlayer.swift"]
 
 
@@ -186,13 +207,86 @@ def clip_configurations(clip_bundle_id):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# The two facts App Store Connect rejected the first clip build for
+# ══════════════════════════════════════════════════════════════════════════════
+def read_text(path):
+    if not os.path.exists(path):
+        raise SystemExit("ERROR: %s is missing." % path)
+    with open(path, "r") as handle:
+        return handle.read()
+
+
+def block_values(text, key):
+    """The <string> values of one key's <array>, in file order. [] when absent."""
+    match = re.search(r"<key>%s</key>\s*<array>(.*?)</array>" % re.escape(key), text, re.S)
+    if not match:
+        return []
+    return re.findall(r"<string>([^<]*)</string>", match.group(1))
+
+
+def set_block(text, key, values):
+    """Replace (or insert) one key's array, leaving the rest of the file alone.
+
+    A TEXT edit, not a plist round-trip: the comments in these files are the
+    explanation of why each key is there, and plistlib would drop them all.
+    """
+    block = "\t<key>%s</key>\n\t<array>\n%s\t</array>\n" % (
+        key, "".join("\t\t<string>%s</string>\n" % v for v in values))
+    pattern = re.compile(r"\t<key>%s</key>\s*<array>.*?</array>\n" % re.escape(key), re.S)
+    if pattern.search(text):
+        return pattern.sub(lambda _m: block, text, count=1)
+    anchor = "</dict>\n</plist>"
+    if anchor not in text:
+        raise SystemExit("ERROR: cannot add %s to a plist without a closing </dict>." % key)
+    return text.replace(anchor, block + anchor, 1)
+
+
+def ensure_clip_plist(path=None):
+    """Declare all four orientations, on both the generic and the iPad key."""
+    path = path or CLIP_INFO_PLIST
+    text = read_text(path)
+    original = text
+    for key in ("UISupportedInterfaceOrientations", "UISupportedInterfaceOrientations~ipad"):
+        if block_values(text, key) != ORIENTATIONS:
+            text = set_block(text, key, ORIENTATIONS)
+    if text == original:
+        return "%s: all four orientations already declared" % path
+    with open(path, "w") as handle:
+        handle.write(text)
+    return "%s: all four orientations declared (error 90474)" % path
+
+
+def appclip_identifier(parent_bundle, team_id):
+    return "%s.%s.Clip" % (team_id, parent_bundle)
+
+
+def ensure_parent_entitlements(project_text, team_id=DEFAULT_TEAM_ID, path=None):
+    """Name this app's clip in the PARENT app's entitlements (warning 90876)."""
+    path = path or APP_ENTITLEMENTS
+    identifier = appclip_identifier(app_bundle_id(project_text), team_id)
+    text = read_text(path)
+    if block_values(text, APPCLIP_ENTITLEMENT) == [identifier]:
+        return "%s: already names %s" % (path, identifier)
+    with open(path, "w") as handle:
+        handle.write(set_block(text, APPCLIP_ENTITLEMENT, [identifier]))
+    return "%s: names %s (warning 90876)" % (path, identifier)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # The patch
 # ══════════════════════════════════════════════════════════════════════════════
-def apply(project_text):
-    if CLIP_TARGET_NAME in project_text:
-        return project_text, ["already applied - nothing written"]
+def apply(project_text, team_id=DEFAULT_TEAM_ID, clip_plist=None, app_entitlements=None):
+    # ── NORMALISED ON EVERY RUN, INCLUDING AN ALREADY-PATCHED PROJECT ───────
+    # The orientation list and the parent's clip identifier live outside
+    # project.pbxproj, so a project that is "already applied" says nothing
+    # about them. Both are rewritten (idempotently) before anything else, and
+    # `--check --require` proves the result instead of trusting an earlier run.
+    notes = [ensure_clip_plist(clip_plist),
+             ensure_parent_entitlements(project_text, team_id, app_entitlements)]
 
-    notes = []
+    if CLIP_TARGET_NAME in project_text:
+        return project_text, notes + ["already applied - project untouched"]
+
     parent_bundle = app_bundle_id(project_text)
     clip_bundle = (os.environ.get("CLIP_BUNDLE_ID") or "").strip() or (parent_bundle + ".Clip")
     t = project_text
@@ -407,11 +501,26 @@ def braces_balanced(text):
     return depth == 0
 
 
-def inspect(project_text):
+def inspect(project_text, team_id=DEFAULT_TEAM_ID, clip_plist=None, app_entitlements=None):
+    clip_plist = clip_plist or CLIP_INFO_PLIST
+    app_entitlements = app_entitlements or APP_ENTITLEMENTS
+    # ── WHAT APPLE VALIDATES, REPORTED EVEN FOR AN UNPATCHED PROJECT ────────
+    # The first clip build was rejected for these two and for nothing else, so
+    # they are part of the report (and of --require) rather than a footnote.
+    expected = appclip_identifier(app_bundle_id(project_text), team_id)
+    plist_text = read_text(clip_plist)
+    entitlements_text = read_text(app_entitlements)
+    orientations = block_values(plist_text, "UISupportedInterfaceOrientations")
+    declared = block_values(entitlements_text, APPCLIP_ENTITLEMENT)
     report = {"target_present": False, "embed": False, "dependency": False,
               "product_type": None, "bundle_id": None, "sources": [],
               "entitlements": os.path.exists(ENTITLEMENTS),
-              "brace_balance_ok": braces_balanced(project_text)}
+              "brace_balance_ok": braces_balanced(project_text),
+              "clip_orientations": orientations,
+              "clip_orientations_complete": orientations == ORIENTATIONS,
+              "parent_appclip_identifiers": declared,
+              "parent_appclip_expected": expected,
+              "parent_appclip_ok": expected in declared}
     if CLIP_TARGET_NAME not in project_text:
         return report
     report["target_present"] = True
@@ -438,20 +547,43 @@ def main(argv=None):
     parser.add_argument("--require", action="store_true", help="fail unless the clip is wired")
     parser.add_argument("--report", default="", help="write the JSON report here")
     parser.add_argument("--dry-run", action="store_true", help="print the result's size only")
+    parser.add_argument("--team-id", default=os.environ.get("APPLE_TEAM_ID", DEFAULT_TEAM_ID),
+                        help="Apple Team ID prefixed to the clip id in the parent entitlements")
+    parser.add_argument("--clip-plist", default=CLIP_INFO_PLIST,
+                        help="the clip's Info.plist to normalise")
+    parser.add_argument("--app-entitlements", default=APP_ENTITLEMENTS,
+                        help="the PARENT app's entitlements to normalise")
     args = parser.parse_args(argv)
 
     with open(args.project, "r") as handle:
         original = handle.read()
 
+    context = {"team_id": args.team_id, "clip_plist": args.clip_plist,
+               "app_entitlements": args.app_entitlements}
     report = {"ok": True, "notes": []}
     if args.check:
-        report.update(inspect(original))
+        report.update(inspect(original, **context))
         report["ok"] = report["target_present"] and report["brace_balance_ok"]
-        if args.require and not (report["target_present"] and report["embed"]
-                                 and report["dependency"] and report["entitlements"]):
-            report["ok"] = False
+        if args.require:
+            # The two rejections Apple reported are part of the gate: a wired
+            # target whose plist or parent entitlements are wrong fails HERE,
+            # before an hour of archive, instead of at upload.
+            if not (report["target_present"] and report["embed"] and report["dependency"]
+                    and report["entitlements"]
+                    and report["clip_orientations_complete"] and report["parent_appclip_ok"]):
+                report["ok"] = False
+            report["missing"] = [name for name, ok in (
+                ("target", report["target_present"]),
+                ("embed phase", report["embed"]),
+                ("target dependency", report["dependency"]),
+                ("clip entitlements file", report["entitlements"]),
+                ("all four clip orientations (error 90474)", report["clip_orientations_complete"]),
+                ("parent appclip identifier (warning 90876)", report["parent_appclip_ok"]),
+            ) if not ok]
+            for item in report["missing"]:
+                sys.stderr.write("MISSING: %s\n" % item)
     else:
-        patched, notes = apply(original)
+        patched, notes = apply(original, **context)
         report["notes"] = notes
         if patched != original:
             if not braces_balanced(patched):
@@ -460,10 +592,10 @@ def main(argv=None):
                 with open(args.project, "w") as handle:
                     handle.write(patched)
                 report["written"] = True
-                report.update(inspect(patched))
+                report.update(inspect(patched, **context))
         else:
             report["written"] = False
-            report.update(inspect(patched))
+            report.update(inspect(patched, **context))
         report["ok"] = report.get("target_present", False)
 
     print(json.dumps(report, indent=2, ensure_ascii=False))

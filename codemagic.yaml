@@ -607,6 +607,7 @@ workflows:
             --require-widget "${ENABLE_LIVE_ACTIVITY_WIDGET:-false}" \
             --clip-bundle-id "${BUNDLE_ID}.Clip" \
             --require-clip "${ENABLE_APP_CLIP:-false}" \
+            --require-appclip "${ENABLE_APP_CLIP:-false}" \
             --app-group "group.$BUNDLE_ID" \
             --report "$CM_BUILD_DIR/signing-report.json"
           echo "=== signing-report.json (audit + the selection) ==="
@@ -758,6 +759,23 @@ workflows:
             fi
             echo "OK: $KEY matches the app ($APP_VALUE)"
           done
+      - name: Verify the App Clip in the archive (iOS)
+        script: |
+          # ── THE TWO THINGS THAT WERE REJECTED AT UPLOAD, NOT AT ARCHIVE ─────
+          # The first clip build archived cleanly and App Store Connect refused
+          # the .ipa for two facts that exist only in the BUILT product: the
+          # orientations declared by the clip's own Info.plist (error 90474) and
+          # the clip identifier in the parent app's SIGNED entitlements (warning
+          # 90876). Both are read out of the artifact here, so a correct source
+          # file can never hide a wrong binary.
+          if [ "${ENABLE_APP_CLIP:-}" != "true" ]; then
+            echo "SKIPPED: App Clip not enabled for this build."
+            exit 0
+          fi
+          python3 scripts/verify-ios-app-clip.py \
+            --archive "$CM_BUILD_DIR/build/App.xcarchive" \
+            --report "$CM_BUILD_DIR/clip-archive-check.json"
+          cat "$CM_BUILD_DIR/clip-archive-check.json"
       - name: Verify SKAdNetwork IDs in the built app (iOS)
         script: |
           PLIST="$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app/Info.plist"

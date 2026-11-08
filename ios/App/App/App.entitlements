@@ -15,5 +15,23 @@
 	<array>
 		<string>group.com.base69e6bdb4986a04a256653a23.app</string>
 	</array>
+	<!--
+		THE CLIP THIS APP CONTAINS — App Store Connect warning 90876.
+
+		The parent app names the App Clip embedded in it, prefixed with the Apple
+		Team ID, so App Store Connect can match the two and can validate the
+		clip's parent-application-identifiers claim against it.
+
+		This is not documentation: the value must ALSO be inside the app's
+		provisioning profile (the App Clips capability on the parent App ID), or
+		signing fails because the entitlements and the profile disagree. The
+		build audits that BEFORE archiving — see `ios-signing.py select`, which
+		refuses a profile missing this key instead of letting Xcode discover it a
+		forty-minute archive later.
+	-->
+	<key>com.apple.developer.associated-appclip-app-identifiers</key>
+	<array>
+		<string>322DV2PB9V.com.base69e6bdb4986a04a256653a23.app.Clip</string>
+	</array>
 </dict>
 </plist>
