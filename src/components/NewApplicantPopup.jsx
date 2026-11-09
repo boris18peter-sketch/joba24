@@ -11,6 +11,7 @@ import { isUserVerified } from '@/lib/utils';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import StarRating from '@/components/profile/StarRating';
+import { profileHeroBackground } from '@/lib/profileTier';
 
 /**
  * NewApplicantPopup — a candidate just applied to one of MY tasks.
@@ -139,7 +140,10 @@ export default function NewApplicantPopup({ task, application, onClose }) {
         <div style={{
           position: 'relative', overflow: 'hidden',
           borderRadius: 20,
-          background: 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, #2563eb 100%)',
+          /* The SAME surface his own profile wears — gold for identity + social
+             verified, green for identity only, brand blue otherwise — so the
+             person on the popup is recognisably the person on the profile. */
+          background: profileHeroBackground(profile, 'linear-gradient(160deg, var(--brand-hero-bg, #0a52b0) 0%, var(--brand-hero-bg, var(--brand-primary)) 55%, #2563eb 100%)'),
           padding: '16px 14px 14px',
           textAlign: 'center',
         }}>

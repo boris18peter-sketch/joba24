@@ -7,6 +7,8 @@ import {
   Instagram, Facebook, Music2, AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { isUserVerified, copyToClipboard } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -159,6 +161,10 @@ export default function SocialConnectSheet({ user, onClose }) {
         setStep('code');
       } else {
         setStep('oauth');
+        // Coming back from a redirect (blocked popup, or a connection finished in
+        // the system browser) must not ask for the same consent again. This probe
+        // is silent: "not connected" is the normal answer and shows no error.
+        completeInstagramOAuth({ silent: true });
       }
       return;
     }
@@ -176,14 +182,50 @@ export default function SocialConnectSheet({ user, onClose }) {
     }
   };
 
-  // ── Instagram OAuth flow — opens Instagram consent in a popup, then ──
-  // calls the backend to read the username from the Graph API and mark
-  // the user as verified. No bio-code needed.
+  // ── Finish (or quietly look for) an Instagram OAuth connection ─────────────
+  // One endpoint, two uses: `silent` is the probe that runs when the visitor
+  // lands back in the sheet — a connection made in another tab, or in the system
+  // browser, is picked up here instead of being asked for again.
+  const completeInstagramOAuth = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await base44.functions.invoke('verifyInstagram', {
+        action: 'oauth_verify', platform: 'instagram',
+      });
+      if (res.data?.verified) {
+        toast.success(t('sl_verified_success', { platform: 'Instagram' }));
+        await refresh();
+        setUsernameInput(res.data.username || '');
+        setVerified(true);
+        setStep('code');
+        return true;
+      }
+      if (!silent) {
+        setOauthError(res.data?.error || 'החיבור עם Instagram לא הושלם. נסה שוב.');
+      }
+    } catch (e) {
+      if (!silent) {
+        setOauthError('החיבור עם Instagram נכשל. ודא שיש לך חשבון עסקי או יוצר (Creator) ב-Instagram.');
+      }
+    } finally {
+      if (!silent) setLoading(false);
+    }
+    return false;
+  };
+
+  // ── Instagram OAuth — ONE flow, the mechanism each surface really has ──────
+  // This used to be window.open() + a popup.closed poll only. That works on a
+  // desktop browser and nowhere else: inside the native app there is no popup to
+  // close, so the poll never fired and the sheet waited for ever with no error —
+  // which is what "connecting a social network just doesn't work" looked like for
+  // the majority of our users, who are on a phone. Now:
+  //   • native → the system browser, and its own finish event;
+  //   • web    → the popup, which is still the nicest path when it is allowed;
+  //   • blocked popup → a plain redirect, picked up by the probe on return.
   const handleInstagramOAuth = async () => {
     setOauthError('');
     setLoading(true);
     try {
-      // 1. Get the OAuth consent URL from the platform
       const url = await base44.connectors.connectAppUser(INSTAGRAM_CONNECTOR_ID);
       if (!url) {
         setOauthError('לא הצלחנו לפתוח את חיבור ה-Instagram. נסה שוב.');
@@ -191,48 +233,31 @@ export default function SocialConnectSheet({ user, onClose }) {
         return;
       }
 
-      // 2. Open the OAuth consent page in a popup
+      if (Capacitor.isNativePlatform()) {
+        const handle = await Browser.addListener('browserFinished', async () => {
+          handle.remove();
+          await completeInstagramOAuth();
+        });
+        await Browser.open({ url });
+        return;
+      }
+
       const popup = window.open(url, '_blank', 'width=500,height=700');
 
-      // A BLOCKED popup is a normal outcome — especially on mobile browsers —
-      // and window.open then returns null. The poll below watched for
-      // `popup.closed`, which a null popup never reports, so the interval ran
-      // for the life of the page and called the verification endpoint on every
-      // tick. Stop and say so instead.
+      // A blocked popup is normal on mobile browsers. Leaving the page is what
+      // every other OAuth flow does, and the probe finishes it on the way back.
       if (!popup) {
-        setOauthError('הדפדפן חסם את חלון החיבור. יש לאפשר חלונות קופצים ולנסות שוב.');
-        setLoading(false);
+        window.location.href = url;
         return;
       }
       popupRef.current = popup;
 
-      // 3. Poll until the popup closes (user finished or cancelled)
       const pollClose = setInterval(async () => {
         if (popup.closed) {
           clearInterval(pollClose);
           pollRef.current = null;
           popupRef.current = null;
-
-          // 4. Call backend to verify the OAuth connection
-          try {
-            const res = await base44.functions.invoke('verifyInstagram', {
-              action: 'oauth_verify', platform: 'instagram',
-            });
-            if (res.data?.verified) {
-              toast.success(t('sl_verified_success', { platform: 'Instagram' }));
-              await refresh();
-              setUsernameInput(res.data.username || '');
-              setVerified(true);
-              setStep('code');
-            } else if (res.data?.error) {
-              setOauthError(res.data.error);
-            } else {
-              setOauthError('החיבור עם Instagram לא הושלם. נסה שוב.');
-            }
-          } catch (e) {
-            setOauthError('החיבור עם Instagram נכשל. ודא שיש לך חשבון עסקי או יוצר (Creator) ב-Instagram.');
-          }
-          setLoading(false);
+          await completeInstagramOAuth();
         }
       }, 600);
       pollRef.current = pollClose;

@@ -426,6 +426,20 @@ export default function BenefitsBanner() {
         .j-ben-dot::after { content: ''; position: absolute; inset: -10px; }
         .j-ben-dot-on { width: 20px; background: #1a6fd4; }
 
+        /* ── NARROW SCREENS: the picture steps aside, never the words ──────────
+           On a small phone the column was too tight — the illustration held 45%
+           of the width, the headline hit its floor and the body ran out of rows,
+           so copy was clipped instead of read. The picture now takes a small
+           fixed share, the banner is a touch taller and the body may use a third
+           line: the illustration is the part that gives, the text is never cut. */
+        @media (max-width: 430px) {
+          .j-ben { height: 174px; padding: 11px 12px 22px; }
+          .j-ben-eyebrow { font-size: 12.5px; }
+          .j-ben-title { font-size: 19.5px; }
+          .j-ben-body { font-size: 12.5px; margin-top: 6px; -webkit-line-clamp: 3; }
+          .j-ben-art { flex: 0 0 32%; max-width: 112px; }
+        }
+
         @media (min-width: 720px) {
           .j-ben { height: 166px; padding: 14px 18px 24px; }
           .j-ben-eyebrow { font-size: 14.5px; }
