@@ -28,7 +28,8 @@ export const LIVE_UPDATE_PLUGIN = 'JobaLiveUpdate';
 
 /** Must match the plugin's `@PluginMethod` list. Asserted by the Android test. */
 export const LIVE_UPDATE_METHODS = [
-  'isSupported', 'update', 'end', 'activeUpdates', 'setActionAuth', 'consumePendingOpenTask',
+  'isSupported', 'update', 'end', 'activeUpdates', 'setActionAuth', 'setInstallAuth',
+  'consumePendingOpenTask',
 ];
 
 const JobaLiveUpdate = registerPlugin('JobaLiveUpdate');
@@ -104,6 +105,49 @@ export async function ensureActionCapability({ taskId, role = 'publisher' } = {}
   const result = await syncActionAuth({ taskId, role });
   if (result?.ok) capabilityCache.set(key, result);
   return result;
+}
+
+/**
+ * The install-scoped capability, for a card that was drawn while the app was
+ * closed.
+ *
+ * ── WHY IT IS NEEDED ON ANDROID TOO ────────────────────────────────────────
+ * Android has no Push-to-Start gate: ANY dispatch can create the card, including
+ * one that lands while the app is not running. That card was drawn by the
+ * messaging service, so no session existed to mint the per-card capability its
+ * button needs — and without one the button could only open the app.
+ *
+ * This mints the same narrow, task-less capability iOS uses for a
+ * Push-to-Start card (`scope: 'user'`): it names no task, carries only the two
+ * action ids a card can offer, and every tap is re-authorized against the record
+ * by `liveActivityAction`. It is refreshed well inside its 12-hour life.
+ */
+const INSTALL_CAPABILITY_REFRESH_MS = 6 * 60 * 60 * 1000;
+let installCapability = null;
+
+export async function ensureInstallActionCapability({ force = false } = {}) {
+  if (!isAndroidLiveUpdateNative()) return { ok: false, reason: 'not_native' };
+  const stillFresh = installCapability?.ok === true
+    && !force
+    && Date.now() - Number(installCapability.at || 0) < INSTALL_CAPABILITY_REFRESH_MS;
+  if (stillFresh) return installCapability;
+
+  try {
+    const response = await base44.functions.invoke('issueLiveActivityActionToken', { scope: 'user' });
+    const token = response?.data?.token;
+    if (!token) return { ok: false, reason: response?.data?.error || 'no_token' };
+    const expiresAtMs = Date.parse(String(response?.data?.expires_at || '')) || 0;
+    const stored = await JobaLiveUpdate.setInstallAuth({
+      endpoint: actionEndpoint(),
+      token,
+      expiresAtMs,
+    });
+    const result = { ok: stored?.stored === true, at: Date.now(), expiresAtMs };
+    if (result.ok) installCapability = result;
+    return result;
+  } catch {
+    return { ok: false, reason: 'mint_failed' };
+  }
 }
 
 /** Create or update the card for one task and role. */

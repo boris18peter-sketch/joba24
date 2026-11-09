@@ -17,7 +17,9 @@ import {
   activeTaskActivities,
   drainActivityActionStages,
   endTaskActivity,
+  ensureInstallActionCapability,
   isLiveUpdateNative,
+  liveUpdatePlatform,
   startTaskActivity,
   updateTaskActivity,
 } from '@/lib/liveUpdateNative';
@@ -229,6 +231,11 @@ export default function RealTaskActivityBridge() {
     if (!access?.allowed || access.userId !== me?.id) return undefined;
     syncPushToStartToken().catch(() => {});
     ensureUserActionCapability().catch(() => {});
+    // On Android the equivalent of a Push-to-Start card is EVERY pushed card: one
+    // can arrive while the app is closed, so the install-scoped capability its
+    // button needs is minted here, on the first launch that follows. No-op on iOS,
+    // which already minted its own above.
+    ensureInstallActionCapability().catch(() => {});
     return attachPushToStartTokenListener(() => {});
   }, [access?.allowed, access?.userId, me?.id, probe]);
 
@@ -316,6 +323,9 @@ export default function RealTaskActivityBridge() {
             task_id: step.taskId,
             role: step.role,
             event,
+            // Which surface reported it. The table is shared by both transports
+            // now, so a row that did not say would be unattributable.
+            platform: liveUpdatePlatform(),
             reason: extra.reason || '',
             activity_id: extra.activityId || '',
             revision: extra.revision ?? null,

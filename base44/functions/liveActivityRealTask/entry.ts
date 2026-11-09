@@ -151,7 +151,12 @@ async function respondToReport(base44, { user, task, role, body }) {
     revision: Number.isFinite(Number(body?.revision)) ? Math.max(0, Math.floor(Number(body.revision))) : null,
     phase: clip(body?.phase, 40),
     app_version: clip(body?.app_version, 40),
-    platform: 'ios',
+    // ── WHICH PLATFORM REPORTED THIS ────────────────────────────────────────
+    // Hardcoded to 'ios' while only iOS reported; the bridge is now shared, so an
+    // Android card's report would have been filed as Apple's and the diagnostics
+    // view — the whole point of this table — could not tell the two transports
+    // apart. Only the two known values are accepted.
+    platform: body?.platform === 'android' ? 'android' : 'ios',
     occurred_at: new Date(now).toISOString(),
     received_ms: now,
   }).catch(() => null);

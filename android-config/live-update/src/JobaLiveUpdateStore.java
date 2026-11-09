@@ -194,6 +194,42 @@ public final class JobaLiveUpdateStore {
         return expiresAt > System.currentTimeMillis();
     }
 
+    /* ── The INSTALL-scoped capability ────────────────────────────────────────
+       A card created by a push appears while the app is closed, so there was no
+       session to mint the per-card capability its button needs. On the next
+       launch the app mints the narrow install-scoped one (`scope: 'user'`),
+       exactly as iOS does for a Push-to-Start card, and the receiver falls back
+       to it. It names no task: the tap carries the task and role, and the server
+       re-checks ownership against the record on every request. */
+
+    public void putInstallAuth(String endpoint, String token, long expiresAtMs) {
+        SharedPreferences.Editor editor = prefs.edit();
+        if (token == null || token.isEmpty()) {
+            editor.remove("install:endpoint").remove("install:token").remove("install:exp");
+        } else {
+            editor.putString("install:endpoint", endpoint == null ? "" : endpoint)
+                    .putString("install:token", token)
+                    .putLong("install:exp", expiresAtMs);
+        }
+        editor.apply();
+    }
+
+    public String installEndpoint() {
+        return prefs.getString("install:endpoint", "");
+    }
+
+    public String installToken() {
+        return prefs.getString("install:token", "");
+    }
+
+    /** Same rule as a per-card capability: unknown expiry means "cannot act". */
+    public boolean canActAsInstall() {
+        String token = installToken();
+        String endpoint = installEndpoint();
+        if (token.isEmpty() || endpoint.isEmpty()) return false;
+        return prefs.getLong("install:exp", 0L) > System.currentTimeMillis();
+    }
+
     /* ── A tap that has to survive the launch ────────────────────────────────
        The notification's content intent starts the app; THIS is how the task id
        reaches the web layer, because the notification was posted by our own

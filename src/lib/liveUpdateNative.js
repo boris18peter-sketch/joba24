@@ -85,3 +85,13 @@ export async function drainActivityActionStages() {
 export function attachOpenTaskListener(onTask) {
   return android.attachOpenTaskListener(onTask);
 }
+
+/**
+ * The install-scoped capability a card needs when it was drawn while the app was
+ * closed. iOS mints its own in `liveActivityNative` (a Push-to-Start card); on
+ * Android EVERY pushed card can arrive with no app running, so the same
+ * capability is minted on the next launch. Off Android this is a no-op.
+ */
+export function ensureInstallActionCapability(options = {}) {
+  return android.ensureInstallActionCapability(options);
+}

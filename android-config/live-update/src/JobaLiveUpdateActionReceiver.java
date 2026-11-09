@@ -53,16 +53,30 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
         final JobaLiveUpdateStore store = new JobaLiveUpdateStore(appContext);
         final String key = JobaLiveUpdateStore.keyOf(taskId, role);
 
-        // The capability cannot outlive the card, and it cannot be used after the
-        // horizon the server gave it. When it is gone the tap opens the task
-        // instead — where a fresh capability (and the applicant list) exists.
-        if (!store.canAct(key)) {
+        // ── WHICH CAPABILITY THIS TAP USES ───────────────────────────────────
+        // The per-card one is always preferred: it is bound to this task, this
+        // role and the actions that role may perform.
+        //
+        // The install-scoped one is the fallback, and it is not a convenience: a
+        // card created by a PUSH was drawn while the app was closed, so there was
+        // no session to mint a per-card capability. Without this fallback that
+        // card's button could only ever open the app, while the identical iOS card
+        // (Push-to-Start) acts in place. It names no task — the request carries the
+        // task and role, and the server re-checks ownership on every tap.
+        final String endpoint;
+        final String token;
+        if (store.canAct(key)) {
+            endpoint = store.actionEndpoint(key);
+            token = store.actionToken(key);
+        } else if (store.canActAsInstall()) {
+            endpoint = store.installEndpoint();
+            token = store.installToken();
+        } else {
+            // Nothing may act for this card: open the task, where a fresh
+            // capability (and the applicant list) exists.
             openTask(appContext, taskId);
             return;
         }
-
-        final String endpoint = store.actionEndpoint(key);
-        final String token = store.actionToken(key);
 
         // A receiver's work is cut off when onReceive returns, so the request runs
         // on a thread that holds the process alive until it is finished.
@@ -118,11 +132,15 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
                     : connection.getErrorStream();
             String response = read(stream);
 
-            if (status >= 200 && status < 300) {
-                // The server has already moved the task. Its own dispatch carries
-                // the new revision to this device, which repaints the card — so the
-                // receiver deliberately does not guess the new state here.
-                return;
+            // ── THE CARD SHOWS WHAT THE SERVER CONFIRMED ─────────────────────
+            // iOS applies the response's own snapshot to the card, and this is the
+            // same rule. It matters most on a REFUSAL: a refused tap changes no
+            // Task, so no entity event follows and no push would ever correct the
+            // card — it would keep offering an action that can no longer work.
+            // The engine applies the same ordering rules as a push, so a snapshot
+            // older than what is already on screen is refused, never drawn.
+            if (status < 500) {
+                applyOutcome(context, response, taskId, role);
             }
 
             // A refused capability must not be retried forever: drop it, so the
@@ -133,6 +151,33 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
             }
         } finally {
             if (connection != null) connection.disconnect();
+        }
+    }
+
+    /**
+     * Apply the server's answer to the card, exactly as the App Intent does on
+     * iOS.
+     *
+     * `terminal` means the card is finished and comes down; otherwise the
+     * snapshot the server built for THIS caller is drawn. Nothing is guessed: an
+     * answer without a snapshot leaves the card as it was, and the server's own
+     * dispatch (which follows a successful transition) is still the authority.
+     */
+    private static void applyOutcome(Context context, String response, String taskId, String role) {
+        if (response == null || response.isEmpty()) return;
+        try {
+            JSONObject body = new JSONObject(response);
+            if (body.optBoolean("terminal", false)) {
+                JobaLiveUpdateEngine.cancel(context, taskId, role);
+                return;
+            }
+            JSONObject snapshot = body.optJSONObject("snapshot");
+            if (snapshot == null) return;
+            JobaLiveUpdatePayload payload = JobaLiveUpdatePayload.fromJson(snapshot.toString());
+            if (payload == null) return;
+            JobaLiveUpdateEngine.apply(context, payload);
+        } catch (Throwable ignored) {
+            // The card keeps what it had; the push that follows will correct it.
         }
     }
 

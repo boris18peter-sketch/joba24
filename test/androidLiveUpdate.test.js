@@ -196,8 +196,12 @@ describe('Android Live Update — the native card', () => {
     expect(receiver).toContain('body.put("expected_step"');
     expect(receiver).toContain('body.put("task_id", taskId)');
     expect(receiver).toContain('body.put("role"');
-    // A capability that cannot act opens the task instead of posting a dead token.
-    expect(receiver).toContain('if (!store.canAct(key))');
+    // The per-card capability is preferred; the install-scoped one is the
+    // fallback for a card that was drawn while the app was closed.
+    expect(receiver).toContain('if (store.canAct(key))');
+    expect(receiver).toContain('else if (store.canActAsInstall())');
+    // With neither, the tap opens the task instead of posting a dead token.
+    expect(receiver).toContain('openTask(appContext, taskId);');
   });
 
   it('handles a killed app: a data message is drawn natively', () => {
@@ -207,6 +211,48 @@ describe('Android Live Update — the native card', () => {
     expect(service).toContain('JobaLiveUpdateEngine.apply(getApplicationContext(), payload)');
     // Everything that is NOT a Live Update keeps the app's existing push path.
     expect(service).toContain('super.onMessageReceived(remoteMessage)');
+  });
+
+  it('corrects the card from the server\'s answer, as the App Intent does', () => {
+    const receiver = source('JobaLiveUpdateActionReceiver.java');
+    // iOS writes the response's own snapshot into the card; Android must too.
+    expect(receiver).toContain('applyOutcome(context, response, taskId, role)');
+    expect(receiver).toContain('body.optBoolean("terminal", false)');
+    expect(receiver).toContain('JobaLiveUpdateEngine.cancel(context, taskId, role)');
+    expect(receiver).toContain('JSONObject snapshot = body.optJSONObject("snapshot")');
+    // …through the ONE engine, so a stale answer can never move the card back.
+    expect(receiver).toContain('JobaLiveUpdateEngine.apply(context, payload)');
+    // ── AND IT IS NOT ONLY FOR SUCCESS ───────────────────────────────────────
+    // A refused tap (409 not_eligible / action_mismatch) changes no Task, so no
+    // entity event follows and no push would ever correct the card. Without this
+    // the button stayed on screen offering an action that could never work.
+    expect(receiver).toContain('if (status < 500)');
+    expect(receiver).not.toContain('The server has already moved the task');
+  });
+
+  it('acts on a card that was created while the app was closed', () => {
+    // Android has no Push-to-Start gate: any dispatch can create the card, so no
+    // session existed to mint its per-card capability. The install-scoped one
+    // (the same capability iOS uses for a Push-to-Start card) is the fallback.
+    const store = source('JobaLiveUpdateStore.java');
+    expect(store).toContain('public void putInstallAuth(');
+    expect(store).toContain('public boolean canActAsInstall()');
+    const plugin = source('JobaLiveUpdatePlugin.java');
+    expect(plugin).toContain('public void setInstallAuth(PluginCall call)');
+    expect(LIVE_UPDATE_METHODS).toContain('setInstallAuth');
+    expect(ANDROID_MODULE).toContain("scope: 'user'");
+    expect(ANDROID_MODULE).toContain('export async function ensureInstallActionCapability');
+    // Minted where iOS already mints its own, so one effect prepares both.
+    const realTask = read(join(ROOT, 'src/components/RealTaskActivityBridge.jsx'));
+    expect(realTask).toContain('ensureInstallActionCapability()');
+  });
+
+  it('files a device report under the platform that made it', () => {
+    const fn = read(join(ROOT, 'base44/functions/liveActivityRealTask/entry.ts'));
+    expect(fn).not.toContain("platform: 'ios',");
+    expect(fn).toContain("body?.platform === 'android' ? 'android' : 'ios'");
+    const realTask = read(join(ROOT, 'src/components/RealTaskActivityBridge.jsx'));
+    expect(realTask).toContain('platform: liveUpdatePlatform()');
   });
 
   it('exposes exactly the plugin methods the web layer calls', () => {

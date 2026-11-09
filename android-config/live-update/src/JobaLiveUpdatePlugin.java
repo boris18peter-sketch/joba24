@@ -144,6 +144,27 @@ public class JobaLiveUpdatePlugin extends Plugin {
         call.resolve(result);
     }
 
+    /**
+     * The install-scoped capability — the counterpart of `setUserActionAuth` on
+     * iOS.
+     *
+     * A card created by a push appeared while the app was closed, so no per-card
+     * capability could be minted for it. This is the narrow one the app mints on
+     * the next launch, which the receiver falls back to so the button on such a
+     * card still acts instead of merely opening the app.
+     */
+    @PluginMethod
+    public void setInstallAuth(PluginCall call) {
+        Long expiresAt = call.getLong("expiresAtMs");
+        new JobaLiveUpdateStore(getContext()).putInstallAuth(
+                call.getString("endpoint", ""),
+                call.getString("token", ""),
+                expiresAt == null ? 0L : expiresAt);
+        JSObject result = new JSObject();
+        result.put("stored", true);
+        call.resolve(result);
+    }
+
     /** Read (and clear) a task the card asked to open while the app was closed. */
     @PluginMethod
     public void consumePendingOpenTask(PluginCall call) {
