@@ -132,6 +132,24 @@ describe('Android Live Update — the native card', () => {
     expect(notifier).toContain('setSilent(true)');
     // Replace, never stack: one notification identity per (task, role).
     expect(notifier).toContain('manager.notify(TAG, notificationId(key), notification)');
+    // ── AND IT MAY ONLY EVER CANCEL ITS OWN CARD ──────────────────────────────
+    // `NotificationManager.cancelAll()` would take every Joba24 notification with
+    // it — the app's existing pushes included — as soon as one task ended. The
+    // card is addressed by (tag, id) and nothing else, so there is no bulk cancel
+    // in this file at all.
+    expect(notifier).not.toContain('cancelAll()');
+    expect(notifier).toContain('manager.cancel(TAG, notificationId(key))');
+  });
+
+  it('uses nothing above the project\'s minSdk on the card\'s own path', () => {
+    // minSdk is 24 and the generated project enables no core-library desugaring,
+    // so `String.join` (API 26) throws NoSuchMethodError on Android 7.x — on the
+    // exact path that posts a card, where it looks like "Live Updates never
+    // appear". The sources build their strings with a StringBuilder instead.
+    for (const name of JAVA_FILES) {
+      expect(source(name), `${name} must not use String.join`).not.toContain('String.join(');
+    }
+    expect(source('JobaLiveUpdatePayload.java')).toContain('public static String join(String delimiter, List<String> values)');
   });
 
   it('marks Hebrew text right-to-left', () => {

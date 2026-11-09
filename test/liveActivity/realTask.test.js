@@ -426,12 +426,32 @@ describe('a card is closed only on the task\'s own evidence', () => {
     // `window.location.origin` in the native app is `capacitor://localhost`,
     // which URLSession cannot request at all: every tap failed as a network
     // error before a packet left the phone.
+    //
+    // The derivation now lives in ONE module that BOTH platforms read — the iOS
+    // App Intent and the Android receiver make the same call from a session-less
+    // surface, so the rule is asserted where it is defined and the two consumers
+    // are asserted to use that definition rather than their own copy. Same
+    // guarantee, one fewer way to drift.
+    const endpoint = read('src/lib/activityActionEndpoint.js');
     const native = read('src/lib/liveActivityNative.js');
-    expect(native).not.toContain('`${window.location.origin}/functions/liveActivityAction`');
+    const android = read('src/lib/androidLiveUpdate.js');
+
+    for (const file of [endpoint, native, android]) {
+      expect(file).not.toContain('`${window.location.origin}/functions/liveActivityAction`');
+    }
     // Only an https origin is accepted; the shell falls back to the public app.
-    expect(native).toContain("if (/^https:\\/\\//.test(origin)) return `${origin}/functions/liveActivityAction`");
-    expect(native).toContain("'https://joba24.com'");
+    expect(endpoint).toContain("if (/^https:\\/\\//.test(origin)) return `${origin}/functions/liveActivityAction`");
+    expect(endpoint).toContain("'https://joba24.com'");
+
+    // Both platforms consume that single definition.
+    expect(native).toContain("export { actionEndpoint } from '@/lib/activityActionEndpoint';");
     expect(native).toContain('endpoint: actionEndpoint(),');
+    expect(android).toContain("import { actionEndpoint } from '@/lib/activityActionEndpoint';");
+    // …and neither consumer builds the path or the origin itself.
+    for (const file of [native, android]) {
+      expect(file).not.toContain("'/functions/liveActivityAction'");
+      expect(file).not.toContain('joba24.com');
+    }
   });
 });
 

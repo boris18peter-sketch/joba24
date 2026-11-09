@@ -92,6 +92,28 @@ public final class JobaLiveUpdatePayload {
         return RLM + text;
     }
 
+    /**
+     * `String.join`, without the API level.
+     *
+     * ── WHY THIS IS NOT String.join ───────────────────────────────────────────
+     * `java.lang.String.join` needs Android API 26, and this project's minSdk is
+     * 24 with no core-library desugaring, so calling it throws
+     * `NoSuchMethodError` on Android 7.x — on the very path that posts a card,
+     * where the failure would look like "Live Updates simply never appear".
+     * A StringBuilder has no such floor, so the string is identical on every
+     * version the app ships to.
+     */
+    public static String join(String delimiter, List<String> values) {
+        if (values == null || values.isEmpty()) return "";
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < values.size(); index += 1) {
+            String value = values.get(index);
+            if (index > 0) builder.append(delimiter);
+            builder.append(value == null ? "" : value);
+        }
+        return builder.toString();
+    }
+
     /** "2/3" — the same counter the card draws beside its step row. */
     public String progressText() {
         if (total <= 0) return "";
@@ -106,19 +128,20 @@ public final class JobaLiveUpdatePayload {
      * look like new content.
      */
     public String contentKey() {
-        return String.join("|",
-                title == null ? "" : title,
-                subtitle == null ? "" : subtitle,
-                phase == null ? "" : phase,
-                String.valueOf(step),
-                String.valueOf(total),
-                String.join(",", stepLabels),
-                categoryLabel == null ? "" : categoryLabel,
-                actionId == null ? "" : actionId,
-                actionLabel == null ? "" : actionLabel,
-                colorKey == null ? "" : colorKey,
-                ratingPrompt == null ? "" : ratingPrompt,
-                String.valueOf(ratingValue));
+        List<String> parts = new ArrayList<>();
+        parts.add(title == null ? "" : title);
+        parts.add(subtitle == null ? "" : subtitle);
+        parts.add(phase == null ? "" : phase);
+        parts.add(String.valueOf(step));
+        parts.add(String.valueOf(total));
+        parts.add(join(",", stepLabels));
+        parts.add(categoryLabel == null ? "" : categoryLabel);
+        parts.add(actionId == null ? "" : actionId);
+        parts.add(actionLabel == null ? "" : actionLabel);
+        parts.add(colorKey == null ? "" : colorKey);
+        parts.add(ratingPrompt == null ? "" : ratingPrompt);
+        parts.add(String.valueOf(ratingValue));
+        return join("|", parts);
     }
 
     /** From an FCM data map (the delivery path: app backgrounded or closed). */

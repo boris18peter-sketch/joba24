@@ -125,12 +125,6 @@ public final class JobaLiveUpdateNotifier {
         manager.cancel(TAG, notificationId(key));
     }
 
-    public static void cancelAll(Context context) {
-        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager == null) return;
-        manager.cancelAll();
-    }
-
     /* ══════════════════════════════════════════════════════════════════════
        THE CARD ITSELF
        ══════════════════════════════════════════════════════════════════════ */
@@ -307,7 +301,7 @@ public final class JobaLiveUpdateNotifier {
         String progress = payload.progressText();
         if (!progress.isEmpty()) parts.add(progress);
         if (payload.categoryLabel != null && !payload.categoryLabel.isEmpty()) parts.add(payload.categoryLabel);
-        return parts.isEmpty() ? "" : JobaLiveUpdatePayload.rtl(String.join(" · ", parts));
+        return parts.isEmpty() ? "" : JobaLiveUpdatePayload.rtl(JobaLiveUpdatePayload.join(" · ", parts));
     }
 
     /** The expanded text: the subtitle, then the flow's own step labels. */
@@ -323,7 +317,7 @@ public final class JobaLiveUpdateNotifier {
                 if (label == null || label.trim().isEmpty()) continue;
                 labels.add(index <= payload.step ? "✓ " + label.trim() : label.trim());
             }
-            builder.append(JobaLiveUpdatePayload.RLM).append(String.join("  ·  ", labels));
+            builder.append(JobaLiveUpdatePayload.RLM).append(JobaLiveUpdatePayload.join("  ·  ", labels));
         }
         if (payload.hasRatingAsk() && !payload.ratingPrompt.isEmpty()) {
             builder.append('\n').append(JobaLiveUpdatePayload.RLM).append(payload.ratingPrompt);
