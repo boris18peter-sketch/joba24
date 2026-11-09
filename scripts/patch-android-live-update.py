@@ -13,16 +13,49 @@ Joba24 adds has to be injected at build time — the same pattern
      from the project's Gradle configuration (`namespace` / `applicationId`),
      because a modern AndroidManifest.xml declares no package at all;
   2. places the notification's small-icon vector in res/drawable/;
-  3. points the FCM event at OUR service (a subclass of the plugin's own, so no
-     existing push behaviour changes — see the class comment);
-  4. registers the two broadcast receivers the notification's tap and its action
-     button use, plus the promoted-notification permission;
+  3. adds the Live Update service, the two receivers and the promoted-notification
+     permission to AndroidManifest.xml, all as direct children of <application>;
+  4. points the FCM event at OUR service (a subclass of the plugin's own, so no
+     existing push behaviour changes — see the class comment) and removes the
+     plugin's own declaration, so exactly one service claims it;
   5. registers the Capacitor plugin in MainActivity (BEFORE super.onCreate, which
      Capacitor requires).
 
+WHERE THINGS GO IS DECIDED BY AN XML PARSER, NEVER BY STRING MATCHING
+--------------------------------------------------------------------
+The manifest is edited by OFFSET: expat reports the byte position and depth of
+the root tag, of `<application>` and of its closing tag, and the components are
+spliced in there. That is not stylistic. The previous version anchored on the
+string "FCM_PLUGIN_ACTIVITY" and inserted after the nearest `</intent-filter>` —
+but that filter lives INSIDE <activity>, so the service and both receivers were
+written inside the activity element, and aapt2 refused to link the release:
+
+    Unexpected <service> inside <manifest><application><activity>
+    Unexpected <receiver> inside <manifest><application><activity>   (x2)
+
+A parser knows the depth; a substring does not. Everything outside the spliced
+offsets — MainActivity, the Firebase activity filter, permissions, <queries>,
+indentation — is preserved byte for byte.
+
+VALIDATION BEFORE GRADLE
+------------------------
+`validate_structure()` performs the checks aapt2 would only reach after Gradle
+starts: components nested in the wrong parent, components declared twice, a
+missing or duplicated MESSAGING_EVENT filter, the plugin's service not removed,
+and a permission in the wrong parent. It runs on every patch (the script refuses
+to write a manifest that would not link) and again under `--check`, which the
+build runs as its own step — so this class of failure surfaces before the build,
+not at step 25.
+
+USAGE
+-----
+  patch-android-live-update.py                 # patch ./android
+  patch-android-live-update.py --check         # verify only, write nothing
+  patch-android-live-update.py --root <dir>    # another project root
+
 It is idempotent: re-running it rewrites the injected block and changes nothing
-else. `--check` verifies without writing, and exits non-zero when something the
-app depends on is missing — that is what the build step runs after it.
+else. `--check` exits non-zero when something the app depends on is missing or
+misplaced.
 
 WHY THE SERVICE REPLACEMENT IS SAFE
 -----------------------------------
@@ -34,12 +67,6 @@ with the same filter and REMOVE theirs from the merged manifest — ours extends
 theirs, so ordinary messages reach `super.onMessageReceived(...)` and land in the
 plugin exactly as before. Two sibling services would have made delivery
 non-deterministic; a subclass cannot.
-
-USAGE
------
-  patch-android-live-update.py                 # patch ./android
-  patch-android-live-update.py --check         # verify only, write nothing
-  patch-android-live-update.py --root <dir>    # another project root
 """
 
 import argparse
@@ -48,6 +75,7 @@ import re
 import shutil
 import subprocess
 import sys
+import xml.parsers.expat
 from pathlib import Path
 
 SOURCE_DIR = Path("android-config/live-update/src")
@@ -72,6 +100,19 @@ BEGIN = "<!-- >>> joba24-live-update (generated - do not edit by hand) -->"
 END = "<!-- <<< joba24-live-update -->"
 
 TOOLS_NS = 'xmlns:tools="http://schemas.android.com/tools"'
+
+PROMOTED_PERMISSION = (
+    '    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />\n'
+)
+
+# The components this script owns, and the element each one must be declared as.
+LIVE_COMPONENTS = (
+    ("service", "JobaLiveUpdateMessagingService"),
+    ("receiver", "JobaLiveUpdateActionReceiver"),
+    ("receiver", "JobaLiveUpdateOpenReceiver"),
+)
+
+MESSAGING_EVENT = 'name="com.google.firebase.MESSAGING_EVENT"'
 
 # Where the app's identity actually lives in a modern Android project.
 GRADLE_FILES = ("android/app/build.gradle", "android/app/build.gradle.kts")
@@ -155,22 +196,108 @@ def resolve_package(root, manifest_text):
     )
 
 
-def ensure_tools_namespace(manifest_text):
-    if TOOLS_NS in manifest_text:
-        return manifest_text
-    return manifest_text.replace("<manifest ", "<manifest " + TOOLS_NS + " ", 1)
+# ══════════════════════════════════════════════════════════════════════════
+# XML-AWARE MANIFEST ACCESS
+#
+# Every structural decision below comes from the parser, not from a substring:
+# where the root tag is, where <application> opens, where it closes, and how
+# deep each element sits. Splices happen at those offsets only.
+# ══════════════════════════════════════════════════════════════════════════
+
+def _char_offset(text, byte_index):
+    """expat counts BYTES; Python slices characters."""
+    return len(text.encode("utf-8")[:byte_index].decode("utf-8"))
+
+
+def _tag_end(text, start):
+    """Offset just past the '>' of the start tag that begins at `start`."""
+    quote = None
+    for index in range(start, len(text)):
+        char = text[index]
+        if quote:
+            if char == quote:
+                quote = None
+        elif char in "\"'":
+            quote = char
+        elif char == ">":
+            return index + 1
+    fail("unterminated tag in AndroidManifest.xml")
+
+
+def scan_manifest(text):
+    """
+    The manifest's structural layout.
+
+    Returns:
+      root_start, root_tag_end  — the <manifest ...> start tag
+      application_start         — the <application ...> start tag
+      application_end           — the </application> closing tag
+      elements                  — [(path, depth)] for every element, so the
+                                  validation below can prove WHERE a component
+                                  ended up rather than merely that it exists.
+    """
+    parser = xml.parsers.expat.ParserCreate()
+    stack = []
+    found = {"elements": []}
+
+    def start(name, _attributes):
+        stack.append(name)
+        found["elements"].append(("/".join(stack), len(stack)))
+        if len(stack) == 1:
+            found["root_start"] = _char_offset(text, parser.CurrentByteIndex)
+        elif len(stack) == 2 and name == "application":
+            found["application_start"] = _char_offset(text, parser.CurrentByteIndex)
+
+    def end(name):
+        if len(stack) == 2 and name == "application":
+            found["application_end"] = _char_offset(text, parser.CurrentByteIndex)
+        stack.pop()
+
+    parser.StartElementHandler = start
+    parser.EndElementHandler = end
+    try:
+        parser.Parse(text.encode("utf-8"), True)
+    except xml.parsers.expat.ExpatError as error:
+        fail("AndroidManifest.xml is not well-formed XML: %s" % error)
+
+    if "root_start" not in found:
+        fail("AndroidManifest.xml has no root element")
+    if "application_start" not in found or "application_end" not in found:
+        fail("AndroidManifest.xml declares no closed <application> element")
+    if found["application_end"] <= found["application_start"]:
+        fail("<application> is self-closing — Live Update components cannot be added")
+
+    found["root_tag_end"] = _tag_end(text, found["root_start"])
+    return found
+
+
+def ensure_tools_namespace(text):
+    """
+    Declare `xmlns:tools` on the ROOT element, which is the only place XML
+    allows a namespace declaration to apply to its whole document.
+
+    Inserted inside the root start tag at the offset the parser reported, so the
+    root's own attributes and formatting are left exactly as they were.
+    """
+    if "xmlns:tools=" in text:
+        return text
+    layout = scan_manifest(text)
+    tag_end = layout["root_tag_end"]
+    # Just before '>' (or '/>' for a self-closing root).
+    insert_at = tag_end - (2 if text[:tag_end].endswith("/>") else 1)
+    return text[:insert_at] + " " + TOOLS_NS + text[insert_at:]
 
 
 def build_block(package):
-    return f"""{BEGIN}
+    return f"""    {BEGIN}
     <!--
         THE LIVE UPDATE SURFACE (Joba24).
 
-        The service below is OURS and extends the messaging plugin's own, so FCM
-        keeps delivering ordinary Joba24 pushes exactly as before while a
-        data-only Live Update message is intercepted and drawn as an ongoing
-        notification. The plugin's declaration is removed so there is exactly one
-        claimant of com.google.firebase.MESSAGING_EVENT.
+        Every element here is a DIRECT CHILD of <application>. The service below
+        is OURS and extends the messaging plugin's own, so FCM keeps delivering
+        ordinary Joba24 pushes exactly as before while a data-only Live Update
+        message is intercepted and drawn as an ongoing notification. The plugin's
+        declaration is removed so there is exactly one claimant of the FCM event.
     -->
     <service
         tools:node="remove"
@@ -193,45 +320,121 @@ def build_block(package):
     <receiver
         android:name="{package}.JobaLiveUpdateOpenReceiver"
         android:exported="false" />
-{END}"""
+    {END}"""
+
+
+def validate_structure(text, package):
+    """
+    The checks aapt2 performs only after Gradle starts, performed before it.
+
+    Returns a list of problems; an empty list means the manifest is valid for
+    this script's purposes. The first check is the exact error from the release
+    build: a component nested where the manifest schema has no room for it.
+    """
+    problems = []
+    layout = scan_manifest(text)
+    paths = [path for path, _ in layout["elements"]]
+
+    for path in paths:
+        parts = path.split("/")
+        if len(parts) > 2 and parts[-1] in ("service", "receiver") and "activity" in parts[2:-1]:
+            problems.append(
+                "<%s> is nested inside <%s>, not directly inside <application>"
+                % (parts[-1], parts[2:-1][-1])
+            )
+
+    for element, name in LIVE_COMPONENTS:
+        if "manifest/application/%s" % element not in paths:
+            problems.append("no <%s> directly under <application> for %s" % (element, name))
+        declared = text.count("%s.%s" % (package, name))
+        if declared != 1:
+            problems.append("%s is declared %d times (expected 1)" % (name, declared))
+
+    if 'tools:node="remove"' not in text:
+        problems.append("the plugin's MessagingService declaration is not removed")
+
+    filters = text.count('action android:name="com.google.firebase.MESSAGING_EVENT"')
+    if filters != 1:
+        problems.append("expected exactly one MESSAGING_EVENT filter, found %d" % filters)
+
+    if "POST_PROMOTED_NOTIFICATIONS" not in text:
+        problems.append("android.permission.POST_PROMOTED_NOTIFICATIONS is missing")
+    if any(path.endswith("application/uses-permission") for path in paths):
+        problems.append("<uses-permission> is nested inside <application>")
+
+    return problems
+
+
+def strip_block(text):
+    """
+    Remove a previously generated block, wherever it was written — including the
+    broken placement the old string-based version produced. Starting from a clean
+    manifest is what makes re-running this script idempotent.
+    """
+    while BEGIN in text:
+        start = text.index(BEGIN)
+        line_start = text.rfind("\n", 0, start) + 1
+        end = text.index(END, start) + len(END)
+        tail = text[end:]
+        # The block owns its whole line, so its line is removed with it and the
+        # newline that followed it — leaving the manifest byte-identical to what
+        # it was before the block was inserted. That is what makes a
+        # patch → check → patch cycle stable.
+        if tail.startswith("\n"):
+            tail = tail[1:]
+        text = text[:line_start] + tail
+    return text
 
 
 def patch_manifest(path, package, check=False):
+    """
+    Put the Live Update components where the manifest schema allows them.
+
+    `check=True` validates the file AS IT IS ON DISK and writes nothing, so a
+    manifest left in a bad state by an earlier tool fails the build step instead
+    of reaching Gradle.
+    """
     text = path.read_text()
 
-    if BEGIN in text and END in text:
-        head, rest = text.split(BEGIN, 1)
-        _, tail = rest.split(END, 1)
-        text = head + build_block(package) + tail
-    else:
-        if "FCM_PLUGIN_ACTIVITY" in text:
-            # Immediately after the FCM tap filter: the same neighbourhood as the
-            # app's other notification wiring, so it stays easy to find.
-            anchor = text.index("FCM_PLUGIN_ACTIVITY")
-            close = text.index("</intent-filter>", anchor) + len("</intent-filter>")
-            text = text[:close] + "\n\n" + build_block(package) + text[close:]
-        else:
-            anchor = text.rindex("</application>")
-            text = text[:anchor] + build_block(package) + "\n" + text[anchor:]
+    if check:
+        problems = validate_structure(text, package)
+        if problems:
+            fail("AndroidManifest.xml structure is invalid: " + "; ".join(problems))
+        return text
 
+    text = strip_block(text)
     text = ensure_tools_namespace(text)
 
+    layout = scan_manifest(text)
     if "POST_PROMOTED_NOTIFICATIONS" not in text:
-        text = text.replace(
-            "<application",
-            '    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />\n<application',
-            1,
-        )
+        # A <uses-permission> is a direct child of <manifest>, so it goes at the
+        # START OF THE LINE that opens <application> — the parser gave us that
+        # element's own offset, and the line's indentation stays intact.
+        at = layout["application_start"]
+        line_start = text.rfind("\n", 0, at) + 1
+        at = line_start if not text[line_start:at].strip() else at
+        text = text[:at] + PROMOTED_PERMISSION + text[at:]
+        layout = scan_manifest(text)
 
-    # ── THE SERVICE MUST BE OURS, AND ONLY OURS ─────────────────────────────
-    # A merged manifest with both declarations leaves FCM with two candidates.
-    # The removal marker is what guarantees a single one, so it is verified here
-    # rather than trusted.
-    if 'tools:node="remove"' not in text:
-        fail("manifest does not remove the plugin's MessagingService declaration")
+    # ── THE ONLY INSERTION POINT FOR THE BLOCK ───────────────────────────────
+    # Immediately before </application>, i.e. a direct child of <application>.
+    # Never after an <intent-filter>: in a real Capacitor manifest that filter is
+    # inside <activity>, and that is what produced "Unexpected <service> inside
+    # <manifest><application><activity>".
+    at = layout["application_end"]
+    # Its own line is the natural home: the block takes a line of its own and the
+    # closing tag keeps the indentation it already had.
+    line_start = text.rfind("\n", 0, at) + 1
+    if not text[line_start:at].strip():
+        at = line_start
+    lead = "\n" if at == layout["application_end"] and not text[:at].endswith("\n") else ""
+    text = text[:at] + lead + build_block(package) + "\n" + text[at:]
 
-    if not check:
-        path.write_text(text)
+    problems = validate_structure(text, package)
+    if problems:
+        fail("the patched AndroidManifest.xml would not link: " + "; ".join(problems))
+
+    path.write_text(text)
     return text
 
 
@@ -336,6 +539,7 @@ def main():
         "sources": [],
         "drawables": [],
         "checks": {},
+        "structure": [],
     }
 
     if args.check:
@@ -344,6 +548,10 @@ def main():
                 fail("%s/%s is missing — the Live Update is not installed" % (app_java_dir, name))
         if BEGIN not in manifest.read_text():
             fail("AndroidManifest.xml has no Live Update block")
+        # The generated manifest is validated BEFORE Gradle runs: a component in
+        # the wrong parent is a resource-linking failure at the AAB step, so it is
+        # caught here instead.
+        patch_manifest(manifest, package, check=True)
     else:
         report["sources"] = install_sources(app_java_dir, package)
         report["drawables"] = install_drawables(res_drawable_dir)
@@ -353,7 +561,10 @@ def main():
     text = manifest.read_text()
     main_activity = app_java_dir / "MainActivity.java"
     activity_text = main_activity.read_text() if main_activity.exists() else ""
+    layout = scan_manifest(text)
+    paths = [path for path, _ in layout["elements"]]
 
+    report["structure"] = validate_structure(text, package)
     report["checks"] = {
         "manifest_block": BEGIN in text,
         "plugin_service_removed": PLUGIN_SERVICE in text and 'tools:node="remove"' in text,
@@ -362,9 +573,14 @@ def main():
             ("%s.%s" % (package, name)) in text
             for name in ("JobaLiveUpdateActionReceiver", "JobaLiveUpdateOpenReceiver")
         ),
+        "components_direct_children": all(
+            "manifest/application/%s" % element in paths
+            for element, _name in LIVE_COMPONENTS
+        ),
         "promoted_permission": "POST_PROMOTED_NOTIFICATIONS" in text,
         "plugin_registered": "JobaLiveUpdatePlugin" in activity_text,
         "sources": all((app_java_dir / name).exists() for name in JAVA_FILES),
+        "structure_valid": not report["structure"],
     }
 
     if args.json:
@@ -373,6 +589,8 @@ def main():
         print("[live-update] package: %s (from %s)" % (package, package_source))
         for key, ok in report["checks"].items():
             print("[live-update] %s %s" % ("OK  " if ok else "MISS", key))
+        for problem in report["structure"]:
+            print("[live-update] PROBLEM %s" % problem)
         if report["sources"]:
             print("[live-update] installed %d source files, %d drawables"
                   % (len(report["sources"]), len(report["drawables"])))

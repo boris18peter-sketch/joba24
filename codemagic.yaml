@@ -1022,7 +1022,10 @@ workflows:
       # that plugin's declaration, so exactly one service claims
       # com.google.firebase.MESSAGING_EVENT and every existing Joba24 push keeps
       # flowing through `super`. The --check pass at the end proves the wiring is
-      # complete rather than trusting that the writes landed.
+      # complete rather than trusting that the writes landed, and it also VALIDATES
+      # THE MANIFEST STRUCTURE with an XML parser — a component nested in the wrong
+      # parent is exactly what aapt2 refuses to link at the "Build signed AAB"
+      # step, so it fails here instead, before Gradle starts.
       - name: Install Android Live Update (task card, service, plugin)
         script: |
           python3 scripts/patch-android-live-update.py

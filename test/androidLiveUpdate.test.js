@@ -105,12 +105,12 @@ android {
 }
 `;
 
-function project({ manifestPackage = true, gradle = BUILD_GRADLE } = {}) {
+function project({ manifestPackage = true, gradle = BUILD_GRADLE, manifest: custom = null } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'joba-android-live-'));
   const main = join(root, 'android/app/src/main');
   const javaDir = join(main, 'java', ...PACKAGE.split('.'));
   mkdirSync(javaDir, { recursive: true });
-  const manifest = manifestPackage ? MANIFEST : MANIFEST.replace(` package="${PACKAGE}"`, '');
+  const manifest = custom ?? (manifestPackage ? MANIFEST : MANIFEST.replace(` package="${PACKAGE}"`, ''));
   writeFileSync(join(main, 'AndroidManifest.xml'), manifest);
   writeFileSync(join(javaDir, 'MainActivity.java'), MAIN_ACTIVITY);
   if (gradle) writeFileSync(join(root, 'android/app/build.gradle'), gradle);
@@ -500,5 +500,201 @@ describe('Android Live Update — the shared bridge', () => {
     // The revision is only committed when SOMETHING was delivered, both carriers
     // counted — so a dry run or a failure still releases the claim.
     expect(send).toMatch(/const sent = results\.filter\(\(r\) => r\.result\.ok && !r\.result\.dryRun\)\.length\s*\n\s*\+ androidResults\.filter/);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. THE REAL CAPACITOR MANIFEST — THE SHAPE THAT FAILED THE AAB BUILD
+   ──────────────────────────────────────────────────────────────────────────
+   Step 25 ("Build signed AAB") refused to link the release with:
+       Unexpected <service> inside <manifest><application><activity>
+       Unexpected <receiver> inside <manifest><application><activity>   (x2)
+
+   The patcher had anchored on the string "FCM_PLUGIN_ACTIVITY" and inserted
+   after the nearest </intent-filter> — but that filter lives INSIDE <activity>,
+   so the block landed in the activity. These tests use the manifest Capacitor
+   actually generates (nested activity with several filters and a meta-data, a
+   file provider, <queries> after </application>, no package attribute) and
+   assert the placement rule itself, not the patcher's opinion of it.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const BLOCK_BEGIN = '<!-- >>> joba24-live-update (generated - do not edit by hand) -->';
+const BLOCK_END = '<!-- <<< joba24-live-update -->';
+
+const CAPACITOR_MANIFEST = `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:name="${PACKAGE}.MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="FCM_PLUGIN_ACTIVITY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="\${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+</manifest>
+`;
+
+/** Every <service>/<receiver> that sits anywhere INSIDE an <activity>. Must be []. */
+const componentsInsideActivities = (manifest) => [...manifest.matchAll(/<activity\b[\s\S]*?<\/activity>/g)]
+  .flatMap((block) => [...block[0].matchAll(/<(service|receiver)\b/g)].map((m) => m[1]));
+
+/** The text between <application …> and </application> — where our block belongs. */
+const applicationInner = (manifest) => {
+  const open = manifest.indexOf('<application');
+  const close = manifest.lastIndexOf('</application>');
+  return manifest.slice(open, close);
+};
+
+describe('Android Live Update — real Capacitor manifest', () => {
+  it('keeps the service and both receivers as direct children of <application>', () => {
+    const p = project({ manifestPackage: false, manifest: CAPACITOR_MANIFEST });
+    const patched = run(PATCHER, ['--root', p.root]);
+    expect(patched.code, patched.stderr).toBe(0);
+
+    const manifest = read(p.manifest);
+
+    // THE release failure, asserted at its source.
+    expect(componentsInsideActivities(manifest)).toEqual([]);
+
+    // …and the components really are inside <application>, not beside it.
+    const inner = applicationInner(manifest);
+    expect(inner.match(/<service\b/g)).toHaveLength(2); // ours + the removal marker
+    expect(inner.match(/<receiver\b/g)).toHaveLength(2);
+
+    // The block sits after the activity closed and before the application does.
+    const blockAt = manifest.indexOf(BLOCK_BEGIN);
+    expect(blockAt).toBeGreaterThan(manifest.lastIndexOf('</activity>'));
+    expect(blockAt).toBeLessThan(manifest.lastIndexOf('</application>'));
+    expect(manifest).toContain(BLOCK_END);
+  });
+
+  it('preserves MainActivity, the Firebase filter and every unrelated entry', () => {
+    const p = project({ manifestPackage: false, manifest: CAPACITOR_MANIFEST });
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    const manifest = read(p.manifest);
+
+    // The activity is untouched: same name, same attributes, same two filters,
+    // same meta-data, still a direct child of <application>.
+    expect(manifest).toContain(`android:name="${PACKAGE}.MainActivity"`);
+    expect(manifest).toContain('android:launchMode="singleTask"');
+    expect(manifest).toMatch(/<activity\b[\s\S]*android.intent.category.LAUNCHER[\s\S]*<\/activity>/);
+    expect(manifest).toMatch(/<activity\b[\s\S]*FCM_PLUGIN_ACTIVITY[\s\S]*<\/activity>/);
+    expect(manifest).toMatch(/<activity\b[\s\S]*android.support.FILE_PROVIDER_PATHS[\s\S]*<\/activity>/);
+    expect(manifest).toContain('androidx.core.content.FileProvider');
+    expect(manifest).toContain('${applicationId}.fileprovider');
+    expect(manifest).toContain('<queries>');
+    expect(manifest).toContain('android.intent.action.VIEW');
+
+    // Exactly one FCM event filter claims delivery.
+    expect([...manifest.matchAll(/<action android:name="com\.google\.firebase\.MESSAGING_EVENT"/g)]).toHaveLength(1);
+    // The permission belongs to <manifest>, never inside <application>.
+    expect(applicationInner(manifest)).not.toContain('POST_PROMOTED_NOTIFICATIONS');
+    expect(manifest).toContain('android.permission.POST_PROMOTED_NOTIFICATIONS');
+  });
+
+  it('is idempotent — repeated runs never duplicate a component', () => {
+    const p = project({ manifestPackage: false, manifest: CAPACITOR_MANIFEST });
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    const once = read(p.manifest);
+
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    const twice = read(p.manifest);
+    expect(twice).toBe(once);
+
+    expect([...twice.matchAll(/POST_PROMOTED_NOTIFICATIONS/g)]).toHaveLength(1);
+    expect([...twice.matchAll(new RegExp(`${PACKAGE}\\.JobaLiveUpdateMessagingService`, 'g'))]).toHaveLength(1);
+    expect([...twice.matchAll(new RegExp(`${PACKAGE}\\.JobaLiveUpdateActionReceiver`, 'g'))]).toHaveLength(1);
+    expect([...twice.matchAll(new RegExp(`${PACKAGE}\\.JobaLiveUpdateOpenReceiver`, 'g'))]).toHaveLength(1);
+
+    expect(run(PATCHER, ['--root', p.root, '--check']).code).toBe(0);
+  });
+
+  it('refuses a manifest whose components sit inside <activity> — and repairs it', () => {
+    const p = project({ manifestPackage: false, manifest: CAPACITOR_MANIFEST });
+    // Install the sources first, so --check fails on PLACEMENT, not on missing files.
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+
+    // The exact shape the old patcher produced: the block written after the FCM
+    // intent-filter, which is still inside the activity element.
+    const stray = `<service android:name="${PACKAGE}.JobaLiveUpdateMessagingService" android:exported="false">`
+      + '<intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter></service>';
+    const broken = CAPACITOR_MANIFEST.replace(
+      '            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"',
+      `            ${BLOCK_BEGIN}\n            ${stray}\n            ${BLOCK_END}\n\n`
+        + '            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"',
+    );
+    writeFileSync(p.manifest, broken);
+
+    const checked = run(PATCHER, ['--root', p.root, '--check']);
+    expect(checked.code).not.toBe(0);
+    expect(checked.stderr).toContain('inside <activity>');
+
+    // Patching it re-places the block instead of keeping the nested copy.
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    const repaired = read(p.manifest);
+    expect(componentsInsideActivities(repaired)).toEqual([]);
+    expect([...repaired.matchAll(/<service\b/g)]).toHaveLength(2);
+    expect(run(PATCHER, ['--root', p.root, '--check']).code).toBe(0);
+  });
+
+  it('fails loudly on a manifest that is not well-formed XML', () => {
+    const p = project({ manifestPackage: false, manifest: CAPACITOR_MANIFEST.replace('</application>', '') });
+    const result = run(PATCHER, ['--root', p.root]);
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain('not well-formed');
+  });
+
+  it('reports a clean structure in its JSON report', () => {
+    const p = project({ manifestPackage: false, manifest: CAPACITOR_MANIFEST });
+    const result = run(PATCHER, ['--root', p.root, '--json']);
+    expect(result.code, result.stderr).toBe(0);
+
+    const report = JSON.parse(result.stdout);
+    expect(report.structure).toEqual([]);
+    expect(report.checks.components_direct_children).toBe(true);
+    expect(report.checks.structure_valid).toBe(true);
+    expect(report.checks.receivers).toBe(true);
   });
 });
