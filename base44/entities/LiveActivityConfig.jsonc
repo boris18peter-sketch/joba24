@@ -24,6 +24,11 @@
       "default": false,
       "description": "Real APNs delivery FOR THE ALLOWLISTED test users only. Only a literal true permits a network call, and only for a recipient listed in test_user_ids. It can never arm delivery for anybody else, and it never overrides `dry_run` for non-test users."
     },
+    "android_delivery": {
+      "type": "boolean",
+      "default": false,
+      "description": "ANDROID TRANSPORT SWITCH. true = the same snapshot revision is also delivered to the recipient's Android devices as a data-only FCM message, which the app renders as an ongoing notification and promotes to an Android 16 Live Update where the device supports it. Completely independent of APNs: arming iOS never arms Android and vice versa. Android has no Push-to-Start equivalent, so a data message may create the card while the app is closed."
+    },
     "push_to_start": {
       "type": "boolean",
       "default": false,

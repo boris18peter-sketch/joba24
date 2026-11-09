@@ -288,12 +288,19 @@ describe('production stays inert', () => {
     return found;
   }
 
-  it('has exactly two importers: the admin test panel and the allowlisted real-task bridge', () => {
+  it('has exactly three importers: the two screens, and the platform dispatcher', () => {
     // Stage 3 shipped the bridge unwired, and this test pinned that. The
-    // real-task integration is the deliberate activation, so the list is now
-    // closed at TWO — a third importer would mean some screen started touching
-    // Lock Screen state again — and the second one is gated by the server
-    // allowlist rather than by being unreachable.
+    // real-task integration is the deliberate activation, so the list grew to
+    // TWO — a third would mean some screen started touching Lock Screen state
+    // again — and the second one is gated by the server allowlist rather than by
+    // being unreachable.
+    //
+    // The third entry, `liveUpdateNative.js`, is not a screen: it is the ONE
+    // platform-neutral seam the bridge now calls (`activeTaskActivities`,
+    // `start/update/end`), which forwards to ActivityKit on iOS and to the
+    // Android card on Android. It has to name this module to do that, and keeping
+    // it a SINGLE seam is what stops the platform choice leaking into screens:
+    // no component may import liveActivityNative directly any more.
     const importers = sourceFiles().filter((file) => {
       if (file === BRIDGE) return false;
       return read(file).includes('liveActivityNative');
@@ -301,6 +308,7 @@ describe('production stays inert', () => {
     expect(importers.sort()).toEqual([
       join(ROOT, 'src/components/RealTaskActivityBridge.jsx'),
       join(ROOT, 'src/components/liveActivity/LiveActivityTestPanel.jsx'),
+      join(ROOT, 'src/lib/liveUpdateNative.js'),
     ].sort());
 
     const realTaskBridge = read(join(ROOT, 'src/components/RealTaskActivityBridge.jsx'));

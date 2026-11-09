@@ -5,18 +5,28 @@ import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
+// ── ONE BRIDGE, TWO PLATFORMS ─────────────────────────────────────────────
+// The lifecycle below is platform-neutral by design: it decides WHEN a card moves
+// (a new revision, a different task, an action's reply) and the server decides
+// WHAT it says. Only the surface that draws it differs, so the calls go through
+// `liveUpdateNative`, which forwards to ActivityKit on iOS (unchanged) and to the
+// Android Live Update on Android. The iOS-only extras — the per-card push token,
+// Push-to-Start and the App Group action stages — stay imported from their own
+// module and simply do nothing off iOS.
 import {
   activeTaskActivities,
+  drainActivityActionStages,
+  endTaskActivity,
+  isLiveUpdateNative,
+  startTaskActivity,
+  updateTaskActivity,
+} from '@/lib/liveUpdateNative';
+import {
   attachActivityTokenListener,
   attachPushToStartTokenListener,
   clearActivityAction,
-  drainActivityActionStages,
-  endTaskActivity,
   ensureUserActionCapability,
-  isLiveActivityNative,
-  startTaskActivity,
   syncPushToStartToken,
-  updateTaskActivity,
 } from '@/lib/liveActivityNative';
 import {
   buildRealSnapshot,
@@ -190,7 +200,7 @@ export default function RealTaskActivityBridge() {
   // added to the allowlist starts reporting within seconds of coming back to the
   // app instead of after a cold relaunch.
   useEffect(() => {
-    if (!isLiveActivityNative() || !me?.id) return undefined;
+    if (!isLiveUpdateNative() || !me?.id) return undefined;
     let alive = true;
     base44.functions.invoke('liveActivityRealTask', { action: 'access' })
       .then((response) => {
@@ -252,7 +262,7 @@ export default function RealTaskActivityBridge() {
   // iOS dismissed (reboot, or the user swiped it away) must be started again,
   // and a leftover one for a task that is over must be closed.
   useEffect(() => {
-    if (!access?.allowed || !me?.id || !isLiveActivityNative()) return undefined;
+    if (!access?.allowed || !me?.id || !isLiveUpdateNative()) return undefined;
 
     let alive = true;
     const timer = setTimeout(async () => {

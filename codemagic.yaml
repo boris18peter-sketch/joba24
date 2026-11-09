@@ -1011,6 +1011,22 @@ workflows:
             echo "ERROR: FCM_PLUGIN_ACTIVITY intent-filter missing — notification taps will open nothing"
             exit 1
           fi
+      # ── ANDROID LIVE UPDATE — the Android equivalent of the iOS Live Activity ──
+      # Installs the native card (an ongoing notification, promoted to an Android 16
+      # Live Update where the device supports it), its FCM service, the two
+      # receivers its tap and button use, and the Capacitor plugin the web layer
+      # drives. Runs AFTER the manifest patch so it can add its block beside the
+      # existing push wiring, and BEFORE the platform is synced and built.
+      #
+      # The FCM service it installs EXTENDS the messaging plugin's own and removes
+      # that plugin's declaration, so exactly one service claims
+      # com.google.firebase.MESSAGING_EVENT and every existing Joba24 push keeps
+      # flowing through `super`. The --check pass at the end proves the wiring is
+      # complete rather than trusting that the writes landed.
+      - name: Install Android Live Update (task card, service, plugin)
+        script: |
+          python3 scripts/patch-android-live-update.py
+          python3 scripts/patch-android-live-update.py --check
       - name: Inject Meta App Events SDK for Android
         script: |
           python3 << 'PYEOF'

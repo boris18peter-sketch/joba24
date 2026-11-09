@@ -266,8 +266,11 @@ describe('codemagic.yaml', () => {
     const body = yaml.slice(archive, archive + 700);
     expect(body).toContain('DEVELOPMENT_TEAM=322DV2PB9V');
     expect(body).toContain('CODE_SIGN_STYLE=Manual');
-    expect(body).toContain('MARKETING_VERSION=2.130299.9');
-    expect(body).toContain('CURRENT_PROJECT_VERSION=42');
+    // The version pair moves together with every release: commit beb4b8db bumped
+    // both in codemagic.yaml (2.130299.9/42 → 2.130300.0/43) and left this
+    // assertion behind, so the guard failed on a build that was correct.
+    expect(body).toContain('MARKETING_VERSION=2.130300.0');
+    expect(body).toContain('CURRENT_PROJECT_VERSION=43');
     // The retry lives in the resolve step only; the archive is never wrapped.
     expect(yaml.match(/xcodebuild archive/g)).toHaveLength(1);
   });

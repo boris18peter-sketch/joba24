@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Live Update's small icon.
+
+  A notification small icon is a MASK, not a picture: only its alpha channel is
+  used, and the system tints it. It must therefore be a solid glyph on a
+  transparent background, which is exactly what this is — the same arrow the
+  card shows while a worker is on the way (the widget's `navigation` icon), so the
+  status bar carries the app's own symbol rather than a generic bell.
+
+  24dp, as the platform requires: anything else is scaled and loses its edges.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFFFF">
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2.2 L20.4,20.1 C20.7,20.8 20,21.5 19.3,21.2 L12,18.1 L4.7,21.2 C4,21.5 3.3,20.8 3.6,20.1 Z" />
+</vector>

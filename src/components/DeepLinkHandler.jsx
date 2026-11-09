@@ -20,6 +20,7 @@ import { useBrand } from '@/lib/brand/BrandProvider';
 import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
 import { setPendingTask, readPendingTask, clearPendingTask, PENDING_TASK_EVENT } from '@/lib/pendingTask';
 import { getOnboardingTrack, TRACKS } from '@/lib/onboardingTrack';
+import { attachOpenTaskListener } from '@/lib/liveUpdateNative';
 
 // The first-run flow owns the screen until the visitor has been through it.
 // A pending task waits for them to come out the other side.
@@ -69,6 +70,29 @@ export default function DeepLinkHandler() {
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', clean);
     }
+  }, []);
+
+  // ── A TAP ON THE ANDROID LIVE UPDATE CARD ─────────────────────────────────
+  // The card is posted by the app's own service, not by the FCM SDK, so the SDK's
+  // tap plumbing never sees it. The native side records the task id BEFORE the app
+  // comes forward and hands it over here exactly once — for a cold start and for a
+  // resume alike. It goes through `setPendingTask`, which is the app's existing
+  // parking mechanism for "a link asked for this task", so the task opens through
+  // the same path a shared link already uses (auth, onboarding and Brand routing
+  // included) instead of a second, parallel one.
+  useEffect(() => {
+    let detach = null;
+    let cancelled = false;
+    attachOpenTaskListener((taskId) => { if (taskId) setPendingTask(taskId); })
+      .then((off) => {
+        if (cancelled) { if (typeof off === 'function') off(); return; }
+        detach = off;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (typeof detach === 'function') detach();
+    };
   }, []);
 
   // Open the sheet once auth is ready and the user is on a stable route

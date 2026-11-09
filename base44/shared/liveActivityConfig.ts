@@ -140,6 +140,27 @@ export function mayContactApnsFor(config, userId) {
   return willContactApns(config);
 }
 
+/**
+ * May a REAL network request be made to Firebase Cloud Messaging — the ANDROID
+ * transport — for this recipient?
+ *
+ * ── WHY IT HAS ITS OWN SWITCH ──────────────────────────────────────────────
+ * Android and iOS are two different delivery systems with two different failure
+ * modes, so arming one must never imply the other. `android_delivery` is off by
+ * default; without it an Android device is still planned and audited exactly as
+ * an iOS one (so the diagnostics answer "what would have been sent") and not a
+ * single message leaves the server.
+ *
+ * The allowlist rule is deliberately identical to APNs: a test user needs only
+ * `android_delivery`, everybody else needs the global flags lifted as well, so
+ * switching Android on for a tester can never arm it for everyone.
+ */
+export function mayContactFcmFor(config, userId) {
+  if (config?.android_delivery !== true) return false;
+  if (isTestUser(config, userId)) return true;
+  return config?.enabled === true && config?.dry_run === false;
+}
+
 /** What the configuration permits for this recipient: disabled | dry_run | armed. */
 export function sendGateFor(config, userId) {
   if (!isTrackedRecipient(config, userId)) return 'disabled';

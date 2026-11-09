@@ -33,7 +33,9 @@ import {
 import { authorizeDispatch, eligibleTokens } from './liveActivityAuth.ts';
 import { buildLiveActivityPush, sendLiveActivityPush } from './liveActivityApns.ts';
 import { buildPushToStartPayload } from './liveActivityPushToStart.ts';
-import { isTrackedRecipient, mayContactApnsFor } from './liveActivityConfig.ts';
+import { isTrackedRecipient, mayContactApnsFor, mayContactFcmFor } from './liveActivityConfig.ts';
+import { loadAndroidRecipients, sendLiveUpdateToAndroid } from './liveActivityFcm.ts';
+import { readFcmCredentials } from './fcmMessaging.ts';
 
 export const DISPATCH_ROLES = ['publisher', 'worker'];
 
@@ -299,6 +301,14 @@ export async function loadSnapshotInputs(base44, input) {
     config,
     categories: preloaded = null,
     settings: preloadedSettings = null,
+    // ── ANDROID HAS NO ACTIVITY TOKENS, SO "NO TOKEN" IS NOT "NO RECIPIENT" ──
+    // The early return below exists so a phone that has never registered costs
+    // one read instead of five. Android registers its token on the USER record,
+    // not in LiveActivityToken, so for an armed Android transport the category
+    // chain and the platform settings are still needed: without them the
+    // snapshot would be built with empty categories and the card would lose the
+    // category's own step labels — a quiet parity break, not a visible error.
+    forceSnapshot = false,
   } = input || {};
 
   const tokenPage = await base44.asServiceRole.entities.LiveActivityToken
@@ -344,7 +354,7 @@ export async function loadSnapshotInputs(base44, input) {
   // on EVERY task event, before the dispatcher discovered there was nothing to
   // address. That is the steady state of a phone that has not registered yet,
   // and it ran for both sides of every task.
-  if (!tokens.length && !startTokens.length) {
+  if (!tokens.length && !startTokens.length && !forceSnapshot) {
     return {
       tokens: [],
       startTokens: [],
@@ -726,6 +736,15 @@ export async function dispatchRecipient(input) {
   }
 
   const state = await readState(base44, { recipientId, taskId: task.id, role });
+
+  // ── THE SECOND TRANSPORT IS ARMED, NOT ASSUMED ───────────────────────────
+  // Android is addressed through the app's EXISTING push identity (the user's
+  // FCM tokens), so there is nothing to register and nothing to migrate. It is
+  // read only when the operator has armed it, which keeps a dispatch to an
+  // iOS-only user exactly as cheap as it was.
+  const androidEnabled = config?.android_delivery === true;
+  const androidTokens = androidEnabled ? await loadAndroidRecipients(base44, recipientId) : [];
+
   const { tokens, startTokens, timeZone, bundleId, categories, settings } = await loadSnapshotInputs(base44, {
     task,
     role,
@@ -733,13 +752,14 @@ export async function dispatchRecipient(input) {
     config,
     categories: preloadedCategories,
     settings: preloadedSettings,
+    forceSnapshot: androidEnabled,
   });
   const readsDoneAt = Date.now();
 
   // The one outcome reachable with no snapshot work at all, audited exactly like
   // every other: without it, "why did nothing arrive on my Lock Screen" has no
   // row to answer it.
-  if (!tokens.length && !startTokens.length) {
+  if (!tokens.length && !startTokens.length && !androidTokens.length) {
     await recordDispatchOutcome(base44, {
       recipientId,
       taskId: task.id,
@@ -841,7 +861,12 @@ export async function dispatchRecipient(input) {
     && !(Number(state?.revision) > 0);
 
   const targetTokens = remoteStart ? startTokens : tokens;
-  if (!targetTokens.length) {
+  // ── AN ANDROID DEVICE IS A RECIPIENT, EVEN WITH NO ACTIVITYKIT TOKEN ──────
+  // iOS addresses a CARD; Android addresses the INSTALL. A user on Android has
+  // no LiveActivityToken rows at all, so returning "no_active_tokens" here would
+  // skip exactly the recipients this transport exists for. The skip is only
+  // correct when NEITHER transport has anywhere to send.
+  if (!targetTokens.length && !androidTokens.length) {
     // ── THE TOKEN RACE, RECORDED ───────────────────────────────────────────
     // This is the case that hid the most: a progress event dispatched while the
     // card's token was still travelling to the server. Nothing is claimed and no
@@ -982,8 +1007,25 @@ export async function dispatchRecipient(input) {
     }
   }
 
+  // ── THE SAME REVISION, CARRIED TO ANDROID ────────────────────────────────
+  // Deliberately AFTER the iOS loop and inside the same claim: one revision, one
+  // decision, two transports. A phone that is neither (a web session holding a
+  // Firebase WEB token) is reported as a dry run, never as a delivery — a web
+  // token is not an Android device and must not make a revision look committed.
+  const androidResults = androidTokens.length
+    ? await sendLiveUpdateToAndroid({
+        base44,
+        tokens: androidTokens,
+        snapshot: plan.snapshot || { id: task.id, role, revision: plan.revision },
+        event: plan.kind === 'end' ? 'end' : 'update',
+        maySend: mode === 'dispatch' && mayContactFcmFor(config, recipientId),
+        credentials: readFcmCredentials(),
+      })
+    : [];
+
   const afterSendAt = Date.now();
-  const sent = results.filter((r) => r.result.ok && !r.result.dryRun).length;
+  const sent = results.filter((r) => r.result.ok && !r.result.dryRun).length
+    + androidResults.filter((r) => r.result.ok && !r.result.dryRun).length;
   const committed = sent > 0;
 
   // ── A CLAIM THAT DELIVERED NOTHING IS GIVEN BACK ─────────────────────────
@@ -1017,6 +1059,26 @@ export async function dispatchRecipient(input) {
     token_id: tokenRow.id,
     apns_status: result.status ?? null,
     apns_id: result.apnsId || '',
+    error_category: result.ok ? '' : (result.category || ''),
+    attempts: result.dryRun ? 0 : 1,
+    dispatched_at: dispatchedAt,
+  })));
+
+  // ── ANDROID ATTEMPTS GO IN THE SAME TABLE ────────────────────────────────
+  // "the card did not move on my Android phone" has to be answerable by the same
+  // query an iOS question uses. There is no token id and no APNs status on this
+  // path, and the transport is named in `reason` (`fcm:…`) so an operator can
+  // tell at a glance which carrier a row belongs to.
+  await Promise.allSettled(androidResults.map(({ result }) => base44.asServiceRole.entities.LiveActivityDispatch.create({
+    user_id: recipientId,
+    task_id: task.id,
+    role,
+    revision: plan.revision,
+    event,
+    phase: plan.snapshot?.phase || (event === 'end' ? 'terminal' : ''),
+    status: result.ok ? (result.dryRun ? 'dry_run' : 'sent') : 'failed',
+    decision: plan.decision,
+    reason: `fcm:${result.category || 'sent'}`.slice(0, 200),
     error_category: result.ok ? '' : (result.category || ''),
     attempts: result.dryRun ? 0 : 1,
     dispatched_at: dispatchedAt,
@@ -1074,10 +1136,15 @@ export async function dispatchRecipient(input) {
     phase: plan.snapshot?.phase || null,
     tokens: targetTokens.length,
     sent,
-    dryRun: results.every((r) => r.result.dryRun),
-    failed: results.filter((r) => !r.result.ok).length,
+    dryRun: [...results, ...androidResults].every((r) => r.result.dryRun),
+    failed: [...results, ...androidResults].filter((r) => !r.result.ok).length,
     invalidated: results.filter((r) => shouldInvalidateToken(r.result)).length,
     contactedApns: maySend,
     credentialsMissing: credentials.missing,
+    // Android, reported separately: one summary line must never blur the two
+    // transports into "something was sent".
+    contactedFcm: androidResults.some((r) => r.result.ok && !r.result.dryRun),
+    androidTokens: androidTokens.length,
+    androidSent: androidResults.filter((r) => r.result.ok && !r.result.dryRun).length,
   };
 }

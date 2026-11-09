@@ -22,6 +22,7 @@
  */
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { base44 } from '@/api/base44Client';
+import { actionEndpoint } from '@/lib/activityActionEndpoint';
 
 /** Must match `jsName` in ios/App/App/LiveActivityPlugin.swift. */
 export const LIVE_ACTIVITY_PLUGIN = 'JobaActivity';
@@ -41,30 +42,15 @@ export const LIVE_ACTIVITY_METHODS = [
 const JobaActivity = registerPlugin('JobaActivity');
 
 /**
- * The public origin the Lock Screen action posts to.
+ * The endpoint the Lock Screen action posts to.
  *
- * `window.location.origin` is NOT usable here. Inside the native app the page is
- * served from `capacitor://localhost`, so the endpoint stored for the App Intent
- * was `capacitor://localhost/functions/liveActivityAction` — a scheme URL that
- * URLSession refuses outright. Every tap therefore failed as `network_error`
- * without a single packet leaving the phone: the button was dead in the only
- * build that matters, and nothing in the diagnostics said why.
- *
- * A browser build keeps posting to the origin it is served from (so previews
- * work); the native shell, which has no https origin at all, posts to the public
- * app domain.
+ * The derivation itself now lives in `@/lib/activityActionEndpoint`, because the
+ * ANDROID card performs the very same call from its own receiver and must be
+ * handed the identical absolute URL — one definition, so the two platforms can
+ * never derive two different origins. See that module for why
+ * `window.location.origin` alone was broken inside the native shell.
  */
-const PUBLIC_APP_ORIGIN = 'https://joba24.com';
-
-function actionEndpoint() {
-  try {
-    const origin = window.location?.origin || '';
-    if (/^https:\/\//.test(origin)) return `${origin}/functions/liveActivityAction`;
-  } catch {
-    // No window, or a container that exposes no origin — use the public domain.
-  }
-  return `${PUBLIC_APP_ORIGIN}/functions/liveActivityAction`;
-}
+export { actionEndpoint } from '@/lib/activityActionEndpoint';
 
 // ── ONE native listener, MANY subscribers ───────────────────────────────────
 // This used to be a boolean guard that let exactly one caller listen: the second
