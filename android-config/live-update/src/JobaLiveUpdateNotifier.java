@@ -149,7 +149,22 @@ public final class JobaLiveUpdateNotifier {
                     .setOnlyAlertOnce(true)
                     .setShowWhen(false)
                     .setAutoCancel(false)
-                    .setSilent(true);
+                    // ── SILENCE, WITHOUT setSilent ────────────────────────────────
+                    // `setSilent(boolean)` exists only on NotificationCompat's
+                    // builder. This chain is the FRAMEWORK builder — it has to be,
+                    // because the promoted style and its extras are framework
+                    // types — and the framework has no such method: calling it
+                    // here failed the release build at
+                    // `:app:compileReleaseJavaWithJavac` with "cannot find symbol".
+                    //
+                    // androidx implements setSilent by clearing the sound and the
+                    // vibration pattern and dropping those two default bits, so
+                    // these two calls are the same instruction written out. Silence
+                    // itself is owned by the notification channel above
+                    // (no sound, no vibration, IMPORTANCE_DEFAULT), and this path
+                    // only runs on Android 16+, where the channel is what decides.
+                    .setSound(null)
+                    .setVibrate(null);
 
             // The status-chip text: the same counter the card shows.
             String critical = payload.progressText();

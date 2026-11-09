@@ -119,6 +119,36 @@ GRADLE_FILES = ("android/app/build.gradle", "android/app/build.gradle.kts")
 VARIABLES_GRADLE = "android/variables.gradle"
 CAPACITOR_CONFIG = "capacitor.config.json"
 
+# ══════════════════════════════════════════════════════════════════════════
+# THE DEPENDENCY THE INJECTED SOURCES COMPILE AGAINST
+# ══════════════════════════════════════════════════════════════════════════
+# `JobaLiveUpdateMessagingService extends io.capawesome...messaging.MessagingService`,
+# and that class extends FirebaseMessagingService. The plugin declares
+# firebase-messaging as `implementation`, which means it is NOT on the app
+# module's compile classpath: a project dependency exposes its own classes, never
+# its `implementation` dependencies. The plugin therefore compiles and the app
+# does not — which is exactly how the third Codemagic build failed, at
+# `:app:compileReleaseJavaWithJavac`:
+#
+#     package com.google.firebase.messaging does not exist
+#     cannot find symbol: class FirebaseMessagingService
+#     cannot find symbol: class RemoteMessage          (twice)
+#     cannot find symbol: getApplicationContext()      (cascade: the superclass
+#                                                       could not be resolved, so
+#                                                       Service's own methods
+#                                                       were unreachable)
+#
+# Declaring the SAME version the plugin already resolves changes nothing in the
+# resolved dependency graph (Gradle resolves one version per coordinate) while
+# putting the API on our compile classpath. The version is READ from the plugin
+# rather than hard-coded, so an npm update cannot leave this pinned behind it.
+APP_GRADLE = "android/app/build.gradle"
+PLUGIN_GRADLE = "node_modules/@capacitor-firebase/messaging/android/build.gradle"
+FIREBASE_MESSAGING_VERSION_FALLBACK = "25.0.1"
+FIREBASE_MESSAGING_COORDINATE = "com.google.firebase:firebase-messaging"
+GRADLE_BEGIN = "    // >>> joba24-live-update (generated - do not edit by hand)"
+GRADLE_END = "    // <<< joba24-live-update"
+
 
 def fail(message):
     sys.exit("ERROR: " + message)
@@ -438,6 +468,126 @@ def patch_manifest(path, package, check=False):
     return text
 
 
+def resolve_firebase_messaging_version(root):
+    """
+    The firebase-messaging version our sources must compile against.
+
+    Read from the messaging plugin's own build.gradle, whose default is what the
+    dependency graph already resolves. Returns (version, where it came from).
+    """
+    path = root / PLUGIN_GRADLE
+    if path.exists():
+        match = re.search(
+            r"(?m)firebaseMessagingVersion\s*=.*?'([0-9][0-9A-Za-z.\-]*)'", path.read_text()
+        )
+        if match:
+            return match.group(1), PLUGIN_GRADLE
+    return FIREBASE_MESSAGING_VERSION_FALLBACK, "fallback (plugin not installed)"
+
+
+def gradle_block(version):
+    return (
+        "%s\n"
+        "    // The injected service EXTENDS the messaging plugin's own service, so\n"
+        "    // Firebase's messaging API has to be on THIS module's compile classpath.\n"
+        "    // The plugin declares it as `implementation`, which hides it from us; the\n"
+        "    // same version is declared here so the resolved graph is unchanged.\n"
+        '    implementation "%s:%s"\n'
+        "%s"
+        % (GRADLE_BEGIN, FIREBASE_MESSAGING_COORDINATE, version, GRADLE_END)
+    )
+
+
+def strip_gradle_block(text):
+    """Remove a previously written block, so a re-run changes nothing."""
+    while GRADLE_BEGIN in text:
+        start = text.index(GRADLE_BEGIN)
+        line_start = text.rfind("\n", 0, start) + 1
+        end = text.index(GRADLE_END, start) + len(GRADLE_END)
+        tail = text[end:]
+        if tail.startswith("\n"):
+            tail = tail[1:]
+        text = text[:line_start] + tail
+    return text
+
+
+def dependencies_span(text):
+    """(start, end) of the module's own `dependencies { ... }` block."""
+    match = re.search(r"(?m)^dependencies\s*\{", text)
+    if not match:
+        fail(
+            "%s declares no dependencies block — the Live Update cannot add "
+            "firebase-messaging, and its service will not compile" % APP_GRADLE
+        )
+    depth = 0
+    for index in range(match.end() - 1, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return match.start(), index
+    return match.start(), len(text)
+
+
+def validate_gradle(text, version):
+    """
+    The checks Gradle would only reach after it starts, performed before it.
+
+    A missing or misplaced dependency is a compile failure at
+    `:app:compileReleaseJavaWithJavac`, so it is caught here instead.
+    """
+    problems = []
+    declared = text.count(FIREBASE_MESSAGING_COORDINATE)
+    if declared != 1:
+        problems.append(
+            "%s is declared %d times in %s (expected 1)"
+            % (FIREBASE_MESSAGING_COORDINATE, declared, APP_GRADLE)
+        )
+
+    start, end = dependencies_span(text)
+    at = text.find(FIREBASE_MESSAGING_COORDINATE)
+    if at != -1 and not (start < at < end):
+        problems.append("%s is declared outside the dependencies block" % FIREBASE_MESSAGING_COORDINATE)
+
+    expected = "%s:%s" % (FIREBASE_MESSAGING_COORDINATE, version)
+    if expected not in text:
+        problems.append("expected %s (the version the messaging plugin resolves)" % expected)
+
+    return problems
+
+
+def patch_gradle(path, version, check=False):
+    """
+    Put firebase-messaging on the app module's compile classpath.
+
+    `check=True` validates the file as it is on disk and writes nothing.
+    """
+    if not path.exists():
+        fail("%s not found. Run `npx cap add android` first." % path)
+
+    text = path.read_text()
+    if check:
+        problems = validate_gradle(text, version)
+        if problems:
+            fail("android/app/build.gradle does not compile the Live Update: " + "; ".join(problems))
+        return text
+
+    text = strip_gradle_block(text)
+    start, _end = dependencies_span(text)
+    # Right after the line that opens the block: a plain dependency line, which is
+    # what every other entry in this file is.
+    insert_at = text.index("\n", start) + 1
+    text = text[:insert_at] + gradle_block(version) + "\n" + text[insert_at:]
+
+    problems = validate_gradle(text, version)
+    if problems:
+        fail("the patched android/app/build.gradle would not compile the Live Update: " + "; ".join(problems))
+
+    path.write_text(text)
+    return text
+
+
 def install_sources(app_java_dir, package):
     app_java_dir.mkdir(parents=True, exist_ok=True)
     written = []
@@ -532,10 +682,14 @@ def main():
                 break
 
     res_drawable_dir = root / "android/app/src/main/res/drawable"
+    app_gradle = root / APP_GRADLE
+    messaging_version, messaging_source = resolve_firebase_messaging_version(root)
 
     report = {
         "package": package,
         "package_source": package_source,
+        "firebase_messaging_version": messaging_version,
+        "firebase_messaging_source": messaging_source,
         "sources": [],
         "drawables": [],
         "checks": {},
@@ -552,13 +706,19 @@ def main():
         # the wrong parent is a resource-linking failure at the AAB step, so it is
         # caught here instead.
         patch_manifest(manifest, package, check=True)
+        # …and so is a missing compile-time dependency: it fails the same Android
+        # build one step later, in javac, where the message names Firebase classes
+        # rather than the module that lacks them.
+        patch_gradle(app_gradle, messaging_version, check=True)
     else:
         report["sources"] = install_sources(app_java_dir, package)
         report["drawables"] = install_drawables(res_drawable_dir)
         patch_manifest(manifest, package)
+        report["gradle"] = bool(patch_gradle(app_gradle, messaging_version))
         report["plugin_registered"] = register_plugin(app_java_dir)
 
     text = manifest.read_text()
+    gradle_text = app_gradle.read_text() if app_gradle.exists() else ""
     main_activity = app_java_dir / "MainActivity.java"
     activity_text = main_activity.read_text() if main_activity.exists() else ""
     layout = scan_manifest(text)
@@ -578,6 +738,9 @@ def main():
             for element, _name in LIVE_COMPONENTS
         ),
         "promoted_permission": "POST_PROMOTED_NOTIFICATIONS" in text,
+        "firebase_messaging": (
+            "%s:%s" % (FIREBASE_MESSAGING_COORDINATE, messaging_version) in gradle_text
+        ),
         "plugin_registered": "JobaLiveUpdatePlugin" in activity_text,
         "sources": all((app_java_dir / name).exists() for name in JAVA_FILES),
         "structure_valid": not report["structure"],
@@ -587,6 +750,7 @@ def main():
         print(json.dumps(report, indent=2))
     else:
         print("[live-update] package: %s (from %s)" % (package, package_source))
+        print("[live-update] firebase-messaging: %s (from %s)" % (messaging_version, messaging_source))
         for key, ok in report["checks"].items():
             print("[live-update] %s %s" % ("OK  " if ok else "MISS", key))
         for problem in report["structure"]:
