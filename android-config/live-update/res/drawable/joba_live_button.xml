@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The action button: the app's approved green gradient
+     (linear-gradient(135deg,#059669,#047857)), radius 14. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:startColor="#059669"
+        android:endColor="#047857"
+        android:type="linear" />
+    <corners android:radius="14dp" />
+</shape>

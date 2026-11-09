@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The COLLAPSED card — what the shade shows before it is expanded.
+
+  A custom content view is used for both states, and they are two different
+  layouts on purpose: one tall card cannot serve a 64dp collapsed slot, so
+  reusing it would clip the title under the action button. Collapsed keeps only
+  what identifies the card at a glance — the bubble, the sentence, the flow
+  position — and expands into the full card above.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/joba_compact_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layoutDirection="rtl"
+    android:gravity="center_vertical"
+    android:background="@drawable/joba_live_card_bg"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
+
+    <ImageView
+        android:id="@+id/joba_compact_icon"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:padding="8dp"
+        android:background="@drawable/joba_live_bubble"
+        android:scaleType="fitCenter"
+        android:contentDescription="@null" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:orientation="vertical"
+        android:layoutDirection="rtl">
+
+        <TextView
+            android:id="@+id/joba_compact_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#0D1E40"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_compact_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="11.5sp"
+            android:textColor="#4B6083" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/joba_compact_counter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:background="@drawable/joba_live_chip"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="#1A6FD4"
+        android:maxLines="1" />
+</LinearLayout>

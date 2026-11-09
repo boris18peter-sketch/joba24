@@ -92,7 +92,28 @@ JAVA_FILES = [
     "JobaLiveUpdatePlugin.java",
 ]
 
-DRAWABLES = ["ic_joba_live.xml"]
+DRAWABLES = [
+    "ic_joba_live.xml",
+    # The designed card's own surfaces: the white card with its hairline, the
+    # icon bubble, the "2/3" capsule, the rail's two segment states and the
+    # action button's green gradient.
+    "joba_live_card_bg.xml",
+    "joba_live_bubble.xml",
+    "joba_live_chip.xml",
+    "joba_live_segment_on.xml",
+    "joba_live_segment_off.xml",
+    "joba_live_button.xml",
+]
+
+# ── THE CARD ITSELF ─────────────────────────────────────────────────────────
+# A RemoteViews layout is the only way an Android notification can be a designed
+# card, so the Live Update ships two: the expanded card and the collapsed row.
+# They are installed like any other resource — if they are missing the card
+# silently degrades to a plain notification, which is the look this replaces.
+LAYOUTS = [
+    "joba_live_update_card.xml",
+    "joba_live_update_compact.xml",
+]
 
 PLUGIN_SERVICE = "io.capawesome.capacitorjs.plugins.firebase.messaging.MessagingService"
 
@@ -614,6 +635,19 @@ def install_drawables(res_drawable_dir):
     return written
 
 
+def install_layouts(res_layout_dir):
+    """The card's two RemoteViews layouts, and the ids the notifier binds."""
+    res_layout_dir.mkdir(parents=True, exist_ok=True)
+    written = []
+    for name in LAYOUTS:
+        source = RES_DIR / "layout" / name
+        if not source.exists():
+            fail("missing layout: %s" % source)
+        shutil.copyfile(source, res_layout_dir / name)
+        written.append(name)
+    return written
+
+
 def register_plugin(app_java_dir):
     """
     Register the Capacitor plugin in MainActivity.
@@ -682,6 +716,7 @@ def main():
                 break
 
     res_drawable_dir = root / "android/app/src/main/res/drawable"
+    res_layout_dir = root / "android/app/src/main/res/layout"
     app_gradle = root / APP_GRADLE
     messaging_version, messaging_source = resolve_firebase_messaging_version(root)
 
@@ -692,6 +727,7 @@ def main():
         "firebase_messaging_source": messaging_source,
         "sources": [],
         "drawables": [],
+        "layouts": [],
         "checks": {},
         "structure": [],
     }
@@ -700,6 +736,13 @@ def main():
         for name in JAVA_FILES:
             if not (app_java_dir / name).exists():
                 fail("%s/%s is missing — the Live Update is not installed" % (app_java_dir, name))
+        # The card's layouts are resources, not code: without them the notifier
+        # still compiles (it only references R.layout) and the notification then
+        # degrades to plain text, which is a silent visual regression rather than
+        # a build error. So the check is explicit.
+        for name in LAYOUTS:
+            if not (res_layout_dir / name).exists():
+                fail("res/layout/%s is missing — the card would draw as plain text" % name)
         if BEGIN not in manifest.read_text():
             fail("AndroidManifest.xml has no Live Update block")
         # The generated manifest is validated BEFORE Gradle runs: a component in
@@ -713,6 +756,7 @@ def main():
     else:
         report["sources"] = install_sources(app_java_dir, package)
         report["drawables"] = install_drawables(res_drawable_dir)
+        report["layouts"] = install_layouts(res_layout_dir)
         patch_manifest(manifest, package)
         report["gradle"] = bool(patch_gradle(app_gradle, messaging_version))
         report["plugin_registered"] = register_plugin(app_java_dir)
@@ -743,6 +787,7 @@ def main():
         ),
         "plugin_registered": "JobaLiveUpdatePlugin" in activity_text,
         "sources": all((app_java_dir / name).exists() for name in JAVA_FILES),
+        "card_layouts": all((res_layout_dir / name).exists() for name in LAYOUTS),
         "structure_valid": not report["structure"],
     }
 
@@ -756,8 +801,8 @@ def main():
         for problem in report["structure"]:
             print("[live-update] PROBLEM %s" % problem)
         if report["sources"]:
-            print("[live-update] installed %d source files, %d drawables"
-                  % (len(report["sources"]), len(report["drawables"])))
+            print("[live-update] installed %d source files, %d drawables, %d layouts"
+                  % (len(report["sources"]), len(report["drawables"]), len(report["layouts"])))
 
     missing = [key for key, ok in report["checks"].items() if not ok]
     if missing:

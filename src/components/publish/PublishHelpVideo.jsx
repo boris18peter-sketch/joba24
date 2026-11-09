@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Play, X } from 'lucide-react';
 import { EXPLAINER_VIDEO_URL } from '@/lib/explainerVideo';
+import HelpVideoPlayer from '@/components/publish/HelpVideoPlayer';
 
 /**
  * The publisher's own explainer video, on the publish form.
@@ -97,20 +98,13 @@ export default function PublishHelpVideo() {
               </button>
             </div>
 
-            <video
-              src={VIDEO_URL}
-              controls
-              autoPlay
-              playsInline
-              preload="metadata"
-              style={{
-                display: 'block', width: '100%',
-                maxHeight: '70vh',
-                borderRadius: 14,
-                background: '#000',
-                objectFit: 'contain',
-              }}
-            />
+            {/* ── THE APP'S OWN PLAYER, NOT THE SYSTEM'S ────────────────────────
+                A bare `<video controls>` inside the Android WebView hands the
+                element to the platform media UI — its seek bar, its three-dot
+                overflow menu, its fullscreen pill — which is why the modal read
+                as a stock system player dropped into a designed sheet. The
+                controls are ours now. */}
+            <HelpVideoPlayer src={VIDEO_URL} />
 
             <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, textAlign: 'center', padding: '10px 6px 2px', lineHeight: 1.5 }}>
               הסרטון נפתח רק כשבוחרים לראות אותו, ואפשר לסגור אותו ולהמשיך למלא את הטופס בכל רגע.

@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { PartyPopper, Check, ChevronLeft } from 'lucide-react';
 import PopupClose from '@/components/ui/PopupClose';
 import { useLanguage } from '@/lib/LanguageContext';
+import { setPopupBlock } from '@/lib/popupGate';
 
 /**
  * TaskCompletedCongratsPopup — the warm closing note of the completion flow.
@@ -32,6 +34,23 @@ import { useLanguage } from '@/lib/LanguageContext';
 export default function TaskCompletedCongratsPopup({ task, role, onClose }) {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
+
+  // ── THE NOTE HOLDS THE SCREEN WHILE IT IS ON SCREEN ────────────────────────
+  // The rating sheet and the bonus each claimed the popup gate; this note did
+  // not. Its own effect in Layout waits for a free screen before opening, but
+  // once open it held nothing — so the bonus, which arrives seconds later from
+  // the server when the rating is submitted, took the gate as free and landed ON
+  // TOP of it. That is the pile the user reported: "the completion popup opens by
+  // itself and then the bonus jumps over it".
+  //
+  // Claiming the gate here makes the two strictly sequential in both directions:
+  // the bonus cannot open while this note is up (useLoyaltyBonus re-checks the
+  // gate every 700ms while a reward is pending), and this note cannot open while
+  // a bonus is up. Released on unmount, so nothing can be left holding it.
+  useEffect(() => {
+    setPopupBlock('congrats', true);
+    return () => setPopupBlock('congrats', false);
+  }, []);
 
   const isWorker = role === 'worker';
 

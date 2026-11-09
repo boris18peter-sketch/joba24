@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -823,5 +823,136 @@ describe('Android Live Update — compile-time dependency', () => {
     const report = JSON.parse(result.stdout);
     expect(report.firebase_messaging_version).toBe(FIREBASE_MESSAGING_FALLBACK);
     expect(report.checks.firebase_messaging).toBe(true);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7. THE DESIGNED CARD — the iOS Lock Screen card, drawn on Android
+   ──────────────────────────────────────────────────────────────────────────
+   The card used to be a plain system notification: a title, a body, a BigText
+   list and a progress bar, styled by whatever launcher the device runs. That is
+   why it read as "unclear and nothing like iOS" — it was not a card.
+
+   A RemoteViews layout is the only way a notification can be one, so these tests
+   pin the four things that make it hold together:
+     • the layout the notifier binds exists, and declares every id it names (a
+       missing id is a silent no-op in RemoteViews, not a crash — the card would
+       simply stop updating that line);
+     • the card is a real designed surface in the app's palette, not text;
+     • the button is a genuine tap target, and it NEVER leads nowhere;
+     • the build step installs the layouts, and fails loudly when one is missing.
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('Android Live Update — the designed card', () => {
+  const RES = join(ROOT, 'android-config/live-update/res');
+  const CARD = read(join(RES, 'layout/joba_live_update_card.xml'));
+  const COMPACT = read(join(RES, 'layout/joba_live_update_compact.xml'));
+
+  it('declares every view id the notifier binds', () => {
+    // RemoteViews setters are reflective: an id that has no view updates nothing
+    // and reports nothing, so the binding is verified against the XML itself.
+    const used = new Set([...source('JobaLiveUpdateNotifier.java').matchAll(/R\.id\.(\w+)/g)].map((m) => m[1]));
+    const declared = new Set([...(CARD + COMPACT).matchAll(/@\+id\/(\w+)/g)].map((m) => m[1]));
+    expect(used.size).toBeGreaterThan(8);
+    for (const id of used) expect(declared.has(id), `${id} is bound but not declared`).toBe(true);
+  });
+
+  it('draws the iOS card blocks, not a paragraph of text', () => {
+    const notifier = source('JobaLiveUpdateNotifier.java');
+    expect(notifier).toContain('new RemoteViews(context.getPackageName(), R.layout.joba_live_update_card)');
+    expect(notifier).toContain('new RemoteViews(context.getPackageName(), R.layout.joba_live_update_compact)');
+    // Both states get a custom view: one tall card cannot serve a 64dp slot.
+    expect(notifier).toContain('builder.setCustomBigContentView(card)');
+    expect(notifier).toContain('builder.setCustomContentView(compact != null ? compact : card)');
+
+    // The blocks, in the iOS order.
+    const order = ['joba_card_icon', 'joba_card_title', 'joba_card_subtitle',
+      'joba_card_counter', 'joba_card_segments', 'joba_card_labels', 'joba_card_action'];
+    const positions = order.map((id) => CARD.indexOf(`@+id/${id}`));
+    expect(positions.every((at) => at > 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+
+    // The step rail is three-state, like the widget's: reached / current / ahead.
+    expect(notifier).toContain('R.drawable.joba_live_segment_on');
+    expect(notifier).toContain('index == current ? BRAND : (index < current ? TEXT1 : TEXT3)');
+    expect(notifier).toContain('Paint.FAKE_BOLD_TEXT_FLAG');
+  });
+
+  it('paints the app\'s own tokens onto the card', () => {
+    expect(read(join(RES, 'drawable/joba_live_segment_on.xml'))).toContain('#1A6FD4');
+    expect(read(join(RES, 'drawable/joba_live_button.xml'))).toContain('#059669');
+    expect(read(join(RES, 'drawable/joba_live_button.xml'))).toContain('#047857');
+    expect(read(join(RES, 'drawable/joba_live_card_bg.xml'))).toContain('#FFFFFF');
+    expect(read(join(RES, 'drawable/joba_live_card_bg.xml'))).toContain('#E4EAF5');
+    expect(read(join(RES, 'drawable/joba_live_bubble.xml'))).toContain('#EFF6FF');
+    // Text tokens live in the layout, and the card is laid out right-to-left.
+    expect(CARD).toContain('#0D1E40'); // --text-1
+    expect(CARD).toContain('#4B6083'); // --text-2
+    expect(CARD).toContain('#94A3B8'); // --text-3
+    expect(CARD).toContain('android:layoutDirection="rtl"');
+  });
+
+  it('does not replace the Android 16 Live Update with our own view', () => {
+    const notifier = source('JobaLiveUpdateNotifier.java');
+    const promoted = notifier.slice(
+      notifier.indexOf('private static Notification buildPromoted('),
+      notifier.indexOf('private static Notification buildOngoing('),
+    );
+    // The promoted card is drawn by the platform from ProgressStyle; forcing a
+    // custom view there would drop the status-bar chip and the Lock Screen slot.
+    expect(promoted).toContain('if (style == null) {');
+    const beforeGuard = promoted.slice(0, promoted.indexOf('if (style == null) {'));
+    expect(beforeGuard).not.toContain('setCustomBigContentView');
+  });
+
+  it('gives the button a real tap target on both surfaces', () => {
+    const notifier = source('JobaLiveUpdateNotifier.java');
+    expect(notifier).toContain('views.setOnClickPendingIntent(R.id.joba_card_action, buttonIntent)');
+    expect(notifier).toContain('views.setOnClickPendingIntent(R.id.joba_card_root, openIntent)');
+    expect(notifier).toContain('views.setOnClickPendingIntent(R.id.joba_compact_root, openIntent)');
+  });
+
+  it('never leaves a tap with nowhere to go', () => {
+    const notifier = source('JobaLiveUpdateNotifier.java');
+    // ── THE REGRESSION ────────────────────────────────────────────────────
+    // The button always broadcast to a receiver, and the receiver's no-capability
+    // path called startActivity — which Android 10+ blocks for a broadcast
+    // receiver. A tap with no capability therefore did NOTHING AT ALL.
+    expect(notifier).toContain('if (!store.canAct(payload.key()) && !store.canActAsInstall())');
+    expect(notifier).toContain('PendingIntent.getActivity(context, requestCode, launch, flags)');
+    expect(notifier).toContain('PendingIntent.getBroadcast(context, requestCode, intent, flags)');
+    // With a capability it still acts in place, without opening the app.
+    expect(notifier).toContain('new Intent(context, JobaLiveUpdateActionReceiver.class)');
+  });
+
+  it('installs the layouts into the generated project', () => {
+    const p = project();
+    const result = run(PATCHER, ['--root', p.root, '--json']);
+    expect(result.code, result.stderr).toBe(0);
+
+    const report = JSON.parse(result.stdout);
+    expect([...report.layouts].sort()).toEqual([
+      'joba_live_update_card.xml',
+      'joba_live_update_compact.xml',
+    ]);
+    expect(report.checks.card_layouts).toBe(true);
+    for (const name of report.layouts) {
+      expect(existsSync(join(p.root, 'android/app/src/main/res/layout', name)), name).toBe(true);
+    }
+    // …and the six card drawables with them.
+    expect(report.drawables).toContain('joba_live_card_bg.xml');
+    expect(report.drawables).toContain('joba_live_button.xml');
+    expect(report.drawables).toContain('joba_live_segment_on.xml');
+  });
+
+  it('fails --check when a card layout is missing', () => {
+    const p = project();
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    expect(run(PATCHER, ['--root', p.root, '--check']).code).toBe(0);
+
+    rmSync(join(p.root, 'android/app/src/main/res/layout/joba_live_update_card.xml'));
+    const checked = run(PATCHER, ['--root', p.root, '--check']);
+    expect(checked.code).not.toBe(0);
+    // Named for what the user would see, not for the resource id.
+    expect(checked.stderr).toContain('would draw as plain text');
   });
 });

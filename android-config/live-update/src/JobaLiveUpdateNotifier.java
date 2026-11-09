@@ -6,9 +6,15 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.RemoteViews;
 
 import androidx.core.app.NotificationCompat;
 
@@ -22,16 +28,21 @@ import java.util.List;
  * The card is not re-designed for Android; it is the SAME card, mapped onto what
  * a notification can actually do:
  *
- *   iOS Lock Screen                       Android notification
+ *   iOS Lock Screen                       this notification
  *   ─────────────────────────────────     ───────────────────────────────────
- *   brand mark + app name                 large icon = the app's own icon
- *   title (the flow's own words)          content title
- *   subtitle (what to do next)            content text, wrapped in BigText
- *   step row with a tick per step          a segmented progress bar + "2/3"
- *   step labels                           the labels, in the expanded text
- *   one action button                     one action button
- *   Hebrew, forced right-to-left          the same strings, marked RTL
+ *   white card, 22pt radius, hairline     res/layout/joba_live_update_card.xml
+ *   icon bubble (44 / radius 14)          the bubble + the tinted step glyph
+ *   title, bold --text-1                  joba_card_title
+ *   subtitle, --text-2, 2 lines           joba_card_subtitle
+ *   "2/3" capsule                         joba_card_counter
+ *   step rail, reached = brand blue       joba_card_segments (+ labels)
+ *   one full-width green action           joba_card_action
+ *   Hebrew, forced right-to-left          layoutDirection="rtl" + RTL strings
  *   brand blue / success green            the same two colours, from the palette
+ *
+ * The title / text / action this builder also sets are the FALLBACK a launcher
+ * uses if it refuses a custom view (and what a heads-up peek shows) — not the
+ * card. See `buildCardViews`.
  *
  * The palette is copied verbatim from the widget (JobaPalette in
  * ios/App/JobaActivityWidget/JobaActivityWidgetBundle.swift) so the two surfaces
@@ -63,7 +74,25 @@ public final class JobaLiveUpdateNotifier {
     private static final int SUCCESS = 0xFF059669;
     private static final int TEXT1 = 0xFF0D1E40;
     private static final int TEXT2 = 0xFF4B6083;
+    private static final int TEXT3 = 0xFF94A3B8;
     private static final int BORDER = 0xFFE4EAF5;
+
+    /**
+     * The rail's four slots.
+     *
+     * Four is the SAME ceiling the iOS rail uses (`min(payload.total, 4)` when the
+     * promoted style builds its segments), and it is fixed here because a
+     * RemoteViews layout cannot add views at runtime: a flow longer than four
+     * steps shows its first four positions rather than a rail that stops meaning
+     * anything. `total` still drives the "2/3" capsule, so the number is never
+     * wrong even when the rail is cropped.
+     */
+    private static final int[] SEGMENT_IDS = {
+            R.id.joba_seg_1, R.id.joba_seg_2, R.id.joba_seg_3, R.id.joba_seg_4,
+    };
+    private static final int[] LABEL_IDS = {
+            R.id.joba_label_1, R.id.joba_label_2, R.id.joba_label_3, R.id.joba_label_4,
+    };
 
     /** The intent action the action button broadcasts. */
     public static final String ACTION_BUTTON = "__PKG__.LIVE_UPDATE_BUTTON";
@@ -188,6 +217,24 @@ public final class JobaLiveUpdateNotifier {
             }
 
             applyLargeIcon(builder, context);
+
+            // ── ONLY WHEN THERE IS NO SYSTEM CARD TO SHOW ─────────────────────
+            // A device that builds the progress style gets the platform's own
+            // promoted Live Update, and a custom view there would replace the
+            // system card with ours — losing the status-bar chip and the Lock
+            // Screen placement that make it a Live Update at all. When the style
+            // could NOT be built (reflection is version-dependent), this
+            // notification is just an ordinary shade card, so it gets the designed
+            // layout like every other Android version.
+            if (style == null) {
+                RemoteViews card = buildCardViews(context, payload, openIntent, buttonIntent);
+                if (card != null) {
+                    RemoteViews compact = buildCompactViews(context, payload, openIntent);
+                    builder.setCustomContentView(compact != null ? compact : card);
+                    builder.setCustomBigContentView(card);
+                }
+            }
+
             return builder.build();
         } catch (Throwable ignored) {
             return null;
@@ -234,6 +281,23 @@ public final class JobaLiveUpdateNotifier {
                         R.drawable.ic_joba_live,
                         JobaLiveUpdatePayload.rtl(payload.actionLabel),
                         buttonIntent).build());
+            }
+
+            // ── THE CARD THE USER ACTUALLY SEES ───────────────────────────────
+            // Everything above is the fallback: the title, the text and the action
+            // are what a launcher draws if it refuses a custom view, and what a
+            // heads-up peek shows. The designed card — the same blocks as the iOS
+            // Lock Screen card — comes from the two RemoteViews layouts below, so
+            // the shade shows a real card instead of a paragraph of text with a
+            // progress bar underneath it.
+            //
+            // The collapsed slot gets its OWN layout: one tall card cannot serve a
+            // 64dp row, so reusing it would clip the title under the button.
+            RemoteViews card = buildCardViews(context, payload, openIntent, buttonIntent);
+            if (card != null) {
+                RemoteViews compact = buildCompactViews(context, payload, openIntent);
+                builder.setCustomContentView(compact != null ? compact : card);
+                builder.setCustomBigContentView(card);
             }
 
             try {
@@ -367,18 +431,211 @@ public final class JobaLiveUpdateNotifier {
         return PendingIntent.getBroadcast(context, notificationId(payload.key()), intent, flags);
     }
 
-    /** The card's ONE action — the same one the Lock Screen button performs. */
+    /**
+     * The card's ONE action — and it now behaves the way the label promises.
+     *
+     * ── WHY A TAP USED TO DO NOTHING AT ALL ─────────────────────────────────
+     * The button always broadcast to JobaLiveUpdateActionReceiver, and the
+     * receiver could only act if the app had already minted this card a
+     * capability. Without one it fell back to `startActivity` — and a broadcast
+     * receiver has no visible UI, so Android 10+ blocks that background activity
+     * start outright. The result was a tap that produced nothing whatsoever: no
+     * request, no app, no explanation. That is exactly what "the buttons do not
+     * respond" means at the OS level.
+     *
+     * The decision is therefore made HERE, where the card is drawn, and it is made
+     * once for the whole life of this revision:
+     *
+     *   a capability exists → broadcast the action. It posts straight to the
+     *     endpoint, the card is corrected from the server's own answer, and no app
+     *     opens — the Lock Screen behaviour.
+     *   no capability yet  → the SAME button, the SAME label, opens the task in the
+     *     app. A notification tap is a user gesture, so the launch is always
+     *     allowed, and the app is where a fresh capability (and the action itself)
+     *     lives. This is precisely what the iOS card does when its capability has
+     *     expired, and it is why the label never has to change.
+     */
     private static PendingIntent buttonIntent(Context context, JobaLiveUpdatePayload payload) {
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+        // A distinct request code from the open intent, or the two PendingIntents
+        // would be the same object and the tap would do the wrong thing.
+        int requestCode = notificationId(payload.key()) + 1;
+
+        JobaLiveUpdateStore store = new JobaLiveUpdateStore(context);
+        if (!store.canAct(payload.key()) && !store.canActAsInstall()) {
+            Intent launch = new Intent(context, MainActivity.class);
+            launch.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            launch.putExtra("joba_open_task", payload.taskId);
+            return PendingIntent.getActivity(context, requestCode, launch, flags);
+        }
+
         Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
         intent.setAction(ACTION_BUTTON);
         intent.putExtra("task_id", payload.taskId);
         intent.putExtra("role", payload.role);
         intent.putExtra("action_id", payload.actionId);
         intent.putExtra("action_step", payload.actionStep);
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
-        // A distinct request code from the open intent, or the two PendingIntents
-        // would be the same object and the tap would do the wrong thing.
-        return PendingIntent.getBroadcast(context, notificationId(payload.key()) + 1, intent, flags);
+        return PendingIntent.getBroadcast(context, requestCode, intent, flags);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       THE DESIGNED CARD
+       ══════════════════════════════════════════════════════════════════════ */
+
+    /**
+     * The expanded card: bubble, title, subtitle, position capsule, step rail with
+     * its labels, and the one action — the iOS card's own blocks, in its order.
+     *
+     * Every value is pushed through RemoteViews setters rather than baked into the
+     * layout, because this view is re-bound on every revision and inflating a new
+     * one per update is what makes a card flicker.
+     */
+    private static RemoteViews buildCardViews(
+            Context context,
+            JobaLiveUpdatePayload payload,
+            PendingIntent openIntent,
+            PendingIntent buttonIntent) {
+        try {
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.joba_live_update_card);
+
+            Bitmap glyph = glyphBitmap(context, dpToPx(context, 22), colorFor(payload));
+            if (glyph != null) views.setImageViewBitmap(R.id.joba_card_icon, glyph);
+
+            views.setTextViewText(R.id.joba_card_title, orTitle(payload));
+            String subtitle = JobaLiveUpdatePayload.rtl(payload.subtitle);
+            if (subtitle.isEmpty()) {
+                views.setViewVisibility(R.id.joba_card_subtitle, View.GONE);
+            } else {
+                views.setTextViewText(R.id.joba_card_subtitle, subtitle);
+            }
+
+            // The "1/3" the card shows beside the rail — the same value the
+            // status-bar chip carries on Android 16.
+            String counter = payload.progressText();
+            if (counter.isEmpty()) {
+                views.setViewVisibility(R.id.joba_card_counter, View.GONE);
+            } else {
+                views.setTextViewText(R.id.joba_card_counter, JobaLiveUpdatePayload.rtl(counter));
+            }
+
+            fillRail(views, payload);
+
+            if (buttonIntent != null && payload.hasAction()) {
+                views.setTextViewText(R.id.joba_card_action, JobaLiveUpdatePayload.rtl(payload.actionLabel));
+                views.setViewVisibility(R.id.joba_card_action, View.VISIBLE);
+                views.setOnClickPendingIntent(R.id.joba_card_action, buttonIntent);
+            } else {
+                views.setViewVisibility(R.id.joba_card_action, View.GONE);
+            }
+
+            views.setOnClickPendingIntent(R.id.joba_card_root, openIntent);
+            return views;
+        } catch (Throwable ignored) {
+            // A launcher that refuses the layout falls back to the title/text/action
+            // this notification already carries — never to an empty card.
+            return null;
+        }
+    }
+
+    /** The collapsed row: the bubble, the sentence and the position, nothing else. */
+    private static RemoteViews buildCompactViews(
+            Context context,
+            JobaLiveUpdatePayload payload,
+            PendingIntent openIntent) {
+        try {
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.joba_live_update_compact);
+
+            Bitmap glyph = glyphBitmap(context, dpToPx(context, 18), colorFor(payload));
+            if (glyph != null) views.setImageViewBitmap(R.id.joba_compact_icon, glyph);
+
+            views.setTextViewText(R.id.joba_compact_title, orTitle(payload));
+            String subtitle = JobaLiveUpdatePayload.rtl(payload.subtitle);
+            views.setTextViewText(R.id.joba_compact_subtitle, subtitle.isEmpty()
+                    ? JobaLiveUpdatePayload.rtl(payload.categoryLabel) : subtitle);
+
+            String counter = payload.progressText();
+            if (counter.isEmpty()) {
+                views.setViewVisibility(R.id.joba_compact_counter, View.GONE);
+            } else {
+                views.setTextViewText(R.id.joba_compact_counter, JobaLiveUpdatePayload.rtl(counter));
+            }
+
+            views.setOnClickPendingIntent(R.id.joba_compact_root, openIntent);
+            return views;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * The rail, filled the way the iOS one is.
+     *
+     * Three states per slot, the same three the Lock Screen draws:
+     *   behind the work  → brand blue, label in --text-1;
+     *   the current step → brand blue, label in brand blue and bold;
+     *   still ahead      → border grey, label in --text-3.
+     * A flow with no position yet (the OPEN phase) hides the rail and its labels
+     * entirely rather than drawing a row of empty dashes.
+     */
+    private static void fillRail(RemoteViews views, JobaLiveUpdatePayload payload) {
+        boolean show = payload.total > 0 && payload.step >= 0;
+        views.setViewVisibility(R.id.joba_card_segments, show ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.joba_card_labels, show ? View.VISIBLE : View.GONE);
+        if (!show) return;
+
+        int slots = Math.min(payload.total, SEGMENT_IDS.length);
+        int current = Math.min(Math.max(payload.step, 0), slots - 1);
+
+        for (int index = 0; index < SEGMENT_IDS.length; index += 1) {
+            boolean used = index < slots;
+            views.setViewVisibility(SEGMENT_IDS[index], used ? View.VISIBLE : View.GONE);
+            views.setViewVisibility(LABEL_IDS[index], used ? View.VISIBLE : View.GONE);
+            if (!used) continue;
+
+            views.setInt(SEGMENT_IDS[index], "setBackgroundResource",
+                    index <= current
+                            ? R.drawable.joba_live_segment_on
+                            : R.drawable.joba_live_segment_off);
+
+            String label = index < payload.stepLabels.size() ? payload.stepLabels.get(index) : "";
+            views.setTextViewText(LABEL_IDS[index], JobaLiveUpdatePayload.rtl(label));
+            views.setTextColor(LABEL_IDS[index],
+                    index == current ? BRAND : (index < current ? TEXT1 : TEXT3));
+            // `TextView.setPaintFlags` is reachable from RemoteViews, and it is the
+            // only way to make ONE label heavier without a second layout: the step
+            // the work is on is the only one that carries weight.
+            views.setInt(LABEL_IDS[index], "setPaintFlags",
+                    Paint.ANTI_ALIAS_FLAG | (index == current ? Paint.FAKE_BOLD_TEXT_FLAG : 0));
+        }
+    }
+
+    /**
+     * The app's own step glyph, tinted, as a bitmap.
+     *
+     * RemoteViews cannot tint a drawable, so the vector is drawn into a bitmap in
+     * the card's colour once per revision. The bubble behind it is a shape
+     * drawable in the layout, so only the glyph needs to be a bitmap.
+     */
+    private static Bitmap glyphBitmap(Context context, int sizePx, int color) {
+        try {
+            Drawable glyph = context.getDrawable(R.drawable.ic_joba_live);
+            if (glyph == null || sizePx <= 0) return null;
+            glyph = glyph.mutate();
+            glyph.setTint(color);
+            Bitmap bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            glyph.setBounds(0, 0, sizePx, sizePx);
+            glyph.draw(canvas);
+            return bitmap;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static int dpToPx(Context context, int dp) {
+        return (int) (dp * context.getResources().getDisplayMetrics().density + 0.5f);
     }
 }

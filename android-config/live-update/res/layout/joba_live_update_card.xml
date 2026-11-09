@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Live Update CARD — the Android rendition of the iOS Lock Screen activity.
+
+  ── WHY THIS FILE EXISTS ────────────────────────────────────────────────────
+  Until now the card was a plain system notification: a title, a body and a
+  BigText list, drawn by the launcher in whatever style the device uses. That is
+  why it read as "unclear and not like iOS" — because it was not a card at all,
+  it was text in a notification slot.
+
+  A RemoteViews layout is the ONLY way an Android notification can be an actual
+  designed card, so the iOS blocks are rebuilt here one for one:
+
+    iOS Lock Screen card                   this layout
+    ─────────────────────────────────      ─────────────────────────────────
+    icon bubble (44 / radius 14)           joba_card_icon, 40dp, radius 12
+    title, bold text-1                     joba_card_title
+    subtitle, text-2, 2 lines              joba_card_subtitle
+    "2/3" capsule                          joba_card_counter
+    3-step rail, reached = brand blue      joba_card_segments (4 slots)
+    step labels under the rail             joba_card_labels
+    full-width green action button         joba_card_action
+    white card, hair border                joba_live_card_bg
+
+  ── REMOTEVIEWS RULES OBEYED HERE ───────────────────────────────────────────
+  Only views on the RemoteViews allowlist are used (LinearLayout, TextView,
+  ImageView). `android.view.View` is NOT allowed, which is why the rail's
+  segments and the labels are TextViews rather than plain Views. Every colour a
+  running card can change is set from Java (`setTextColor`, `setInt(...,
+  "setBackgroundResource", ...)`, `setViewVisibility`), never by re-inflating.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/joba_card_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:background="@drawable/joba_live_card_bg"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
+
+    <!-- ── Header: the bubble, the two lines that say what is happening, and
+         the flow position at the far edge, exactly as the iOS card stacks
+         them. ─────────────────────────────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layoutDirection="rtl"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/joba_card_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="9dp"
+            android:background="@drawable/joba_live_bubble"
+            android:scaleType="fitCenter"
+            android:contentDescription="@null" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:orientation="vertical"
+            android:layoutDirection="rtl">
+
+            <TextView
+                android:id="@+id/joba_card_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#0D1E40"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/joba_card_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:textSize="12sp"
+                android:textColor="#4B6083"
+                android:lineSpacingExtra="1dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/joba_card_counter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:background="@drawable/joba_live_chip"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#1A6FD4"
+            android:maxLines="1" />
+    </LinearLayout>
+
+    <!-- ── The step rail. Four slots, the same ceiling the iOS rail uses, so a
+         flow with more steps is represented by its first four rather than by a
+         bar that no longer means anything. Hidden entirely when the flow has no
+         steps (the OPEN phase), because an empty rail is a row of grey dashes. -->
+    <LinearLayout
+        android:id="@+id/joba_card_segments"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"
+        android:layoutDirection="rtl">
+
+        <TextView
+            android:id="@+id/joba_seg_1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/joba_live_segment_off" />
+
+        <TextView
+            android:id="@+id/joba_seg_2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="5dp"
+            android:background="@drawable/joba_live_segment_off" />
+
+        <TextView
+            android:id="@+id/joba_seg_3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="5dp"
+            android:background="@drawable/joba_live_segment_off" />
+
+        <TextView
+            android:id="@+id/joba_seg_4"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="5dp"
+            android:background="@drawable/joba_live_segment_off" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/joba_card_labels"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:orientation="horizontal"
+        android:layoutDirection="rtl">
+
+        <TextView
+            android:id="@+id/joba_label_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="10.5sp"
+            android:textColor="#94A3B8"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_label_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="10.5sp"
+            android:textColor="#94A3B8"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_label_3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="10.5sp"
+            android:textColor="#94A3B8"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_label_4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="10.5sp"
+            android:textColor="#94A3B8"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- ── The ONE action, in the app's own approved green gradient. It is here
+         rather than only in the system action row because the action row sits
+         below the card in a strip the launcher styles, which is what made the
+         button look like a footnote instead of the thing to press. ─────────── -->
+    <TextView
+        android:id="@+id/joba_card_action"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:minHeight="46dp"
+        android:gravity="center"
+        android:background="@drawable/joba_live_button"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:textSize="14.5sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:maxLines="2"
+        android:ellipsize="end" />
+</LinearLayout>
