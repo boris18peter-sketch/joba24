@@ -5,7 +5,16 @@ import UIKit
 /// The film the clip is built around. It is streamed from the app's public
 /// storage rather than bundled: the clip must stay under Apple's 15 MB limit,
 /// and the film alone is more than half of that.
-private let clipFilmURL = URL(string: "https://base44.app/api/apps/69e6bdb4986a04a256653a23/files/mp/public/69e6bdb4986a04a256653a23/53c314145_joba24-app-clip.mp4")!
+///
+/// THE CDN URL, NOT THE APP'S FILE ENDPOINT. These are the same file, but the
+/// `/api/apps/.../files/mp/public/...` form answers with a 302 redirect on every
+/// single request — and, for `HEAD`, with a 404 about half the time. Asking
+/// AVPlayer to discover a film through a redirect hop it has to repeat for every
+/// byte range is one more thing that can fail; the media host serves the file
+/// directly, over https, with `accept-ranges`, an immutable cache and no
+/// redirect at all. If the asset is ever re-uploaded, this is the one line to
+/// update.
+private let clipFilmURL = URL(string: "https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/53c314145_joba24-app-clip.mp4")!
 
 private let brandNavy = Color(red: 0.05, green: 0.12, blue: 0.25)
 private let brandBlue = Color(red: 0.10, green: 0.44, blue: 0.83)
@@ -83,9 +92,12 @@ struct ClipRootView: View {
                     .font(.system(size: 44, weight: .bold))
                     .foregroundColor(brandGold.opacity(0.7))
             } else {
-                ClipVideoPlayer(url: clipFilmURL)
-                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                    .onAppear(perform: checkFilm)
+                ClipVideoPlayer(url: clipFilmURL) {
+                    // The player is the only judge of the film: this fires only
+                    // when the item genuinely failed, never for a slow network.
+                    videoFailed = true
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
             }
         }
         .overlay(
@@ -142,19 +154,4 @@ struct ClipRootView: View {
         overlay.present(in: scene)
     }
 
-    // MARK: - Film health
-
-    /// A film that cannot be reached must not leave a black rectangle. The
-    /// player reports its own failure; the view simply asks once whether the
-    /// asset is readable before it shows the player at all.
-    private func checkFilm() {
-        var request = URLRequest(url: clipFilmURL)
-        request.httpMethod = "HEAD"
-        URLSession.shared.dataTask(with: request) { response, _, _ in
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            if status != 200 {
-                DispatchQueue.main.async { videoFailed = true }
-            }
-        }.resume()
-    }
 }
