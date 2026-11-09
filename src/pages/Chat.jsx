@@ -21,7 +21,6 @@ import ChatHeader from '@/components/chat/ChatHeader';
 import ChatComposer from '@/components/chat/ChatComposer';
 import ChatSkeleton from '@/components/chat/ChatSkeleton';
 import ChatEmptyState from '@/components/chat/ChatEmptyState';
-import TaskContextCard from '@/components/chat/TaskContextCard';
 import DateSeparator from '@/components/chat/DateSeparator';
 import ChatMessageRow from '@/components/chat/ChatMessageRow';
 import NewMessagesPill from '@/components/chat/NewMessagesPill';
@@ -409,8 +408,6 @@ export default function Chat() {
               <Loader2 size={16} className="animate-spin" color="var(--text-3)" />
             </div>
           )}
-
-          {task && <TaskContextCard task={task} isRTL={isRTL} t={t} onOpen={openTask} />}
 
           {initialLoading && messages.length === 0 ? (
             <ChatSkeleton />

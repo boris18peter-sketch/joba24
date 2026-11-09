@@ -44,8 +44,6 @@ export default function PublishTaskBanner() {
             border: 'none', cursor: 'pointer',
             boxShadow: '0 6px 20px rgba(26,111,212,0.4)'
           }}>
-          
-          <span style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900 }}>➕</span>
           פרסם משימה
         </button>
 
