@@ -86,13 +86,34 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {}
 `;
 
-function project() {
+/* The Gradle file a Capacitor 6+ / AGP 8 project generates: the identifier
+   lives here, as `namespace` plus `defaultConfig.applicationId`, and the
+   manifest has no package attribute of its own. */
+const BUILD_GRADLE = `apply plugin: 'com.android.application'
+
+android {
+    namespace "${PACKAGE}"
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "${PACKAGE}"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+    }
+}
+`;
+
+function project({ manifestPackage = true, gradle = BUILD_GRADLE } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'joba-android-live-'));
   const main = join(root, 'android/app/src/main');
   const javaDir = join(main, 'java', ...PACKAGE.split('.'));
   mkdirSync(javaDir, { recursive: true });
-  writeFileSync(join(main, 'AndroidManifest.xml'), MANIFEST);
+  const manifest = manifestPackage ? MANIFEST : MANIFEST.replace(` package="${PACKAGE}"`, '');
+  writeFileSync(join(main, 'AndroidManifest.xml'), manifest);
   writeFileSync(join(javaDir, 'MainActivity.java'), MAIN_ACTIVITY);
+  if (gradle) writeFileSync(join(root, 'android/app/build.gradle'), gradle);
   return { root, javaDir, manifest: join(main, 'AndroidManifest.xml'), mainActivity: join(javaDir, 'MainActivity.java') };
 }
 
@@ -325,6 +346,59 @@ describe('Android Live Update — build wiring', () => {
     const result = run(PATCHER, ['--root', empty]);
     expect(result.code).not.toBe(0);
     expect(result.stderr).toContain('npx cap add android');
+  });
+
+  /* ── REGRESSION: THE SHAPE THAT FAILED THE FIRST REAL ANDROID BUILD ──────
+     Step 9 died with "AndroidManifest.xml declares no package attribute" on a
+     perfectly standard project. Since AGP 8 the identifier is not in the
+     manifest at all — it is `namespace` + `defaultConfig.applicationId` in
+     app/build.gradle — so the patcher has to read Gradle, not the manifest. */
+  it('resolves the app id from Gradle when the manifest has no package attribute', () => {
+    const p = project({ manifestPackage: false });
+    expect(read(p.manifest)).not.toContain('package=');
+
+    const patched = run(PATCHER, ['--root', p.root]);
+    expect(patched.code, patched.stderr).toBe(0);
+    expect(patched.stdout).toContain(PACKAGE);
+
+    // The sources land in the namespace's package folder, fully substituted.
+    for (const name of JAVA_FILES) {
+      const body = read(join(p.javaDir, name));
+      expect(body, `${name} is not in the app package`).toContain(`package ${PACKAGE};`);
+      expect(body).not.toContain('__PKG__');
+    }
+
+    const manifest = read(p.manifest);
+    expect(manifest).toContain(`${PACKAGE}.JobaLiveUpdateMessagingService`);
+    expect(manifest).toContain(`${PACKAGE}.JobaLiveUpdateActionReceiver`);
+    expect(manifest).toContain(`${PACKAGE}.JobaLiveUpdateOpenReceiver`);
+    // The identifier is READ from Gradle, never written back into the manifest.
+    expect(manifest).not.toContain('package="');
+    expect(read(p.mainActivity)).toContain('registerPlugin(JobaLiveUpdatePlugin.class);');
+
+    expect(run(PATCHER, ['--root', p.root, '--check']).code, 'check after patch').toBe(0);
+
+    // …and a second run is still a no-op.
+    const once = read(p.manifest);
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    expect(read(p.manifest)).toBe(once);
+  });
+
+  it('reads applicationId when no namespace is declared', () => {
+    const p = project({
+      manifestPackage: false,
+      gradle: `android {\n    defaultConfig {\n        applicationId "${PACKAGE}"\n    }\n}\n`,
+    });
+    const patched = run(PATCHER, ['--root', p.root]);
+    expect(patched.code, patched.stderr).toBe(0);
+    expect(read(join(p.javaDir, 'JobaLiveUpdatePlugin.java'))).toContain(`package ${PACKAGE};`);
+  });
+
+  it('fails with a clear message when nothing declares the package', () => {
+    const p = project({ manifestPackage: false, gradle: null });
+    const result = run(PATCHER, ['--root', p.root]);
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain("cannot resolve the app's package");
   });
 });
 

@@ -9,7 +9,9 @@ Joba24 adds has to be injected at build time — the same pattern
 `patch-android-manifest.py` and the Meta/TikTok steps already use. This script:
 
   1. copies the Java sources from android-config/live-update/src/ into the
-     generated app package, substituting the real package name;
+     generated app package, substituting the real package name — which is read
+     from the project's Gradle configuration (`namespace` / `applicationId`),
+     because a modern AndroidManifest.xml declares no package at all;
   2. places the notification's small-icon vector in res/drawable/;
   3. points the FCM event at OUR service (a subclass of the plugin's own, so no
      existing push behaviour changes — see the class comment);
@@ -71,17 +73,86 @@ END = "<!-- <<< joba24-live-update -->"
 
 TOOLS_NS = 'xmlns:tools="http://schemas.android.com/tools"'
 
+# Where the app's identity actually lives in a modern Android project.
+GRADLE_FILES = ("android/app/build.gradle", "android/app/build.gradle.kts")
+VARIABLES_GRADLE = "android/variables.gradle"
+CAPACITOR_CONFIG = "capacitor.config.json"
+
 
 def fail(message):
     sys.exit("ERROR: " + message)
 
 
-def read_package(manifest_text):
-    """The app package, taken from the manifest rather than guessed."""
-    match = re.search(r'package="([^"]+)"', manifest_text)
-    if not match:
-        fail("AndroidManifest.xml declares no package attribute")
-    return match.group(1)
+def gradle_value(text, key):
+    """
+    One declared value from a Gradle file: `key "x"` (Groovy), `key = "x"` (Kotlin).
+
+    Anchored to the start of a line and to a quoted value, so a mention of the key
+    in a comment or a variable reference (`applicationId APP_ID`) is not mistaken
+    for the declaration itself.
+    """
+    match = re.search(
+        r'(?m)^\s*%s\s*=?\s*["\']([A-Za-z0-9_.]+)["\']' % re.escape(key), text
+    )
+    return match.group(1) if match else None
+
+
+def resolve_package(root, manifest_text):
+    """
+    The app's Java package, read from the project's Gradle configuration.
+
+    ── WHY THIS IS NOT A MANIFEST LOOKUP ANY MORE ─────────────────────────────
+    Since AGP 8 — and therefore every Capacitor 6+ project, including the one
+    this app builds — AndroidManifest.xml carries NO `package` attribute. The
+    identifier moved into the Gradle build file: `namespace` at the top level and
+    `applicationId` under `defaultConfig`. Reading it from the manifest was what
+    failed the first Android build at step 9: a completely standard, correct
+    project was rejected as if it were malformed.
+
+    `namespace` is preferred over `applicationId` because it is the package the
+    app's own classes are compiled into — MainActivity's `package`, and the name
+    every component declared in the manifest must resolve to. A Capacitor project
+    sets the two to the same value; when a product flavour changes the
+    applicationId they differ, and the class package is still the namespace.
+
+    The manifest attribute is kept as a fallback for an older project, and
+    capacitor.config.json as the last resort. Returns (package, where it came from).
+    """
+    for name in GRADLE_FILES:
+        path = root / name
+        if not path.exists():
+            continue
+        text = path.read_text()
+        for key in ("namespace", "applicationId"):
+            value = gradle_value(text, key)
+            if value:
+                return value, name
+
+    # The oldest Capacitor template declared it once, in variables.gradle.
+    variables = root / VARIABLES_GRADLE
+    if variables.exists():
+        value = gradle_value(variables.read_text(), "applicationId")
+        if value:
+            return value, VARIABLES_GRADLE
+
+    match = re.search(r'(?m)^\s*package="([A-Za-z0-9_.]+)"', manifest_text)
+    if match:
+        return match.group(1), "AndroidManifest.xml"
+
+    config = root / CAPACITOR_CONFIG
+    if config.exists():
+        try:
+            value = json.loads(config.read_text()).get("appId")
+        except json.JSONDecodeError:
+            value = None
+        if value:
+            return value, CAPACITOR_CONFIG
+
+    fail(
+        "cannot resolve the app's package: %s declares no namespace/applicationId, "
+        "AndroidManifest.xml has no package attribute and %s has no appId"
+        % (" / ".join(GRADLE_FILES), CAPACITOR_CONFIG)
+    )
 
 
 def ensure_tools_namespace(manifest_text):
@@ -239,11 +310,33 @@ def main():
     if not manifest.exists():
         fail("%s not found. Run `npx cap add android` first." % manifest)
 
-    package = read_package(manifest.read_text())
+    package, package_source = resolve_package(root, manifest.read_text())
     app_java_dir = root / "android/app/src/main/java" / Path(package.replace(".", "/"))
+
+    # ── AND IF THE CLASSES LIVE SOMEWHERE ELSE, FOLLOW THEM ──────────────────
+    # `namespace` and the folder MainActivity is generated into can disagree in a
+    # project that was re-identified (a renamed appId). Our classes must sit in
+    # the SAME package as MainActivity, because that is the package the manifest's
+    # component names resolve against — so MainActivity's own `package` line is
+    # the final authority when the derived folder does not hold it.
+    if not (app_java_dir / "MainActivity.java").exists():
+        for candidate in (root / "android/app/src/main/java").rglob("MainActivity.java"):
+            declared = re.search(r'(?m)^\s*package\s+([A-Za-z0-9_.]+)\s*;', candidate.read_text())
+            if declared:
+                package = declared.group(1)
+                app_java_dir = candidate.parent
+                package_source += " (MainActivity package)"
+                break
+
     res_drawable_dir = root / "android/app/src/main/res/drawable"
 
-    report = {"package": package, "sources": [], "drawables": [], "checks": {}}
+    report = {
+        "package": package,
+        "package_source": package_source,
+        "sources": [],
+        "drawables": [],
+        "checks": {},
+    }
 
     if args.check:
         for name in JAVA_FILES:
@@ -277,7 +370,7 @@ def main():
     if args.json:
         print(json.dumps(report, indent=2))
     else:
-        print("[live-update] package: %s" % package)
+        print("[live-update] package: %s (from %s)" % (package, package_source))
         for key, ok in report["checks"].items():
             print("[live-update] %s %s" % ("OK  " if ok else "MISS", key))
         if report["sources"]:
