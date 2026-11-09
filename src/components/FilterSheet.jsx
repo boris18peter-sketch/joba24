@@ -105,7 +105,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
         style={{
-          background: 'white',
+          background: 'var(--sheet-bg)',
           borderRadius: '28px 28px 0 0',
           width: '100%',
           maxWidth: 480,
@@ -117,11 +117,11 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
         onClick={e => e.stopPropagation()}
       >
         {/* Handle + Header */}
-        <div style={{ padding: '14px 20px 12px', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
-          <div style={{ width: 40, height: 4, borderRadius: 99, background: '#e2e8f0', margin: '0 auto 14px' }} />
+        <div style={{ padding: '14px 20px 12px', borderBottom: '1px solid var(--surface-3)', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 14px' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{t('filter_title')}</div>
-            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={15} color="var(--text-2)" />
             </button>
           </div>
@@ -135,7 +135,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             <div
               style={{
                 background: local.forYou ? '#fffbeb' : '#fafafa',
-                border: `1.5px solid ${local.forYou ? '#f59e0b' : '#e2e8f0'}`,
+                border: `1.5px solid ${local.forYou ? '#f59e0b' : 'var(--border-1)'}`,
                 borderRadius: 14, padding: '13px 16px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 cursor: 'pointer',
@@ -143,7 +143,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               onClick={() => setLocal(p => ({ ...p, forYou: !p.forYou }))}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: local.forYou ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: local.forYou ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Sparkles size={16} color={local.forYou ? 'white' : 'var(--text-3)'} strokeWidth={1.8} />
                 </div>
                 <div>
@@ -153,7 +153,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               </div>
               <div style={{
                 width: 22, height: 22, borderRadius: '50%',
-                background: local.forYou ? '#f59e0b' : '#e2e8f0',
+                background: local.forYou ? '#f59e0b' : 'var(--border-1)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
@@ -196,7 +196,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
           <div
             style={{
               background: local.requires_invoice ? '#faf5ff' : '#fafafa',
-              border: `1.5px solid ${local.requires_invoice ? '#a855f7' : '#e2e8f0'}`,
+              border: `1.5px solid ${local.requires_invoice ? '#a855f7' : 'var(--border-1)'}`,
               borderRadius: 14, padding: '13px 16px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               cursor: 'pointer',
@@ -204,7 +204,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             onClick={() => setLocal(p => ({ ...p, requires_invoice: !p.requires_invoice }))}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: local.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: local.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <FileText size={16} color={local.requires_invoice ? 'white' : 'var(--text-3)'} strokeWidth={1.8} />
               </div>
               <div>
@@ -214,7 +214,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             </div>
             <div style={{
               width: 22, height: 22, borderRadius: '50%',
-              background: local.requires_invoice ? '#7c3aed' : '#e2e8f0',
+              background: local.requires_invoice ? '#7c3aed' : 'var(--border-1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s',
             }}>
@@ -277,7 +277,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
           flexShrink: 0,
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(10px)',
-          borderTop: '1px solid #f1f5f9',
+          borderTop: '1px solid var(--surface-3)',
         }}>
           {/* Reset — text button */}
           <button onClick={handleReset}

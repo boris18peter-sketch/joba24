@@ -237,14 +237,14 @@ export default function TaskApplicants({ task, onApprove }) {
         >
           <div
             dir={isRTL ? 'rtl' : 'ltr'}
-            style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}
+            style={{ background: 'var(--sheet-bg)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚫</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('ta_cancel_worker_title')}</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: t('ta_cancel_worker_body', { name: approvedApp ? (applicantProfiles[approvedApp.worker_id]?.full_name || approvedApp.worker_name) : '' }) }} />
+              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>{t('ta_cancel_worker_title')}</div>
+              <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: t('ta_cancel_worker_body', { name: approvedApp ? (applicantProfiles[approvedApp.worker_id]?.full_name || approvedApp.worker_name) : '' }) }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
@@ -256,7 +256,7 @@ export default function TaskApplicants({ task, onApprove }) {
               <button
                 onClick={() => cancelWorkerMutation.mutate()}
                 disabled={cancelWorkerMutation.isPending}
-                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1.5px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'var(--surface-2)', border: '1.5px solid var(--color-danger-border)', color: 'var(--color-danger)', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 {cancelWorkerMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><UserX size={16} /> {t('ta_yes_cancel_worker')}</>}
               </button>

@@ -187,7 +187,12 @@ export default function GlobalPopups() {
       {notifications.length > 0 && createPortal(
         <div style={{
           position: 'fixed',
-          top: `calc(env(safe-area-inset-top) + ${HEADER_H + 8}px)`,
+          // ── FROM THE VERY TOP, OVER THE HEADER ────────────────────────────
+          // These banners sat BELOW the app header, which made them read as
+          // part of the page rather than as something that just arrived. The
+          // notification everyone already knows drops onto the top edge of the
+          // screen, above everything, so that is where this one lives now.
+          top: 'calc(env(safe-area-inset-top) + 8px)',
           left: 0, right: 0,
           zIndex: 9999999,
           pointerEvents: 'none',

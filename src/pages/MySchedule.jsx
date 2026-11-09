@@ -74,6 +74,25 @@ export default function MySchedule() {
     [agendaDays, entriesByDay]
   );
 
+  // ── THE PAST IS PART OF THE CALENDAR ──────────────────────────────────────
+  // The agenda was deliberately forward-only: a finished job vanished from it
+  // the morning after, so there was no way to look back at what had already
+  // been worked. History is the other half of the same list — every past day
+  // that holds an entry, newest first — so the calendar now covers past,
+  // present and future while still being ONE list of days.
+  const [view, setView] = useState('upcoming');
+  const historyDays = useMemo(
+    () => [...entriesByDay.keys()].filter((key) => key < todayKey).sort().reverse(),
+    [entriesByDay, todayKey]
+  );
+  const historyCount = useMemo(
+    () => historyDays.reduce((total, key) => total + (entriesByDay.get(key)?.length || 0), 0),
+    [historyDays, entriesByDay]
+  );
+
+  const visibleDays = view === 'history' ? historyDays : agendaDays;
+  const visibleCount = view === 'history' ? historyCount : agendaCount;
+
   // Refs to each day block so tapping a calendar day can bring it into view
   // inside the page's own scroll container.
   const dayRefs = useRef({});
@@ -142,16 +161,41 @@ export default function MySchedule() {
 
           {/* ── The agenda — one continuous list from today forward ── */}
           <section>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 10, padding: '0 2px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8, padding: '0 2px' }}>
               <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>{t('sched_my_jobs')}</span>
-              {agendaCount > 0 && (
+              {visibleCount > 0 && (
                 <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-primary)' }}>
-                  {t('sched_jobs_planned', { n: agendaCount })}
+                  {t('sched_jobs_planned', { n: visibleCount })}
                 </span>
               )}
             </div>
 
-            {agendaDays.length === 0 ? (
+            {/* Upcoming / History — two views of the same agenda */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12, padding: '0 2px' }}>
+              {[
+                { key: 'upcoming', label: t('sched_view_upcoming', 'קרוב') },
+                { key: 'history', label: t('sched_view_history', 'היסטוריה') },
+              ].map(({ key, label }) => {
+                const on = view === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setView(key)}
+                    style={{
+                      height: 30, padding: '0 14px', borderRadius: 99, cursor: 'pointer',
+                      border: `1px solid ${on ? 'var(--brand-primary)' : 'var(--border-1)'}`,
+                      background: on ? 'var(--brand-primary)' : 'var(--surface-2)',
+                      color: on ? '#ffffff' : 'var(--text-2)',
+                      fontSize: 12, fontWeight: 900,
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {visibleDays.length === 0 ? (
               <div style={{
                 background: 'var(--brand-card-bg, var(--surface-2))',
                 border: '1px solid var(--border-1)', borderRadius: 16,
@@ -159,10 +203,10 @@ export default function MySchedule() {
               }}>
                 <div style={{ fontSize: 26, marginBottom: 6 }}>📅</div>
                 <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 3 }}>
-                  {t('sched_empty_title')}
+                  {view === 'history' ? t('sched_history_empty_title', 'אין עדיין עבודות בהיסטוריה') : t('sched_empty_title')}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>
-                  {t('sched_empty_sub')}
+                  {view === 'history' ? t('sched_history_empty_sub', 'עבודות שהסתיימו יופיעו כאן') : t('sched_empty_sub')}
                 </div>
                 <button
                   onClick={() => navigate('/')}
@@ -178,7 +222,7 @@ export default function MySchedule() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {agendaDays.map((dayKey) => {
+                {visibleDays.map((dayKey) => {
                   const dayEntries = entriesByDay.get(dayKey) || [];
                   const isToday = dayKey === todayKey;
                   return (
