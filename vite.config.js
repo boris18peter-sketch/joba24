@@ -20,22 +20,20 @@ export default defineConfig({
   build: {
     // Split large vendor libraries into separate chunks for better caching + parallel download
     chunkSizeWarningLimit: 1200,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react-router')) return 'vendor-router';
-            if (id.includes('react-dom') || id.includes('react/')) return 'vendor-react';
-            if (id.includes('@tanstack')) return 'vendor-query';
-            if (id.includes('framer-motion')) return 'vendor-motion';
-            if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
-            if (id.includes('mapbox-gl') || id.includes('react-map-gl')) return 'vendor-map';
-            if (id.includes('firebase')) return 'vendor-firebase';
-            if (id.includes('lucide-react')) return 'vendor-icons';
-            if (id.includes('@base44')) return 'vendor-base44';
-          }
-        },
-      },
-    },
+    // ── NO manualChunks — AND THAT IS THE FIX, NOT AN OVERSIGHT ─────────────
+    // Naming vendor chunks by hand was making the FIRST PAINT download the
+    // biggest libraries in the app. Rollup puts shared CommonJS interop helpers
+    // (a couple of kilobytes, needed by nearly every chunk) into ONE chunk, and
+    // with hand-named chunks that happened to be a heavy vendor one — so the app
+    // entry imported it, and every launch had to fetch 384 KB of charting code
+    // plus 120 KB of Firebase before anything could paint. Removing just those
+    // two names moved the same trap onto the 1.8 MB map library instead.
+    //
+    // Left to itself Rollup does what is actually wanted here: the entry keeps
+    // its own small shims, a library is bundled into the LAZY chunk that uses it
+    // (charts into the dashboards, Mapbox into the map page, Firebase into the
+    // push path), and anything two lazy pages share is split out once and only
+    // fetched when one of them opens. Nothing extra is loaded at launch, and no
+    // behaviour changes — only when each file is downloaded.
   },
 });
