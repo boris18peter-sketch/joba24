@@ -9,6 +9,7 @@
  */
 const BTN = {
   flex: 1, height: 38, borderRadius: 12,
+  boxSizing: 'border-box',
   background: 'var(--surface-3)',
   border: '1px solid var(--border-1)',
   color: 'var(--text-2)', fontWeight: 700, fontSize: 13,
@@ -16,7 +17,7 @@ const BTN = {
   textDecoration: 'none',
 };
 
-export default function TaskNavButtons({ lat, lng, locationName }) {
+export default function TaskNavButtons({ lat, lng, locationName, height = 38, radius = 12 }) {
   const hasCoords = Number.isFinite(parseFloat(lat)) && Number.isFinite(parseFloat(lng));
   const q = encodeURIComponent(locationName || '');
 
@@ -27,10 +28,12 @@ export default function TaskNavButtons({ lat, lng, locationName }) {
     ? `https://maps.google.com/maps?daddr=${lat},${lng}`
     : `https://maps.google.com/maps?q=${q}`;
 
+  const btn = { ...BTN, height, borderRadius: radius };
+
   return (
     <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-      <a href={wazeUrl} target="_blank" rel="noopener noreferrer" style={BTN}>Waze</a>
-      <a href={gpsUrl} target="_blank" rel="noopener noreferrer" style={BTN}>GPS</a>
+      <a href={wazeUrl} target="_blank" rel="noopener noreferrer" style={btn}>Waze</a>
+      <a href={gpsUrl} target="_blank" rel="noopener noreferrer" style={btn}>GPS</a>
     </div>
   );
 }

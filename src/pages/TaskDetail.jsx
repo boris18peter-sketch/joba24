@@ -6,10 +6,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users } from 'lucide-react';
+import { MapPin, Clock, MessageCircle, Flag, CheckCircle2, Loader2, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Navigation, ShieldCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import TaskDetailActions from '@/components/TaskDetailActions';
-import MapUnavailableCard from '@/components/map/MapUnavailableCard';
+import TaskNavButtons from '@/components/map/TaskNavButtons';
 import TaskOwnerMenu from '@/components/TaskOwnerMenu';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
@@ -1298,15 +1298,18 @@ export default function TaskDetail(props) {
               />
             </Suspense>
           ) : (task.location_name || task.city) ? (
-            <div style={{ margin: '8px 12px 0', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border-1)', background: 'var(--surface-2)' }}>
-              <MapUnavailableCard
-                task={task}
-                height={190}
-                t={t}
-                title={t('td_task_location', 'מיקום המשימה')}
-                note={t('td_navigate_note', 'אפשר להגיע ליעד דרך ניווט חיצוני:')}
-              />
-            </div>
+            /* No map to draw — so the ONLY thing that appears is the two
+               navigation buttons themselves: full width, equal and symmetric,
+               sitting in the sheet's own rhythm like every other row. It used
+               to be an empty 190px card with the buttons pinned to its bottom
+               edge, which read as a map frame that had failed to load. */
+            <TaskNavButtons
+              lat={task.lat}
+              lng={task.lng}
+              locationName={[task.location_name, task.city].filter(Boolean).join(', ')}
+              height={46}
+              radius={14}
+            />
           ) : null
         )}
 

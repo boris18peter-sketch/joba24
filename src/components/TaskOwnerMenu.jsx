@@ -26,8 +26,6 @@ export default function TaskOwnerMenu({ open, onClose, task, onCancel, meId }) {
   if (!open && !confirmDelete) return null;
   if (!task) return null;
 
-  const closeMenu = () => { setConfirmDelete(false); onClose(); };
-
   const handleCancel = () => {
     onClose();
     const workerIsActive = ['on_the_way', 'delayed', 'parking', 'arrived', 'starting', 'finishing', 'done'].includes(task.worker_status);
