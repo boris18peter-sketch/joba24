@@ -103,7 +103,17 @@ android {
         versionName "1.0"
     }
 }
+
+dependencies {
+    implementation project(':capacitor-android')
+}
 `;
+
+/* The version the patcher falls back to when the plugin is not installed in the
+   project it is patching (which is the case for every temp project here). It is
+   the messaging plugin's own default, so no version is ever invented. */
+const FIREBASE_MESSAGING = 'com.google.firebase:firebase-messaging';
+const FIREBASE_MESSAGING_FALLBACK = '25.0.1';
 
 function project({ manifestPackage = true, gradle = BUILD_GRADLE, manifest: custom = null } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'joba-android-live-'));
@@ -114,7 +124,13 @@ function project({ manifestPackage = true, gradle = BUILD_GRADLE, manifest: cust
   writeFileSync(join(main, 'AndroidManifest.xml'), manifest);
   writeFileSync(join(javaDir, 'MainActivity.java'), MAIN_ACTIVITY);
   if (gradle) writeFileSync(join(root, 'android/app/build.gradle'), gradle);
-  return { root, javaDir, manifest: join(main, 'AndroidManifest.xml'), mainActivity: join(javaDir, 'MainActivity.java') };
+  return {
+    root,
+    javaDir,
+    manifest: join(main, 'AndroidManifest.xml'),
+    mainActivity: join(javaDir, 'MainActivity.java'),
+    gradle: join(root, 'android/app/build.gradle'),
+  };
 }
 
 function run(script, args) {
@@ -160,6 +176,28 @@ describe('Android Live Update — the native card', () => {
     // in this file at all.
     expect(notifier).not.toContain('cancelAll()');
     expect(notifier).toContain('manager.cancel(TAG, notificationId(key))');
+  });
+
+  it('stays silent without calling setSilent on a framework builder', () => {
+    // `setSilent(boolean)` exists ONLY on NotificationCompat's builder. The
+    // promoted path builds on the FRAMEWORK builder (it has to: the promoted
+    // style and its extras are framework types), so that call did not compile —
+    // "cannot find symbol" at :app:compileReleaseJavaWithJavac.
+    const notifier = source('JobaLiveUpdateNotifier.java');
+    const promoted = notifier.slice(
+      notifier.indexOf('private static Notification buildPromoted('),
+      notifier.indexOf('private static Notification buildOngoing('),
+    );
+    expect(promoted).not.toContain('.setSilent(');
+    // …and it is still silent: the two calls androidx's setSilent performs.
+    expect(promoted).toContain('.setSound(null)');
+    expect(promoted).toContain('.setVibrate(null)');
+    expect(promoted).toContain('.setOnlyAlertOnce(true)');
+
+    // The compat path has the method, and keeps using it.
+    const ongoing = notifier.slice(notifier.indexOf('private static Notification buildOngoing('));
+    expect(ongoing).toContain('NotificationCompat.Builder');
+    expect(ongoing).toContain('.setSilent(true)');
   });
 
   it('uses nothing above the project\'s minSdk on the card\'s own path', () => {
@@ -387,7 +425,7 @@ describe('Android Live Update — build wiring', () => {
   it('reads applicationId when no namespace is declared', () => {
     const p = project({
       manifestPackage: false,
-      gradle: `android {\n    defaultConfig {\n        applicationId "${PACKAGE}"\n    }\n}\n`,
+      gradle: `android {\n    defaultConfig {\n        applicationId "${PACKAGE}"\n    }\n}\n\ndependencies {\n}\n`,
     });
     const patched = run(PATCHER, ['--root', p.root]);
     expect(patched.code, patched.stderr).toBe(0);
@@ -696,5 +734,94 @@ describe('Android Live Update — real Capacitor manifest', () => {
     expect(report.checks.components_direct_children).toBe(true);
     expect(report.checks.structure_valid).toBe(true);
     expect(report.checks.receivers).toBe(true);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. THE COMPILE-TIME DEPENDENCY
+   ──────────────────────────────────────────────────────────────────────────
+   The service extends the messaging plugin's own service, and that plugin
+   declares firebase-messaging as `implementation` — which does NOT put it on the
+   app module's compile classpath. The plugin compiled; the app did not, at
+   :app:compileReleaseJavaWithJavac:
+
+       package com.google.firebase.messaging does not exist
+       cannot find symbol: class FirebaseMessagingService
+       cannot find symbol: class RemoteMessage
+       cannot find symbol: getApplicationContext()   (a cascade of the above:
+                                                      an unresolvable superclass
+                                                      hides Service's own methods)
+
+   These tests pin the two facts that fix it: the dependency is declared on the
+   app module, and it is declared at the version the plugin itself resolves, so
+   the resolved graph is unchanged.
+   ══════════════════════════════════════════════════════════════════════════ */
+describe('Android Live Update — compile-time dependency', () => {
+  it('declares firebase-messaging in the app module, inside dependencies', () => {
+    const p = project();
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+
+    const gradle = read(p.gradle);
+    expect(gradle).toContain(`implementation "${FIREBASE_MESSAGING}:${FIREBASE_MESSAGING_FALLBACK}"`);
+    expect([...gradle.matchAll(new RegExp(FIREBASE_MESSAGING, 'g'))]).toHaveLength(1);
+
+    // Inside the module's own dependencies block — a dependency anywhere else in
+    // the file is ignored by Gradle and fails the same way.
+    const block = gradle.slice(gradle.indexOf('dependencies {'), gradle.lastIndexOf('}'));
+    expect(block).toContain(FIREBASE_MESSAGING);
+  });
+
+  it('uses the version the installed messaging plugin resolves', () => {
+    // The version is READ, never hard-coded, so an npm update of the plugin cannot
+    // leave this pinned behind it.
+    const p = project();
+    const pluginDir = join(p.root, 'node_modules/@capacitor-firebase/messaging/android');
+    mkdirSync(pluginDir, { recursive: true });
+    writeFileSync(
+      join(pluginDir, 'build.gradle'),
+      "ext {\n    firebaseMessagingVersion = project.hasProperty('firebaseMessagingVersion')"
+        + " ? rootProject.ext.firebaseMessagingVersion : '25.9.9'\n}\n",
+    );
+
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    const gradle = read(p.gradle);
+    expect(gradle).toContain(`implementation "${FIREBASE_MESSAGING}:25.9.9"`);
+    // The property NAME in that same line must never be mistaken for a version.
+    expect(gradle).not.toContain(`${FIREBASE_MESSAGING}:firebaseMessagingVersion`);
+  });
+
+  it('is idempotent and fails --check when the dependency goes missing', () => {
+    const p = project();
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    const once = read(p.gradle);
+
+    expect(run(PATCHER, ['--root', p.root]).code).toBe(0);
+    expect(read(p.gradle)).toBe(once);
+    expect(run(PATCHER, ['--root', p.root, '--check']).code).toBe(0);
+
+    writeFileSync(
+      p.gradle,
+      once.replace(`    implementation "${FIREBASE_MESSAGING}:${FIREBASE_MESSAGING_FALLBACK}"\n`, ''),
+    );
+    const result = run(PATCHER, ['--root', p.root, '--check']);
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain('does not compile the Live Update');
+  });
+
+  it('refuses a Gradle file with no dependencies block', () => {
+    const p = project({ gradle: `android {\n    namespace "${PACKAGE}"\n}\n` });
+    const result = run(PATCHER, ['--root', p.root]);
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain('declares no dependencies block');
+  });
+
+  it('reports the dependency and the version it chose', () => {
+    const p = project();
+    const result = run(PATCHER, ['--root', p.root, '--json']);
+    expect(result.code, result.stderr).toBe(0);
+
+    const report = JSON.parse(result.stdout);
+    expect(report.firebase_messaging_version).toBe(FIREBASE_MESSAGING_FALLBACK);
+    expect(report.checks.firebase_messaging).toBe(true);
   });
 });

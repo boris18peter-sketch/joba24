@@ -1880,14 +1880,45 @@ workflows:
             exit 1
           fi
           echo ""
-          echo "=== Checking Firebase messaging plugin sync ==="
-          if grep -q "firebase" android/app/capacitor.build.gradle 2>/dev/null || \
-             grep -q "firebase-messaging" android/app/build.gradle 2>/dev/null; then
-            echo "✓ Firebase messaging plugin found in gradle"
+          echo "=== Checking firebase-messaging is on the APP module's compile classpath ==="
+          # A HARD FAILURE, deliberately. The messaging plugin declares
+          # firebase-messaging as `implementation`, so it is never exposed to this
+          # module — and the injected Live Update service EXTENDS that plugin's
+          # service, which means FirebaseMessagingService and RemoteMessage have to
+          # be resolvable HERE. The dependency this project's Live Update step
+          # declares is what makes that true; without it the release build dies at
+          # :app:compileReleaseJavaWithJavac with "package
+          # com.google.firebase.messaging does not exist".
+          #
+          # This used to be a warning that passed as soon as ANY "firebase" line
+          # appeared in capacitor.build.gradle — i.e. it was satisfied by the plugin
+          # project and proved nothing about the app module. That is exactly how the
+          # missing dependency reached the compile step.
+          if grep -q 'com.google.firebase:firebase-messaging' android/app/build.gradle; then
+            echo "✓ firebase-messaging is declared by the app module:"
+            grep 'com.google.firebase:firebase-messaging' android/app/build.gradle
           else
-            echo "⚠ WARNING: Firebase messaging not found in capacitor.build.gradle — checking..."
+            echo "✗ CRITICAL: firebase-messaging is not declared in android/app/build.gradle —"
+            echo "  the injected Live Update service cannot compile against it."
+            echo "  Re-run: python3 scripts/patch-android-live-update.py"
+            cat android/app/build.gradle
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking the messaging plugin project is included ==="
+          if grep -q "firebase" android/app/capacitor.build.gradle 2>/dev/null; then
+            echo "✓ messaging plugin project is in capacitor.build.gradle"
+          else
+            echo "⚠ WARNING: messaging plugin not found in capacitor.build.gradle"
             cat android/app/capacitor.build.gradle 2>/dev/null || echo "capacitor.build.gradle not found"
           fi
+          echo ""
+          # `cap sync` ran between the install step and here. Re-proving the wiring
+          # now means a regeneration that quietly dropped the dependency, the
+          # manifest block or the plugin registration fails HERE with a named
+          # reason, instead of at javac with a Firebase class name.
+          echo "=== Re-validating the Live Update wiring after cap sync ==="
+          python3 scripts/patch-android-live-update.py --check
       - name: Build signed AAB
         script: |
           echo "Available Java versions:"
