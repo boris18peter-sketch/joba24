@@ -6,6 +6,7 @@ import Map, { Marker, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { getMapToken } from '@/lib/mapToken';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
+import MapUnavailableCard from '@/components/map/MapUnavailableCard';
 import { useLanguage } from '@/lib/LanguageContext';
 import { haversineKm, formatDistance, formatTravelTime } from '@/lib/distance';
 
@@ -200,6 +201,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
 export default function TaskLocationMap({ task, onGenerateInvoice }) {
   const { t } = useLanguage();
   const [mapToken, setMapToken] = useState('');
+  const [mapFailed, setMapFailed] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
@@ -210,14 +212,27 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
 
   useEffect(() => {
     if (!hasLocation) return;
-    // Token uses global cache — instant on repeat visits
-    getMapToken().then(token => { if (token) setMapToken(token); });
+    let cancelled = false;
+    // ── A MAP THAT NEVER ARRIVES MUST SAY SO ─────────────────────────────────
+    // The token can fail, be rejected, or simply never resolve. Each of those
+    // used to leave the box spinning forever, so the location was never shown at
+    // all. A bounded wait is what turns "waiting" into "not available", which is
+    // the state that can actually offer the navigation buttons instead.
+    const giveUp = setTimeout(() => { if (!cancelled && !mapToken) setMapFailed(true); }, 7000);
+    getMapToken()
+      .then((token) => {
+        if (cancelled) return;
+        if (token) setMapToken(token);
+        else setMapFailed(true);
+      })
+      .catch(() => { if (!cancelled) setMapFailed(true); });
     if (navigator.geolocation) {
       getCurrentPosition(
         pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => {}, { timeout: 6000 }
       );
     }
+    return () => { cancelled = true; clearTimeout(giveUp); };
   }, [hasLocation]);
 
   if (!hasLocation) return null;
@@ -241,6 +256,8 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
             onGenerateInvoice={onGenerateInvoice}
             t={t}
           />
+        ) : mapFailed ? (
+          <MapUnavailableCard task={enrichedTask} height={220} t={t} />
         ) : (
           <div style={{ height: 220, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
@@ -264,6 +281,8 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
               onGenerateInvoice={onGenerateInvoice}
               t={t}
             />
+          ) : mapFailed ? (
+            <MapUnavailableCard task={enrichedTask} fullScreen t={t} />
           ) : (
             <div style={{ height: '100dvh', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />

@@ -249,7 +249,11 @@ export default function CreateTask() {
   // A publisher — including a guest who signs in half-way through this form — is
   // on a different journey, and that popup must not land on top of it. Marked
   // here, at the one place every publish starts.
-  useEffect(() => { markPublisherContext(); }, []);
+  useEffect(() => {
+    markPublisherContext();
+    // Back in the form: a future abandonment may ask again with the dot.
+    rearmDraftDot();
+  }, []);
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });

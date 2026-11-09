@@ -72,6 +72,7 @@ import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { animate, motion, useMotionValue, useReducedMotion } from 'framer-motion';
+import { subscribeTaskDraft, hasUnfinishedDraft } from '@/lib/taskDraft';
 
 // ── The bubble's shape — one size for every tab ──────────────────────────────
 const BUBBLE_H = 40;         // uniform height
@@ -103,6 +104,9 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
   const [geom, setGeom] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [emphasis, setEmphasis] = useState(null);
+  // An unpublished task is waiting: the raised publish button says so with a dot.
+  const [draftWaiting, setDraftWaiting] = useState(() => hasUnfinishedDraft());
+  useEffect(() => subscribeTaskDraft(() => setDraftWaiting(hasUnfinishedDraft())), []);
 
   const regular = items.filter((i) => !i.primary);
   const primary = items.find((i) => i.primary);
@@ -399,8 +403,27 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
                   position: 'relative', zIndex: 2,
                 }}
               >
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-nav-active, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
+                <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-nav-active, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
                   <Icon size={24} color="white" />
+                  {/* ── UNFINISHED DRAFT ──────────────────────────────────────
+                      A task was started and never published. The dot is the one
+                      quiet signal that brings the publisher back to it; it is
+                      cleared when the task is published or the form is closed on
+                      purpose, so it can never become permanent noise. The white
+                      ring separates it from the blue button underneath. */}
+                  {draftWaiting && (
+                    <span
+                      aria-label="draft"
+                      style={{
+                        position: 'absolute', top: 2, insetInlineEnd: 2,
+                        width: 13, height: 13, borderRadius: '50%',
+                        background: 'var(--color-danger, #dc2626)',
+                        border: '2px solid var(--surface-2, #fff)',
+                        boxShadow: '0 1px 4px rgba(220,38,38,0.5)',
+                        animation: 'badgePop 0.35s cubic-bezier(0.34,1.6,0.64,1) both',
+                      }}
+                    />
+                  )}
                 </div>
                 <span style={{ fontSize: 9.5, color: 'var(--brand-nav-active, var(--brand-primary))', marginTop: 3, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
               </button>
