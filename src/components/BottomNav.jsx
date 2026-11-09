@@ -105,8 +105,12 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
   const [dragging, setDragging] = useState(false);
   const [emphasis, setEmphasis] = useState(null);
   // An unpublished task is waiting: the raised publish button says so with a dot.
-  const [draftWaiting, setDraftWaiting] = useState(() => hasUnfinishedDraft());
-  useEffect(() => subscribeTaskDraft(() => setDraftWaiting(hasUnfinishedDraft())), []);
+  // Read straight from the store on every render (and re-rendered on any change
+  // it announces), so a draft that was saved, resumed or deleted — from the form
+  // or from anywhere else — is always reflected without a second source of truth.
+  const [, setDraftTick] = useState(0);
+  useEffect(() => subscribeTaskDraft(() => setDraftTick((n) => n + 1)), []);
+  const draftWaiting = hasUnfinishedDraft();
 
   const regular = items.filter((i) => !i.primary);
   const primary = items.find((i) => i.primary);

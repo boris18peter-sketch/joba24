@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
@@ -72,7 +71,6 @@ export default function PublishedTasksEmptyState() {
           fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent',
         }}
       >
-        <Plus size={18} strokeWidth={2.8} />
         {t('post_task_btn')}
       </button>
 

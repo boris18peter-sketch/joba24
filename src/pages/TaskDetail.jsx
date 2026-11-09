@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Clock, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share, Trash2, Navigation, ShieldCheck, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import TaskDetailActions from '@/components/TaskDetailActions';
+import MapUnavailableCard from '@/components/map/MapUnavailableCard';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
@@ -1305,15 +1306,34 @@ export default function TaskDetail(props) {
           </div>
         )}
 
-        {/* Task location map — shown for all tasks with location (including TAKEN/active) */}
-        {task.lat && task.lng && !['CANCELLED', 'EXPIRED'].includes(task.status) &&
-        <Suspense fallback={<div style={{ height: 168, margin: '8px 12px 0', borderRadius: 20, background: 'var(--surface-3)' }} className="animate-pulse" />}>
-          <TaskLocationMap
-            task={task}
-            onGenerateInvoice={task.status === 'COMPLETED' && me?.id === task.worker_id ? () => setShowInvoice(true) : undefined}
-          />
-        </Suspense>
-        }
+        {/* ── WHERE THE TASK IS ──────────────────────────────────────────────
+            A task always shows its location — with or without coordinates.
+            This used to render ONLY when lat/lng existed, so a task whose
+            address was typed instead of picked had no location area at all: no
+            map, and nothing that could actually get the worker there. A task
+            with no coordinates now gets the same address card a failed map
+            gets, carrying the Waze and Google Maps buttons — which are exactly
+            the right answer, because they navigate without needing a map. */}
+        {!['CANCELLED', 'EXPIRED'].includes(task.status) && (
+          task.lat && task.lng ? (
+            <Suspense fallback={<div style={{ height: 168, margin: '8px 12px 0', borderRadius: 20, background: 'var(--surface-3)' }} className="animate-pulse" />}>
+              <TaskLocationMap
+                task={task}
+                onGenerateInvoice={task.status === 'COMPLETED' && me?.id === task.worker_id ? () => setShowInvoice(true) : undefined}
+              />
+            </Suspense>
+          ) : (task.location_name || task.city) ? (
+            <div style={{ margin: '8px 12px 0', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border-1)', background: 'var(--surface-2)' }}>
+              <MapUnavailableCard
+                task={task}
+                height={190}
+                t={t}
+                title={t('td_task_location', 'מיקום המשימה')}
+                note={t('td_navigate_note', 'אפשר להגיע ליעד דרך ניווט חיצוני:')}
+              />
+            </div>
+          ) : null
+        )}
 
 
 

@@ -14,7 +14,7 @@ import NavButtons from '@/components/NavButtons';
  * Waze and Google Maps open natively and need no map inside the app, which is
  * exactly why they are the right fallback rather than a retry loop.
  */
-export default function MapUnavailableCard({ task, height = 220, fullScreen = false, t }) {
+export default function MapUnavailableCard({ task, height = 220, fullScreen = false, t, title, note }) {
   const address = [task?.location_name, task?.city].filter(Boolean).join(', ');
 
   return (
@@ -39,7 +39,7 @@ export default function MapUnavailableCard({ task, height = 220, fullScreen = fa
 
       <div style={{ maxWidth: 340 }}>
         <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)' }}>
-          {t('map_unavailable_title', 'המפה לא זמינה כרגע')}
+          {title || t('map_unavailable_title', 'המפה לא זמינה כרגע')}
         </div>
         {address && (
           <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 5, lineHeight: 1.45 }}>
@@ -47,7 +47,7 @@ export default function MapUnavailableCard({ task, height = 220, fullScreen = fa
           </div>
         )}
         <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.45 }}>
-          {t('map_unavailable_note', 'אפשר עדיין להגיע ליעד דרך ניווט חיצוני:')}
+          {note || t('map_unavailable_note', 'אפשר עדיין להגיע ליעד דרך ניווט חיצוני:')}
         </div>
       </div>
 

@@ -73,7 +73,7 @@ export default function ScheduleChangeCard({ task, me }) {
       if (action === 'accept') {
         const n = res.data?.conflicts?.length || 0;
         toast.success('המועד החדש אושר');
-        if (n > 0) toast.warning('שים לב: יש לך עבודה אחרת שחופפת למועד החדש');
+        if (n > 0) toast.warning('שים לב: יש לך משימה אחרת שחופפת למועד החדש');
       } else {
         toast.success('בקשת השינוי נדחתה');
       }
@@ -144,7 +144,7 @@ export default function ScheduleChangeCard({ task, me }) {
             <AlertTriangle size={15} color="var(--color-warning)" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--color-warning)' }}>
-                {conflicts.length === 1 ? 'יש לך עבודה אחרת במועד המוצע' : `יש לך ${conflicts.length} עבודות אחרות במועד המוצע`}
+                {conflicts.length === 1 ? 'יש לך משימה אחרת במועד המוצע' : `יש לך ${conflicts.length} משימות אחרות במועד המוצע`}
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.55 }}>
                 {conflicts.map((c) => c.task_title).join(' · ')}

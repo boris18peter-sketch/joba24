@@ -213,7 +213,7 @@ export default function ScheduleChangeSheet({ task, onClose }) {
             <AlertTriangle size={17} color="var(--color-warning)" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--color-warning)' }}>
-                {conflicts.length === 1 ? 'יש לך עבודה אחרת במועד הזה' : `יש לך ${conflicts.length} עבודות אחרות במועד הזה`}
+                {conflicts.length === 1 ? 'יש לך משימה אחרת במועד הזה' : `יש לך ${conflicts.length} משימות אחרות במועד הזה`}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.6 }}>
                 {conflicts.map((c) => `${c.task_title} (${c.role === 'client' ? 'מפרסם' : 'עובד'})`).join(' · ')}

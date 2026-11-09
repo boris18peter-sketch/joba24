@@ -39,7 +39,7 @@ export default function ScheduleDayCell({ date, entries, isToday, isSelected, on
   return (
     <button
       onClick={onSelect}
-      aria-label={`${date.getDate()}${count ? ` · ${count} עבודות` : ''}`}
+      aria-label={`${date.getDate()}${count ? ` · ${count} משימות` : ''}`}
       style={{
         height: 48, minWidth: 0, borderRadius: 13, cursor: 'pointer',
         border: isSelected

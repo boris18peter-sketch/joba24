@@ -8,6 +8,7 @@
  * Nothing here invents data — it is a pure projection of `occurrencesOf`.
  */
 import { occurrencesOf, schedulePhase, DEFAULT_SCHEDULE_WINDOWS } from '@/lib/scheduling';
+import { parseTime } from '@/lib/time';
 
 /** 'YYYY-MM-DD' of a moment in LOCAL time — the calendar's day key. */
 export function dateKey(d) {
@@ -31,7 +32,39 @@ export function buildScheduleEntries(tasks, meId, now = Date.now()) {
     if (!task || !task.id) continue;
     const role = task.client_id === meId ? 'client' : 'worker';
     const phase = schedulePhase(task, now);
-    for (const occurrence of occurrencesOf(task)) {
+    const occurrences = occurrencesOf(task);
+
+    // ── A TASK WITHOUT A FIXED TIME IS STILL IN THE CALENDAR ────────────────
+    // occurrencesOf only knows explicit slots and scheduled_time, so a task
+    // agreed for "no specific time" produced no entry at all and disappeared
+    // from the whole page: only tasks pinned to a specific time were ever
+    // listed. Every task the user takes part in now gets one entry on its own
+    // timeline day — the completion day for a finished task, otherwise the day
+    // it was created — so nothing they published or performed is missing.
+    if (occurrences.length === 0) {
+      const stamp = parseTime(task.completed_at) || parseTime(task.created_date);
+      if (stamp) {
+        out.push({
+          id: `${task.id}_timeline`,
+          task,
+          occurrence: {
+            key: 'timeline',
+            start: stamp,
+            end: null,
+            date: null,
+            startClock: null,
+            endClock: null,
+            source: 'timeline',
+          },
+          role,
+          phase,
+          day: dateKey(stamp),
+        });
+      }
+      continue;
+    }
+
+    for (const occurrence of occurrences) {
       out.push({
         id: `${task.id}_${occurrence.key}`,
         task,

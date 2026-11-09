@@ -203,10 +203,10 @@ export default function MySchedule() {
               }}>
                 <div style={{ fontSize: 26, marginBottom: 6 }}>📅</div>
                 <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 3 }}>
-                  {view === 'history' ? t('sched_history_empty_title', 'אין עדיין עבודות בהיסטוריה') : t('sched_empty_title')}
+                  {view === 'history' ? t('sched_history_empty_title', 'אין עדיין משימות בהיסטוריה') : t('sched_empty_title')}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>
-                  {view === 'history' ? t('sched_history_empty_sub', 'עבודות שהסתיימו יופיעו כאן') : t('sched_empty_sub')}
+                  {view === 'history' ? t('sched_history_empty_sub', 'משימות שהסתיימו יופיעו כאן') : t('sched_empty_sub')}
                 </div>
                 <button
                   onClick={() => navigate('/')}

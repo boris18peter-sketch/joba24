@@ -756,7 +756,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               tasks — had no menu at all. It now sits above whichever action row
               this card ends with, so the publisher sees it on his own task
               wherever it appears. */}
-          {task.created_by === currentUserId && (
+          {isMyPublished && (
             <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
               <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
               {showMenu && (

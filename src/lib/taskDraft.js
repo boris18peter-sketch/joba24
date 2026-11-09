@@ -50,12 +50,18 @@ export function hasUnfinishedDraft() {
 }
 
 /**
- * The publisher closed the form: the dot goes away until they open the form
- * again. The DRAFT is untouched — the work is still there to resume.
+ * Kept so the form's close handler keeps compiling — but deliberately does
+ * NOTHING to the dot.
+ *
+ * It used to record "the publisher walked away on purpose" and hide the dot.
+ * Leaving the form, however, is precisely the moment the dot earns its place:
+ * it is the only signal anywhere in the app that an unfinished task is waiting.
+ * Because that signal was silenced by the very action it exists for, it never
+ * appeared at all. The draft is untouched either way, and the dot clears when
+ * the task is published or the draft is deleted.
  */
 export function dismissDraftDot() {
-  try { localStorage.setItem(DISMISS_KEY, '1'); } catch { /* private mode */ }
-  emit();
+  // No-op on purpose. See above.
 }
 
 /** The publisher is back in the form — a future abandonment may ask again. */
