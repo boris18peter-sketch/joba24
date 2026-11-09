@@ -30,7 +30,7 @@ export default function ChatComposer({
         aria-label="attachment"
         style={{
           width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0,
-          background: 'var(--surface-3)', border: 'none', cursor: 'pointer',
+          background: 'var(--surface-3)', border: '1px solid var(--border-1)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
@@ -41,7 +41,7 @@ export default function ChatComposer({
       {recording ? (
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 12px', borderRadius: 20, minHeight: 40,
+          padding: '8px 12px', borderRadius: 12, minHeight: 40,
           background: 'var(--color-danger-bg)', border: '1.5px solid var(--color-danger-border)',
         }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
@@ -56,7 +56,7 @@ export default function ChatComposer({
       ) : (
         <div style={{
           flex: 1, minWidth: 0, display: 'flex', alignItems: 'center',
-          background: 'var(--surface-3)', borderRadius: 20,
+          background: 'var(--surface-3)', borderRadius: 12,
           border: '1.5px solid var(--border-1)',
           paddingTop: 2, paddingBottom: 2,
           paddingInlineStart: 12, paddingInlineEnd: 8,
@@ -82,7 +82,7 @@ export default function ChatComposer({
       )}
 
       {uploadingVoice ? (
-        <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 38, height: 38, borderRadius: 12, flexShrink: 0, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Loader2 size={16} color="var(--brand-btn-primary-bg, var(--brand-primary))" className="animate-spin" />
         </div>
       ) : recording ? (
@@ -91,7 +91,7 @@ export default function ChatComposer({
           className="btn-tap"
           aria-label="send"
           style={{
-            width: 40, height: 40, minHeight: 0, minWidth: 0, borderRadius: '50%', flexShrink: 0, border: 'none', cursor: 'pointer',
+            width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0, border: 'none', cursor: 'pointer',
             background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
           }}
@@ -104,7 +104,7 @@ export default function ChatComposer({
           className="btn-tap"
           aria-label="send"
           style={{
-            width: 40, height: 40, minHeight: 0, minWidth: 0, borderRadius: '50%', flexShrink: 0, border: 'none', cursor: 'pointer',
+            width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0, border: 'none', cursor: 'pointer',
             background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary)))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(26,111,212,0.32)',
@@ -118,8 +118,8 @@ export default function ChatComposer({
           disabled={uploading}
           aria-label="record"
           style={{
-            width: 40, height: 40, minHeight: 0, minWidth: 0, borderRadius: '50%', flexShrink: 0,
-            background: 'var(--surface-3)', border: 'none', cursor: 'pointer',
+            width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0,
+            background: 'var(--surface-3)', border: '1px solid var(--border-1)', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >

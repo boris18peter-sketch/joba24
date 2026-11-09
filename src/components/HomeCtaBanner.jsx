@@ -1,4 +1,5 @@
 import { useLanguage } from '@/lib/LanguageContext';
+import GoldCheckBadge from '@/components/GoldCheckBadge';
 
 /**
  * HomeCtaBanner — unified call-to-action used across the home feed AND profile.
@@ -25,8 +26,11 @@ const CheckSvg = ({ size = 16 }) => (
 );
 
 function BannerIcon({ iconType, icon: Icon }) {
-  // Official badge style (green/gold gradient circle + white check) on a white container
-  if (iconType === 'verify' || iconType === 'social') {
+  // The gold mark is the SHARED component — the connect sheet draws the same
+  // one, so the badge the user is promised here is the badge they receive
+  // inside the sheet. Only the green (KYC) mark is drawn locally.
+  if (iconType === 'social') return <GoldCheckBadge size={42} />;
+  if (iconType === 'verify') {
     return (
       <div style={{
         width: 42, height: 42, borderRadius: '50%',

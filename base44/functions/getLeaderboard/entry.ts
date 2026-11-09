@@ -25,7 +25,13 @@ export default async function (req) {
 
     const items = (Array.isArray(users) ? users : users?.items || []).map((u) => ({
       id: u.id,
+      // ── THE NAME THE PERSON ACTUALLY CHOSE ────────────────────────────────
+      // The board used `full_name` only, which the app never writes: a user names
+      // themselves into `display_name`, so renaming yourself changed the profile
+      // and the chat header but left the leaderboard showing the old name for
+      // ever. Both are returned, and the board prefers display_name.
       full_name: u.full_name || '',
+      display_name: (u.display_name || '').trim(),
       profile_photo: u.profile_photo || null,
       tasks_completed: u.tasks_completed || 0,
       is_verified: u.is_verified || false,

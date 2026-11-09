@@ -1,11 +1,14 @@
 import { Headphones } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { useLanguage } from '@/lib/LanguageContext';
-import { useBrandText } from '@/components/BrandIdentity';
+import { useBrandText, useBrandIdentity } from '@/components/BrandIdentity';
 
 export default function SupportHeader() {
   const { t } = useLanguage();
   const brandText = useBrandText();
+  // Support IS the brand speaking, so its avatar is the official mark — the same
+  // one the header, the loading screen and the emails use.
+  const { logoUrl } = useBrandIdentity();
 
   return (
     <div style={{
@@ -26,11 +29,14 @@ export default function SupportHeader() {
 
       <div style={{
         width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-        background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))',
+        background: '#ffffff', overflow: 'hidden',
+        border: '1px solid var(--border-1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 3px 10px rgba(26,111,212,0.28)',
+        boxShadow: '0 3px 10px rgba(26,111,212,0.22)',
       }}>
-        <Headphones size={19} color="white" />
+        {logoUrl
+          ? <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          : <Headphones size={19} color="var(--brand-primary)" />}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>

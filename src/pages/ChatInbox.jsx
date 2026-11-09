@@ -9,6 +9,8 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { chatMessagePreview } from '@/lib/chatPreview';
 import { threadCounterpart } from '@/lib/chatThread';
 import ConversationRow from '@/components/chat/ConversationRow';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { useBrandIdentity } from '@/components/BrandIdentity';
 import { workerTasksQuery, myPublishedTasksQuery, myApplicationsQuery } from '@/lib/queries';
 
 const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
@@ -71,6 +73,9 @@ function supportStamp(date, t) {
 
 export default function ChatInbox() {
   const { t, isRTL } = useLanguage();
+  // The official mark, resolved from the Brand — the support conversation is the
+  // brand talking, so it wears the logo rather than a generic life-buoy icon.
+  const { logoUrl } = useBrandIdentity();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   // The ONE canonical lists (see @/lib/queries) — not hand-written copies.
@@ -196,6 +201,11 @@ export default function ChatInbox() {
     [messages, allTasks, me?.id],
   );
 
+  // Every counterpart, resolved live — one request for the whole list. The name,
+  // the photo and the badge on each row come from here, so a rename or a new
+  // verification shows up the next time the inbox is opened.
+  const profileOf = useUserProfiles(conversations.map((c) => c.otherId));
+
   // Opening a conversation clears its badge immediately, without waiting for
   // the server round-trip.
   const markConversationRead = useCallback((conv) => {
@@ -239,11 +249,14 @@ export default function ChatInbox() {
               }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
-                  background: 'linear-gradient(135deg,var(--brand-primary),#0a52b0)',
+                  background: '#ffffff', overflow: 'hidden',
+                  border: '1px solid var(--border-1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 2px 8px rgba(15,40,107,0.14)',
                 }}>
-                  <LifeBuoy size={22} color="white" />
+                  {logoUrl
+                    ? <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    : <LifeBuoy size={22} color="var(--brand-primary)" />}
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -290,7 +303,7 @@ export default function ChatInbox() {
                   onClick={() => markConversationRead(conv)}
                 >
                   <div style={{ borderBottom: i < conversations.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
-                    <ConversationRow conv={conv} meId={me.id} t={t} />
+                    <ConversationRow conv={conv} meId={me.id} t={t} profile={profileOf(conv.otherId)} />
                   </div>
                 </Link>
               ))

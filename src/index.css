@@ -725,6 +725,13 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 
 @keyframes chatRowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .chat-row-in { animation: chatRowIn 0.2s ease-out both; }
+/* ── ENTERING A CONVERSATION ────────────────────────────────────────────────
+   The chat is a full-screen surface portaled straight onto <body>, so it used to
+   APPEAR — one frame with the task sheet, the next with a screen over it. That
+   hard cut is what read as "the screen jumps when I press type in chat". It now
+   arrives the way the app's other surfaces do: a short slide with a fade. */
+@keyframes chatEnter { from { opacity: 0; transform: translateY(10px) scale(0.995); } to { opacity: 1; transform: none; } }
+.j-chat-enter { animation: chatEnter 0.22s cubic-bezier(0.32, 0.72, 0, 1) both; }
 
 /* ════════════════════════════════════════════════════════════════════
    ONBOARDING — one shared layout + one shared preview language

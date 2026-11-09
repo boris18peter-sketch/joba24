@@ -15,6 +15,7 @@ import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { useChatViewport } from '@/hooks/useViewportHeight';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import useChatThread from '@/hooks/useChatThread';
 import ChatHeader from '@/components/chat/ChatHeader';
 import ChatComposer from '@/components/chat/ChatComposer';
@@ -122,6 +123,14 @@ export default function Chat() {
   const pairIds = useMemo(() => [me?.id, otherPersonId].filter(Boolean), [me?.id, otherPersonId]);
 
   const otherIsOnline = useOnlineStatus(otherPersonId);
+  // ── THE COUNTERPART'S CURRENT NAME AND BADGE ───────────────────────────────
+  // The task's `worker_name` and the message's `sender_name` are copies taken
+  // when they were written, so a person who renamed themselves still appeared
+  // here under the old name and with the KYC badge only. This resolves the live
+  // record (name, photo, badges) in one request.
+  const profileOf = useUserProfiles([otherPersonId]);
+  const otherProfile = profileOf(otherPersonId);
+
   const { data: otherUserData } = useQuery({
     queryKey: ['userProfile', otherPersonId],
     queryFn: () => base44.entities.User.filter({ id: otherPersonId }),
@@ -322,8 +331,21 @@ export default function Chat() {
 
   // Prefer the counterpart's own profile name — an applicant is not yet the
   // task's `worker_name`, so the task snapshot would show the wrong person.
-  const otherPersonName = otherUserData?.display_name || otherUserData?.full_name
+  const otherPersonName = otherProfile?.name
+    || otherUserData?.display_name || otherUserData?.full_name
     || (me?.id === task?.client_id ? (task?.worker_name || t('chat_worker_default')) : (task?.client_name || t('chat_client_default')));
+
+  // The badge is decided by the LIVE record: KYC → green, plus a verified social
+  // network → gold. Anything the older read returned is only the fallback.
+  const headerUser = otherProfile
+    ? {
+        ...otherUserData,
+        full_name: otherProfile.name || otherUserData?.full_name,
+        profile_photo: otherProfile.photo || otherUserData?.profile_photo,
+        kyc_status: otherProfile.is_verified ? 'approved' : otherUserData?.kyc_status,
+        instagram_verified: otherProfile.social_verified || otherUserData?.instagram_verified,
+      }
+    : otherUserData;
 
   const openProfile = () => { if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`); };
   const openTask = () => { if (task) openTaskSheet(task.id); };
@@ -331,6 +353,7 @@ export default function Chat() {
   return createPortal(
     <div
       ref={shellRef}
+      className="j-chat-enter"
       style={{
         position: 'fixed', top: 0, left: 0, right: 0,
         height: '100dvh',
@@ -359,8 +382,8 @@ export default function Chat() {
 
       <ChatHeader
         name={otherPersonName}
-        photo={otherUserData?.profile_photo}
-        user={otherUserData}
+        photo={otherProfile?.photo || otherUserData?.profile_photo}
+        user={headerUser}
         isOnline={otherIsOnline}
         task={task}
         isRTL={isRTL}

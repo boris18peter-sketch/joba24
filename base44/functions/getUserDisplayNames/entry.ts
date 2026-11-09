@@ -41,6 +41,14 @@ Deno.serve(async (req) => {
     )].slice(0, MAX_IDS) as string[];
 
     const names: Record<string, string> = {};
+    // ── AND THE PUBLIC FACE THAT TRAVELS WITH THE NAME ──────────────────────
+    // A chat row and the conversation header need more than a name: the photo and
+    // the badges are what the user reads next to it. Those live on the SAME record
+    // and are just as stale when copied onto a task or a message, so they are
+    // resolved here, in the same call, instead of a second per-person request.
+    // Only fields the app already shows publicly are returned — never email,
+    // phone, KYC data or balances.
+    const profiles: Record<string, unknown> = {};
     if (ids.length) {
       const rows = await base44.asServiceRole.entities.User.filter(
         { id: { $in: ids } },
@@ -50,10 +58,16 @@ Deno.serve(async (req) => {
       for (const u of rows || []) {
         const name = (u.display_name || '').trim() || u.full_name || '';
         if (name) names[u.id] = name;
+        profiles[u.id] = {
+          name,
+          photo: u.profile_photo || null,
+          is_verified: !!u.is_verified,
+          social_verified: !!(u.instagram_verified || u.facebook_verified || u.tiktok_verified),
+        };
       }
     }
 
-    return Response.json({ names });
+    return Response.json({ names, profiles });
   } catch (error) {
     console.error('getUserDisplayNames error:', error?.message);
     // An empty map is a safe answer: every caller falls back to the name it

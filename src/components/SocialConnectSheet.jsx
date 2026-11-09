@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  Loader2, X, ShieldCheck, ArrowRight, Edit3, Copy, Check, CheckCircle, ExternalLink,
+  Loader2, X, ArrowRight, Edit3, Copy, Check, CheckCircle, ExternalLink,
   Instagram, Facebook, Music2, AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { isUserVerified, copyToClipboard } from '@/lib/utils';
+import GoldCheckBadge from '@/components/GoldCheckBadge';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -324,14 +325,41 @@ export default function SocialConnectSheet({ user, onClose }) {
 
         <div style={{ padding: '8px 20px 20px' }}>
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
-              <ShieldCheck size={26} color="white" />
+          <div style={{
+            position: 'relative', overflow: 'hidden',
+            margin: '0 0 18px', padding: '20px 16px 18px', borderRadius: 20,
+            background: 'linear-gradient(165deg, rgba(251,191,36,0.20) 0%, rgba(251,191,36,0.06) 55%, transparent 100%)',
+            border: '1px solid var(--color-warning-border)',
+            textAlign: 'center',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 11 }}>
+              <GoldCheckBadge size={62} />
             </div>
-            <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>{t('sl_connect_title')}</h3>
-            <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
+            <h3 style={{
+              fontSize: 19, fontWeight: 900, color: 'var(--text-1)',
+              margin: 0, lineHeight: 1.25, letterSpacing: -0.3,
+            }}>
+              {t('sl_connect_title')}
+            </h3>
+            <p style={{
+              fontSize: 13, color: 'var(--text-2)', margin: '7px auto 0',
+              lineHeight: 1.55, fontWeight: 600, maxWidth: 300,
+            }}>
               {t('sl_connect_subtitle')}
             </p>
+            {/* The networks themselves — the only decoration on the header, and
+                it answers "which ones?" before the button does. */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 14 }}>
+              {PLATFORMS.map(pl => (
+                <span key={pl.key} style={{
+                  width: 26, height: 26, borderRadius: 8, background: pl.brandColor,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(15,40,107,0.16)',
+                }}>
+                  <pl.icon size={14} color="white" />
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* ── Step 1: Choose platform ── */}

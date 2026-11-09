@@ -1,5 +1,6 @@
 import { format, isToday, isYesterday } from 'date-fns';
 import { CheckCheck, ClipboardList } from 'lucide-react';
+import GoldBadge from '@/components/GoldBadge';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { chatMessagePreview } from '@/lib/chatPreview';
 
@@ -30,11 +31,17 @@ function stamp(date, t) {
   return format(d, 'd/M');
 }
 
-export default function ConversationRow({ conv, meId, t }) {
+export default function ConversationRow({ conv, meId, t, profile }) {
   const isMyTask = conv.task.client_id === meId;
-  const name = conv.otherName
+  // The live profile wins over every snapshot: the message's `sender_name` and
+  // the task's `worker_verified` were both copied at write time, so a renamed or
+  // newly verified person kept showing the old name and no badge at all.
+  const name = profile?.name
+    || conv.otherName
     || (isMyTask ? (conv.task.worker_name || t('chat_worker_default')) : (conv.task.client_name || t('chat_client_default')));
-  const verified = isMyTask ? conv.task.worker_verified : conv.task.client_verified;
+  const verified = profile ? profile.is_verified : (isMyTask ? conv.task.worker_verified : conv.task.client_verified);
+  const gold = !!profile?.social_verified;
+  const photo = profile?.photo;
   const unread = conv.unread || 0;
   const last = conv.lastMsg;
   const fromMe = last?.sender_id === meId;
@@ -59,7 +66,7 @@ export default function ConversationRow({ conv, meId, t }) {
         fontSize: 18, fontWeight: 800, color: '#fff', overflow: 'hidden',
         boxShadow: '0 2px 8px rgba(15,40,107,0.14)',
       }}>
-        {name.charAt(0)}
+        {photo ? <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name.charAt(0)}
       </div>
 
       {/* Name → latest message → task */}
@@ -71,7 +78,7 @@ export default function ConversationRow({ conv, meId, t }) {
             color: 'var(--text-1)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{name}</span>
-          {verified && <VerifiedBadge size="sm" />}
+          {verified && (gold ? <GoldBadge size="sm" /> : <VerifiedBadge size="sm" />)}
           <span style={{ marginInlineStart: 'auto', fontSize: 11, color: unread > 0 ? 'var(--brand-primary)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 500, flexShrink: 0 }}>
             {stamp(last?.created_date || conv.task.updated_date, t)}
           </span>

@@ -31,7 +31,16 @@ export default function Leaderboard() {
     const unsubReview = base44.entities.Review.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['all-reviews'] });
     });
-    return () => { unsubUser(); unsubTask(); unsubReview(); };
+    // Coming back to the board re-reads it — the same moment a member would
+    // notice a name that had gone stale.
+    const onWake = () => {
+      if (document.visibilityState === 'visible') queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    };
+    document.addEventListener('visibilitychange', onWake);
+    return () => {
+      unsubUser(); unsubTask(); unsubReview();
+      document.removeEventListener('visibilitychange', onWake);
+    };
   }, [queryClient]);
 
   const { data: reviews = [] } = useQuery({
@@ -59,6 +68,14 @@ export default function Leaderboard() {
       const res = await base44.functions.invoke('getLeaderboard', {});
       return res.data?.items || [];
     },
+    // ── A RENAME MUST REACH THE BOARD ────────────────────────────────────────
+    // The board is served with the service role, so a normal member receives no
+    // realtime event when somebody else edits their profile — the subscription
+    // above only ever fires for an admin. It is therefore re-read whenever the
+    // screen is opened or the app is brought back, which is when a stale name
+    // would actually be seen.
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   // Build leaderboard from the authoritative tasks_completed counter on each
@@ -68,10 +85,13 @@ export default function Leaderboard() {
   const board = {};
   users.forEach(u => {
     const completed = u.tasks_completed || 0;
+    // The chosen name wins: `display_name` is what a member edits, `full_name` is
+    // only the fallback for an account that has never renamed itself.
+    const shownName = u.display_name || u.full_name || '';
     board[u.id] = {
       user_id: u.id,
-      name: u.full_name || t('anonymous'),
-      avatar: u.full_name?.[0]?.toUpperCase() || '?',
+      name: shownName || t('anonymous'),
+      avatar: shownName?.[0]?.toUpperCase() || '?',
       profile_photo: u.profile_photo || null,
       is_verified: u.is_verified || false,
       social_verified: !!(u.instagram_verified || u.facebook_verified || u.tiktok_verified),
