@@ -94,7 +94,9 @@ export default function RatingModal({ task, me, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
 
-      onClose();
+      // `submitted` tells the caller a review really went through: a bonus may be
+      // released by it, and the closing note must wait behind that bonus.
+      onClose({ submitted: true });
     } catch (e) {
       console.error('Review submit failed:', e);
       toast.error(t('review_error'));

@@ -67,7 +67,8 @@ import BoostOverlay from '@/components/BoostOverlay';
 import { myPublishedTasksQuery, workerTasksQuery, myApplicationsQuery, selectActiveWorkerTask, selectActiveClientTask } from '@/lib/queries';
 import { reconcileActiveTask } from '@/lib/activeTaskCache';
 import { hasAskedCompletionPrompt, markCompletionPromptAsked } from '@/lib/completionPrompt';
-import { isPopupBlocked, setPopupBlock } from '@/lib/popupGate';
+import { isPopupBlocked, setPopupBlock, subscribePopupGate } from '@/lib/popupGate';
+import { expectBonus, isBonusExpected, subscribeBonusWindow } from '@/lib/bonusWindow';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -401,31 +402,70 @@ export default function Layout() {
     // Same rule as the rating: the sheet steps aside, so the note is never
     // underneath the details the user happened to have open.
     if (sheetTaskId === task.id) closeTaskSheet();
+    // ── EVEN A NOTE RAISED WITHOUT A RATING WAITS FOR THE BONUS ANSWER ──────
+    // This path covers "the job was finished earlier" — a review already given on
+    // another device, or a cold start on a finished task. A bonus can still be
+    // owed and unannounced at that moment, and it must be celebrated before the
+    // note whatever path raised it. The window is short and it is closed by the
+    // hook's own answer, so a user with no bonus waits one quick read, not 3.5s.
+    expectBonus();
     setPendingCongrats({ task, role: me.id === task.worker_id ? 'worker' : 'client' });
   }, [me?.id, sheetTaskId, closeTaskSheet]);
 
   // ── THE NOTE TAKES ITS TURN, LAST ─────────────────────────────────────────
-  // Order after a completed job: the rating ask, then the bonus that rating
-  // earned (if any), then this note. The rating sheet and the bonus each hold
-  // the popup gate while they are on screen, and the bonus also holds it while
-  // its reward is being checked — so the note simply waits for the screen to be
-  // free. The settle window matters: the note is queued a moment BEFORE the
-  // bonus has claimed anything, and without it the note took the screen and the
-  // bonus landed on top of it, which is the jumble this fixes.
+  // One order, always: the rating, then the bonus that rating released (if there
+  // is one), then this note. The note is drawn only when BOTH are behind us:
+  //
+  //   • nothing else owns the screen (the popup gate), and
+  //   • the bonus question has an ANSWER — either a bonus was shown and closed,
+  //     or the server said there is none (see @/lib/bonusWindow).
+  //
+  // The previous version waited a fixed 1.2s and hoped the bonus had taken the
+  // screen by then. Finding a bonus is two server reads, so when it ran late the
+  // note opened first and the bonus — which mounts afterwards, at the same
+  // z-index — was painted OVER it. That is the flash: the note for a second, then
+  // the bonus on top of it. The note now never opens while a bonus may still be
+  // coming, so that flash cannot happen at all.
   useEffect(() => {
     if (!pendingCongrats) return undefined;
-    let ticks = 0;
-    const timer = setInterval(() => {
-      ticks += 1;
-      // A settle window first (the bonus is found by a short server read that
-      // starts the moment the rating closes), then the note waits as long as
-      // anything still owns the screen.
-      if (ticks < 4 || isPopupBlocked()) return;
+    let done = false;
+    let timer = null;
+    const attempt = () => {
+      if (done) return;
+      if (isPopupBlocked() || isBonusExpected()) return;
+      done = true;
+      clearInterval(timer);
       setPendingCongrats(null);
       setCongratsTask(pendingCongrats);
-    }, 300);
-    return () => clearInterval(timer);
+    };
+    // Both answers are events: the screen frees up, or the bonus window closes.
+    // The tick covers the one case that raises no event — a safety window that
+    // simply runs out.
+    const unsubGate = subscribePopupGate(attempt);
+    const unsubBonus = subscribeBonusWindow(attempt);
+    timer = setInterval(attempt, 200);
+    return () => {
+      done = true;
+      clearInterval(timer);
+      unsubGate();
+      unsubBonus();
+    };
   }, [pendingCongrats]);
+
+  // ── AND THE NOTE STEPS ASIDE IF A BONUS STILL ARRIVES ─────────────────────
+  // A late reward, a second bonus, or a slow read can put a bonus on screen after
+  // the note: the order must hold anyway. The note leaves immediately and is
+  // re-queued, so it returns after the bonus is closed. `'congrats'` is excluded
+  // from the check because the note itself is the one holding that key.
+  useEffect(() => {
+    if (!congratsTask) return undefined;
+    const check = () => {
+      if (!isPopupBlocked('congrats')) return;
+      setPendingCongrats(congratsTask);
+      setCongratsTask(null);
+    };
+    return subscribePopupGate(check);
+  }, [congratsTask]);
 
   const maybeShowRating = useCallback((task) => {
     if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
@@ -902,11 +942,18 @@ export default function Layout() {
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {/* Task alerts (cancelled / revoked / cancel-success) render globally via GlobalPopups */}
       {ratingTask && me && createPortal(
-        <RatingModal task={ratingTask} me={me} onClose={() => {
+        <RatingModal task={ratingTask} me={me} onClose={(opts) => {
           // Both prompts were marked as asked the moment they were raised (see
           // completionPrompt), so nothing needs recording here — closing the
           // sheet only has to hand over to the note below.
           ratingPendingRef.current.delete(ratingTask.id);
+          // ── A BONUS MAY BE ON ITS WAY — THE NOTE WAITS FOR IT ──────────────
+          // A rating that was actually SUBMITTED can release a bonus from the
+          // server, and that bonus must be celebrated before the closing note.
+          // Opening the window here — before the rating's gate is released, which
+          // is the instant the bonus starts being looked for — is what guarantees
+          // the order: rating → bonus → note, with no flash of the note in between.
+          if (opts?.submitted) expectBonus();
           // ── THE THANK-YOU COMES AFTER THE ASK ────────────────────────────
           // Completion is three moments, in this order: the ✓ on the task card,
           // then the rating sheet, then this. Asking and then thanking is a

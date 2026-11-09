@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { isPopupBlocked, setPopupBlock, subscribePopupGate } from '@/lib/popupGate';
 import { hasAnnouncedBonus, rememberBonusAnnounced } from '@/lib/bonusAnnouncement';
 import { hasAskedCompletionPrompt } from '@/lib/completionPrompt';
+import { resolveBonusWindow } from '@/lib/bonusWindow';
 
 /**
  * How long a task-earned bonus waits for that task's rating sheet.
@@ -76,6 +77,10 @@ export function useLoyaltyBonus(user) {
       // rating sheet was open is never silently lost.
       rememberBonusAnnounced(userId, next.key);
       setBonus({ amount: next.amount, kind: next.kind });
+      // The question "is a bonus coming?" now has its answer — yes, and it is on
+      // screen. The gate above already keeps the closing note out until it is
+      // closed, so the note does not also have to sit out the safety window.
+      resolveBonusWindow();
     };
 
     // ── ASK THE SERVER AGAIN, DO NOT WAIT FOR A RELAUNCH ────────────────────
@@ -94,7 +99,13 @@ export function useLoyaltyBonus(user) {
         .filter({ user_id: userId, type: 'Loyalty_Reward' }, '-created_date', 1)
         .catch(() => null);
       const rows = Array.isArray(res) ? res : res?.items;
-      if (!cancelled) offer(rows?.[0]);
+      if (cancelled) return;
+      const queued = await offer(rows?.[0]);
+      // ── THIS IS THE ANSWER THE CLOSING NOTE IS WAITING FOR ────────────────
+      // The server was asked and there is nothing to announce, so the note no
+      // longer has to wait for a bonus that will never come. Skipped when a bonus
+      // WAS queued: then the screen belongs to the bonus until it is closed.
+      if (!cancelled && !queued) resolveBonusWindow();
     };
 
     const refresh = () => {
@@ -103,13 +114,16 @@ export function useLoyaltyBonus(user) {
       catchUp();
     };
 
+    // Returns TRUE when a bonus was queued for display (so the closing note keeps
+    // waiting for it) and FALSE when there is nothing to announce (so the note is
+    // released — see @/lib/bonusWindow).
     const offer = async (tx) => {
-      if (!tx?.id) return;
+      if (!tx?.id) return false;
       // The popup announces THIS transaction's bonus and nothing else. A record
       // that carries no usable amount is not a bonus to celebrate, so it is
       // skipped rather than shown as a number that is not what the worker earned.
       const value = Number(tx.amount);
-      if (!Number.isFinite(value) || value <= 0) return;
+      if (!Number.isFinite(value) || value <= 0) return false;
 
       // ── TWO BONUSES, TWO DIFFERENT ANNOUNCEMENTS ──────────────────────────
       // The two are told apart by `task_id`: a rating reward is always tied to a
@@ -134,10 +148,10 @@ export function useLoyaltyBonus(user) {
       // is already behind this user. Until then the welcome total covers it —
       // and that modal marks the same 'profile_bonus' key, so it can never
       // surface again afterwards.
-      if (isProfile && !(await hasAnnouncedBonus(userId, 'welcome_gift'))) return;
+      if (isProfile && !(await hasAnnouncedBonus(userId, 'welcome_gift'))) return false;
 
-      if (await hasAnnouncedBonus(userId, key)) return;
-      if (cancelled) return;
+      if (await hasAnnouncedBonus(userId, key)) return false;
+      if (cancelled) return false;
       pendingRef.current = {
         key,
         amount: Math.round(value),
@@ -148,6 +162,7 @@ export function useLoyaltyBonus(user) {
         since: Date.now(),
       };
       flush();
+      return true;
     };
 
     const unsubGate = subscribePopupGate(refresh);
