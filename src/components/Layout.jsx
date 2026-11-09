@@ -9,6 +9,13 @@ import { Suspense } from 'react';
 // error on the tab the user was opening, with nothing to heal it.
 import { lazyRetry } from '@/lib/lazyRetry';
 
+/**
+ * How long after a job closed its closing note may still be shown. The note
+ * belongs to the MOMENT of completion — it must never come back attached to a
+ * week-old task every time that task is opened.
+ */
+const CLOSING_NOTE_WINDOW_MS = 30 * 60 * 1000;
+
 const HomeFeed = lazyRetry(() => import('@/pages/HomeFeed'));
 const MapView = lazyRetry(() => import('@/pages/MapView'));
 const ChatInbox = lazyRetry(() => import('@/pages/ChatInbox'));
@@ -393,6 +400,15 @@ export default function Layout() {
   const showCongrats = useCallback((task) => {
     if (!me?.id || !task?.id) return;
     if (me.id !== task.client_id && me.id !== task.worker_id) return;
+    // ── A COMPLETION IS A MOMENT, NOT A STATUS ────────────────────────────
+    // The closing note thanks somebody for a job that has JUST closed. Opening
+    // a task finished last week — still unrated — used to replay that whole
+    // ending: the note, and behind it whatever else the completion flow leaves
+    // queued, for a moment that is long gone. An old finished task may still
+    // ask for its RATING (once), and nothing else: no closing notes attached to
+    // it, ever again.
+    const completedAt = new Date(task.completed_at || task.updated_date || 0).getTime();
+    if (!Number.isFinite(completedAt) || Date.now() - completedAt > CLOSING_NOTE_WINDOW_MS) return;
     // The note never lands on top of its own ask.
     if (ratingPendingRef.current.has(task.id)) return;
     // Asked at most once per task per user, and marked NOW — at show time — so a

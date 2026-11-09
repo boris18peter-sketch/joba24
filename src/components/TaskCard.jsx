@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap, X, Pencil, Share2 } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap, X } from 'lucide-react';
 import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
 import TaskImage from '@/components/TaskImage';
@@ -20,6 +20,7 @@ import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHour
 import { buildRepostUrl } from '@/lib/taskUtils';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
+import TaskOwnerMenu from '@/components/TaskOwnerMenu';
 import ApplySheet from '@/components/ApplySheet';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
@@ -39,16 +40,6 @@ import { creditsShortfall } from '@/lib/jobaBalance';
 import { invalidateTaskCaches } from '@/lib/taskSync';
 import { formatDistance } from '@/lib/distance';
 
-
-// One row of the publisher's "..." menu. Defined once so the three actions can
-// never drift apart in height, weight or alignment.
-const MENU_ITEM = {
-  width: '100%', textAlign: 'right', padding: '12px 14px',
-  background: 'none', border: 'none', borderTop: '1px solid var(--border-1)',
-  cursor: 'pointer', fontSize: 13.5, fontWeight: 700,
-  color: 'var(--text-1)', display: 'flex', alignItems: 'center', gap: 9,
-  fontFamily: 'var(--font-inter)', WebkitTapHighlightColor: 'transparent',
-};
 
 function normalizeDate(d) {
   const s = String(d);
@@ -750,39 +741,6 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             applicants. Owner management stays exactly as it was, only moved
             here so every card ends with one button in the same place. */}
         <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
-          {/* ── THE PUBLISHER'S "..." MENU ────────────────────────────────
-              It used to be rendered only in the worker branch, which meant the
-              publisher's OWN card in the feed — the one place he manages his
-              tasks — had no menu at all. It now sits above whichever action row
-              this card ends with, so the publisher sees it on his own task
-              wherever it appears. */}
-          {isMyPublished && (
-            <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-              <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
-              {showMenu && (
-                <>
-                  {/* Tapping anywhere else closes it — a menu with no way out
-                      except the same button was the real complaint here. */}
-                  <div
-                    onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(false); }}
-                    style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'transparent' }}
-                  />
-                  <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }} style={{ position: 'absolute', bottom: 34, right: 0, background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 12, boxShadow: 'var(--shadow-lg)', zIndex: 1000, minWidth: 176, overflow: 'hidden' }}>
-                    <button onClick={e => { e.stopPropagation(); setShowMenu(false); navigate(`/create-task?editId=${task.id}`); }} style={{ ...MENU_ITEM, borderTop: 'none', color: 'var(--text-1)' }}>
-                      <Pencil size={14} color="var(--text-2)" /> {t('mtc_edit_task')}
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); setShowMenu(false); handleShare(); }} style={{ ...MENU_ITEM, color: 'var(--text-1)' }}>
-                      <Share2 size={14} color="var(--text-2)" /> {t('share', 'שיתוף')}
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }} style={{ ...MENU_ITEM, color: 'var(--color-danger)' }}>
-                      <Trash2 size={14} color="var(--color-danger)" /> {t('mtc_cancel_task')}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
           {isMyPublished ? (
             task.status === 'OPEN' ? (
               // The boost pill sits where the task-detail sheet puts it — at the
@@ -926,6 +884,19 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         {showDetails && (
           <div style={{ borderTop: '1px solid var(--border-1)', paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
             <TaskDetailsRows task={displayTask} compact={true} />
+            {/* The publisher's own menu — the SAME button, sheet and options as
+                the task screen, and only here, inside the details he opened. */}
+            {isMyPublished && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+                <button
+                  className="j-icon-btn"
+                  onClick={e => { e.stopPropagation(); setShowMenu(true); }}
+                  aria-label={t('task_actions_title')}
+                  style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)', flexShrink: 0 }}>
+                  <MoreVertical size={15} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -948,6 +919,16 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           onClose={() => setShowCancelConfirm(false)}
         />,
         document.body
+      )}
+
+      {isMyPublished && (
+        <TaskOwnerMenu
+          open={showMenu}
+          onClose={() => setShowMenu(false)}
+          task={task}
+          onCancel={() => setShowCancelConfirm(true)}
+          meId={currentUserId}
+        />
       )}
 
       {showLoginPrompt && createPortal(

@@ -1,61 +1,26 @@
-import { MapPin, Navigation } from 'lucide-react';
-import NavButtons from '@/components/NavButtons';
+import TaskNavButtons from '@/components/map/TaskNavButtons';
 
 /**
- * MapUnavailableCard — what a task's location shows when the map itself cannot.
+ * MapUnavailableCard — a task's location when there is no map to draw.
  *
- * Before this, a failed (or never-arriving) map token left a spinner turning on
- * a pale blue box. Forever: the token promise simply resolved with nothing, no
- * state changed, and the box kept spinning while the task location — the one
- * thing the person needed — was never shown at all.
- *
- * A spinner with no end is worse than no map. So the failure gets a real answer:
- * the address in words, and the two buttons that actually get somebody there.
- * Waze and Google Maps open natively and need no map inside the app, which is
- * exactly why they are the right fallback rather than a retry loop.
+ * It shows the navigation bar and NOTHING ELSE: the same two buttons, in the
+ * same bar, in the same place, as the map's own bottom row. No icon, no title,
+ * no address line, no explanatory note — the buttons are the whole answer, and
+ * they must look exactly like the ones the user already knows from the map.
  */
-export default function MapUnavailableCard({ task, height = 220, fullScreen = false, t, title, note }) {
+export default function MapUnavailableCard({ task, height = 220, fullScreen = false }) {
   const address = [task?.location_name, task?.city].filter(Boolean).join(', ');
 
   return (
-    <div
-      style={{
-        minHeight: fullScreen ? '100dvh' : height,
-        background: 'var(--surface-2)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        gap: 14, padding: '24px 20px', textAlign: 'center',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{
-        width: 52, height: 52, borderRadius: '50%',
-        background: 'var(--surface-3)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <MapPin size={24} strokeWidth={1.9} color="var(--brand-primary)" />
-      </div>
-
-      <div style={{ maxWidth: 340 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)' }}>
-          {title || t('map_unavailable_title', 'המפה לא זמינה כרגע')}
-        </div>
-        {address && (
-          <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 5, lineHeight: 1.45 }}>
-            {address}
-          </div>
-        )}
-        <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.45 }}>
-          {note || t('map_unavailable_note', 'אפשר עדיין להגיע ליעד דרך ניווט חיצוני:')}
-        </div>
-      </div>
-
-      <NavButtons lat={task?.lat} lng={task?.lng} locationName={address} />
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--text-3)', fontWeight: 600 }}>
-        <Navigation size={12} strokeWidth={2} />
-        {t('map_unavailable_hint', 'הכפתורים יפתחו ניווט במכשיר')}
+    <div style={{
+      minHeight: fullScreen ? '100dvh' : height,
+      background: 'var(--surface-2)',
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+      boxSizing: 'border-box',
+      paddingBottom: fullScreen ? 'env(safe-area-inset-bottom)' : 0,
+    }}>
+      <div style={{ borderTop: '1px solid var(--border-1)', padding: '8px 10px' }}>
+        <TaskNavButtons lat={task?.lat} lng={task?.lng} locationName={address} />
       </div>
     </div>
   );

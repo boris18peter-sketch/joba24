@@ -4,19 +4,22 @@
  * The publish form already saves a draft (CreateTask's own debounced auto-save,
  * same localStorage key). What was missing is a way for the REST of the app to
  * know it exists: the raised publish button in the bottom bar is the one place
- * that can bring the publisher back to it, and it had no idea.
+ * that can bring the publisher back to it.
  *
- * Two facts, not one:
- *   • the draft itself (owns by the form);
- *   • whether the publisher has already said "not now" by closing the form —
- *     the dot must not nag somebody who deliberately walked away. Entering the
- *     form again re-arms it, so the next abandonment asks once more.
+ * ── THE DOT ASKS ONCE, THEN STOPS ───────────────────────────────────────────
+ * The dot is a nudge, not a badge. It appears the FIRST time a publisher walks
+ * away from a task he started, then it stops: entering the form again and
+ * closing it again is a decision, and repeating the dot every time turns the
+ * publish button into a red light permanently stuck on (there is no way for him
+ * to delete the draft from the form, so it could never be cleared).
  *
- * Deliberately module-level with subscribers: the form and the bottom bar live in
- * different trees (the bar is portaled to <body>), exactly like popupGate.
+ * That is why the state is a COUNT of closings rather than a flag: the dot is
+ * shown at exactly one close. The draft itself is never touched — nothing typed
+ * is lost — and publishing or deleting the draft resets the count, so a NEW
+ * draft earns its own single nudge.
  */
 const DRAFT_KEY = 'joba24_create_task_draft';
-const DISMISS_KEY = 'joba24_create_task_draft_dismissed';
+const CLOSES_KEY = 'joba24_create_task_draft_closes';
 
 const listeners = new Set();
 const emit = () => listeners.forEach((fn) => fn());
@@ -40,33 +43,40 @@ function readDraft() {
   }
 }
 
-function isDismissed() {
-  try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; }
+function closeCount() {
+  try {
+    const n = parseInt(localStorage.getItem(CLOSES_KEY) || '0', 10);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setCloseCount(n) {
+  try { localStorage.setItem(CLOSES_KEY, String(n)); } catch { /* private mode */ }
 }
 
 /** Should the publish button carry the red dot right now? */
 export function hasUnfinishedDraft() {
-  return !!readDraft() && !isDismissed();
+  return !!readDraft() && closeCount() === 1;
 }
 
 /**
- * Kept so the form's close handler keeps compiling — but deliberately does
- * NOTHING to the dot.
- *
- * It used to record "the publisher walked away on purpose" and hide the dot.
- * Leaving the form, however, is precisely the moment the dot earns its place:
- * it is the only signal anywhere in the app that an unfinished task is waiting.
- * Because that signal was silenced by the very action it exists for, it never
- * appeared at all. The draft is untouched either way, and the dot clears when
- * the task is published or the draft is deleted.
+ * The publisher left the form. The FIRST time this is what raises the dot; from
+ * the second time on it lowers it, so a repeated close is never nagged.
  */
 export function dismissDraftDot() {
-  // No-op on purpose. See above.
+  if (!readDraft()) return;
+  setCloseCount(closeCount() + 1);
+  emit();
 }
 
-/** The publisher is back in the form — a future abandonment may ask again. */
+/**
+ * Kept for the form's own mount. Entering the form no longer re-arms anything:
+ * the count is what decides, so coming back and leaving again must NOT bring
+ * the dot back.
+ */
 export function rearmDraftDot() {
-  try { localStorage.removeItem(DISMISS_KEY); } catch { /* private mode */ }
   emit();
 }
 
@@ -75,11 +85,11 @@ export function notifyDraftChanged() {
   emit();
 }
 
-/** The task was published: there is no draft left. */
+/** The task was published (or the draft deleted): there is no draft left. */
 export function clearTaskDraft() {
   try {
     localStorage.removeItem(DRAFT_KEY);
-    localStorage.removeItem(DISMISS_KEY);
+    localStorage.removeItem(CLOSES_KEY);
   } catch { /* private mode */ }
   emit();
 }

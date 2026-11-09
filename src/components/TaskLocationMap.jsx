@@ -7,6 +7,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { getMapToken } from '@/lib/mapToken';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
 import MapUnavailableCard from '@/components/map/MapUnavailableCard';
+import TaskNavButtons from '@/components/map/TaskNavButtons';
 import { useLanguage } from '@/lib/LanguageContext';
 import { haversineKm, formatDistance, formatTravelTime } from '@/lib/distance';
 
@@ -129,39 +130,9 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
         paddingBottom: isExpanded ? 'max(8px, env(safe-area-inset-bottom))' : '8px',
         display: 'flex', flexDirection: 'column', gap: 6,
       }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {/* Navigation is a QUIET secondary here — two brand-coloured slabs
-              under the map pulled the eye away from the task itself, so these
-              wear the same neutral surface every other secondary uses. */}
-          <a
-            href={`https://waze.com/ul?ll=${task.lat},${task.lng}&navigate=yes`}
-            target="_blank" rel="noopener noreferrer"
-            style={{
-              flex: 1, height: 38, borderRadius: 12,
-              background: 'var(--surface-3)',
-              border: '1px solid var(--border-1)',
-              color: 'var(--text-2)', fontWeight: 700, fontSize: 13,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              textDecoration: 'none',
-            }}
-          >
-            Waze
-          </a>
-          <a
-            href={`https://maps.google.com/maps?daddr=${task.lat},${task.lng}`}
-            target="_blank" rel="noopener noreferrer"
-            style={{
-              flex: 1, height: 38, borderRadius: 12,
-              background: 'var(--surface-3)',
-              border: '1px solid var(--border-1)',
-              color: 'var(--text-2)', fontWeight: 700, fontSize: 13,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              textDecoration: 'none',
-            }}
-          >
-            GPS
-          </a>
-        </div>
+        {/* One definition of the two navigation buttons, shared with the no-map
+            card — see components/map/TaskNavButtons. */}
+        <TaskNavButtons lat={task.lat} lng={task.lng} />
         {/* Invoice: view existing OR generate new */}
         {task.invoice_html ? (
           <button

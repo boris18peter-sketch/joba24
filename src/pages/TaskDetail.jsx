@@ -10,6 +10,7 @@ import { MapPin, Clock, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, Refr
 import { toast } from 'sonner';
 import TaskDetailActions from '@/components/TaskDetailActions';
 import MapUnavailableCard from '@/components/map/MapUnavailableCard';
+import TaskOwnerMenu from '@/components/TaskOwnerMenu';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
@@ -159,33 +160,7 @@ export default function TaskDetail(props) {
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [creditsNeeded, setCreditsNeeded] = useState(null);
   const [showOwnerMenu, setShowOwnerMenu] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Delete is a permanent removal. Authorization is SERVER-AUTHORITATIVE: the
-  // Task RLS permits delete only for the owner (client_id) or an admin, so a
-  // non-owner request is rejected by the server even if the UI were bypassed.
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      // SERVER-AUTHORITATIVE: releasing every applicant's committed jobas and
-      // removing the task happen together, so a delete can never strand credits.
-      const res = await base44.functions.invoke('deleteTask', { taskId: id });
-      if (!res.data?.success) throw new Error(res.data?.error || 'delete_failed');
-    },
-    onSuccess: () => {
-      invalidateTaskCaches(queryClient, { taskId: id, meId: me?.id });
-      toast.success(t('task_deleted_toast') || 'המשימה נמחקה');
-      setShowDeleteConfirm(false);
-      window.dispatchEvent(new CustomEvent('close_task_sheet'));
-    },
-    onError: (err) => {
-      const code = err?.response?.data?.error || err?.data?.error;
-      if (code === 'work_in_progress_not_deletable') {
-        toast.error(t('delete_blocked_in_progress') || 'העבודה כבר החלה — יש לבטל את המשימה במקום למחוק אותה');
-      } else {
-        toast.error(t('delete_error_toast') || 'שגיאה במחיקה');
-      }
-    },
-  });
   const [showInvoice, setShowInvoice] = useState(false);
   const [showInvoiceView, setShowInvoiceView] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
@@ -1497,83 +1472,15 @@ export default function TaskDetail(props) {
         document.body
       )}
 
-      {/* Owner 3-dot bottom sheet */}
-      {showOwnerMenu && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000001, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowOwnerMenu(false)}>
-          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-3)', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
-            {(task.status === 'OPEN' || task.status === 'EXPIRED') &&
-            <div onClick={() => { setShowOwnerMenu(false); window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/create-task?editId=${id}`); }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Pencil size={17} color="var(--brand-primary)" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{t('edit_task_title')}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('edit_task_sub')}</div>
-                  </div>
-                </div>
-              </div>
-            }
-            <div
-              onClick={() => {
-                setShowOwnerMenu(false);
-                const workerIsActive = ['on_the_way', 'delayed', 'parking', 'arrived', 'starting', 'finishing', 'done'].includes(task.worker_status);
-                if (task.status === 'TAKEN' && workerIsActive) {
-                  window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
-                } else {setShowCancelConfirm(true);}
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}>
-              
-              <div style={{ width: 40, height: 40, borderRadius: 13, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <X size={17} color="var(--color-danger)" />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-danger)' }}>{t('cancel_task_title')}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('cancel_task_sub')}</div>
-              </div>
-            </div>
-            <div
-              onClick={() => { setShowOwnerMenu(false); setShowDeleteConfirm(true); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--color-danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Trash2 size={17} color="var(--color-danger)" />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-danger)' }}>{t('delete_task_title') || 'מחיקת משימה'}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{t('delete_task_sub') || 'מחיקה סופית — לא ניתן לשחזר'}</div>
-              </div>
-            </div>
-            <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
-          </div>
-        </div>,
-        document.body
-      )}
-
-
-
-      {showDeleteConfirm && task && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000002, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowDeleteConfirm(false)}>
-          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>{t('delete_task_title') || 'מחיקת משימה'}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 18 }}>{t('delete_task_confirm') || 'המשימה תימחק לצמיתות. לא ניתן לשחזר פעולה זו.'}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}
-                style={{ width: '100%', height: 48, borderRadius: 14, background: 'var(--color-danger)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: deleteMutation.isPending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {deleteMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> {t('delete_task_btn') || 'מחק משימה'}</>}
-              </button>
-              <button onClick={() => setShowDeleteConfirm(false)} disabled={deleteMutation.isPending}
-                style={{ width: '100%', height: 44, borderRadius: 14, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                {t('cancel')}
-              </button>
-            </div>
-            <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* The publisher's own menu — ONE shared component, the same one the task
+          card opens from its details, so both surfaces are the same sheet. */}
+      <TaskOwnerMenu
+        open={showOwnerMenu}
+        onClose={() => setShowOwnerMenu(false)}
+        task={task}
+        onCancel={() => setShowCancelConfirm(true)}
+        meId={me?.id}
+      />
 
       {showInvoice && task && me && createPortal(
         <InvoiceModal task={task} me={me} onClose={() => setShowInvoice(false)} />,
