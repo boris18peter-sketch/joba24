@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Loader2, Check, MessageCircle, ChevronLeft, User } from 'lucide-react';
+import { Loader2, CheckCircle, MessageCircle, ChevronLeft, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -281,19 +281,21 @@ export default function NewApplicantPopup({ task, application, onClose }) {
             disabled={approving}
             style={{
               flex: 1, height: 52, borderRadius: 14,
-              background: 'var(--brand-btn-primary-bg, var(--brand-primary))',
+              /* The SAME green as "אישור מיידי" in the task detail sheet, so the
+                 instant-approve action looks identical wherever it appears. */
+              background: approving ? '#86efac' : 'linear-gradient(135deg,#059669,#047857)',
               border: 'none', fontSize: 15.5, fontWeight: 900,
-              color: 'var(--brand-btn-primary-text, #ffffff)',
+              color: '#ffffff',
               cursor: approving ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: approving ? 'none' : '0 6px 18px rgba(26,111,212,0.26)',
-              opacity: approving ? 0.75 : 1,
+              boxShadow: approving ? 'none' : '0 6px 18px rgba(5,150,105,0.32)',
+              opacity: approving ? 0.85 : 1,
               WebkitTapHighlightColor: 'transparent',
             }}
           >
             {approving ? <Loader2 size={18} className="animate-spin" /> : (
               <>
-                <Check size={17} strokeWidth={2.6} />
+                <CheckCircle size={18} strokeWidth={2.2} />
                 <span>{t('applicant_popup_approve') || 'אישור מיידי'}</span>
               </>
             )}

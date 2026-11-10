@@ -424,7 +424,10 @@ export default function BottomNav({ items, activePath, isRTL, onNavigate, onPrim
                         background: 'var(--color-danger, #dc2626)',
                         border: '2px solid var(--surface-2, #fff)',
                         boxShadow: '0 1px 4px rgba(220,38,38,0.5)',
-                        animation: 'badgePop 0.35s cubic-bezier(0.34,1.6,0.64,1) both',
+                        /* It POPS once, then keeps blinking: a dot that only
+                           popped read as permanent decoration, and one that never
+                           moved was easy to miss on a busy bar. */
+                        animation: 'badgePop 0.35s cubic-bezier(0.34,1.6,0.64,1) both, pulse-app 1.7s ease-in-out 0.4s infinite',
                       }}
                     />
                   )}

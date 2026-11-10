@@ -49,10 +49,16 @@ messaging.onBackgroundMessage((payload) => {
   // Dedup: skip if we just showed this exact notification
   if (!shouldShow(tag)) return;
 
+  // ── THE ICONS MUST BE REAL FILES ──────────────────────────────────────────
+  // These pointed at `/icon-192.png` and `/icon-96.png`, which do not exist —
+  // the app's icons live under `/icons/`. Every web notification therefore
+  // arrived with a broken icon and a missing status-bar badge, and on a few
+  // Android launchers a notification whose icon cannot be fetched is displayed
+  // blank or dropped from the shade entirely. Both now resolve.
   self.registration.showNotification(title, {
     body,
-    icon: '/icon-192.png',
-    badge: '/icon-96.png',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/favicon-48.png',
     data: { url, tag },
     tag,
     requireInteraction: false,

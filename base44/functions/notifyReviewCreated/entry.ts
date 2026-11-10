@@ -33,10 +33,20 @@ Deno.serve(async (req) => {
     // unnoticed: the bug was only ever visible to the publisher.
     const reviewerIsWorker = data.role === 'worker';
     const whoLabel = reviewerIsWorker ? 'העובד' : 'המפרסם';        // who rated YOU
-    const revieweeLabel = reviewerIsWorker ? 'מפרסם' : 'עובד';      // what YOU are
+
+    // ── NO TRAILING "as a worker / as a publisher" ────────────────────────────
+    // The body used to end with "— כמפרסם" / "— כעובד", which read as a
+    // description of the RATER rather than of the recipient and produced copy
+    // like "המפרסם השאיר דירוג של 5 כוכבים — כעובד": confusing, and wrong for
+    // half the recipients. The title already says who rated whom, so the body is
+    // the rating itself (or the written review) and nothing else.
+    //
+    // `rating` and `comment` are also passed through, so the whole wording of
+    // this notification can be rewritten in the admin's Notifications tab
+    // (`review_created`) without touching code.
     const reviewBody = data.comment
       ? `"${data.comment.substring(0, 100)}"`
-      : `${whoLabel} השאיר דירוג של ${data.rating} כוכבים — כ${revieweeLabel}`;
+      : `דירוג של ${data.rating} כוכבים`;
 
     // ── Route through NotificationManager ──
     await base44.asServiceRole.functions.invoke('notificationManager', {
@@ -46,6 +56,8 @@ Deno.serve(async (req) => {
       variables: {
         who_label: whoLabel,
         stars: stars,
+        rating: data.rating || 0,
+        comment: (data.comment || '').substring(0, 100),
         review_body: reviewBody,
         task_id: data.task_id || '',
         reviewee_id: data.reviewee_id,

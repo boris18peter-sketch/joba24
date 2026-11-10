@@ -219,9 +219,31 @@ Deno.serve(async (req) => {
                 // open — the destination never lived in click_action anyway.
                 clickAction: 'FCM_PLUGIN_ACTIVITY',
                 tag: tag || 'joba24',
+                // ── SO A NOTIFICATION THAT ARRIVES IS ACTUALLY SHOWN ────────
+                // An Android notification is only rendered if it carries a
+                // sound and a visibility: a silent, non-public notification is
+                // posted without alerting, and on several OEM builds (Xiaomi,
+                // Samsung, Huawei) it is silently swallowed when the app is in
+                // the background — which is exactly the "some notifications
+                // never arrive" report. These four fields make every push an
+                // audible, lock-screen-visible alert.
+                sound: 'default',
+                defaultSound: true,
+                defaultVibrateTimings: true,
+                visibility: 'PUBLIC',
+                notificationPriority: 'PRIORITY_HIGH',
               },
             },
             apns: {
+              // An alert push must travel as priority 10 and declare its type,
+              // or Apple may hold it for a low-power device and deliver it
+              // minutes later (or not at all). Without these headers iOS treated
+              // the message as an unspecified push, which is the iOS half of the
+              // same "not every notification arrives" report.
+              headers: {
+                'apns-priority': '10',
+                'apns-push-type': 'alert',
+              },
               payload: {
                 aps: {
                   alert: { title, body: body || '' },

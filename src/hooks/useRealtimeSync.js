@@ -328,6 +328,12 @@ export default function useRealtimeSync({
       // Refresh after application settlement too, not only the earlier task event.
       if (!appData.worker_id || appData.worker_id === me.id) {
         queryClient.invalidateQueries({ queryKey: ['myLockedJobas', me.id] });
+        // The credits that were locked by this application are released the
+        // moment it is declined or cancelled, so every surface that shows a
+        // locked figure is refreshed here — not only on its own minute-long poll.
+        // `lockedPopupTasks` backs the "locked credits" popup, which kept showing
+        // tasks whose applications had already been settled.
+        queryClient.invalidateQueries({ queryKey: ['lockedPopupTasks'] });
         // The canonical applications list — ['myApplications', me.id] was a second
         // cache of this same list and no longer exists.
         queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });

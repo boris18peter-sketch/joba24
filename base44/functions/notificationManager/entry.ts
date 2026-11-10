@@ -51,6 +51,15 @@ const DEFAULT_CONFIGS = {
     cooldown_minutes: 0,
     priority: 'normal',
   },
+  application_declined: {
+    title_template: 'הבקשה שלך לא אושרה הפעם',
+    body_template: 'המפרסם לא אישר את הבקשה שלך למשימה "{task_title}"{credits_line}',
+    deep_link: '/task/{task_id}',
+    tag_template: 'app_declined_{task_id}_{worker_id}',
+    segments: ['all'],
+    cooldown_minutes: 0,
+    priority: 'normal',
+  },
   new_chat_message: {
     title_template: 'הודעה חדשה 💬',
     body_template: '{sender_name}: {message_preview}',
@@ -341,7 +350,10 @@ function fillTemplate(template, variables) {
   for (const [key, value] of Object.entries(variables || {})) {
     result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value ?? ''));
   }
-  return result;
+  // A placeholder this event did not supply is dropped instead of printed:
+  // "{credits_line}" shown literally in a notification body is worse than
+  // nothing at all (a manual test send from the dashboard passes no variables).
+  return result.replace(/\{[a-z0-9_]+\}/gi, '').replace(/\s{2,}/g, ' ').trim();
 }
 
 Deno.serve(async (req) => {

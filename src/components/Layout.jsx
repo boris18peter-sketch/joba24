@@ -766,7 +766,21 @@ export default function Layout() {
       }
       return;
     }
-    if (isGuest) return;
+    if (isGuest) {
+      // ── A GUEST WHO NEVER FINISHED THE FIRST RUN STILL GETS IT ────────────
+      // Guest mode is PERSISTED (`joba24_guest_mode`), and the publish form
+      // enters it automatically. On a device that already carries that flag —
+      // typically Android, whose WebView keeps localStorage across launches —
+      // this early return swallowed the first-run screen for good: a fresh
+      // install opened straight onto the feed and Welcome never appeared, while
+      // the same build on iOS (tested with clean storage) showed it normally.
+      // A guest with no finished first run IS a first-run visitor, so the
+      // choice screen is shown once and then the normal rules apply.
+      if (!hasSeenFirstRun() && location.pathname === '/') {
+        navigate('/welcome', { replace: true });
+      }
+      return;
+    }
 
     // ── A visitor with no account ────────────────────────────────────────────
     // They are never left on a route they cannot use, and they are NEVER

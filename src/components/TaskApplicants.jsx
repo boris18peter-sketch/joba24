@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck, Phone, Lock, Briefcase } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, Phone, Lock, Briefcase } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import UserVerificationBadge from '@/components/UserVerificationBadge';
@@ -99,6 +99,9 @@ export default function TaskApplicants({ task, onApprove }) {
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
+      // The gold "N מועמדויות" button reads its number from this counter, so the
+      // approval must refresh it too — otherwise the badge kept the old count.
+      queryClient.invalidateQueries({ queryKey: ['applicant-stats', task.id] });
       queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', updatedTask?.worker_id] });
       toast.success(t('ta_worker_approved', { name: updatedTask?.worker_name || t('worker') }));
       onApprove?.();
@@ -167,8 +170,13 @@ export default function TaskApplicants({ task, onApprove }) {
       }
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
 
-      // Immediately sync applicant count (don't wait for fade animation)
+      // Immediately sync applicant count (don't wait for fade animation).
+      // `applicant-stats` is the ONE number the gold "N מועמדויות" button and the
+      // task sheet's applicant bar render — without this invalidation the decline
+      // took up to 30 seconds (its refetch interval) to be reflected, so the
+      // button stayed gold and kept announcing a candidate who was already gone.
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['applicant-stats', task.id] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
 
       setFadingIds(prev => new Set([...prev, app.id]));
@@ -176,6 +184,7 @@ export default function TaskApplicants({ task, onApprove }) {
         setFadingIds(prev => { const n = new Set(prev); n.delete(app.id); return n; });
         queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
         queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
+        queryClient.invalidateQueries({ queryKey: ['applicant-stats', task.id] });
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         if (res.data?.auto_bump_resumed) {
           toast.success(t('ta_declined_bump'));

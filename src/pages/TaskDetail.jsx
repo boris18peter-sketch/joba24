@@ -373,6 +373,14 @@ export default function TaskDetail(props) {
       const app = event.data;
       const currentMeId = meIdRef.current;
 
+      // ── THE APPLICANT COUNTER FOLLOWS THE SERVER, NOT A TIMER ─────────────
+      // `applicationCount` (the gold bar and the live-activity subtitle) comes
+      // from the counts endpoint, which polls every 30 seconds. A decline made
+      // here — or by the same publisher on another device — therefore left the
+      // gold button showing a candidate who had already been removed. Any
+      // application event for this task now refreshes that number at once.
+      queryClient.invalidateQueries({ queryKey: ['applicant-stats', id] });
+
       // applications-pulse for applicant counter
       queryClient.setQueryData(['applications-pulse', id], (old = []) => {
         if (event.type === 'create') return old.find(a => a.id === app.id) ? old : [...old, app];

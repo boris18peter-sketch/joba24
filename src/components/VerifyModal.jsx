@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Shield, X, CheckCircle, Loader2, Camera, Eye, EyeOff,
-  Lock, Clock, ChevronDown, ChevronUp, UserCheck, Star, BadgeCheck
+  Lock, Clock, ChevronDown, ChevronUp, UserCheck, Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -186,6 +186,13 @@ export default function VerifyModal({ onClose, onSuccess }) {
   };
 
   const ACCENT = 'var(--brand-modal-cta-bg, var(--brand-primary))';
+  // ── THE OFFICIAL GREEN MARK ────────────────────────────────────────────────
+  // Verification is the GREEN badge everywhere else in the app (the profile's
+  // verified tick is drawn in #16a34a → #059669). The sheet's hero mark and its
+  // call to action wear that same green, so the sheet is recognisably about the
+  // green badge and not a generic blue "info" action.
+  const GREEN = 'linear-gradient(135deg,#16a34a,#059669)';
+  const GREEN_SHADOW = '0 6px 20px rgba(22,163,74,0.34)';
 
   return createPortal(
     <div style={{
@@ -238,9 +245,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
               {/* Icon + title — the accent badge that draws attention to verification */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-                  <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.26) 0%, transparent 70%)' }} />
-                  <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: `linear-gradient(135deg, ${ACCENT}, var(--brand-modal-cta-bg, var(--brand-primary-dark)))`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(26,111,212,0.32)' }}>
-                    <BadgeCheck size={32} color="white" strokeWidth={1.8} />
+                  <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: 'radial-gradient(circle, rgba(22,163,74,0.28) 0%, transparent 70%)' }} />
+                  <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: GREEN_SHADOW }}>
+                    <CheckCircle size={32} color="white" strokeWidth={2.2} />
                   </div>
                 </div>
                 <div>
@@ -434,12 +441,12 @@ export default function VerifyModal({ onClose, onSuccess }) {
                 disabled={submitDisabled}
                 style={{
                   width: '100%', height: 52, borderRadius: 16,
-                  background: submitDisabled ? 'var(--brand-btn-disabled-bg, var(--surface-3))' : `linear-gradient(135deg, ${ACCENT}, var(--brand-modal-cta-bg, var(--brand-primary-dark)))`,
-                  color: submitDisabled ? 'var(--text-3)' : 'var(--brand-modal-cta-text, white)', fontWeight: 800, fontSize: 15,
+                  background: submitDisabled ? 'var(--brand-btn-disabled-bg, var(--surface-3))' : GREEN,
+                  color: submitDisabled ? 'var(--text-3)' : 'white', fontWeight: 800, fontSize: 15,
                   border: 'none', cursor: submitDisabled ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   letterSpacing: 0.2,
-                  boxShadow: submitDisabled ? 'none' : '0 4px 20px rgba(26,111,212,0.3)',
+                  boxShadow: submitDisabled ? 'none' : GREEN_SHADOW,
                   marginBottom: 8,
                 }}
               >

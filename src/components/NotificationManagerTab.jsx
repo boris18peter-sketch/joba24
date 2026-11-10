@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { Bell, RefreshCw, Loader2, Power, Send, Plus, X, ChevronDown, ChevronUp, Mail, Zap, Trophy, HeartHandshake, Coins, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Bell, RefreshCw, Loader2, Send, Plus, X, ChevronDown, ChevronUp, Mail, Zap, Trophy, HeartHandshake, Coins, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 const CATEGORY_META = {
   transactional: { label: 'טרנזקציוני', icon: Zap, color: '#1a6fd4', bg: '#eff6ff' },
@@ -311,7 +311,7 @@ function ConfigDetail({ label, value, mono }) {
 }
 
 const EVENT_KEY_OPTIONS = [
-  'application_created', 'application_approved', 'application_revoked',
+  'application_created', 'application_approved', 'application_revoked', 'application_declined',
   'new_chat_message', 'new_matching_task', 'no_show_report',
   'review_created', 'task_cancelled', 'task_completed', 'worker_left_task',
   'worker_status_on_the_way', 'worker_status_arrived', 'worker_status_done',

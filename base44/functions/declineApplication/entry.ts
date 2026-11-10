@@ -41,8 +41,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden — not task owner' }, { status: 403 });
     }
 
-    // Mark application as rejected
-    await base44.asServiceRole.entities.TaskApplication.update(applicationId, { status: 'rejected' });
+    // Mark application as rejected.
+    //
+    // The identity fields are written back alongside the status ON PURPOSE. A
+    // realtime update event carries the fields of the write, so an update that
+    // only set `status` reached the worker's device as `{ id, status }` — with no
+    // worker_id and no task_id, nothing on that device could tell it was their
+    // own application. That is why a decline produced no popup and no banner for
+    // the worker, and why the locked credits sat there until a later poll. With
+    // the owner of the record in the payload, the client recognises the event
+    // immediately.
+    await base44.asServiceRole.entities.TaskApplication.update(applicationId, {
+      status: 'rejected',
+      task_id: taskId,
+      worker_id: app.worker_id,
+      worker_name: app.worker_name || '',
+      credits_charged: app.credits_charged || 0,
+    });
 
     // Rebuild applicants array from actual TaskApplication records (single source of truth)
     const allAppsAfter = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
@@ -82,6 +97,33 @@ Deno.serve(async (req) => {
           note: `הבקשה למשימה "${task.title}" נדחתה על ידי המפרסם — ${creditsToRefund} ג׳ובות הוחזרו`,
         });
       }
+    }
+
+    // ── The worker is TOLD, exactly like every other status change ───────────
+    // A decline used to be silent: `application_revoked` only fires on
+    // approved → rejected, so a pending application that was declined reached
+    // nobody. The worker now gets the same managed notification every other
+    // outcome of an application gets — title, body and deep link editable in the
+    // admin's Notifications tab under `application_declined`.
+    // A push failure must never undo a decline that already happened, so this is
+    // reported and swallowed rather than thrown.
+    try {
+      await base44.asServiceRole.functions.invoke('notificationManager', {
+        event_key: 'application_declined',
+        user_ids: [app.worker_id],
+        task_id: taskId,
+        variables: {
+          task_title: task.title || '',
+          task_id: taskId,
+          worker_name: app.worker_name || '',
+          credits: creditsToRefund,
+          credits_line: creditsToRefund > 0
+            ? ` — ${creditsToRefund} ג׳ובות הוחזרו לחשבונך`
+            : '',
+        },
+      });
+    } catch (notifyErr) {
+      console.error('⚠️ declineApplication notify failed:', notifyErr?.message);
     }
 
     // NOTE: price is NOT reset here. The auto-bump cron resumes bumping from the

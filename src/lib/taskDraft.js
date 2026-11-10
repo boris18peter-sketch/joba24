@@ -56,9 +56,20 @@ function setCloseCount(n) {
   try { localStorage.setItem(CLOSES_KEY, String(n)); } catch { /* private mode */ }
 }
 
-/** Should the publish button carry the red dot right now? */
+/**
+ * Should the publish button carry the red dot right now?
+ *
+ * YES for as long as a real draft exists — that is the rule the app defines: an
+ * unfinished task waiting to be published is flagged on the raised publish
+ * button. It used to require the draft to have been abandoned exactly once
+ * (`closeCount() === 1`), so a publisher who left the form a second time, or
+ * whose app was closed by the OS while the form was open, saw no dot at all even
+ * though the draft was sitting there. The count is still recorded (the dot's
+ * "one nudge" wording is historical), but the dot now follows the draft itself,
+ * and publishing or deleting the draft is what clears it.
+ */
 export function hasUnfinishedDraft() {
-  return !!readDraft() && closeCount() === 1;
+  return !!readDraft();
 }
 
 /**
