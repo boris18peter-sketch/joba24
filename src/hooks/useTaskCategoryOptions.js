@@ -17,9 +17,17 @@ export default function useTaskCategoryOptions() {
   const { rows, isLoading } = useGlobalCategories();
 
   const options = useMemo(() => {
+    // "אחר" (and every "…אחרת" service) is listed LAST — the catch-all never
+    // sits between real categories.
+    const isOther = (key) => key === 'other' || /_other$/.test(key || '');
     return (rows || [])
       .filter((r) => r && r.active !== false && ACTIONABLE.includes(r.node_type || 'service'))
-      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .sort((a, b) => {
+        const ao = isOther(a.category_key) ? 1 : 0;
+        const bo = isOther(b.category_key) ? 1 : 0;
+        if (ao !== bo) return ao - bo;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      })
       .map((r) => ({
         value: r.category_key,
         // The fixed list carries the emoji-prefixed labels the app has always

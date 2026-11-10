@@ -4,6 +4,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useBrandCategories } from '@/lib/brand/brandCategories';
 import { localizedCategoryLabel } from '@/lib/brand/categoryLabels';
 import { useWorkerPool } from '@/hooks/useWorkerPool';
+import { countWorkers } from '@/lib/workerCounts';
 import { categoryIcon } from '@/components/empty/categoryIcons';
 import BenefitsBanner from '@/components/empty/BenefitsBanner';
 import CategoryCarousel from '@/components/empty/CategoryCarousel';
@@ -27,23 +28,22 @@ export default function PublishedTasksEmptyState() {
   const { rootGroups, globalMap } = useBrandCategories();
   const { data: pool = [] } = useWorkerPool();
 
+  // The badge is the number of professionals who offer this SECTION — counted by
+  // the shared helper the publish form uses, over the same pool, so a tile and
+  // the form can never show two different numbers for one trade again.
   const items = useMemo(() => {
-    const keySets = (rootGroups || []).map((g) => new Set((g.services || []).map((s) => s.value).filter(Boolean)));
-    const counts = keySets.map(() => 0);
-    for (const w of pool || []) {
-      const offers = w.preferred_categories || [];
-      if (!offers.length) continue;
-      keySets.forEach((keys, i) => {
-        if (offers.some((k) => keys.has(k))) counts[i] += 1;
-      });
-    }
     const seen = new Set();
     return (rootGroups || [])
       .filter((g) => g?.key && !seen.has(g.key) && seen.add(g.key))
-      .map((g, i) => {
+      .map((g) => {
         const raw = String(localizedCategoryLabel(g.key, globalMap?.[g.key], lang, t) || g.label || g.key);
         const label = raw.replace(/^[^\p{L}\p{N}]+/u, '').trim() || raw;
-        return { key: g.key, label, Icon: categoryIcon(g.key, globalMap), count: counts[i] || 0 };
+        return {
+          key: g.key,
+          label,
+          Icon: categoryIcon(g.key, globalMap),
+          count: countWorkers(pool, globalMap, { category: g.key }),
+        };
       });
   }, [rootGroups, globalMap, pool, lang, t]);
 

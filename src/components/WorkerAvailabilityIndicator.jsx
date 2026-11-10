@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import { getCategoryLabel } from '@/lib/categories';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
+import { rootKeyFor } from '@/lib/workerCounts';
 import { useLanguage } from '@/lib/LanguageContext';
 import LiveWorkerAvatars from '@/components/LiveWorkerAvatars';
 
@@ -36,8 +37,13 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
     requestAnimationFrame(animate);
   }, [count]); // eslint-disable-line
 
-  // The actionable category (e.g. DJs) owns the label — never the parent niche.
-  const catLabel = hasCategory ? (categoryMap[category]?.label || getCategoryLabel(category, t)) : '';
+  // The count is the PARENT category's total — the same number the feed's tile
+  // for that category shows — so the label is the parent's name as well. Naming
+  // the single service here ("בעיית אינסטלציה אחרת") next to the whole trade's
+  // count was exactly the mismatch the publisher saw: a big number under a
+  // service nobody had actually subscribed to.
+  const rootKey = hasCategory ? rootKeyFor(category, categoryMap) : '';
+  const catLabel = hasCategory ? (categoryMap[rootKey]?.label || getCategoryLabel(rootKey || category, t)) : '';
 
   const mainLabel = (() => {
     if (hasCategory && hasCity) {

@@ -1,5 +1,9 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useWorkerPool } from '@/hooks/useWorkerPool';
+import { useBrandCategories } from '@/lib/brand/brandCategories';
+import { countWorkers } from '@/lib/workerCounts';
 
 /**
  * useWorkerStatsData — the pre-aggregated worker counts record.
@@ -22,29 +26,35 @@ export function useWorkerStatsData() {
 }
 
 /**
- * useWorkerStats — a count that narrows based on category + city selection:
- *   - category + city:  stats.category_city['cat|city']
- *   - category only:    stats.categories[cat]
- *   - nothing:          stats.total
+ * useWorkerStats — how many professionals are available, optionally narrowed by
+ * category and city.
  *
- * Data is recomputed every 5 min by the recountWorkerStats backend function.
+ * ── WHY IT READS THE POOL AND NOT THE PRE-AGGREGATED RECORD ────────────────
+ * The WorkerStat record counts a professional under the EXACT category key they
+ * saved, so a plumber who listed only a sub-service ("בעיית אינסטלציה אחרת") was
+ * counted for that sub-service alone. The count in the publish form therefore
+ * FELL from 39 to 2 the moment the publisher picked a service — the same trade,
+ * two numbers. "אחר" was worse still: it was excluded from the lookup and fell
+ * through to the whole-pool total, so one tile said 32 and the form said 140.
+ *
+ * Every number now comes from src/lib/workerCounts — the same function the feed's
+ * category tiles call, over the same pool query — counted PER PARENT CATEGORY.
+ * A sub-service therefore always shows its trade's real total.
  */
 export function useWorkerStats(category, city) {
-  const { data: stats } = useWorkerStatsData();
+  const { data: pool = [] } = useWorkerPool();
+  const { globalMap } = useBrandCategories();
 
-  const hasCategory = category && category !== 'other';
+  const hasCategory = !!category;
   const hasCity = !!city;
 
-  const count = (() => {
-    if (!stats) return 0;
-    if (hasCategory && hasCity) {
-      return stats.category_city?.[`${category}|${city}`] || 0;
-    }
-    if (hasCategory) {
-      return stats.categories?.[category] || 0;
-    }
-    return stats.total || 0;
-  })();
+  const count = useMemo(
+    () => countWorkers(pool, globalMap, {
+      category: hasCategory ? category : null,
+      city: hasCity ? city : null,
+    }),
+    [pool, globalMap, hasCategory, category, hasCity, city]
+  );
 
-  return { count, hasCategory, hasCity, stats };
+  return { count, hasCategory, hasCity };
 }

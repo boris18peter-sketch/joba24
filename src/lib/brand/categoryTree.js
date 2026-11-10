@@ -124,7 +124,28 @@ export function categoryRootGroups(categories, map) {
     }
     byRoot.get(key).services.push(s);
   }
-  return [...byRoot.values()].sort((a, b) => (a.sort || 0) - (b.sort || 0));
+  // ── A CATCH-ALL IS ALWAYS LAST ────────────────────────────────────────────
+  // "אחר" owns no trade, so listing it between real categories pushed real ones
+  // off the end of the rail and made the form's list read oddly. The rule is
+  // applied here, once, because this grouping feeds BOTH the feed's category
+  // rail and the publish form's pickers — they cannot drift apart.
+  const isOther = (key) => key === 'other' || /_other$/.test(key || '');
+  return [...byRoot.values()]
+    .map((group) => ({
+      ...group,
+      services: [...group.services].sort((a, b) => {
+        const ao = isOther(a.value) ? 1 : 0;
+        const bo = isOther(b.value) ? 1 : 0;
+        if (ao !== bo) return ao - bo;
+        return (a.sort_order ?? 999) - (b.sort_order ?? 999);
+      }),
+    }))
+    .sort((a, b) => {
+      const ao = isOther(a.key) ? 1 : 0;
+      const bo = isOther(b.key) ? 1 : 0;
+      if (ao !== bo) return ao - bo;
+      return (a.sort || 0) - (b.sort || 0);
+    });
 }
 
 /**
