@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { BrandLogo, BrandName } from '@/components/BrandIdentity';
-import { TRACKS } from '@/lib/onboardingTrack';
+import {
+  TRACKS, getOnboardingTrack, setOnboardingTrack, markExplainerDone,
+} from '@/lib/onboardingTrack';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useRegistrationCount } from '@/hooks/useRegistrationCount';
 import OnboardingFooter from '@/components/onboarding/OnboardingFooter';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
@@ -34,6 +38,10 @@ const BOXES = [
     titleKey: 'onb_box_publish_title',
     bodyKey: 'onb_box_publish_body',
     proofKey: 'onb_box_publish_proof',
+    // The ONE line that carries a number, and it is the app's own sign-up
+    // counter — the same figure the join screen shows — so the two screens can
+    // never quote different totals.
+    proofCount: true,
     ctaKey: 'onb_box_publish_cta',
     plain: false,
   },
@@ -42,6 +50,7 @@ const BOXES = [
     titleKey: 'onb_box_worker_title',
     bodyKey: 'onb_box_worker_body',
     proofKey: 'onb_box_worker_proof',
+    proofCount: false,
     ctaKey: 'onb_box_worker_cta',
     plain: true,
   },
@@ -50,11 +59,31 @@ const BOXES = [
 export default function TrackChoice({ onChoose }) {
   const { t, isRTL } = useLanguage();
   const CtaArrow = isRTL ? ArrowLeft : ArrowRight;
+  const navigate = useNavigate();
+  const joinedCount = useRegistrationCount();
+
   // A returning visitor — someone who published here before and has now opened
   // the app, or landed on the campaign link again — already HAS an account. They
   // must not be walked through the whole first-run flow a second time, so the way
   // back in is offered right here, in one tap.
   const [showLogin, setShowLogin] = useState(false);
+
+  // ── CONTINUE AS A GUEST, FROM THE FIRST SCREEN ───────────────────────────
+  // The guest button inside the sign-in sheet only entered guest mode and closed
+  // itself, expecting the app shell to route the guest home. That expectation is
+  // true INSIDE the app — and false here: /welcome is a standalone route with no
+  // app shell around it, so nothing happened at all and the tap read as dead.
+  //
+  // The press IS the end of the first run for this visitor: the journey and its
+  // finished state are recorded (exactly as the worker join step does), so the
+  // root gate cannot send the guest back here, and then the feed is opened.
+  const continueAsGuest = () => {
+    const current = getOnboardingTrack() || TRACKS.PUBLISH;
+    setOnboardingTrack(current);
+    markExplainerDone(current);
+    setShowLogin(false);
+    navigate('/', { replace: true });
+  };
 
   return (
     <div className="j-hero" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -77,14 +106,13 @@ export default function TrackChoice({ onChoose }) {
           </span>
         </div>
 
-        <div className="j-hero-main">
-          {/* ── ONE PROMISE, ONE LINE ────────────────────────────────────────
-              The headline carries the whole message now ("need help? someone is
-              already on the way"), so the explanatory line that used to sit under
-              it is gone. Two lines of introduction before the two choices is what
-              pushed the cards down and made the screen feel longer than it is. */}
-          <h1 className="j-hero-title">{t('onb_choice_title')}</h1>
-
+        {/* ── NO HEADLINE: THE LOGO IS THE INTRODUCTION ─────────────────────
+            "Need help? Someone is already on the way" repeated the first card's
+            own question and spoke only to the visitor who needs help, on a screen
+            that is equally for the one who wants to earn. The two cards say both
+            halves well enough on their own, so they now sit directly under the
+            lockup with nothing between them. */}
+        <div className="j-hero-main j-hero-main-close">
           <div className="j-hero-boxes">
             {BOXES.map((box, i) => (
               <motion.div
@@ -101,13 +129,14 @@ export default function TrackChoice({ onChoose }) {
                 <div>
                   <div className="j-hero-box-title">{t(box.titleKey)}</div>
                   <p className="j-hero-box-body">{t(box.bodyKey)}</p>
-                  {/* Social proof — the number that answers "is anyone actually
-                      here?" before the visitor has to wonder. Same row, same
-                      emphasis and same place on BOTH cards, so the two choices
-                      stay visually equal. */}
+                  {/* One quiet benefit line: a small brand-coloured tick and
+                      muted ink, no frame. Same row on BOTH cards, so the two
+                      choices stay visually equal. */}
                   <div className="j-hero-proof">
-                    <CheckCircle size={14} strokeWidth={2.6} />
-                    <span>{t(box.proofKey)}</span>
+                    <CheckCircle size={13} strokeWidth={2.8} />
+                    <span>{box.proofCount
+                      ? t(box.proofKey, { n: joinedCount.toLocaleString() })
+                      : t(box.proofKey)}</span>
                   </div>
                 </div>
 
@@ -137,6 +166,7 @@ export default function TrackChoice({ onChoose }) {
           titleKey="onb_login_cta"
           onLogin={() => setShowLogin(false)}
           onClose={() => setShowLogin(false)}
+          onGuest={continueAsGuest}
         />
       )}
     </div>

@@ -334,7 +334,7 @@ const DEFAULT_TITLE_KEY = {
   apply: 'login_title_apply_task',
 };
 
-export default function LoginPromptModal({ onLogin, onClose, type = 'apply', titleKey }) {
+export default function LoginPromptModal({ onLogin, onClose, onGuest, type = 'apply', titleKey }) {
   const [showEmail, setShowEmail] = useState(false);
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
@@ -344,9 +344,16 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply', tit
   const handleGuest = () => {
     enterGuestMode();
     onClose();
-    // Layout's guest redirect effect routes to "/" automatically (guests are
-    // constrained to the home feed), so we don't need useNavigate here — and
-    // can't use it: AuthContext renders this modal OUTSIDE <Router>.
+    // Inside the app, Layout's guest redirect effect routes to "/" on its own
+    // (guests are constrained to the home feed), so nothing else is needed here
+    // — and useNavigate could not be used anyway: AuthContext renders this modal
+    // OUTSIDE <Router>.
+    //
+    // A caller standing OUTSIDE the app shell (the first-run welcome screen) has
+    // no such effect behind it, so entering guest mode there only closed the
+    // sheet and left the visitor on the same screen — a button that visibly did
+    // nothing. Such a caller passes `onGuest` and performs its own routing.
+    if (onGuest) onGuest();
   };
 
   // Apple Sign-In only works on Apple devices/browsers. On Android (native app

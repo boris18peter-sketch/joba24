@@ -1064,6 +1064,11 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   font-size: 24px; font-weight: 900; line-height: 1.22; letter-spacing: -0.6px;
   color: var(--text-1);
 }
+/* ── THE WELCOME SCREEN CARRIES NO HEADLINE ──────────────────────────────────
+   With the logo as the introduction, the two cards follow it directly instead of
+   floating in the middle of the screen with a sentence above them that repeated
+   the first card's own question. */
+.j-hero-main-close { justify-content: flex-start; padding-top: 18px; }
 .j-hero-body { margin: 0 auto; font-size: 14.5px; line-height: 1.5; color: var(--text-2); max-width: 400px; }
 .j-hero-body + .j-hero-body { margin-top: 8px; }
 .j-hero-count {
@@ -1108,8 +1113,14 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   min-height: unset; min-width: unset;
 }
 
-/* Footer — the SAME links and the SAME store badges on both pages */
-.j-hero-foot { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+/* Footer — the SAME links and the SAME store badges on both pages.
+   The hairline separates the app stores and policy links from the sign-in area
+   above them, so the download prompts stop reading like a third main button. */
+.j-hero-foot {
+  flex-shrink: 0; display: flex; flex-direction: column; gap: 9px; align-items: center;
+  border-top: 1px solid var(--border-1);
+  padding-top: 12px;
+}
 .j-hero-links { display: flex; justify-content: center; align-items: center; gap: 9px; }
 .j-hero-link { font-size: 11.5px; color: var(--text-3); text-decoration: none; font-weight: 700; white-space: nowrap; }
 .j-hero-link-sep { color: var(--border-2); font-size: 11px; }
@@ -1136,23 +1147,25 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 .j-hero-box-title { font-size: 18px; font-weight: 900; letter-spacing: -0.3px; color: var(--text-1); }
 .j-hero-box-body { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-2); }
 
-/* ── Social proof — the one line that answers "is anyone here?" ──────────────
-   Deliberately NOT body text: it sits in a tinted pill with a tick, so it is read
-   as a fact about the marketplace rather than as more description of the button.
-   The ink is `--j-credit-text`, the token built for "brand blue on a tint" in
-   light mode and "light blue on a dark tint" in dark mode, so it stays legible in
-   both without a second rule. */
+/* ── The benefit line — a footnote to the button, never a badge ──────────────
+   It used to sit in a tinted pill with bold text and a tick, which made it as
+   loud as the buttons under it and turned the screen into three competing calls
+   to action. It is now one quiet line: no frame, no fill, a small brand-coloured
+   tick and muted ink. It still answers "is anyone here?" — it just does it under
+   the button's voice instead of over it.
+
+   The fixed minimum height is what keeps the TWO cards equal: the second line is
+   a little longer and may wrap, so both cards reserve the same space and their
+   buttons land at the same height. */
 .j-hero-proof {
-  display: flex; align-items: flex-start; gap: 6px;
-  margin-top: 9px; padding: 7px 10px;
-  border-radius: 12px;
-  background: var(--brand-primary-light);
-  border: 1px solid var(--border-2);
-  color: var(--j-credit-text);
-  font-size: 12.5px; font-weight: 800; line-height: 1.35;
+  display: flex; align-items: flex-start; gap: 5px;
+  margin-top: 7px;
+  min-height: 30px;
+  color: var(--text-2);
+  font-size: 11.5px; font-weight: 600; line-height: 1.35;
   text-align: start;
 }
-.j-hero-proof svg { flex-shrink: 0; margin-top: 1px; opacity: 0.95; }
+.j-hero-proof svg { flex-shrink: 0; margin-top: 1.5px; color: var(--brand-primary); }
 .j-hero-box-cta {
   margin-top: auto;
   height: 46px; border-radius: 13px;
@@ -1201,6 +1214,7 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   .j-hero-box-body { font-size: 12.5px; }
   .j-hero-box-cta { height: 42px; font-size: 14px; }
   .j-hero-count { margin-top: 8px; padding: 5px 13px; }
+  .j-hero-main-close { padding-top: 10px; }
   .j-onb-cta { height: 46px; font-size: 15.5px; }
 }
 

@@ -47,9 +47,13 @@ export default function StoreDownloadButtons({
   const resolvedPlay = appendRef(playStoreUrl || settings.google_play_url || '');
 
   const sizes = {
-    sm: { height: 42, padX: 14, gap: 9, icon: 20, text: 13 },
-    md: { height: 50, padX: 18, gap: 10, icon: 24, text: 15 },
-    lg: { height: 58, padX: 22, gap: 12, icon: 28, text: 17 },
+    // `xs` is the quietest form: for a page whose job is the call to action above
+    // it (the first-run screen), where the badges are a supporting offer and must
+    // never look like a third main button.
+    xs: { height: 36, padX: 12, gap: 7, icon: 17, text: 11.5, maxW: 150, radius: 11 },
+    sm: { height: 42, padX: 14, gap: 9, icon: 20, text: 13, maxW: 170, radius: 13 },
+    md: { height: 50, padX: 18, gap: 10, icon: 24, text: 15, maxW: 170, radius: 13 },
+    lg: { height: 58, padX: 22, gap: 12, icon: 28, text: 17, maxW: 190, radius: 15 },
   }[size];
 
   const badgeBase = {
@@ -59,12 +63,12 @@ export default function StoreDownloadButtons({
     gap: sizes.gap,
     height: sizes.height,
     padding: `0 ${sizes.padX}px`,
-    borderRadius: 13,
+    borderRadius: sizes.radius,
     background: '#000',
     color: '#fff',
     textDecoration: 'none',
     flex: '1 1 0',
-    maxWidth: 170,
+    maxWidth: sizes.maxW,
     minWidth: 0,
     boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
     border: '1px solid rgba(255,255,255,0.12)',

@@ -29,7 +29,7 @@ export default function OnboardingFooter() {
           policy links are a legal footnote. With the links on top, the two
           black badges sat at the very bottom edge and read as part of the
           fine print. Above the links, they finish the page. */}
-      <StoreDownloadButtons size="sm" />
+      <StoreDownloadButtons size="xs" />
 
       <div className="j-hero-links">
         <Link to="/terms" state={from} className="j-hero-link">{t('terms_title')}</Link>
