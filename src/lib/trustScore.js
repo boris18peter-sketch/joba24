@@ -8,9 +8,25 @@
  */
 
 // Shared helper so the meter, the popup, and the improvement guide always agree.
+//
+// ── THE HIGHER OF THE TWO, NEVER THE LOADED LIST ALONE ──────────────────────
+// `tasks` is a WINDOW, not the total: the profile loads only the completed tasks
+// of the Brand in view, at most 50 of them. `user.tasks_completed` is the
+// counter the server increments on every completion, for every Brand.
+//
+// This used to return the list's length whenever the list was non-empty, so the
+// same account could score differently depending on where the score was read:
+// the rating popup (which passes no list, only the user) showed the real total,
+// while the profile — whose list is scoped to the current Brand — showed that
+// Brand's slice. A worker who completed a job on another surface saw the bar
+// "not move" or land on a smaller number than the popup had just promised.
+//
+// The counter is authoritative, so the score is the larger of the two and can
+// never go backwards because a list happened to be short, filtered or truncated.
 export function getCompletedCount(tasks, user) {
   const fromTasks = Array.isArray(tasks) ? tasks.filter(t => t.status === 'COMPLETED').length : 0;
-  return fromTasks || (user?.tasks_completed || 0);
+  const counter = Number(user?.tasks_completed) || 0;
+  return Math.max(fromTasks, counter);
 }
 
 export function calculateTrustScore(user, { tasks = [], reviews = [] } = {}) {
@@ -30,7 +46,12 @@ export function calculateTrustScore(user, { tasks = [], reviews = [] } = {}) {
     const valid = reviews.map(r => r.rating).filter(r => typeof r === 'number' && r > 0);
     if (valid.length) rating = valid.reduce((a, b) => a + b, 0) / valid.length;
   }
-  if ((rating || 0) > 0 && ratingCount >= 1) {
+  // A positive rating always counts. The old guard also demanded a rating COUNT,
+  // but the popup is handed no reviews, so a user whose `rating_count` field was
+  // never written scored 0 there while the profile — which also reads the review
+  // rows — awarded the points. The average itself is only ever built from real
+  // reviews, so the count is a label here, not a second gate.
+  if ((rating || 0) > 0) {
     score += Math.round((rating / 5) * 30);
   }
 

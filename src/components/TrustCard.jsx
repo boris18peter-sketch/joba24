@@ -108,7 +108,8 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
   }
   rating = rating || 0;
   const ratingCount = user?.rating_count || (Array.isArray(reviews) ? reviews.length : 0);
-  const ratingPoints = (rating > 0 && ratingCount >= 1) ? Math.round((rating / 5) * 30) : 0;
+  // Same rule as the score itself (see trustScore.js): a positive rating counts.
+  const ratingPoints = rating > 0 ? Math.round((rating / 5) * 30) : 0;
   const taskPoints = Math.min(Math.round(completedCount * 1.5), 30);
 
   return createPortal(

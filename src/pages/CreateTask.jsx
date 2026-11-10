@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, ChevronRight, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
-import { clearTaskDraft, dismissDraftDot, rearmDraftDot, notifyDraftChanged } from '@/lib/taskDraft';
+import { clearTaskDraft } from '@/lib/taskDraft';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getRequirementCategories, getActiveRequirements } from '@/lib/requirements';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
@@ -254,8 +254,6 @@ export default function CreateTask() {
   // here, at the one place every publish starts.
   useEffect(() => {
     markPublisherContext();
-    // Back in the form: a future abandonment may ask again with the dot.
-    rearmDraftDot();
   }, []);
 
   const startRecording = async () => {
@@ -727,9 +725,6 @@ export default function CreateTask() {
       // Only save if user has typed something meaningful
       if (form.title || form.description) {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
-        // Tell the app a draft now exists — the raised publish button carries a
-        // dot for exactly this, so the publisher knows there is unfinished work.
-        notifyDraftChanged();
         setDraftSaved(true);
         setTimeout(() => setDraftSaved(false), 2000);
       }
@@ -1379,9 +1374,7 @@ export default function CreateTask() {
   // is walked back one step. `idx` is 0 on the first entry of the session, which
   // is the case where "back" would leave the app entirely.
   const closeForm = () => {
-    // Closing the form on purpose silences the "unfinished task" dot. The DRAFT
-    // stays, so nothing typed is lost — only the nagging stops.
-    dismissDraftDot();
+    // The DRAFT stays, so nothing typed is lost — the form resumes it on return.
     if (!isAuthenticated && !isGuest) enterGuestMode();
     const idx = window.history.state?.idx ?? 0;
     if (idx > 0) navigate(-1);
