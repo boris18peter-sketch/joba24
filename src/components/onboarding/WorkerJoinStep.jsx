@@ -8,6 +8,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import OnboardingFooter from '@/components/onboarding/OnboardingFooter';
 import { useRegistrationCount } from '@/hooks/useRegistrationCount';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { markExplainerDone, TRACKS } from '@/lib/onboardingTrack';
 
 /**
  * The join screen, INSIDE the worker flow — the last step, not a separate page.
@@ -95,7 +96,22 @@ export default function WorkerJoinStep({ onBack }) {
           <button
             className="j-hero-cta-2"
             style={{ width: '100%', maxWidth: 520, margin: '0 auto' }}
-            onClick={() => { enterGuestMode(); navigate('/'); }}
+            onClick={() => {
+              // ── WHY THIS WAS "A BUTTON THAT DID NOTHING" ────────────────
+              // Guest mode was entered and the app was opened, but the first-run
+              // flag was only written when the explainer FINISHED — and the guest
+              // route is pressed on the flow's last screen, where a guest may
+              // reach it without that flag being set. Layout then saw a guest who
+              // had never finished the first run and sent them straight back to
+              // /welcome: one frame on the feed, then the same screen again, which
+              // reads as a dead button.
+              //
+              // This press IS the end of the flow, so the flow is recorded as
+              // finished before leaving it. Then nothing bounces the guest.
+              enterGuestMode();
+              markExplainerDone(TRACKS.WORKER);
+              navigate('/');
+            }}
           >
             {t('continue_as_guest')}
           </button>

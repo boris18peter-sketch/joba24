@@ -46,7 +46,8 @@ import PublishStepIntro from '@/components/publish/PublishStepIntro';
 import PublishHelpVideo from '@/components/publish/PublishHelpVideo';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 import { checkGibberish, checkCategoryDescriptionMatch } from '@/lib/taskTextChecks';
-import { bestServiceForText } from '@/lib/descriptionCategoryMatch';
+import useServiceSync from '@/hooks/useServiceSync';
+import PublishIssueBanner from '@/components/publish/PublishIssueBanner';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // Which step of the slider the publisher had reached. A visitor who is asked to
@@ -651,9 +652,29 @@ export default function CreateTask() {
   // Kept apart from the required-field banner so a real reason is never replaced
   // by a generic "something is missing".
   const [publishError, setPublishError] = useState('');
-  // Set when the service was moved onto the description by itself, so the
-  // publisher is TOLD what changed instead of finding a different choice.
-  const [categorySyncNote, setCategorySyncNote] = useState(null);
+
+  // ── THE SERVICE FOLLOWS THE DESCRIPTION ────────────────────────────────
+  // See useServiceSync: a service the publisher picked that matches the text is
+  // never traded away, and the description itself is never edited. In edit mode
+  // the stored task owns its own category, so this is create-only.
+  const serviceSync = useServiceSync({
+    enabled: !isEditMode && !isRepost && !categoriesLoading && !autoDescription.isAuto,
+    text: `${form.description || ''} ${form.title || ''}`,
+    serviceSignature: serviceKeySignature,
+    map: globalMap,
+    currentKey: form.category,
+    translate: t,
+    onSwitch: (next) => {
+      // The category's own answers belonged to the old service, so they go with
+      // it — leaving them behind published one service's answers under another.
+      setForm((prev) => ({ ...prev, category: next, category_details: {} }));
+      setCategoryDetails({});
+      setExtraFieldsText('');
+      setErrors((prev) => ({ ...prev, categoryForm: false }));
+      setModerationErrors((prev) => ({ ...prev, categoryMismatch: null }));
+      setPublishError('');
+    },
+  });
   // Address is confirmed if we have a location (repost/edit pre-fills it, free text also accepted)
   const [addressConfirmed, setAddressConfirmed] = useState(!!form.location_name);
 
@@ -898,6 +919,14 @@ export default function CreateTask() {
     // so every required field is checked first, and while one is missing the
     // user is scrolled straight to it instead of being sent to the login popup.
     if (categoriesLoading) return;
+    setPublishError('');
+    // The description may have just moved the service. Settle it now and stop:
+    // the checks below read the service's own questions, so running them against
+    // a choice that is being replaced would report a field that no longer exists.
+    if (serviceSync.sync()) {
+      fieldRefs.categoryPicker.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (!form.category || (!isEditMode && !brandCategories.some(c => c.value === form.category))) {
       // Nothing filled in yet? The service choice IS the missing field, so that
       // is where the user is taken — never a toast they might not even see.
@@ -1145,7 +1174,18 @@ export default function CreateTask() {
     } catch (err) {
       setLoading(false);
       submittingRef.current = false;
-      toast.error(err?.response?.data?.message || t('ct_publish_err'));
+      // The server's own words when it has any, then the app's generic line.
+      // Either way it STAYS on the form with a retry — a toast alone vanished
+      // after a few seconds and left the publisher with a button that looked
+      // like it did nothing.
+      const reason = err?.response?.data?.message
+        || err?.response?.data?.error
+        || err?.response?.data?.detail
+        || t('ct_publish_err');
+      setPublishError(reason);
+      setShowErrorBanner(true);
+      fieldRefs.categoryPicker.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      toast.error(reason);
       return;
     }
 
@@ -1542,13 +1582,22 @@ export default function CreateTask() {
           </div>
         )}
 
-        {/* Error banner */}
+        {/* Why the last attempt did not go through — the REAL reason when there
+            is one, the generic line only when there is not. */}
         {showErrorBanner && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <AlertTriangle size={16} color="var(--color-danger)" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 13, color: 'var(--color-danger)', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>
-              {t('missing_fields_warning')}
-            </p>
+          <PublishIssueBanner
+            message={publishError || t('missing_fields_warning')}
+            onRetry={publishError ? () => { setPublishError(''); doSubmit(); } : undefined}
+            onDismiss={publishError ? () => { setPublishError(''); setShowErrorBanner(false); } : undefined}
+          />
+        )}
+
+        {/* The service moved onto the description by itself — say so, plainly,
+            so a changed choice is never a surprise. */}
+        {serviceSync.note && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--brand-primary-light)', border: '1px solid var(--border-2)', borderRadius: 14, padding: '10px 12px', fontSize: 12.5, fontWeight: 700, color: 'var(--brand-primary)', lineHeight: 1.5 }}>
+            <span>✓</span>
+            <span>{`השירות עודכן ל"${serviceSync.note.to}" לפי מה שכתבת`}</span>
           </div>
         )}
 
