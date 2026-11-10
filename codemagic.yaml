@@ -942,8 +942,8 @@ workflows:
       groups:
         - ios_signing          # shares FACEBOOK_CLIENT_TOKEN with iOS; does not affect keystore signing
       vars:
-        ANDROID_VERSION_CODE: 32
-        ANDROID_VERSION_NAME: "2.0.4"
+        ANDROID_VERSION_CODE: 33
+        ANDROID_VERSION_NAME: "2.0.5"
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
         # FACEBOOK_CLIENT_TOKEN is provided by the ios_signing environment group
