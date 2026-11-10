@@ -1,19 +1,54 @@
-import { Image, Loader2, Mic, Send, X } from 'lucide-react';
+import { Camera, Image as ImageIcon, Loader2, Mic, Send, X } from 'lucide-react';
 
 /**
- * Bottom composer — Attachment | Message input | Send.
- * Multiline input grows to a sensible maximum, stays compact when short, and
- * sits directly above the keyboard (positioning is owned by the chat shell).
+ * Bottom composer — Camera | Attachment | Message input | Send.
+ *
+ * ── ONE COMPONENT FOR EVERY CONVERSATION ────────────────────────────────────
+ * The task chat and the support chat render THIS component, so the field, the
+ * buttons around it and their geometry cannot drift apart again. Support used to
+ * have its own composer, which is why it looked like a different product.
+ *
+ * ── EVERY CONTROL IS EXACTLY THE SAME HEIGHT ────────────────────────────────
+ * `CONTROL` is the one measurement: the field at rest and all square controls
+ * are that exact height, with the same radius. Buttons used to be 38px beside a
+ * 43px field, so the row read as slightly crooked at every size. When the field
+ * grows (a long message) the controls stay pinned to its bottom edge instead of
+ * floating in the middle.
+ *
+ * ── THE CAMERA ──────────────────────────────────────────────────────────────
+ * Android's WebView only offers "take a photo" when the file input carries the
+ * `capture` attribute — without it the chooser is gallery-only, which is exactly
+ * the "I can't take a picture, only pick one that already exists" report. So the
+ * camera gets its own input with `capture="environment"`, and the existing input
+ * (gallery, video, PDF) is left exactly as it was. On a desktop browser the
+ * camera button is hidden: there is nothing to capture with.
+ *
  * Attachment / voice functionality is unchanged.
  */
+const CONTROL = 40;
+
+function hasCamera() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints || 0) > 1;
+}
+
+const squareButton = (extra = {}) => ({
+  width: CONTROL, height: CONTROL, minHeight: 0, minWidth: 0,
+  borderRadius: 12, flexShrink: 0, boxSizing: 'border-box',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  ...extra,
+});
+
 export default function ChatComposer({
-  value, onChange, onSend, onFileChange, inputRef, fileRef,
-  recording, recordSeconds, uploading, uploadingVoice,
+  value, onChange, onSend, onFileChange, onCameraChange, inputRef, fileRef, cameraRef,
+  recording, recordSeconds, uploading, uploadingVoice, sending = false,
   onStartRecording, onStopRecording, onCancelRecording, formatTime,
   isRTL, t,
 }) {
   const canSend = value.trim().length > 0;
-  const busy = uploading || recording || uploadingVoice;
+  const busy = uploading || recording || uploadingVoice || sending;
+  const showCamera = hasCamera();
 
   return (
     <div style={{
@@ -24,24 +59,57 @@ export default function ChatComposer({
       display: 'flex', alignItems: 'flex-end', gap: 7,
       flexShrink: 0,
     }}>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*,video/*,.pdf"
+        style={{ display: 'none' }}
+        onChange={onFileChange}
+      />
+      {showCamera && (
+        <>
+          {/* `capture` is what makes Android open the camera instead of the
+              gallery — see the note at the top of this file. */}
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={onCameraChange || onFileChange}
+          />
+          <button
+            type="button"
+            onClick={() => cameraRef?.current?.click()}
+            disabled={busy}
+            aria-label={t('chat_take_photo')}
+            style={squareButton({
+              background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+              cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.55 : 1,
+            })}
+          >
+            <Camera size={17} color="var(--text-2)" />
+          </button>
+        </>
+      )}
+
       <button
+        type="button"
         onClick={() => fileRef.current?.click()}
         disabled={busy}
         aria-label="attachment"
-        style={{
-          width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0,
-          background: 'var(--surface-3)', border: '1px solid var(--border-1)', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
+        style={squareButton({
+          background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+          cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.55 : 1,
+        })}
       >
-        {uploading ? <Loader2 size={16} color="var(--brand-btn-primary-bg, var(--brand-primary))" className="animate-spin" /> : <Image size={16} color="var(--text-2)" />}
+        {uploading ? <Loader2 size={17} color="var(--brand-btn-primary-bg, var(--brand-primary))" className="animate-spin" /> : <ImageIcon size={17} color="var(--text-2)" />}
       </button>
-      <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={onFileChange} />
 
       {recording ? (
         <div style={{
-          flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 12px', borderRadius: 12, minHeight: 40,
+          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8,
+          padding: '0 12px', borderRadius: 12, height: CONTROL, boxSizing: 'border-box',
           background: 'var(--color-danger-bg)', border: '1.5px solid var(--color-danger-border)',
         }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
@@ -56,9 +124,8 @@ export default function ChatComposer({
       ) : (
         <div style={{
           flex: 1, minWidth: 0, display: 'flex', alignItems: 'center',
-          background: 'var(--surface-3)', borderRadius: 12,
-          border: '1.5px solid var(--border-1)',
-          paddingTop: 2, paddingBottom: 2,
+          background: 'var(--surface-3)', borderRadius: 12, boxSizing: 'border-box',
+          border: '1.5px solid var(--border-1)', minHeight: CONTROL,
           paddingInlineStart: 12, paddingInlineEnd: 8,
           transition: 'border-color 0.15s ease',
         }}>
@@ -73,7 +140,9 @@ export default function ChatComposer({
             }}
             style={{
               flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-              fontSize: 16, lineHeight: 1.45, resize: 'none',
+              // 21px line + 8px top and bottom = 37px, so the field's outer box is
+              // exactly CONTROL at rest — the same as every button beside it.
+              fontSize: 16, lineHeight: '21px', resize: 'none',
               maxHeight: 120, overflowY: 'auto', padding: '8px 0',
               direction: isRTL ? 'rtl' : 'ltr',
             }}
@@ -82,48 +151,46 @@ export default function ChatComposer({
       )}
 
       {uploadingVoice ? (
-        <div style={{ width: 38, height: 38, borderRadius: 12, flexShrink: 0, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Loader2 size={16} color="var(--brand-btn-primary-bg, var(--brand-primary))" className="animate-spin" />
+        <div style={squareButton({ background: 'var(--surface-3)', border: '1px solid var(--border-1)' })}>
+          <Loader2 size={17} color="var(--brand-btn-primary-bg, var(--brand-primary))" className="animate-spin" />
         </div>
       ) : recording ? (
         <button
           onClick={onStopRecording}
           className="btn-tap"
           aria-label="send"
-          style={{
-            width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0, border: 'none', cursor: 'pointer',
-            background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          style={squareButton({
+            border: 'none', cursor: 'pointer', background: '#dc2626',
             boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
-          }}
+          })}
         >
-          <Send size={16} color="var(--brand-btn-primary-text, white)" />
+          <Send size={17} color="var(--brand-btn-primary-text, white)" />
         </button>
       ) : canSend ? (
         <button
           onClick={() => onSend(value)}
+          disabled={sending}
           className="btn-tap"
           aria-label="send"
-          style={{
-            width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0, border: 'none', cursor: 'pointer',
+          style={squareButton({
+            border: 'none', cursor: sending ? 'not-allowed' : 'pointer',
             background: 'linear-gradient(135deg,var(--brand-btn-primary-bg, var(--brand-primary)),var(--brand-btn-primary-bg, var(--brand-primary)))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(26,111,212,0.32)',
-          }}
+          })}
         >
-          <Send size={16} color="var(--brand-btn-primary-text, white)" />
+          {sending ? <Loader2 size={17} color="var(--brand-btn-primary-text, white)" className="animate-spin" /> : <Send size={17} color="var(--brand-btn-primary-text, white)" />}
         </button>
       ) : (
         <button
           onClick={onStartRecording}
-          disabled={uploading}
+          disabled={busy}
           aria-label="record"
-          style={{
-            width: 38, height: 38, minHeight: 0, minWidth: 0, borderRadius: 12, flexShrink: 0,
-            background: 'var(--surface-3)', border: '1px solid var(--border-1)', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+          style={squareButton({
+            background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+            cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.55 : 1,
+          })}
         >
-          <Mic size={16} color="var(--text-2)" />
+          <Mic size={17} color="var(--text-2)" />
         </button>
       )}
     </div>
