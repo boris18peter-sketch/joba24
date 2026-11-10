@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { isNativeLike } from '@/lib/nativeEnv';
 import { setPendingTask } from '@/lib/pendingTask';
+import { parkRatingLink } from '@/lib/ratingLink';
 
 /**
  * NativeTaskLink — the native app's half of "a task link was tapped".
@@ -51,7 +52,19 @@ export default function NativeTaskLink() {
         const { App } = await import('@capacitor/app');
         const sub = await App.addListener('appUrlOpen', ({ url }) => {
           const taskId = taskIdFromUrl(url);
-          if (taskId) setPendingTask(taskId);
+          if (taskId) {
+            setPendingTask(taskId);
+            // ── THE REST OF THE LINK IS NOT NOISE ──────────────────────────
+            // A finished job's card links with `rate=1`, and the tap that
+            // delivers it here is the native one (Universal Link / App Link).
+            // Reading only the task id dropped that flag, so the app opened the
+            // task and left the person to find the rating the card was already
+            // asking for. The intent is parked next to the task and taken when
+            // the sheet opens, exactly as the web path does.
+            let asksForRating = false;
+            try { asksForRating = new URL(url).searchParams.get('rate') === '1'; } catch { /* malformed link */ }
+            parkRatingLink(taskId, asksForRating);
+          }
         });
         if (cancelled) { sub.remove(); return; }
         handle = sub;

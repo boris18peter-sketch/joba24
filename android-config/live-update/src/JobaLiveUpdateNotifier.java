@@ -94,6 +94,31 @@ public final class JobaLiveUpdateNotifier {
             R.id.joba_label_1, R.id.joba_label_2, R.id.joba_label_3, R.id.joba_label_4,
     };
 
+    /**
+     * The rating ask's five taps — the same row the iOS card draws.
+     *
+     * A finished job's card has no flow action left, so the stars take the
+     * button's place: one tap answers the card where it is, with no app launch.
+     * Five fixed slots, for the same reason the rail has four: a RemoteViews
+     * layout cannot add views at runtime.
+     */
+    private static final int[] STAR_IDS = {
+            R.id.joba_star_1, R.id.joba_star_2, R.id.joba_star_3, R.id.joba_star_4, R.id.joba_star_5,
+    };
+
+    /** The accent gold the in-app star row and the iOS card both use (#fbbf24). */
+    private static final int GOLD = 0xFFFBBF24;
+
+    /**
+     * The action id a star tap carries.
+     *
+     * Deliberately the literal string: the server's own constant lives in
+     * `base44/shared/liveActivityRating.ts` (`RATING_ACTION_ID`) and this file is
+     * compiled into the native project, so it cannot import it. The value is a
+     * wire contract, not an internal name — it must not drift.
+     */
+    private static final String RATING_ACTION_ID = "rate_counterpart";
+
     /** The intent action the action button broadcasts. */
     public static final String ACTION_BUTTON = "__PKG__.LIVE_UPDATE_BUTTON";
 
@@ -532,6 +557,8 @@ public final class JobaLiveUpdateNotifier {
                 views.setViewVisibility(R.id.joba_card_action, View.GONE);
             }
 
+            fillStars(context, views, payload);
+
             views.setOnClickPendingIntent(R.id.joba_card_root, openIntent);
             return views;
         } catch (Throwable ignored) {
@@ -539,6 +566,65 @@ public final class JobaLiveUpdateNotifier {
             // this notification already carries — never to an empty card.
             return null;
         }
+    }
+
+    /**
+     * The stars, in the one place the card can offer an answer.
+     *
+     * ── ASKING VERSUS ANSWERED ───────────────────────────────────────────────
+     * `ratingValue` is the star the server recorded: 0 while the card is ASKING.
+     * Asking, every star is drawn in the rail's "not reached yet" grey and each
+     * one is a control. Answered, the chosen stars take the accent gold and no
+     * tap is bound at all — a card that has its answer must not invite a second
+     * one (the server refuses it, and a dead tap is worse than no tap).
+     *
+     * A card with no rating at all hides the row entirely, so the ordinary
+     * in-progress card is unchanged.
+     */
+    private static void fillStars(Context context, RemoteViews views, JobaLiveUpdatePayload payload) {
+        boolean answered = payload.ratingValue > 0;
+        boolean asking = payload.hasRatingAsk() && !answered;
+
+        if (!asking && !answered) {
+            views.setViewVisibility(R.id.joba_card_stars, View.GONE);
+            return;
+        }
+
+        views.setViewVisibility(R.id.joba_card_stars, View.VISIBLE);
+        for (int index = 0; index < STAR_IDS.length; index += 1) {
+            int star = index + 1;
+            boolean filled = answered && star <= payload.ratingValue;
+            views.setTextColor(STAR_IDS[index], filled ? GOLD : BORDER);
+            if (asking) {
+                views.setOnClickPendingIntent(STAR_IDS[index], starIntent(context, payload, star));
+            }
+        }
+    }
+
+    /**
+     * One star's tap.
+     *
+     * It goes to the SAME receiver the action button uses, because it is the same
+     * kind of tap: a broadcast that posts to the capability endpoint without
+     * opening the app, and falls back to opening the task when it cannot act. The
+     * only difference is the body — `action_id: rate_counterpart` and the star.
+     */
+    private static PendingIntent starIntent(Context context, JobaLiveUpdatePayload payload, int stars) {
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+
+        Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
+        intent.setAction(ACTION_BUTTON);
+        intent.putExtra("task_id", payload.taskId);
+        intent.putExtra("role", payload.role);
+        intent.putExtra("action_id", RATING_ACTION_ID);
+        intent.putExtra("stars", stars);
+
+        // One request code per star, offset past the open and action intents: with
+        // a shared code the five PendingIntents would be the SAME object, and every
+        // star would post whichever value was bound last.
+        return PendingIntent.getBroadcast(
+                context, notificationId(payload.key()) + 10 + stars, intent, flags);
     }
 
     /** The collapsed row: the bubble, the sentence and the position, nothing else. */

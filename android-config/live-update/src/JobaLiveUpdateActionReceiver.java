@@ -47,6 +47,9 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
         String role = intent.getStringExtra("role");
         String actionId = intent.getStringExtra("action_id");
         String actionStep = intent.getStringExtra("action_step");
+        // A star tap carries its value; every flow action carries none. 0 means
+        // "this tap is not a rating", so the body stays exactly as it was.
+        final int stars = intent.getIntExtra("stars", 0);
         if (taskId == null || taskId.isEmpty()) return;
 
         final Context appContext = context.getApplicationContext();
@@ -94,7 +97,7 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
             public void run() {
                 boolean applied = false;
                 try {
-                    applied = post(appContext, endpoint, token, actionId, actionStep, taskId, role);
+                    applied = post(appContext, endpoint, token, actionId, actionStep, taskId, role, stars);
                 } catch (Throwable ignored) {
                     // Treated exactly like a refusal below: the tap still has to
                     // lead somewhere, so the app is opened on the task.
@@ -118,12 +121,17 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
             String actionId,
             String actionStep,
             String taskId,
-            String role) throws Exception {
+            String role,
+            int stars) throws Exception {
 
         JSONObject body = new JSONObject();
         body.put("token", token);
         body.put("action_id", actionId);
         body.put("expected_step", actionStep == null ? "" : actionStep);
+        // Only a star tap sends one, and only then does the server read it. The
+        // value is clamped again on the server, so a malformed extra cannot
+        // become a rating outside the 1…5 scale.
+        if (stars > 0) body.put("stars", stars);
         body.put("task_id", taskId);
         body.put("role", role == null ? "publisher" : role);
 

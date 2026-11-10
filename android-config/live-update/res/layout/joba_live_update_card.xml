@@ -208,6 +208,85 @@
             android:includeFontPadding="false" />
     </LinearLayout>
 
+    <!-- ── THE STARS ────────────────────────────────────────────────────────
+         The rating ask, drawn where the action button sits: a finished job has
+         no next step, it has one last question. TextViews rather than drawables
+         because a RemoteViews cannot tint an image, and the star character needs
+         no asset, no density variant and no licensing. The five taps are bound
+         from Java (one PendingIntent per star) and are NOT bound once the
+         question is answered: an answered card draws its stars, it no longer
+         offers them. Shown only when the payload carries a rating. ──────────── -->
+    <LinearLayout
+        android:id="@+id/joba_card_stars"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:layoutDirection="rtl"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/joba_star_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="46dp"
+            android:gravity="center"
+            android:text="★"
+            android:textSize="26sp"
+            android:textColor="#D4E2F5"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_star_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="46dp"
+            android:gravity="center"
+            android:text="★"
+            android:textSize="26sp"
+            android:textColor="#D4E2F5"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_star_3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="46dp"
+            android:gravity="center"
+            android:text="★"
+            android:textSize="26sp"
+            android:textColor="#D4E2F5"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_star_4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="46dp"
+            android:gravity="center"
+            android:text="★"
+            android:textSize="26sp"
+            android:textColor="#D4E2F5"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/joba_star_5"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="46dp"
+            android:gravity="center"
+            android:text="★"
+            android:textSize="26sp"
+            android:textColor="#D4E2F5"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
     <!-- ── The ONE action, in the app's own approved green gradient. It is here
          rather than only in the system action row because the action row sits
          below the card in a strip the launcher styles, which is what made the

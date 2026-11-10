@@ -79,7 +79,13 @@ export function buildRatingSnapshot(input: any) {
       prompt: answered ? '' : t('cm_how_was', { name: counterpart }),
       value: answered ? Number(ratedStars) : null,
     },
-    deepLink: `${OPEN_DEEP_LINK}${task.id}`,
+    // ── A CARD THAT IS ASKING OPENS THE APP ON THE ASK ─────────────────────
+    // The card's body tap is the only way to reach the full rating (with a
+    // comment) from the Lock Screen, and it used to open the task and leave the
+    // person to find the rating themselves. `rate=1` tells the app which
+    // question this card was already asking, so it opens on it instead. An
+    // ANSWERED card carries the plain link: there is nothing left to ask.
+    deepLink: `${OPEN_DEEP_LINK}${task.id}${answered ? '' : '&rate=1'}`,
     endsAt: null,
     revision: Math.max(1, Math.floor(Number(revision) || 1)),
     updatedAt: task.updated_date || null,

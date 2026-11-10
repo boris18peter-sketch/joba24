@@ -21,10 +21,15 @@ import { resolveTaskBrandUrl } from '@/lib/brand/taskNavigation';
 import { setPendingTask, readPendingTask, clearPendingTask, PENDING_TASK_EVENT } from '@/lib/pendingTask';
 import { getOnboardingTrack, TRACKS } from '@/lib/onboardingTrack';
 import { attachOpenTaskListener } from '@/lib/liveUpdateNative';
+import { parkRatingLink, takeRatingLink, RATE_TASK_EVENT } from '@/lib/ratingLink';
 
 // The first-run flow owns the screen until the visitor has been through it.
 // A pending task waits for them to come out the other side.
 const FIRST_RUN_PATHS = ['/join', '/welcome'];
+
+// A card that was ASKING for a rating parks its intent here with `rate=1` (see
+// @/lib/ratingLink), and the ask is raised only once the task is actually being
+// opened — Layout answers it with the same sheet every other trigger raises.
 
 export default function DeepLinkHandler() {
   const { openTaskSheet } = useTaskSheet();
@@ -66,6 +71,7 @@ export default function DeepLinkHandler() {
       // Parked in both stores — the URL param is stripped right below, so these
       // two are the only copy left. See @/lib/pendingTask.
       setPendingTask(taskId);
+      parkRatingLink(taskId, params.get('rate') === '1');
       // Remove the param so it doesn't re-trigger on refresh / back-nav
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', clean);
@@ -118,6 +124,12 @@ export default function DeepLinkHandler() {
     resolveTaskBrandUrl(pending, currentBrandId, isPlatformBrand).then((brandUrl) => {
       if (brandUrl) { window.location.href = brandUrl; return; }
       openTaskSheet(pending);
+      // The card asked, so the app opens on the ask. Raised after the sheet so
+      // the two never race: Layout's rating step closes the sheet itself, which
+      // is the order the rest of the completion flow already uses.
+      if (takeRatingLink(pending)) {
+        window.dispatchEvent(new CustomEvent(RATE_TASK_EVENT, { detail: { taskId: pending } }));
+      }
     });
   }, [isLoadingAuth, heldByLaunchGate, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand, pendingSignal]);
 

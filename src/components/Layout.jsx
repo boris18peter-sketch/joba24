@@ -572,6 +572,24 @@ export default function Layout() {
     return () => window.removeEventListener('show_rating_modal', handler);
   }, [maybeShowRating]);
 
+  // ── A CARD'S TAP THAT WAS ASKING FOR A RATING ────────────────────────────
+  // The finished job's card links with `rate=1` (see DeepLinkHandler), so the app
+  // opens straight on the question the card was asking — the full sheet, with the
+  // comment box — instead of the task screen the person would then have to hunt
+  // through. The task is read fresh because the ask needs its true status: every
+  // guard (participation, already rated, one ask per task) lives in maybeShowRating.
+  useEffect(() => {
+    const handler = (e) => {
+      const taskId = e.detail?.taskId;
+      if (!taskId || !me?.id) return;
+      base44.entities.Task.get(taskId)
+        .then((task) => maybeShowRating(task))
+        .catch(() => { /* the task sheet is already open on it */ });
+    };
+    window.addEventListener('joba24_auto_rate', handler);
+    return () => window.removeEventListener('joba24_auto_rate', handler);
+  }, [me?.id, maybeShowRating]);
+
   // ── A COMPLETION THE APP NEVER WATCHED STILL GETS ITS TWO MOMENTS ────────
   // Approval can happen while the app is CLOSED — the Lock Screen's own button
   // does exactly that. No WebSocket event arrives, no task screen was open, so
