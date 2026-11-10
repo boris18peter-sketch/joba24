@@ -168,10 +168,36 @@ public class JobaLiveUpdatePlugin extends Plugin {
     /** Read (and clear) a task the card asked to open while the app was closed. */
     @PluginMethod
     public void consumePendingOpenTask(PluginCall call) {
-        String taskId = new JobaLiveUpdateStore(getContext()).takePendingOpenTask();
+        JobaLiveUpdateStore store = new JobaLiveUpdateStore(getContext());
+        String taskId = store.takePendingOpenTask();
+
+        // ── A COLD START ARRIVES AS THE ACTIVITY'S OWN INTENT ────────────────
+        // The card's tap is an activity PendingIntent (a broadcast could not
+        // launch the app — see JobaLiveUpdateNotifier.openIntent), and extras do
+        // not reach the store on their own. Reading them here is what makes a tap
+        // on a card land on THAT task instead of the feed, on the very first
+        // frame the web layer exists.
+        if (taskId == null || taskId.isEmpty()) {
+            taskId = openTaskFromLaunchIntent();
+        }
+
         JSObject result = new JSObject();
         result.put("taskId", taskId == null ? "" : taskId);
         call.resolve(result);
+    }
+
+    /** The task id the activity was launched with, if any. */
+    private String openTaskFromLaunchIntent() {
+        try {
+            if (getActivity() == null || getActivity().getIntent() == null) return "";
+            String taskId = getActivity().getIntent().getStringExtra("joba_open_task");
+            if (taskId == null) return "";
+            // Cleared so the same launch cannot reopen the task on a later mount.
+            getActivity().getIntent().removeExtra("joba_open_task");
+            return taskId;
+        } catch (Throwable ignored) {
+            return "";
+        }
     }
 
     /**

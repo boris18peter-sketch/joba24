@@ -13,6 +13,7 @@ import { trackEvent } from '@/lib/analytics';
 import { useLanguage } from '@/lib/LanguageContext';
 import { selectTask, patchTaskCache } from '@/lib/taskCache';
 import { dispatchTaskTransition } from '@/lib/taskTransition';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 
 export default function TaskApplicants({ task, onApprove }) {
   const { t, isRTL } = useLanguage();
@@ -49,8 +50,23 @@ export default function TaskApplicants({ task, onApprove }) {
       return profiles;
     },
     enabled: applications.length > 0,
-    staleTime: 120000,
+    // Short: this carries the rating, the phone and the badges — the things a
+    // new photo or a completed job changes. Two minutes of a cached answer is
+    // what made the list feel permanently behind.
+    staleTime: 20 * 1000,
   });
+
+  // ── THE NAME AND THE FACE COME FROM ONE LIVE SOURCE ──────────────────────
+  // The list used to read the copy frozen onto the application, and the photo
+  // from a per-applicant profile request. Two sources, two latencies, and a
+  // rename or a new photo took up to two minutes to appear. This resolves
+  // everybody in ONE batched call from the app-wide profile cache, so the row
+  // paints the current name and photo on its first frame.
+  const liveProfile = useUserProfiles(applications.map(a => a.worker_id));
+
+  /** The current name of one worker, whatever this screen has resolved so far. */
+  const nameOf = (workerId, fallback) =>
+    liveProfile(workerId)?.name || applicantProfiles[workerId]?.full_name || fallback || '';
 
   const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
 
@@ -65,7 +81,7 @@ export default function TaskApplicants({ task, onApprove }) {
         workerId: app.worker_id,
         // The task stores the worker's CURRENT name, not the copy frozen onto the
         // application when it was sent. Approval is where that name is written.
-        workerName: applicantProfiles[app.worker_id]?.full_name || app.worker_name,
+        workerName: nameOf(app.worker_id, app.worker_name),
       });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה באישור');
       // Approval is what arms the worker's card, so it takes the fast lane: the
@@ -253,7 +269,7 @@ export default function TaskApplicants({ task, onApprove }) {
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚫</div>
               <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>{t('ta_cancel_worker_title')}</div>
-              <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: t('ta_cancel_worker_body', { name: approvedApp ? (applicantProfiles[approvedApp.worker_id]?.full_name || approvedApp.worker_name) : '' }) }} />
+              <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: t('ta_cancel_worker_body', { name: approvedApp ? nameOf(approvedApp.worker_id, approvedApp.worker_name) : '' }) }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
@@ -293,7 +309,7 @@ export default function TaskApplicants({ task, onApprove }) {
               {t('ta_decline_confirm_title')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 18 }}>
-              {t('ta_decline_confirm_body', { name: applicantProfiles[declineTarget.worker_id]?.full_name || declineTarget.worker_name || '' })}
+              {t('ta_decline_confirm_body', { name: nameOf(declineTarget.worker_id, declineTarget.worker_name) })}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
@@ -330,7 +346,7 @@ export default function TaskApplicants({ task, onApprove }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 900, color: '#065f46' }}>
-              {t('ta_approved_title', { name: applicantProfiles[approvedApp.worker_id]?.full_name || approvedApp.worker_name || '' })}
+              {t('ta_approved_title', { name: nameOf(approvedApp.worker_id, approvedApp.worker_name) })}
             </div>
             <div style={{ fontSize: 12, color: '#047857', lineHeight: 1.55, marginTop: 3 }}>
               {t('ta_approved_body')}
@@ -365,8 +381,8 @@ export default function TaskApplicants({ task, onApprove }) {
         // Shown under the worker's CURRENT name, resolved by their id. The
         // application's own worker_name is only the fallback for the moment
         // before the live profile arrives.
-        const currentName = profile?.full_name || app.worker_name || '';
-        const photo = profile?.profile_photo;
+        const currentName = nameOf(app.worker_id, app.worker_name);
+        const photo = liveProfile(app.worker_id)?.photo || profile?.profile_photo;
         const rating = profile?.rating || app.worker_rating || 0;
         const isVerified = isUserVerified(profile) || app.worker_verified;
         const isGold = hasSocialVerified(profile);

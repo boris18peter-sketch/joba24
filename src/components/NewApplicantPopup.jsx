@@ -12,6 +12,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import StarRating from '@/components/profile/StarRating';
 import { profileHeroBackground } from '@/lib/profileTier';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 
 /**
  * NewApplicantPopup — a candidate just applied to one of MY tasks.
@@ -65,11 +66,18 @@ export default function NewApplicantPopup({ task, application, onClose }) {
       return fetched;
     },
     enabled: !!application?.worker_id,
-    staleTime: 120000,
+    // Short enough that a rating or a badge earned a moment ago is already here;
+    // the cached copy above still paints instantly.
+    staleTime: 20 * 1000,
     placeholderData: cachedProfile,
   });
 
-  const name = profile?.full_name || application?.worker_name || '';
+  // The SAME live source the applicant list and the profile page read: his
+  // current name and photo, painted on the first frame from what this device
+  // already resolved for him, then refreshed in place.
+  const live = useUserProfiles([application?.worker_id])(application?.worker_id);
+  const name = live?.name || profile?.full_name || application?.worker_name || '';
+  const photo = live?.photo || profile?.profile_photo || null;
   const rating = Number(profile?.rating || 0);
   const reviewCount = Number(profile?.rating_count || 0);
   const verified = profile ? isUserVerified(profile) : false;
@@ -168,15 +176,15 @@ export default function NewApplicantPopup({ task, application, onClose }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {!profile ? (
-              /* The profile is still on its way and nothing is cached yet — the
-                 shimmer says "arriving" instead of an empty grey circle. */
+            {!profile && !live ? (
+              /* Nothing is known about him yet — the shimmer says "arriving"
+                 instead of an empty grey circle. */
               <span className="j-img-skeleton" style={{ borderRadius: '50%' }} />
-            ) : profile.profile_photo ? (
+            ) : photo ? (
               <>
                 {!photoLoaded && <span className="j-img-skeleton" style={{ borderRadius: '50%' }} />}
                 <img
-                  src={profile.profile_photo}
+                  src={photo}
                   alt={name}
                   loading="eager"
                   decoding="async"

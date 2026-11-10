@@ -64,6 +64,20 @@ import java.util.List;
 public final class JobaLiveUpdateNotifier {
 
     public static final String CHANNEL_ID = "joba24_live_update";
+
+    /**
+     * ── THE CARD'S OWN GROUP ─────────────────────────────────────────────────
+     * Android bundles every notification an app posts into one group, and a
+     * GROUPED notification is drawn in its COLLAPSED, inset form — which is
+     * exactly the "the widget is tiny and squashed" report: the card was being
+     * rendered as a child of the "בקשה חדשה!" group, so the shade showed the
+     * compact row squeezed into a child slot instead of the full card.
+     *
+     * Giving the card a group of its own keeps it out of that bundle. A group
+     * with a single member is drawn at full width with its big content, which is
+     * the card this class was built to draw.
+     */
+    private static final String GROUP_KEY = "joba24_live_card";
     private static final String CHANNEL_NAME = "עדכוני משימה";
     private static final String CHANNEL_DESCRIPTION = "כרטיס המשימה הפעילה — עדכון סטטוס בזמן אמת";
     private static final String TAG = "joba-live-update";
@@ -197,6 +211,8 @@ public final class JobaLiveUpdateNotifier {
                     .setContentText(JobaLiveUpdatePayload.rtl(payload.subtitle))
                     .setSubText(subText(payload))
                     .setContentIntent(openIntent)
+                    .setGroup(GROUP_KEY)
+                    .setGroupSummary(false)
                     .setCategory(Notification.CATEGORY_PROGRESS)
                     .setVisibility(Notification.VISIBILITY_PUBLIC)
                     .setOngoing(true)
@@ -254,7 +270,7 @@ public final class JobaLiveUpdateNotifier {
             if (style == null) {
                 RemoteViews card = buildCardViews(context, payload, openIntent, buttonIntent);
                 if (card != null) {
-                    RemoteViews compact = buildCompactViews(context, payload, openIntent);
+                    RemoteViews compact = buildCompactViews(context, payload, openIntent, buttonIntent);
                     builder.setCustomContentView(compact != null ? compact : card);
                     builder.setCustomBigContentView(card);
                 }
@@ -280,6 +296,8 @@ public final class JobaLiveUpdateNotifier {
                     .setContentText(JobaLiveUpdatePayload.rtl(payload.subtitle))
                     .setSubText(subText(payload))
                     .setContentIntent(openIntent)
+                    .setGroup(GROUP_KEY)
+                    .setGroupSummary(false)
                     .setCategory(NotificationCompat.CATEGORY_PROGRESS)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setOngoing(true)
@@ -320,7 +338,7 @@ public final class JobaLiveUpdateNotifier {
             // 64dp row, so reusing it would clip the title under the button.
             RemoteViews card = buildCardViews(context, payload, openIntent, buttonIntent);
             if (card != null) {
-                RemoteViews compact = buildCompactViews(context, payload, openIntent);
+                RemoteViews compact = buildCompactViews(context, payload, openIntent, buttonIntent);
                 builder.setCustomContentView(compact != null ? compact : card);
                 builder.setCustomBigContentView(card);
             }
@@ -447,13 +465,21 @@ public final class JobaLiveUpdateNotifier {
      * plumbing never sees it. The receiver records the id and then starts the app.
      */
     private static PendingIntent openIntent(Context context, JobaLiveUpdatePayload payload) {
-        Intent intent = new Intent(context, JobaLiveUpdateOpenReceiver.class);
-        intent.setAction(JobaLiveUpdateOpenReceiver.ACTION_OPEN);
-        intent.putExtra("task_id", payload.taskId);
-        intent.putExtra("role", payload.role);
+        // ── AN ACTIVITY, NOT A BROADCAST ─────────────────────────────────────
+        // This used to be a broadcast to JobaLiveUpdateOpenReceiver, which then
+        // called `startActivity` — and Android 10+ refuses a background activity
+        // start from a receiver, so tapping the card did nothing at all. A
+        // notification's own PendingIntent is the one launch the OS always
+        // honours, so the tap goes straight to the activity, carrying the task id
+        // as an extra the plugin reads on the way in.
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra("joba_open_task", payload.taskId);
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
-        return PendingIntent.getBroadcast(context, notificationId(payload.key()), intent, flags);
+        return PendingIntent.getActivity(context, notificationId(payload.key()), intent, flags);
     }
 
     /**
@@ -498,13 +524,51 @@ public final class JobaLiveUpdateNotifier {
         // would be the same object and the tap would do the wrong thing.
         int requestCode = notificationId(payload.key()) + 1;
 
-        Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
-        intent.setAction(ACTION_BUTTON);
-        intent.putExtra("task_id", payload.taskId);
-        intent.putExtra("role", payload.role);
-        intent.putExtra("action_id", payload.actionId);
-        intent.putExtra("action_step", payload.actionStep);
-        return PendingIntent.getBroadcast(context, requestCode, intent, flags);
+        // ── CAN THIS CARD ACT FOR ITSELF, RIGHT NOW? ─────────────────────────
+        // A capability is what lets the receiver post straight to the endpoint
+        // without opening the app. It is minted by the app, so a card drawn by a
+        // push while the app was closed has none — and that is the case the
+        // buttons used to die in: the broadcast ran, could not act, tried to
+        // start the activity from a receiver, and Android refused it. Silence.
+        if (mayActInPlace(context, payload)) {
+            Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
+            intent.setAction(ACTION_BUTTON);
+            intent.putExtra("task_id", payload.taskId);
+            intent.putExtra("role", payload.role);
+            intent.putExtra("action_id", payload.actionId);
+            intent.putExtra("action_step", payload.actionStep);
+            return PendingIntent.getBroadcast(context, requestCode, intent, flags);
+        }
+
+        // No capability: the tap opens the app on this task, where the same
+        // action is one press away. A notification PendingIntent may launch an
+        // activity on every Android version, so this tap can never be swallowed.
+        return openTaskIntent(context, payload, requestCode);
+    }
+
+    /** True when a tap can be performed without bringing the app forward. */
+    private static boolean mayActInPlace(Context context, JobaLiveUpdatePayload payload) {
+        if (!payload.hasAction()) return false;
+        try {
+            JobaLiveUpdateStore store = new JobaLiveUpdateStore(context);
+            String key = JobaLiveUpdateStore.keyOf(payload.taskId, payload.role);
+            return store.canAct(key) || store.canActAsInstall();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Open the app on this task — the tap that always lands somewhere. */
+    private static PendingIntent openTaskIntent(Context context, JobaLiveUpdatePayload payload, int requestCode) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra("joba_open_task", payload.taskId);
+        intent.putExtra("joba_open_role", payload.role);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+        return PendingIntent.getActivity(context, requestCode, intent, flags);
     }
 
     /* ══════════════════════════════════════════════════════════════════════
@@ -613,6 +677,13 @@ public final class JobaLiveUpdateNotifier {
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
 
+        // A star can only be recorded by the server, so without a capability the
+        // tap opens the task (where the same question is asked) instead of being
+        // swallowed by a broadcast that has nothing to post.
+        if (!mayActInPlace(context, payload)) {
+            return openTaskIntent(context, payload, notificationId(payload.key()) + 10 + stars);
+        }
+
         Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
         intent.setAction(ACTION_BUTTON);
         intent.putExtra("task_id", payload.taskId);
@@ -631,7 +702,8 @@ public final class JobaLiveUpdateNotifier {
     private static RemoteViews buildCompactViews(
             Context context,
             JobaLiveUpdatePayload payload,
-            PendingIntent openIntent) {
+            PendingIntent openIntent,
+            PendingIntent buttonIntent) {
         try {
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.joba_live_update_compact);
 
@@ -648,6 +720,20 @@ public final class JobaLiveUpdateNotifier {
                 views.setViewVisibility(R.id.joba_compact_counter, View.GONE);
             } else {
                 views.setTextViewText(R.id.joba_compact_counter, JobaLiveUpdatePayload.rtl(counter));
+            }
+
+            // ── THE BUTTON EXISTS IN THE COLLAPSED ROW TOO ────────────────────
+            // The collapsed row used to be read-only, so a card sitting in the
+            // shade (or inside a group) offered nothing to press — the app looked
+            // unresponsive because the control simply was not there. The action
+            // is now a pill on this row as well, bound to the SAME intent the big
+            // card uses, so one tap works without expanding the card first.
+            if (buttonIntent != null && payload.hasAction()) {
+                views.setTextViewText(R.id.joba_compact_action, JobaLiveUpdatePayload.rtl(payload.actionLabel));
+                views.setViewVisibility(R.id.joba_compact_action, View.VISIBLE);
+                views.setOnClickPendingIntent(R.id.joba_compact_action, buttonIntent);
+            } else {
+                views.setViewVisibility(R.id.joba_compact_action, View.GONE);
             }
 
             views.setOnClickPendingIntent(R.id.joba_compact_root, openIntent);

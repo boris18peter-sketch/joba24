@@ -65,6 +65,7 @@
         android:id="@+id/joba_compact_counter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         android:paddingTop="3dp"
@@ -74,4 +75,29 @@
         android:textStyle="bold"
         android:textColor="#1A6FD4"
         android:maxLines="1" />
+
+    <!-- ── THE ACTION, IN THE COLLAPSED ROW ─────────────────────────────────
+         A collapsed card used to be read-only: the bubble, the sentence and the
+         position, and nothing to press. Anyone looking at the shade therefore saw
+         a card whose only control appeared to do nothing — because it was not
+         there. This pill is bound from Java to the SAME intent the full card's
+         button uses, so the one action is reachable without expanding first. -->
+    <TextView
+        android:id="@+id/joba_compact_action"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minHeight="34dp"
+        android:maxWidth="150dp"
+        android:gravity="center"
+        android:background="@drawable/joba_live_button"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:textSize="12.5sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
 </LinearLayout>

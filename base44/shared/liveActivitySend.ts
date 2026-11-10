@@ -27,6 +27,7 @@
  * never contacts Apple.
  */
 import { buildBackendSnapshot } from './liveActivitySnapshot.ts';
+import { withLiveNames } from './userDisplayNames.ts';
 import { buildCompletionRatingCard } from './liveActivityRating.ts';
 import {
   planLiveActivityDispatch, stateAfterPlan, shouldInvalidateToken, nextRevision, TERMINAL_TASK_STATUSES,
@@ -800,8 +801,17 @@ export async function dispatchRecipient(input) {
       }).catch(() => null)
     : null;
 
+  // ── AND THE NAMES ON IT ARE THE PEOPLE'S CURRENT ONES ────────────────────
+  // `task.applicants[].worker_name` is a copy frozen when the application was
+  // sent, and the card's assign button reads exactly it ("אשר את <שם>"). A
+  // candidate who renamed themselves therefore kept the old name on the Lock
+  // Screen for ever — on iOS and Android alike, because both draw this one
+  // snapshot. Resolving the names here, once, before the snapshot is built, is
+  // what makes the card agree with the applicant list and the profile.
+  const namedTask = await withLiveNames(base44, task).catch(() => task);
+
   const snapshot = ratingCard || buildBackendSnapshot({
-    task,
+    task: namedTask,
     role,
     userId: recipientId,
     categories,
