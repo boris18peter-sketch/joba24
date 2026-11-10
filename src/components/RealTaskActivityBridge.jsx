@@ -258,6 +258,22 @@ export default function RealTaskActivityBridge() {
     return attachPushToStartTokenListener(() => {});
   }, [access?.allowed, access?.userId, me?.id, probe]);
 
+  // ── 2c. KEEP THAT CAPABILITY ALIVE WHILE THE APP IS OPEN ──────────────────
+  // It lives twelve hours. An app that is only ever backgrounded — the normal way
+  // a phone is used — would keep an expired one, and every card tap after that
+  // would fall back to opening the app instead of acting. Refreshing whenever the
+  // app comes back to the foreground keeps the fallback usable for the whole life
+  // of the install. `ensureInstallActionCapability` caches internally, so this is
+  // one call at most every six hours, not one per resume.
+  useEffect(() => {
+    if (!access?.allowed || access.userId !== me?.id) return undefined;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') ensureInstallActionCapability().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [access?.allowed, access?.userId, me?.id]);
+
   const tracked = useMemo(
     () => selectTrackedTask({
       workerTask,

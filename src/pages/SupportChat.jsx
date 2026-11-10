@@ -268,8 +268,8 @@ export default function SupportChat() {
         onSend={handleSend}
         sending={sending}
         uploading={uploading}
-        onFileChange={(e) => handleFileUpload(e.target.files)}
-        onCameraChange={(e) => handleFileUpload(e.target.files)}
+        onFileChange={(e) => { handleFileUpload(e.target.files); e.target.value = ''; }}
+        onCameraChange={(e) => { handleFileUpload(e.target.files); e.target.value = ''; }}
         inputRef={textareaRef}
         fileRef={fileInputRef}
         cameraRef={cameraInputRef}
