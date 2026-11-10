@@ -1067,6 +1067,7 @@ export const ar = {
     chat_recording: 'جارٍ التسجيل...',
     chat_cancel: 'إلغاء',
     chat_type_msg: 'اكتب رسالة...',
+    chat_take_photo: 'التقاط صورة',
     wo_step_cat_title: 'ما أنواع الوظائف التي تريد رؤيتها؟',
     wo_step_cat_sub: 'اختر الفئات — سيتكيف موجزك وفقًا لذلك 🎯',
     wo_step_city_title: 'في أي مدن تعمل؟',

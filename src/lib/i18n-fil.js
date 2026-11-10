@@ -1041,6 +1041,7 @@ export const fil = {
   chat_recording: 'Nagrerecord...',
   chat_cancel: 'Kanselahin',
   chat_type_msg: 'Mag-type ng menshe...',
+  chat_take_photo: 'Kumuha ng litrato',
   wo_step_cat_title: 'Anong uri ng trabaho ang gusto mong makita?',
   wo_step_cat_sub: 'Pumili ng kategorya — aadapt ng iyong feed 🎯',
   wo_step_city_title: 'Saang lungsod ka nagtatrabaho?',

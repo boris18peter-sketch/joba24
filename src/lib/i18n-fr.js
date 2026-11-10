@@ -1026,6 +1026,7 @@ export const fr = {
     chat_recording: 'Enregistrement...',
     chat_cancel: 'Annuler',
     chat_type_msg: 'Écris un message...',
+    chat_take_photo: 'Prendre une photo',
     wo_step_cat_title: 'Quels types de jobs veux-tu voir ?',
     wo_step_cat_sub: 'Choisis des catégories — ton fil sadaptera 🎯',
     wo_step_city_title: 'Dans quelles villes travailles-tu ?',

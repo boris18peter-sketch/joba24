@@ -1041,6 +1041,7 @@ export const zh = {
   chat_recording: '录音中...',
   chat_cancel: '取消',
   chat_type_msg: '输入消息...',
+  chat_take_photo: '拍照',
   wo_step_cat_title: '你想看哪种类型的工作？',
   wo_step_cat_sub: '选择类别 — 你的信息流会据此调整 🎯',
   wo_step_city_title: '你在哪些城市工作？',

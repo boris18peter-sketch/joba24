@@ -479,6 +479,84 @@ describe('Android Live Update — payload contract', () => {
     expect(buildLiveUpdateData({ snapshot, event: undefined }).joba_event).toBe('update');
   });
 
+  // ── THE BUTTON MUST WORK WITH THE APP CLOSED ─────────────────────────────
+  // Android draws this card from the message itself, in a service with no
+  // session — so there is no later moment at which the app could hand it the
+  // capability its button needs. It therefore has to travel WITH the revision.
+  it('carries the card\'s capability with the revision', () => {
+    const expiresAtMs = Date.parse('2026-11-10T12:00:00.000Z');
+    const data = buildLiveUpdateData({
+      snapshot,
+      event: 'update',
+      actionAuth: { token: 'v1.payload.sig', endpoint: 'https://joba24.com/functions/liveActivityAction', expiresAtMs },
+    });
+    expect(data.joba_action_token).toBe('v1.payload.sig');
+    expect(data.joba_action_endpoint).toBe('https://joba24.com/functions/liveActivityAction');
+    expect(data.joba_action_exp).toBe(String(expiresAtMs));
+    // Still data-only, still all strings — the contract is unchanged.
+    for (const value of Object.values(data)) expect(typeof value).toBe('string');
+  });
+
+  it('never sends a capability it was not given, and never on a close', () => {
+    expect(buildLiveUpdateData({ snapshot, event: 'update' }).joba_action_token).toBeUndefined();
+    // A card that is being closed has nothing left to act on.
+    const closing = buildLiveUpdateData({
+      snapshot,
+      event: 'end',
+      actionAuth: { token: 'v1.payload.sig', endpoint: 'https://joba24.com/functions/liveActivityAction', expiresAtMs: Date.now() + 60000 },
+    });
+    expect(closing.joba_action_token).toBeUndefined();
+  });
+
+  it('mints a capability the action endpoint will actually accept', async () => {
+    const { signActionToken, verifyActionToken, ACTION_ENDPOINT } = await import('../base44/shared/liveActivityActionToken.ts');
+    const { actionsForRole } = await import('../base44/shared/liveActivityActionGuard.ts');
+    const secret = 'test-secret-value';
+
+    const signed = await signActionToken({
+      secret,
+      userId: 'user_1',
+      taskId: 'task_1',
+      role: 'publisher',
+      actions: actionsForRole('publisher'),
+    });
+    expect(signed.ok).toBe(true);
+
+    // The same secret the endpoint holds must accept it, and it must be bound to
+    // exactly one user, one task and one role.
+    const verified = await verifyActionToken({ secret, token: signed.token });
+    expect(verified.ok).toBe(true);
+    expect(verified.claims.sub).toBe('user_1');
+    expect(verified.claims.tid).toBe('task_1');
+    expect(verified.claims.role).toBe('publisher');
+
+    // …and the endpoint it ships with is an absolute https URL: a native shell has
+    // no https origin of its own, so a relative or `capacitor://localhost` URL
+    // would never leave the device.
+    expect(ACTION_ENDPOINT).toMatch(/^https:\/\/.+\/functions\/liveActivityAction$/);
+  });
+
+  it('reads the capability on the device and stores it before drawing', () => {
+    const payload = source('JobaLiveUpdatePayload.java');
+    const engine = source('JobaLiveUpdateEngine.java');
+
+    // The three parts arrive in the data map…
+    expect(payload).toContain('data.get("joba_action_token")');
+    expect(payload).toContain('data.get("joba_action_endpoint")');
+    expect(payload).toContain('data.get("joba_action_exp")');
+    // …an expired or half-supplied capability is dropped rather than stored…
+    expect(payload).toContain('if (expiresAt <= System.currentTimeMillis()) return;');
+
+    // …and the engine stores it BEFORE the notification is built, because the
+    // tap intents are bound at that moment (and a duplicate revision returns
+    // early, so a later store would never run at all).
+    const storeAt = engine.indexOf('store.putActionAuth(key, payload.actionEndpoint');
+    const postAt = engine.indexOf('JobaLiveUpdateNotifier.post(context, payload)');
+    expect(storeAt).toBeGreaterThan(-1);
+    expect(postAt).toBeGreaterThan(-1);
+    expect(storeAt).toBeLessThan(postAt);
+  });
+
   it('addresses device tokens only — a web subscription is not a device', () => {
     expect(looksLikeAndroidToken('eXaMpLeT0kenValueThatIsLongEnoughToBeReal1234567890')).toBe(true);
     expect(looksLikeAndroidToken('https://fcm.googleapis.com/fcm/send/abc:def')).toBe(false);

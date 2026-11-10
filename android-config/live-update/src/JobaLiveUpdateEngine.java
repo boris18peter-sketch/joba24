@@ -45,6 +45,16 @@ public final class JobaLiveUpdateEngine {
         JobaLiveUpdateStore store = new JobaLiveUpdateStore(context);
         String key = payload.key();
 
+        // ── THE CAPABILITY ARRIVES WITH THE CARD ─────────────────────────────
+        // Stored BEFORE anything is drawn or ordered away, because the tap intents
+        // are bound while the notification is built: if it were stored after that,
+        // the very card this message just created would come out with a button
+        // that could only open the app — and a duplicate revision (below) returns
+        // early, so it would never be stored at all.
+        if (!payload.isEnd() && !payload.actionToken.isEmpty() && !payload.actionEndpoint.isEmpty()) {
+            store.putActionAuth(key, payload.actionEndpoint, payload.actionToken, payload.actionExpiresAt);
+        }
+
         if (!store.shouldApply(payload)) {
             // Two distinct answers, both useful in the diagnostics: an ENDED card
             // is final for that revision, everything else is simply older than

@@ -1041,6 +1041,7 @@ export const hi = {
   chat_recording: 'रिकॉर्डिंग...',
   chat_cancel: 'रद्द करें',
   chat_type_msg: 'संदेश लिखें...',
+  chat_take_photo: 'फ़ोटो लें',
   wo_step_cat_title: 'आप किस प्रकार के काम देखना चाहते हैं?',
   wo_step_cat_sub: 'श्रेणियाँ चुनें — आपका फ़ीड तदनुसार अनुकूलित होगा 🎯',
   wo_step_city_title: 'आप किन शहरों में काम करते हैं?',

@@ -1029,6 +1029,7 @@ export const ru = {
     chat_recording: 'Запись...',
     chat_cancel: 'Отмена',
     chat_type_msg: 'Введите сообщение...',
+    chat_take_photo: 'Сделать фото',
     wo_step_cat_title: 'Какие типы работ вы хотите видеть?',
     wo_step_cat_sub: 'Выберите категории — лента адаптируется 🎯',
     wo_step_city_title: 'В каких городах вы работаете?',

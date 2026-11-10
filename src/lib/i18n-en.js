@@ -1054,6 +1054,7 @@ export const en = {
     chat_recording: 'Recording...',
     chat_cancel: 'Cancel',
     chat_type_msg: 'Type a message...',
+    chat_take_photo: 'Take a photo',
     chat_sent_image: '📷 Photo',
     chat_sent_voice: '🎤 Voice message',
     wo_step_cat_title: 'What types of jobs would you like to see?',
