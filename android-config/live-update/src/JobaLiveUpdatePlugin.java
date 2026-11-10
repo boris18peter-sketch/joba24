@@ -187,6 +187,15 @@ public class JobaLiveUpdatePlugin extends Plugin {
     protected void handleOnResume() {
         super.handleOnResume();
         try {
+            // ── A COLD START RESUMES BEFORE THE WEB LAYER EXISTS ─────────────
+            // The resume that follows a tap on the card happens at launch, when
+            // no JS listener is registered yet. Taking the task id then consumed
+            // it into an event nobody received, so the app opened on the feed and
+            // the tap appeared to have done nothing — the exact symptom reported
+            // for the card's buttons. Leaving the value in the store instead lets
+            // consumePendingOpenTask pick it up on mount, so a cold start and a
+            // warm resume now end in the same place.
+            if (!hasListeners("openTask")) return;
             String taskId = new JobaLiveUpdateStore(getContext()).takePendingOpenTask();
             if (taskId == null || taskId.isEmpty()) return;
             JSObject event = new JSObject();

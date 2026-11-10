@@ -449,11 +449,22 @@ public final class JobaLiveUpdateNotifier {
      *   a capability exists → broadcast the action. It posts straight to the
      *     endpoint, the card is corrected from the server's own answer, and no app
      *     opens — the Lock Screen behaviour.
-     *   no capability yet  → the SAME button, the SAME label, opens the task in the
-     *     app. A notification tap is a user gesture, so the launch is always
-     *     allowed, and the app is where a fresh capability (and the action itself)
-     *     lives. This is precisely what the iOS card does when its capability has
-     *     expired, and it is why the label never has to change.
+     *   no capability yet  → the receiver brings the app up on that task, where a
+     *     fresh capability (and the action itself) lives.
+     *
+     * ── WHY THERE IS NO ACTIVITY PENDINGINTENT HERE ANY MORE ────────────────
+     * The no-capability branch used to return `PendingIntent.getActivity(...)`
+     * and pass the task id as an Intent extra that NOTHING on the Android side
+     * ever read: MainActivity has no onNewIntent, and the store — the only thing
+     * the web layer listens to — was never written. So the app opened on the feed
+     * and the tap produced no action, no navigation and no error. That is the
+     * report "the buttons in the card do not respond", and it could not be fixed
+     * from the web layer, because the information died inside a launch Intent.
+     *
+     * Every tap now goes to the receiver, which records the task in the store the
+     * app reads on launch/resume (JobaLiveUpdatePlugin), acts in place when it
+     * holds a capability, and otherwise opens the app on that task. One path,
+     * one place to be wrong, and it is the path the card body already uses.
      */
     private static PendingIntent buttonIntent(Context context, JobaLiveUpdatePayload payload) {
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
@@ -461,16 +472,6 @@ public final class JobaLiveUpdateNotifier {
         // A distinct request code from the open intent, or the two PendingIntents
         // would be the same object and the tap would do the wrong thing.
         int requestCode = notificationId(payload.key()) + 1;
-
-        JobaLiveUpdateStore store = new JobaLiveUpdateStore(context);
-        if (!store.canAct(payload.key()) && !store.canActAsInstall()) {
-            Intent launch = new Intent(context, MainActivity.class);
-            launch.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                    | Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            launch.putExtra("joba_open_task", payload.taskId);
-            return PendingIntent.getActivity(context, requestCode, launch, flags);
-        }
 
         Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
         intent.setAction(ACTION_BUTTON);

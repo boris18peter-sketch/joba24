@@ -95,38 +95,30 @@ export default function HelpVideoPlayer({ src }) {
         position: 'relative',
         borderRadius: 16,
         overflow: 'hidden',
-        background: '#0B1424',
+        background: 'transparent',
         border: '1px solid var(--border-1)',
       }}
     >
+      {/* ── NO PLACEHOLDER, NO GREY/BLACK BOX, NO PLAY OVERLAY ──────────────
+          The frame used to sit there before playback as a dark rectangle with a
+          large play mark on top of it. On Android that rectangle was the video
+          element's own empty surface — a grey-black block in the middle of a
+          designed sheet, with a second play button under it in the control bar.
+          The video now starts the moment the sheet is opened (which was the whole
+          point of pressing the explainer pill), so the first frame IS the
+          preview: nothing empty is drawn, and the only play control is the one
+          in the bar below, which mirrors its state exactly. */}
       <video
         ref={videoRef}
         src={src}
         playsInline
-        preload="metadata"
+        autoPlay
+        preload="auto"
         disablePictureInPicture
         controlsList="nodownload noplaybackrate noremoteplayback"
         onClick={toggle}
-        style={{ display: 'block', width: '100%', maxHeight: '58vh', background: '#0B1424' }}
+        style={{ display: 'block', width: '100%', maxHeight: '58vh', background: 'transparent' }}
       />
-
-      {!playing && (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label="הפעלת הסרטון"
-          style={{
-            position: 'absolute', inset: 0, margin: 'auto',
-            width: 64, height: 64, borderRadius: '50%', cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.35)',
-            background: 'rgba(13,30,64,0.55)',
-            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <Play size={24} color="#fff" fill="#fff" style={{ marginLeft: 3 }} />
-        </button>
-      )}
 
       <div
         style={{

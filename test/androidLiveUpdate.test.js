@@ -257,8 +257,8 @@ describe('Android Live Update — the native card', () => {
     expect(receiver).toContain('body.put("role"');
     // The per-card capability is preferred; the install-scoped one is the
     // fallback for a card that was drawn while the app was closed.
-    expect(receiver).toContain('if (store.canAct(key))');
-    expect(receiver).toContain('else if (store.canActAsInstall())');
+    expect(receiver).toContain('&& store.canAct(key))');
+    expect(receiver).toContain('&& store.canActAsInstall())');
     // With neither, the tap opens the task instead of posting a dead token.
     expect(receiver).toContain('openTask(appContext, taskId);');
   });
@@ -913,15 +913,22 @@ describe('Android Live Update — the designed card', () => {
 
   it('never leaves a tap with nowhere to go', () => {
     const notifier = source('JobaLiveUpdateNotifier.java');
-    // ── THE REGRESSION ────────────────────────────────────────────────────
-    // The button always broadcast to a receiver, and the receiver's no-capability
-    // path called startActivity — which Android 10+ blocks for a broadcast
-    // receiver. A tap with no capability therefore did NOTHING AT ALL.
-    expect(notifier).toContain('if (!store.canAct(payload.key()) && !store.canActAsInstall())');
-    expect(notifier).toContain('PendingIntent.getActivity(context, requestCode, launch, flags)');
-    expect(notifier).toContain('PendingIntent.getBroadcast(context, requestCode, intent, flags)');
-    // With a capability it still acts in place, without opening the app.
+    const receiver = source('JobaLiveUpdateActionReceiver.java');
+
+    // ── THE REGRESSION THIS LOCKS DOWN ────────────────────────────────────
+    // The no-capability branch used to hand the tap to a getActivity
+    // PendingIntent carrying `joba_open_task` — an extra nothing on the Android
+    // side ever read. The app opened on the feed and the button visibly did
+    // nothing. Every tap must therefore reach the receiver, which is the only
+    // place that records the task for the web layer.
     expect(notifier).toContain('new Intent(context, JobaLiveUpdateActionReceiver.class)');
+    expect(notifier).not.toContain('PendingIntent.getActivity(context');
+    expect(notifier).toContain('PendingIntent.getBroadcast(context, requestCode, intent, flags)');
+
+    // The task is recorded BEFORE any decision, so no path can end in silence…
+    expect(receiver).toContain('store.setPendingOpenTask(taskId);');
+    // …and a failed request opens the task instead of doing nothing.
+    expect(receiver).toContain('if (!applied) openTask(appContext, taskId);');
   });
 
   it('installs the layouts into the generated project', () => {

@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, Play, X } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 import { EXPLAINER_VIDEO_URL } from '@/lib/explainerVideo';
+import HelpVideoPlayer from '@/components/publish/HelpVideoPlayer';
 
 /**
  * The explainer video, as a compact row inside the published-tasks empty state.
  *
  * ── NO VIDEO THUMBNAIL ─────────────────────────────────────────────────────
  * The row used to carry a 52px dark tile with a still frame of the video in it,
- * which read as a second, broken player sitting inside the card. It is now just
- * the play mark in the brand colour: one clear "this is a video" cue, and
- * nothing on the screen is downloaded until the row is actually tapped.
+ * then a bare play mark; both read as a second, half-drawn player sitting inside
+ * the card. It is now the two lines of copy and a chevron — the title and
+ * subtitle already say there is a short video — and nothing is downloaded until
+ * the row is actually tapped.
  *
  * The video itself mounts when the sheet opens — and it never plays by itself,
  * so opening it is always a deliberate tap.
@@ -40,14 +42,9 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
           fontFamily: 'inherit',
         }}
       >
-        {/* The play mark alone — no frame, no still, no dark rectangle. */}
-        <span style={{
-          flexShrink: 0, width: 24, height: 24,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Play size={17} color="var(--brand-primary)" fill="var(--brand-primary)" />
-        </span>
-
+        {/* No mark, no frame, no still: the words say what this row is, and the
+            chevron says it opens something. A play icon beside them made the row
+            read as a second, half-drawn player. */}
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{
             display: 'block', fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)',
@@ -91,17 +88,11 @@ export default function EmptyStateVideoCard({ title, subtitle }) {
                 <X size={18} color="#fff" />
               </button>
             </div>
-            {/* Plays the moment it is opened, exactly like the explainer on the
-                publish form — tapping the card IS the play action, so a second
-                tap on a play button would be one tap too many. */}
-            <video
-              src={EXPLAINER_VIDEO_URL}
-              controls
-              autoPlay
-              playsInline
-              preload="metadata"
-              style={{ display: 'block', width: '100%', maxHeight: '72vh', borderRadius: 16, background: '#000', objectFit: 'contain' }}
-            />
+            {/* The SAME player the publish form uses — one surface, one set of
+                controls, and no black rectangle with the system's seek bar and
+                overflow menu dropped inside the app. It plays as soon as it is
+                opened, so there is no empty preview to look at. */}
+            <HelpVideoPlayer src={EXPLAINER_VIDEO_URL} />
           </div>
         </div>,
         document.body

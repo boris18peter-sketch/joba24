@@ -47,11 +47,18 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
         String role = intent.getStringExtra("role");
         String actionId = intent.getStringExtra("action_id");
         String actionStep = intent.getStringExtra("action_step");
-        if (taskId == null || taskId.isEmpty() || actionId == null || actionId.isEmpty()) return;
+        if (taskId == null || taskId.isEmpty()) return;
 
         final Context appContext = context.getApplicationContext();
         final JobaLiveUpdateStore store = new JobaLiveUpdateStore(appContext);
         final String key = JobaLiveUpdateStore.keyOf(taskId, role);
+
+        // ── RECORDED FIRST, WHATEVER HAPPENS NEXT ────────────────────────────
+        // Every tap on the button arrives here (see buttonIntent). Writing the
+        // task down before anything else is what makes a tap impossible to
+        // ignore: if it cannot be performed in place — no capability, no network,
+        // a refusal — the app still lands on that task the moment it opens.
+        store.setPendingOpenTask(taskId);
 
         // ── WHICH CAPABILITY THIS TAP USES ───────────────────────────────────
         // The per-card one is always preferred: it is bound to this task, this
@@ -65,15 +72,16 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
         // task and role, and the server re-checks ownership on every tap.
         final String endpoint;
         final String token;
-        if (store.canAct(key)) {
+        if (actionId != null && !actionId.isEmpty() && store.canAct(key)) {
             endpoint = store.actionEndpoint(key);
             token = store.actionToken(key);
-        } else if (store.canActAsInstall()) {
+        } else if (actionId != null && !actionId.isEmpty() && store.canActAsInstall()) {
             endpoint = store.installEndpoint();
             token = store.installToken();
         } else {
             // Nothing may act for this card: open the task, where a fresh
-            // capability (and the applicant list) exists.
+            // capability (and the applicant list) exists. A tap that promised an
+            // action must never end in silence.
             openTask(appContext, taskId);
             return;
         }
@@ -84,19 +92,26 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                boolean applied = false;
                 try {
-                    post(appContext, endpoint, token, actionId, actionStep, taskId, role);
+                    applied = post(appContext, endpoint, token, actionId, actionStep, taskId, role);
                 } catch (Throwable ignored) {
-                    // A tap that cannot reach the server leaves the card exactly as
-                    // it was: the button stays, so the user can retry or open the app.
-                } finally {
-                    try { pending.finish(); } catch (Throwable ignored) { }
+                    // Treated exactly like a refusal below: the tap still has to
+                    // lead somewhere, so the app is opened on the task.
                 }
+                // ── A TAP THAT COULD NOT ACT OPENS THE TASK ──────────────────
+                // Previously a failed request changed nothing at all: the card
+                // stayed as it was and the user saw a button that had done
+                // nothing. Opening the task is the honest outcome — the action is
+                // one tap away, with a live session and a fresh capability.
+                if (!applied) openTask(appContext, taskId);
+                try { pending.finish(); } catch (Throwable ignored) { }
             }
         }).start();
     }
 
-    private void post(
+    /** Returns true only when the server accepted the action (2xx). */
+    private boolean post(
             Context context,
             String endpoint,
             String token,
@@ -149,6 +164,10 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
                 new JobaLiveUpdateStore(context)
                         .putActionAuth(JobaLiveUpdateStore.keyOf(taskId, role), "", "", 0L);
             }
+
+            // The caller opens the task when this is false, so only a real 2xx
+            // counts as "the tap did what its label promised".
+            return status >= 200 && status < 300;
         } finally {
             if (connection != null) connection.disconnect();
         }
