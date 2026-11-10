@@ -24,6 +24,13 @@ export default function OnboardingFooter() {
 
   return (
     <footer className="j-hero-foot">
+      {/* ── THE STORE BADGES COME FIRST ──────────────────────────────────────
+          They are the real call to action at the bottom of this screen; the
+          policy links are a legal footnote. With the links on top, the two
+          black badges sat at the very bottom edge and read as part of the
+          fine print. Above the links, they finish the page. */}
+      <StoreDownloadButtons size="sm" />
+
       <div className="j-hero-links">
         <Link to="/terms" state={from} className="j-hero-link">{t('terms_title')}</Link>
         <span className="j-hero-link-sep">|</span>
@@ -31,8 +38,6 @@ export default function OnboardingFooter() {
         <span className="j-hero-link-sep">|</span>
         <Link to="/faq" state={from} className="j-hero-link">{t('faq_title')}</Link>
       </div>
-
-      <StoreDownloadButtons size="sm" />
     </footer>
   );
 }

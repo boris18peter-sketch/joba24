@@ -71,6 +71,17 @@ const TASK_HORIZON_MARGIN_SECONDS = 12 * 60 * 60;
  * `expires_at` / `scheduled_time` plus a margin, with a one-day floor and the
  * weekly ceiling above. A task with no horizon keeps the plain 24h.
  */
+/**
+ * The absolute URL a card's tap posts to.
+ *
+ * ONE constant, shared by the server that hands the capability out and by the
+ * clients that store it: the App Intent on iOS and the broadcast receiver on
+ * Android both call this exact endpoint. A native shell has no https origin of its
+ * own (`capacitor://localhost`), which is why only an absolute public URL works
+ * from both.
+ */
+export const ACTION_ENDPOINT = 'https://joba24.com/functions/liveActivityAction';
+
 export function ttlForTask(task, now = Date.now()) {
   const base = ACTION_TOKEN_DEFAULT_TTL_SECONDS;
   if (!task) return base;

@@ -95,6 +95,33 @@ def main():
             content = content.replace('<application', modify_perm + '<application', 1)
             print("[manifest] added MODIFY_AUDIO_SETTINGS permission.")
 
+    # ── PACKAGE VISIBILITY: WITHOUT THIS, THE CAMERA IS NEVER OFFERED ────────
+    # Capacitor launches the capture intent through
+    # `takePictureIntent.resolveActivity(packageManager)`. On Android 11+ (API 30)
+    # that call returns NULL for any package the app has not declared an interest
+    # in, so Capacitor concludes there is no camera app, logs
+    # "Media capture intent could not be launched. Falling back to default file
+    # picker." and opens the gallery instead. That is precisely the report "on
+    # Android I can only pick existing photos, I cannot take one".
+    #
+    # The CAMERA permission above is necessary but not sufficient: it decides
+    # whether the capture option is allowed at all, while <queries> decides
+    # whether Android lets the app SEE the camera. Both are required, and
+    # Capacitor's own manifest declares neither.
+    if '<queries>' not in content:
+        queries = """    <queries>
+        <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>
+        <intent><action android:name="android.media.action.VIDEO_CAPTURE" /></intent>
+        <intent><action android:name="android.intent.action.GET_CONTENT" /></intent>
+        <intent><action android:name="android.intent.action.PICK" /><data android:mimeType="image/*" /></intent>
+        <intent><action android:name="android.intent.action.PICK" /><data android:mimeType="video/*" /></intent>
+    </queries>
+"""
+        content = content.replace('<application', queries + '<application', 1)
+        print("[manifest] added <queries> for camera / gallery intents.")
+    else:
+        print("[manifest] <queries> already present — skipping.")
+
     # Both filters are added INDEPENDENTLY: an app that already had the deep-link
     # filter must still receive the notification-tap one (and the reverse), so
     # neither can be behind the other's early exit.

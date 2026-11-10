@@ -7,7 +7,17 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { getCurrentBrandId } from '@/lib/brand/currentBrand';
 import SupportHeader from '@/components/support/SupportHeader';
 import SupportMessageBubble from '@/components/support/SupportMessageBubble';
-import SupportComposer from '@/components/support/SupportComposer';
+// ── THE SAME COMPOSER AS EVERY OTHER CONVERSATION ────────────────────────────
+// Support used to draw its own field and buttons, so it looked like a different
+// product: different radii, different heights, a mic button in a different shape.
+// It now renders the ONE composer the task chat uses, which means the field, the
+// camera/attachment buttons and the send button are identical on both screens and
+// move together the next time either is touched.
+import ChatComposer from '@/components/chat/ChatComposer';
+import { compressImage } from '@/lib/imageCompress';
+import { useChatViewport } from '@/hooks/useViewportHeight';
+
+const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 export default function SupportChat() {
   const { user: me, isAuthenticated } = useAuth();
@@ -18,6 +28,10 @@ export default function SupportChat() {
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const [input, setInput] = useState('');
+  const shellRef = useRef(null);
+  const textareaRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -88,11 +102,19 @@ export default function SupportChat() {
     setMessages(prev => [...prev, msg]);
   };
 
+  // The composer is pinned to the visible viewport by the SAME hook the task chat
+  // uses, so the keyboard lifts the input instead of the page on this screen too.
+  useChatViewport(shellRef, ({ keyboardOpen }) => {
+    const el = scrollRef.current;
+    if (el && keyboardOpen) el.scrollTop = el.scrollHeight;
+  });
+
   const handleSend = async (text) => {
     if (!text || !me?.id) return;
     setSending(true);
     try {
       await persist({ content: text });
+      setInput('');
     } catch {
       toast.error(t('support_send_error'));
     }
@@ -105,7 +127,10 @@ export default function SupportChat() {
     const urls = [];
     for (const file of Array.from(files)) {
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        // Same shrink-before-upload as the task chat: a phone photo is many
+        // times larger than anything this screen displays.
+        const payload = await compressImage(file);
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: payload });
         urls.push(file_url);
       } catch {
         toast.error(t('support_upload_error'));
@@ -187,9 +212,11 @@ export default function SupportChat() {
 
   return (
     <div
+      ref={shellRef}
       dir={isRTL ? 'rtl' : 'ltr'}
       style={{
-        position: 'fixed', inset: 0, zIndex: 99999,
+        position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh',
+        maxHeight: 'var(--app-h, 100dvh)', zIndex: 99999,
         background: 'var(--surface-1)',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
@@ -231,17 +258,30 @@ export default function SupportChat() {
         )}
       </div>
 
-      <SupportComposer
+      <ChatComposer
+        value={input}
+        onChange={(e) => {
+          setInput(e.target.value);
+          e.target.style.height = 'auto';
+          e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+        }}
         onSend={handleSend}
         sending={sending}
         uploading={uploading}
-        onPickFile={handleFileUpload}
-        fileInputRef={fileInputRef}
+        onFileChange={(e) => handleFileUpload(e.target.files)}
+        onCameraChange={(e) => handleFileUpload(e.target.files)}
+        inputRef={textareaRef}
+        fileRef={fileInputRef}
+        cameraRef={cameraInputRef}
         recording={recording}
         recordSeconds={recordSeconds}
+        uploadingVoice={false}
         onStartRecording={startRecording}
         onStopRecording={stopRecording}
         onCancelRecording={cancelRecording}
+        formatTime={formatTime}
+        isRTL={isRTL}
+        t={t}
       />
     </div>
   );

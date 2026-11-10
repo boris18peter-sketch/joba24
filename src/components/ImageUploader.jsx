@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { compressImage } from '@/lib/imageCompress';
 import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 
 // Two explicit entry points — a dedicated "צלם" (camera) button using the
@@ -22,7 +23,10 @@ export default function ImageUploader({ images = [], onChange, max = 4 }) {
     try {
       const uploaded = [];
       for (const file of Array.from(files).slice(0, max - images.length)) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        // Shrink before sending: a camera photo is many times bigger than any
+        // place these images are displayed (see src/lib/imageCompress.js).
+        const payload = await compressImage(file);
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: payload });
         uploaded.push(file_url);
       }
       onChange([...images, ...uploaded]);

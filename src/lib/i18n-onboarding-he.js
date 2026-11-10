@@ -28,13 +28,15 @@
  */
 
 const he = {
-  onb_choice_title: 'מה תרצו לעשות היום?',
+  onb_choice_title: 'צריכים עזרה? מישהו כבר בדרך.',
   onb_choice_body: 'ב-Joba24 מוצאים עזרה או מרוויחים מביצוע משימות.',
   onb_box_publish_title: 'צריכים עזרה?',
   onb_box_publish_body: 'פרסמו משימה בחינם, קבלו פניות מעובדים ובחרו מי יעזור לכם.',
+  onb_box_publish_proof: '5,000+ בעלי מקצוע מוכנים לעזור לכם.',
   onb_box_publish_cta: 'פרסמו משימה בחינם',
   onb_box_worker_title: 'רוצים להרוויח?',
   onb_box_worker_body: 'מצאו משימות באזור שלכם, הגישו מועמדות והתחילו להרוויח.',
+  onb_box_worker_proof: 'קבלו אלפי משימות ישירות לטלפון - הצטרפו לקהילה בחינם!',
   onb_box_worker_cta: 'מצאו משימות והתחילו להרוויח',
 
   onb_back: 'חזרה',

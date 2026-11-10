@@ -85,12 +85,32 @@ export function looksLikeAndroidToken(token: string): boolean {
   return !value.includes(' ');
 }
 
-/** The exact data map the device will receive. One place, so it can be tested. */
+/**
+ * The exact data map the device will receive. One place, so it can be tested.
+ *
+ * `actionAuth` is the capability that lets the card's button UPDATE THE STATUS
+ * WITHOUT OPENING THE APP.
+ *
+ * ── WHY IT HAS TO TRAVEL WITH THE REVISION ON ANDROID ──────────────────────
+ * On iOS the app is what hands the widget its capability, because a Live Activity
+ * is started by the app. Android's card is drawn by this data message, inside a
+ * service that runs with no session at all — and the message can arrive while the
+ * app is closed, or long before it is next opened. There is simply no later
+ * moment at which the app could supply the token, so the card would be
+ * informational until the user launched the app: exactly the "the buttons don't
+ * do anything" report.
+ *
+ * The value is the SAME narrow capability the app mints for itself
+ * (`signActionToken`): one user, one task, one role, that role's action ids, a
+ * hard expiry — and every tap is re-authorized against the stored Task. It is
+ * never rendered, never logged, and it is delivered only to the device that was
+ * already receiving this card.
+ */
 export function buildLiveUpdateData(input: any): any {
-  const { snapshot, event } = input || {};
+  const { snapshot, event, actionAuth } = input || {};
   const body = snapshot || {};
   const revision = Math.max(1, Math.floor(Number(body.revision) || 1));
-  return {
+  const data: Record<string, string> = {
     [LIVE_UPDATE_KEY]: '1',
     joba_event: event === 'end' ? 'end' : 'update',
     joba_revision: String(revision),
@@ -102,6 +122,16 @@ export function buildLiveUpdateData(input: any): any {
     // server can never cost the user their update.
     joba_snapshot: JSON.stringify(body),
   };
+
+  const token = typeof actionAuth?.token === 'string' ? actionAuth.token : '';
+  const endpoint = typeof actionAuth?.endpoint === 'string' ? actionAuth.endpoint : '';
+  if (token && endpoint && event !== 'end') {
+    data.joba_action_token = token;
+    data.joba_action_endpoint = endpoint;
+    data.joba_action_exp = String(Math.floor(Number(actionAuth?.expiresAtMs) || 0));
+  }
+
+  return data;
 }
 
 /**
@@ -118,9 +148,13 @@ export async function sendLiveUpdateToAndroid(input: any): Promise<any[]> {
     event = 'update',
     maySend = false,
     credentials = null,
+    actionAuth = null,
   } = input || {};
 
-  const data = buildLiveUpdateData({ snapshot, event });
+  // Built once, with the card's capability already inside it: every token below
+  // therefore receives a card whose button can act, not just one that was drawn
+  // while the app happened to be open.
+  const data = buildLiveUpdateData({ snapshot, event, actionAuth });
   const resolved = credentials || readFcmCredentials();
   const results: any[] = [];
 

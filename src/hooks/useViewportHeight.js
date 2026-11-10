@@ -75,6 +75,18 @@ function surfaceScale() {
   return 1;
 }
 
+/**
+ * iOS is the one platform that pans the DOCUMENT to reveal a focused field, and
+ * un-doing that pan (rather than compensating for it) is what keeps the whole
+ * chat still while the keyboard opens.
+ */
+const IS_IOS = (() => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iP(hone|od|ad)/.test(ua)
+    || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+})();
+
 export function useChatViewport(ref, onGeometryChange) {
   // Held in a ref so a new callback identity never re-subscribes the listeners.
   const callbackRef = useRef(onGeometryChange);
@@ -125,8 +137,35 @@ export function useChatViewport(ref, onGeometryChange) {
       // width and both offsets pins the shell to the visible rectangle on both
       // axes — one frame, one write, nothing left for the browser to decide.
       el.style.width = `${Math.round(w / scale)}px`;
-      el.style.transform = (x || y)
-        ? `translate3d(${Math.round(x / scale)}px, ${Math.round(y / scale)}px, 0)`
+
+      // ── iOS: UNDO THE PAGE'S OWN SCROLL BEFORE MOVING THE SHELL ────────────
+      //
+      // Android resizes the layout viewport when the keyboard opens (the page
+      // declares `interactive-widget=resizes-content`), so the shell simply gets
+      // shorter and nothing travels. iOS does not: it scrolls the DOCUMENT to
+      // bring the focused field above the keyboard, and that scroll is what made
+      // the whole chat — header included — appear to lurch upward while the
+      // keyboard was still rising.
+      //
+      // The scroll is put back to the top the moment it is detected, which is
+      // exactly the "the screen stays where it is, only the keyboard rises"
+      // behaviour. The translate below is then only needed when the visual
+      // viewport has panned in a way the document cannot express, so the composer
+      // can still never end up behind the keyboard.
+      let shiftY = y;
+      if (IS_IOS && y > 0) {
+        try {
+          if (window.scrollY > 0) {
+            window.scrollTo(0, 0);
+            shiftY = 0;
+          }
+        } catch {
+          // Nothing to undo — the translate below still keeps the input visible.
+        }
+      }
+
+      el.style.transform = (x || shiftY)
+        ? `translate3d(${Math.round(x / scale)}px, ${Math.round(shiftY / scale)}px, 0)`
         : '';
 
       // iOS keeps the home-indicator inset while the keyboard is up, which

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { BrandLogo, BrandName } from '@/components/BrandIdentity';
 import { TRACKS } from '@/lib/onboardingTrack';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -33,6 +33,7 @@ const BOXES = [
     track: TRACKS.PUBLISH,
     titleKey: 'onb_box_publish_title',
     bodyKey: 'onb_box_publish_body',
+    proofKey: 'onb_box_publish_proof',
     ctaKey: 'onb_box_publish_cta',
     plain: false,
   },
@@ -40,6 +41,7 @@ const BOXES = [
     track: TRACKS.WORKER,
     titleKey: 'onb_box_worker_title',
     bodyKey: 'onb_box_worker_body',
+    proofKey: 'onb_box_worker_proof',
     ctaKey: 'onb_box_worker_cta',
     plain: true,
   },
@@ -76,8 +78,12 @@ export default function TrackChoice({ onChoose }) {
         </div>
 
         <div className="j-hero-main">
+          {/* ── ONE PROMISE, ONE LINE ────────────────────────────────────────
+              The headline carries the whole message now ("need help? someone is
+              already on the way"), so the explanatory line that used to sit under
+              it is gone. Two lines of introduction before the two choices is what
+              pushed the cards down and made the screen feel longer than it is. */}
           <h1 className="j-hero-title">{t('onb_choice_title')}</h1>
-          <p className="j-hero-body">{t('onb_choice_body')}</p>
 
           <div className="j-hero-boxes">
             {BOXES.map((box, i) => (
@@ -95,6 +101,14 @@ export default function TrackChoice({ onChoose }) {
                 <div>
                   <div className="j-hero-box-title">{t(box.titleKey)}</div>
                   <p className="j-hero-box-body">{t(box.bodyKey)}</p>
+                  {/* Social proof — the number that answers "is anyone actually
+                      here?" before the visitor has to wonder. Same row, same
+                      emphasis and same place on BOTH cards, so the two choices
+                      stay visually equal. */}
+                  <div className="j-hero-proof">
+                    <CheckCircle size={14} strokeWidth={2.6} />
+                    <span>{t(box.proofKey)}</span>
+                  </div>
                 </div>
 
                 <span className={`j-hero-box-cta${box.plain ? ' j-hero-box-cta-plain' : ''}`}>

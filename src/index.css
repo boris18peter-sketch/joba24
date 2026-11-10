@@ -1057,7 +1057,10 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   text-align: center;
 }
 .j-hero-title {
-  margin: 0 0 8px;
+  /* The single most important line on the screen, and now the ONLY introduction
+     before the two choices — so it gets its own breathing room instead of a
+     paragraph's worth of gap that no longer exists beneath it. */
+  margin: 0 0 18px;
   font-size: 24px; font-weight: 900; line-height: 1.22; letter-spacing: -0.6px;
   color: var(--text-1);
 }
@@ -1114,7 +1117,9 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 /* The two journey boxes — Welcome's own actions. Equal height, each button
    pinned to its bottom edge so both line up. */
 .j-hero-boxes {
-  margin-top: 12px;
+  /* The headline's own bottom margin is the gap now — a second margin here would
+     have doubled it and reopened the empty band the copy removal just closed. */
+  margin-top: 0;
   flex: 0 1 auto;
   display: grid; grid-template-rows: 1fr 1fr; gap: 10px;
 }
@@ -1130,6 +1135,24 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 }
 .j-hero-box-title { font-size: 18px; font-weight: 900; letter-spacing: -0.3px; color: var(--text-1); }
 .j-hero-box-body { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-2); }
+
+/* ── Social proof — the one line that answers "is anyone here?" ──────────────
+   Deliberately NOT body text: it sits in a tinted pill with a tick, so it is read
+   as a fact about the marketplace rather than as more description of the button.
+   The ink is `--j-credit-text`, the token built for "brand blue on a tint" in
+   light mode and "light blue on a dark tint" in dark mode, so it stays legible in
+   both without a second rule. */
+.j-hero-proof {
+  display: flex; align-items: flex-start; gap: 6px;
+  margin-top: 9px; padding: 7px 10px;
+  border-radius: 12px;
+  background: var(--brand-primary-light);
+  border: 1px solid var(--border-2);
+  color: var(--j-credit-text);
+  font-size: 12.5px; font-weight: 800; line-height: 1.35;
+  text-align: start;
+}
+.j-hero-proof svg { flex-shrink: 0; margin-top: 1px; opacity: 0.95; }
 .j-hero-box-cta {
   margin-top: auto;
   height: 46px; border-radius: 13px;
@@ -1172,7 +1195,7 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
   .j-hero-brand { font-size: 13px; letter-spacing: 2px; }
   .j-hero-title { font-size: 21px; }
   .j-hero-body { font-size: 13.5px; }
-  .j-hero-boxes { margin-top: 10px; gap: 8px; }
+  .j-hero-boxes { margin-top: 0; gap: 8px; }
   .j-hero-box { padding: 12px; gap: 7px; }
   .j-hero-box-title { font-size: 16.5px; }
   .j-hero-box-body { font-size: 12.5px; }

@@ -4,6 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { chatThreadKey } from '@/lib/chatThread';
 import { selectTask } from '@/lib/taskCache';
+import { compressImage } from '@/lib/imageCompress';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -90,6 +91,7 @@ export default function Chat() {
   const shellRef = useRef(null);
   const listRef = useRef(null);
   const fileRef = useRef(null);
+  const cameraRef = useRef(null);
   const inputRef = useRef(null);
   const markedReadRef = useRef(new Set());
 
@@ -152,13 +154,27 @@ export default function Chat() {
   // `resizingRef` suppresses the scroll event our own re-pin fires, so it can
   // never clear the stickiness that the re-pin depends on.
   const resizingRef = useRef(false);
-  useChatViewport(shellRef, () => {
+  const pinTimerRef = useRef(0);
+  // ── ONE PIN PER SETTLE, NOT ONE PER FRAME ────────────────────────────────
+  // The keyboard reports a dozen geometry changes while it slides. Re-pinning on
+  // every one of them meant the list was being scrolled by us at the same time
+  // the platform was still scrolling it into place — which is what made the
+  // conversation appear to jump on iOS. The newest message is kept in view during
+  // the transition, and the final position is settled once, shortly after the
+  // last change, when nothing else is moving.
+  useChatViewport(shellRef, ({ keyboardOpen }) => {
     const el = listRef.current;
-    if (!el || !stickRef.current) return;
+    if (!el) return;
     resizingRef.current = true;
-    el.scrollTop = el.scrollHeight;
-    requestAnimationFrame(() => { resizingRef.current = false; });
+    if (keyboardOpen) el.scrollTop = el.scrollHeight;
+    clearTimeout(pinTimerRef.current);
+    pinTimerRef.current = setTimeout(() => {
+      const node = listRef.current;
+      if (node && stickRef.current) node.scrollTop = node.scrollHeight;
+      resizingRef.current = false;
+    }, 140);
   });
+  useEffect(() => () => clearTimeout(pinTimerRef.current), []);
 
   // ── Scroll management ────────────────────────────────────────────────────
   // Opening a conversation shows the newest messages.
@@ -292,18 +308,24 @@ export default function Chat() {
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
     gateAuth(async () => {
       setUploading(true);
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        // A camera photo is several megabytes; the chat shows it at a few
+        // hundred pixels. Shrinking it here is what makes the upload finish in
+        // a moment instead of a minute (see src/lib/imageCompress.js).
+        const payload = await compressImage(file);
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: payload });
         await send('', file_url, 'img');
       } catch {
         toast.error(t('chat_send_error'));
       } finally {
         setUploading(false);
-        e.target.value = '';
+        input.value = '';
+        if (cameraRef.current) cameraRef.current.value = '';
       }
     });
   };
@@ -458,8 +480,10 @@ export default function Chat() {
         }}
         onSend={handleSend}
         onFileChange={handleFileUpload}
+        onCameraChange={handleFileUpload}
         inputRef={inputRef}
         fileRef={fileRef}
+        cameraRef={cameraRef}
         recording={recording}
         recordSeconds={recordSeconds}
         uploading={uploading}

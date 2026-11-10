@@ -37,6 +37,8 @@ import { buildLiveActivityPush, sendLiveActivityPush } from './liveActivityApns.
 import { buildPushToStartPayload } from './liveActivityPushToStart.ts';
 import { isTrackedRecipient, mayContactApnsFor, mayContactFcmFor } from './liveActivityConfig.ts';
 import { loadAndroidRecipients, sendLiveUpdateToAndroid } from './liveActivityFcm.ts';
+import { ACTION_ENDPOINT, signActionToken } from './liveActivityActionToken.ts';
+import { actionsForRole } from './liveActivityActionGuard.ts';
 import { readFcmCredentials } from './fcmMessaging.ts';
 
 export const DISPATCH_ROLES = ['publisher', 'worker'];
@@ -1044,6 +1046,35 @@ export async function dispatchRecipient(input) {
     }
   }
 
+  // ── THE CARD'S BUTTON MUST WORK WITH THE APP CLOSED ──────────────────────
+  // Android has no equivalent of the app handing its widget a capability: the
+  // card is drawn by the data message itself, inside a service with no session,
+  // and it may arrive before the app is opened again. So the capability is minted
+  // HERE, as part of the same revision, and rides in the payload — one user, one
+  // task, one role, that role's action ids, with the same re-authorization on
+  // every tap. Without it the card can only ever open the app, which is precisely
+  // the "I have to go into the app to change the status" complaint.
+  let androidActionAuth: any = null;
+  if (androidTokens.length && plan.kind !== 'end') {
+    const secret = Deno.env.get('LIVE_ACTIVITY_ACTION_SECRET') || '';
+    if (secret) {
+      const signed = await signActionToken({
+        secret,
+        userId: recipientId,
+        taskId: task.id,
+        role,
+        actions: actionsForRole(role),
+      }).catch(() => null);
+      if (signed?.ok && signed.token) {
+        androidActionAuth = {
+          token: signed.token,
+          endpoint: ACTION_ENDPOINT,
+          expiresAtMs: (signed.claims?.exp || 0) * 1000,
+        };
+      }
+    }
+  }
+
   // ── THE SAME REVISION, CARRIED TO ANDROID ────────────────────────────────
   // Deliberately AFTER the iOS loop and inside the same claim: one revision, one
   // decision, two transports. A phone that is neither (a web session holding a
@@ -1057,6 +1088,7 @@ export async function dispatchRecipient(input) {
         event: plan.kind === 'end' ? 'end' : 'update',
         maySend: mode === 'dispatch' && mayContactFcmFor(config, recipientId),
         credentials: readFcmCredentials(),
+        actionAuth: androidActionAuth,
       })
     : [];
 

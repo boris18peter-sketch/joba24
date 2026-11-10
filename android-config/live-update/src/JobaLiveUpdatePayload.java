@@ -64,6 +64,19 @@ public final class JobaLiveUpdatePayload {
     public String actionLabel = "";
     public String ratingPrompt = "";
     public int ratingValue = 0;
+    /**
+     * THE CARD'S CAPABILITY — what lets its button update the status WITHOUT the
+     * app being opened.
+     *
+     * It travels with the message because Android's card is drawn by the message:
+     * no session exists at that moment, and for a card created while the app was
+     * closed there may be none for hours. The value is a narrow, signed
+     * capability bound to this user, this task and this role; it is stored (never
+     * drawn, never logged) and every tap is re-authorized by the server.
+     */
+    public String actionToken = "";
+    public String actionEndpoint = "";
+    public long actionExpiresAt = 0L;
     public String raw = "";
 
     private JobaLiveUpdatePayload() {}
@@ -151,6 +164,7 @@ public final class JobaLiveUpdatePayload {
         JobaLiveUpdatePayload payload = fromJson(json);
         if (payload == null) return null;
         payload.event = "end".equals(data.get("joba_event")) ? "end" : "update";
+        payload.readActionAuth(data.get("joba_action_token"), data.get("joba_action_endpoint"), data.get("joba_action_exp"));
         return payload;
     }
 
@@ -161,7 +175,31 @@ public final class JobaLiveUpdatePayload {
         JobaLiveUpdatePayload payload = fromJson(json);
         if (payload == null) return null;
         payload.event = "end".equals(data.getString("joba_event")) ? "end" : "update";
+        payload.readActionAuth(data.getString("joba_action_token"), data.getString("joba_action_endpoint"), data.getString("joba_action_exp"));
         return payload;
+    }
+
+    /**
+     * Read the capability the server attached to this revision.
+     *
+     * All three parts are required: a token with no endpoint (or the reverse) can
+     * never make a request, and an expiry in the past must not be stored as if it
+     * were usable — the store treats a missing expiry as "cannot act", which is
+     * the safe direction.
+     */
+    private void readActionAuth(String token, String endpoint, String expiresAtMs) {
+        if (token == null || token.isEmpty()) return;
+        if (endpoint == null || endpoint.isEmpty()) return;
+        long expiresAt = 0L;
+        try {
+            expiresAt = Long.parseLong(String.valueOf(expiresAtMs).trim());
+        } catch (Throwable ignored) {
+            return;
+        }
+        if (expiresAt <= System.currentTimeMillis()) return;
+        this.actionToken = token;
+        this.actionEndpoint = endpoint;
+        this.actionExpiresAt = expiresAt;
     }
 
     /** From the JSON the web layer hands the plugin (the foreground path). */

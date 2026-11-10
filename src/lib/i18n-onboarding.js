@@ -29,7 +29,9 @@
  */
 
 const en = {
-  onb_choice_title: 'What would you like to do today?',
+  onb_choice_title: 'Need help? Someone is already on the way.',
+  onb_box_publish_proof: '5,000+ professionals ready to help you.',
+  onb_box_worker_proof: 'Thousands of tasks straight to your phone - join the community for free!',
   onb_choice_body: 'On Joba24 you get help, or earn by doing tasks.',
   onb_box_publish_title: 'Need help?',
   onb_box_publish_body: 'Post a task for free, get offers from workers and choose who helps you.',
@@ -115,7 +117,9 @@ const en = {
 };
 
 const ar = {
-  onb_choice_title: 'ماذا تريد أن تفعل اليوم؟',
+  onb_choice_title: 'تحتاج مساعدة؟ أحدهم في الطريق إليك بالفعل.',
+  onb_box_publish_proof: 'أكثر من 5,000 محترف مستعدون لمساعدتك.',
+  onb_box_worker_proof: 'آلاف المهام تصلك مباشرة إلى هاتفك - انضم إلى المجتمع مجانًا!',
   onb_choice_body: 'في Joba24 تجد المساعدة أو تربح من تنفيذ المهام.',
   onb_box_publish_title: 'تحتاج مساعدة؟',
   onb_box_publish_body: 'انشر مهمة مجانًا، واستقبل طلبات من العمال واختر من سيساعدك.',
@@ -201,7 +205,9 @@ const ar = {
 };
 
 const es = {
-  onb_choice_title: '¿Qué quieres hacer hoy?',
+  onb_choice_title: '¿Necesitas ayuda? Alguien ya está en camino.',
+  onb_box_publish_proof: 'Más de 5.000 profesionales listos para ayudarte.',
+  onb_box_worker_proof: 'Miles de tareas directas a tu teléfono: ¡únete gratis a la comunidad!',
   onb_choice_body: 'En Joba24 encuentras ayuda o ganas dinero haciendo tareas.',
   onb_box_publish_title: '¿Necesitas ayuda?',
   onb_box_publish_body: 'Publica una tarea gratis, recibe solicitudes de trabajadores y elige quién te ayuda.',
@@ -287,7 +293,9 @@ const es = {
 };
 
 const fr = {
-  onb_choice_title: "Que voulez-vous faire aujourd'hui ?",
+  onb_choice_title: "Besoin d'aide ? Quelqu'un est déjà en route.",
+  onb_box_publish_proof: 'Plus de 5 000 professionnels prêts à vous aider.',
+  onb_box_worker_proof: 'Des milliers de tâches directement sur votre téléphone - rejoignez la communauté gratuitement !',
   onb_choice_body: "Sur Joba24, on trouve de l'aide ou on gagne en réalisant des tâches.",
   onb_box_publish_title: "Besoin d'aide ?",
   onb_box_publish_body: "Publiez une tâche gratuitement, recevez des demandes de travailleurs et choisissez qui vous aidera.",
@@ -373,7 +381,9 @@ const fr = {
 };
 
 const ru = {
-  onb_choice_title: 'Что вы хотите сделать сегодня?',
+  onb_choice_title: 'Нужна помощь? Кто-то уже в пути.',
+  onb_box_publish_proof: 'Более 5 000 специалистов готовы вам помочь.',
+  onb_box_worker_proof: 'Тысячи задач прямо в ваш телефон - присоединяйтесь к сообществу бесплатно!',
   onb_choice_body: 'В Joba24 находят помощь или зарабатывают, выполняя задачи.',
   onb_box_publish_title: 'Нужна помощь?',
   onb_box_publish_body: 'Опубликуйте задачу бесплатно, получайте отклики исполнителей и выбирайте, кто вам поможет.',
@@ -459,7 +469,9 @@ const ru = {
 };
 
 const fil = {
-  onb_choice_title: 'Ano ang gusto mong gawin ngayon?',
+  onb_choice_title: 'Kailangan ng tulong? May paparating na.',
+  onb_box_publish_proof: '5,000+ propesyonal na handang tumulong sa iyo.',
+  onb_box_worker_proof: 'Libu-libong gawain diretso sa iyong telepono - sumali sa komunidad nang libre!',
   onb_choice_body: 'Sa Joba24, makakahanap ka ng tulong o kikita sa paggawa ng mga gawain.',
   onb_box_publish_title: 'Kailangan ng tulong?',
   onb_box_publish_body: 'Mag-post ng gawain nang libre, tumanggap ng alok mula sa mga manggagawa at piliin kung sino ang tutulong sa iyo.',
@@ -545,7 +557,9 @@ const fil = {
 };
 
 const hi = {
-  onb_choice_title: 'आज आप क्या करना चाहेंगे?',
+  onb_choice_title: 'मदद चाहिए? कोई रास्ते में है।',
+  onb_box_publish_proof: '5,000+ पेशेवर आपकी मदद के लिए तैयार।',
+  onb_box_worker_proof: 'हज़ारों काम सीधे आपके फ़ोन पर - मुफ़्त में समुदाय से जुड़ें!',
   onb_choice_body: 'Joba24 पर आप मदद पाते हैं या काम करके कमाते हैं।',
   onb_box_publish_title: 'मदद चाहिए?',
   onb_box_publish_body: 'मुफ़्त में काम पोस्ट करें, कामगारों से अनुरोध पाएं और चुनें कि कौन आपकी मदद करेगा।',
@@ -631,7 +645,9 @@ const hi = {
 };
 
 const zh = {
-  onb_choice_title: '今天你想做什么？',
+  onb_choice_title: '需要帮忙？已经有人在路上。',
+  onb_box_publish_proof: '5,000+ 位专业人士随时为您服务。',
+  onb_box_worker_proof: '数千个任务直接送到您的手机 - 免费加入社区！',
   onb_choice_body: '在 Joba24，你可以找到帮手，也可以接任务赚钱。',
   onb_box_publish_title: '需要帮忙？',
   onb_box_publish_body: '免费发布任务，收到工人的申请，自己选择由谁来帮你。',
