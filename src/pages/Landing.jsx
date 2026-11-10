@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Mail, Check, Zap, Clock, MapPin, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Check, Zap, MapPin, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
@@ -74,11 +74,10 @@ export default function Landing() {
               <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700 }}>כבר הצטרפו ל-Joba24</span>
             </span>
           </div>
-          <a href="#signup" className="inline-block">
-            <Button className="h-14 px-10 text-base font-bold rounded-2xl bg-white hover:bg-gray-100 text-primary shadow-xl">
-              הרשם עכשיו ✨
-            </Button>
-          </a>
+          {/* asChild renders the anchor AS the button — no <button> inside an <a>. */}
+          <Button asChild className="h-14 px-10 text-base font-bold rounded-2xl bg-white hover:bg-gray-100 text-primary shadow-xl">
+            <a href="#signup">הרשם עכשיו ✨</a>
+          </Button>
 
           {!isStandaloneApp && (
             <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>

@@ -164,8 +164,10 @@ export default function EmptyMyTasksState() {
       </p>
 
       {/* Primary CTA */}
-      <Link to="/create-task" className="j-empty-cta-wrap" style={{ textDecoration: 'none', width: '88%', maxWidth: 360, marginTop: 12, display: 'block' }}>
-        <button
+      {/* The link IS the button — one element, never an <a> wrapping a <button>. */}
+      <div className="j-empty-cta-wrap" style={{ width: '88%', maxWidth: 360, marginTop: 12 }}>
+        <Link
+          to="/create-task"
           onClick={() => { try { navigator.vibrate?.(15); } catch {} }}
           className="j-empty-cta"
           style={{
@@ -175,6 +177,7 @@ export default function EmptyMyTasksState() {
             color: 'white', fontWeight: 800, fontSize: 17, cursor: 'pointer',
             boxShadow: '0 14px 34px rgba(26,111,212,0.42)',
             letterSpacing: 0.2,
+            textDecoration: 'none',
             transition: 'transform 0.1s ease',
           }}
           onMouseDown={(e) => { e.currentTarget.style.animation = 'none'; e.currentTarget.style.transform = 'scale(0.96)'; }}
@@ -185,8 +188,8 @@ export default function EmptyMyTasksState() {
         >
           <Plus size={22} strokeWidth={2.6} />
           {t('post_task_btn')}
-        </button>
-      </Link>
+        </Link>
+      </div>
 
       {/* Spacer */}
       <div style={{ height: 30 }} />

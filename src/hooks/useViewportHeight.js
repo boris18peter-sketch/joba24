@@ -88,26 +88,60 @@ export function useChatViewport(ref, onGeometryChange) {
 
     let frame = 0;
     let lastH = -1;
+    let lastW = -1;
     let lastY = -1;
+    let lastX = -1;
     let lastKeyboard = null;
+    // The tallest geometry ever seen: the WITH-keyboard state is measured
+    // against this, never against `window.innerHeight`. On Android the viewport
+    // meta declares `interactive-widget=resizes-content`, so the layout viewport
+    // — and therefore innerHeight — shrinks BY the keyboard, which made the old
+    // comparison ("vv.height < innerHeight - 120") false whenever the keyboard
+    // opened and left the bottom safe-area inset in place, floating the composer
+    // above the keyboard. A high-water mark is a fact on both platforms.
+    let baseline = 0;
 
     const apply = () => {
       frame = 0;
       const h = Math.round(vv.height);
+      const w = Math.round(vv.width);
       const y = Math.round(vv.offsetTop);
-      if (h === lastH && y === lastY) return;
+      const x = Math.round(vv.offsetLeft);
+      if (h === lastH && w === lastW && y === lastY && x === lastX) return;
       lastH = h;
+      lastW = w;
       lastY = y;
+      lastX = x;
+      if (h > baseline) baseline = h;
 
       // ÷ the surface scale: the viewport is reported in the window's own px,
       // while everything written into the zoomed surface is multiplied by it.
       const scale = surfaceScale();
       el.style.height = `${Math.round(h / scale)}px`;
-      el.style.transform = y ? `translateY(${Math.round(y / scale)}px)` : '';
+      // ── THE WIDTH AND THE HORIZONTAL OFFSET ARE PART OF THE SAME PIN ───────
+      // Compensating only `top` left the horizontal axis to the browser: a
+      // visual viewport that ends up shifted sideways (Safari nudging the page
+      // to reveal a focused field) moved the chat under the finger. Writing the
+      // width and both offsets pins the shell to the visible rectangle on both
+      // axes — one frame, one write, nothing left for the browser to decide.
+      el.style.width = `${Math.round(w / scale)}px`;
+      el.style.transform = (x || y)
+        ? `translate3d(${Math.round(x / scale)}px, ${Math.round(y / scale)}px, 0)`
+        : '';
 
       // iOS keeps the home-indicator inset while the keyboard is up, which
       // would push the composer off the keyboard by ~34px.
-      const keyboardOpen = vv.height < window.innerHeight - 120;
+      //
+      // A keyboard is only ever up around a focused field, so a shrink with
+      // nothing focused is a ROTATION or a resized window, not a keyboard — the
+      // baseline is moved down to it instead of reporting a phantom keyboard
+      // that would keep the composer's inset switched off.
+      const editableFocused = () => {
+        const a = document.activeElement;
+        return !!a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT' || a.isContentEditable);
+      };
+      if (baseline - h > 120 && !editableFocused()) baseline = h;
+      const keyboardOpen = baseline - h > 120;
       if (keyboardOpen !== lastKeyboard) {
         lastKeyboard = keyboardOpen;
         if (keyboardOpen) el.style.setProperty('--safe-bottom', '0px');
@@ -133,6 +167,7 @@ export function useChatViewport(ref, onGeometryChange) {
       vv.removeEventListener('resize', schedule);
       vv.removeEventListener('scroll', schedule);
       el.style.height = '';
+      el.style.width = '';
       el.style.transform = '';
       el.style.removeProperty('--safe-bottom');
     };

@@ -731,7 +731,17 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
    hard cut is what read as "the screen jumps when I press type in chat". It now
    arrives the way the app's other surfaces do: a short slide with a fade. */
 @keyframes chatEnter { from { opacity: 0; transform: translateY(10px) scale(0.995); } to { opacity: 1; transform: none; } }
-.j-chat-enter { animation: chatEnter 0.22s cubic-bezier(0.32, 0.72, 0, 1) both; }
+/* ── NO fill-mode, AND THAT IS THE KEYBOARD FIX ─────────────────────────────
+   `both` kept the LAST keyframe applying for ever — and a running/filling CSS
+   animation outranks an inline style. This shell's `transform` is owned by
+   useChatViewport, which translates it to follow the visual viewport when the
+   keyboard opens. With `both`, that inline translate was permanently ignored:
+   the chat never followed the keyboard, so Safari scrolled the visual viewport
+   itself to reveal the focused input — the header slid away, the whole screen
+   jumped, and it jumped back on blur.
+   Without fill-mode the animation applies only for its 0.22s and then steps
+   aside, leaving `transform` to the hook. The entrance still fades and slides. */
+.j-chat-enter { animation: chatEnter 0.22s cubic-bezier(0.32, 0.72, 0, 1); }
 
 /* ════════════════════════════════════════════════════════════════════
    ONBOARDING — one shared layout + one shared preview language

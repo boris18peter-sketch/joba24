@@ -1,0 +1,75 @@
+{
+  "name": "FacebookPostLog",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "The Task this record is about. One task must reach the Page exactly once."
+    },
+    "page_id": {
+      "type": "string",
+      "description": "The Facebook Page the post was (or is being) made on."
+    },
+    "task_title": {
+      "type": "string",
+      "description": "Snapshot of the task title, so the log is readable without a join."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "claim",
+        "posted",
+        "failed"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "claim",
+      "description": "claim = this run is asking for the right to post. The EARLIEST claim for a task owns the post and every other run backs off. posted = the post exists on the Page. failed = the attempt did not produce a post, so a later run may try again."
+    },
+    "post_id": {
+      "type": "string",
+      "description": "The Facebook post id returned by the Graph API once the post exists."
+    },
+    "post_url": {
+      "type": "string",
+      "description": "Public permalink of the post, used to skip and to report where it went."
+    },
+    "media_type": {
+      "type": "string",
+      "description": "video / photos / text \u2014 how the task was published."
+    },
+    "error": {
+      "type": "string",
+      "description": "Why the attempt failed. Never contains a token or a credential."
+    }
+  },
+  "required": [
+    "task_id",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

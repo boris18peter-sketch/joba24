@@ -100,13 +100,48 @@ export default async function(req: Request): Promise<Response> {
       const pageToken = await getPageAccessToken(accessToken, settings.facebook_page_id);
       if (!pageToken) return Response.json({ error: 'Selected page no longer accessible — reconnect Facebook' }, { status: 400 });
 
-      // ── ONE POST PER TASK, WHATEVER ASKS FOR IT AGAIN ─────────────────────
-      // The workflow fires on create, but a retried or re-delivered run would
-      // publish the same task a second time — and a duplicate on a public Page
-      // is worse than a late post. The task's own link is the identity, so a
-      // recent post carrying it means the job is already done.
+      // ── ONE POST PER TASK — A CLAIM, NOT A CHECK ──────────────────────────
+      // Two runs of this function for the same task (a re-delivered or retried
+      // workflow run, or a second trigger arriving while the first is still
+      // uploading photos) both read "no post yet" and both publish — that is
+      // what put every task on the Page twice.
+      //
+      // A read-then-write check can never close that window: the window is the
+      // whole time between the check and the post. So the right to post is
+      // CLAIMED first and decided afterwards, exactly like the Live Activity
+      // dispatch claims a revision. Every run writes its own claim row, then
+      // reads the task's claims back: rows are ordered by creation, so the
+      // EARLIEST claim is the same row for every run — one owner, every other
+      // run backs off, whichever order the two happened to start in.
+      const claim = await base44.asServiceRole.entities.FacebookPostLog.create({
+        task_id: task.id,
+        page_id: settings.facebook_page_id,
+        task_title: task.title,
+        status: 'claim',
+      });
+
+      const owner = await claimOwner(base44, task.id);
+      if (!owner || owner.id !== claim.id) {
+        // Lost the claim — this task is already posted (or is being posted) by
+        // the run that got there first. Nothing is published, and our own claim
+        // row is removed so it can never block a genuine retry later.
+        await base44.asServiceRole.entities.FacebookPostLog.delete(claim.id).catch(() => {});
+        return Response.json({ skipped: true, reason: 'already_posted', post_url: owner?.post_url || null });
+      }
+
+      // Every exit below records the outcome against the claim, so the log is
+      // always the truth about what reached the Page.
+      const settle = async (patch: Record<string, any>) => {
+        await base44.asServiceRole.entities.FacebookPostLog.update(claim.id, patch).catch(() => {});
+      };
+
+      // ── A SECOND NET: THE PAGE ITSELF ─────────────────────────────────────
+      // The task's own link is the identity. A post that already carries it
+      // means the job is done — including for tasks published before this log
+      // existed, where no claim row is available to look at.
       const existingPost = await findExistingPost(settings.facebook_page_id, pageToken, task.id);
       if (existingPost) {
+        await settle({ status: 'posted', post_url: existingPost.url });
         return Response.json({ skipped: true, reason: 'already_posted', post_url: existingPost.url });
       }
 
@@ -130,8 +165,13 @@ export default async function(req: Request): Promise<Response> {
           }),
         });
         const videoData = await videoResp.json();
-        if (videoData.error) return Response.json({ error: videoData.error.message }, { status: 500 });
-        return Response.json({ ok: true, post_id: videoData.id, media_type: 'video', post_url: `https://facebook.com/${settings.facebook_page_id}/videos/${videoData.id}` });
+        const videoUrl = `https://facebook.com/${settings.facebook_page_id}/videos/${videoData.id}`;
+        if (videoData.error) {
+          await settle({ status: 'failed', error: String(videoData.error.message || '').slice(0, 300) });
+          return Response.json({ error: videoData.error.message }, { status: 500 });
+        }
+        await settle({ status: 'posted', post_id: videoData.id, post_url: videoUrl, media_type: 'video' });
+        return Response.json({ ok: true, post_id: videoData.id, media_type: 'video', post_url: videoUrl });
       }
 
       // Upload images as unpublished photos, then attach to the feed post
@@ -167,10 +207,20 @@ export default async function(req: Request): Promise<Response> {
         body: JSON.stringify(postBody),
       });
       const postData = await postResp.json();
-      if (postData.error) return Response.json({ error: postData.error.message }, { status: 500 });
+      if (postData.error) {
+        await settle({ status: 'failed', error: String(postData.error.message || '').slice(0, 300) });
+        return Response.json({ error: postData.error.message }, { status: 500 });
+      }
 
       const [pageId, postId] = postData.id.split('_');
-      return Response.json({ ok: true, post_id: postData.id, post_url: `https://facebook.com/${pageId}/posts/${postId}`, media_count: attachedMedia.length });
+      const postUrl = `https://facebook.com/${pageId}/posts/${postId}`;
+      await settle({
+        status: 'posted',
+        post_id: postData.id,
+        post_url: postUrl,
+        media_type: attachedMedia.length > 0 ? 'photos' : 'text',
+      });
+      return Response.json({ ok: true, post_id: postData.id, post_url: postUrl, media_count: attachedMedia.length });
     }
 
     // ── TEST POST ──
@@ -282,6 +332,35 @@ async function getPageAccessToken(userToken: string, pageId: string): Promise<st
   }
 
   return null;
+}
+
+/**
+ * Which run owns the post for this task?
+ *
+ * Reads every claim row for the task and returns the EARLIEST one — the same row
+ * for every caller, whatever order the runs started in — so exactly one of them
+ * proceeds. Failed attempts are ignored, because a failure must never stop the
+ * task from being published later.
+ *
+ * A read that fails returns null, and the caller then treats itself as the
+ * loser: not posting is always safer than posting twice.
+ */
+async function claimOwner(base44: any, taskId: string): Promise<any | null> {
+  try {
+    const page = await base44.asServiceRole.entities.FacebookPostLog.filter(
+      { task_id: taskId },
+      { sort: 'created_date', limit: 50 },
+    );
+    const rows: any[] = page?.items || (Array.isArray(page) ? page : []);
+    return rows
+      .filter((r: any) => r.status !== 'failed')
+      .sort((a: any, b: any) =>
+        String(a.created_date || '').localeCompare(String(b.created_date || '')) ||
+        String(a.id).localeCompare(String(b.id)),
+      )[0] || null;
+  } catch {
+    return null;
+  }
 }
 
 /**

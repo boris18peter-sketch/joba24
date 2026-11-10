@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MessageCircle, X, RefreshCw, Loader2 } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
@@ -233,11 +233,9 @@ export default function MyTasks() {
                     </button>
                   )}
                   {task.status === 'TAKEN' && (
-                    <Link to={`/chat/${task.id}?with=${task.worker_id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
-                      <button style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <MessageCircle size={13} /> {t('chat')}
-                      </button>
-                    </Link>
+                    <button onClick={e => { e.stopPropagation(); navigate(`/chat/${task.id}?with=${task.worker_id}`); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <MessageCircle size={13} /> {t('chat')}
+                    </button>
                   )}
                   {task.status === 'OPEN' && (
                     <button onClick={e => { e.stopPropagation(); setCancelTask(task); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#fff1f1', border: '1px solid #fecaca', color: '#dc2626', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
