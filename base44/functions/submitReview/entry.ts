@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { forbidden } from '../../shared/internalAuth.ts';
 import { submitTaskReviewCore } from '../../shared/reviewSubmission.ts';
+import { runTaskTransition } from '../../shared/taskTransitionFastLane.ts';
 
 /**
  * submitReview — the in-app review sheet's endpoint.
@@ -69,6 +70,21 @@ Deno.serve(async (req) => {
     if (result.duplicate) {
       return Response.json({ success: true, note: 'Already reviewed' });
     }
+
+    // ── THE LOCK SCREEN MUST AGREE WITH THE SHEET ─────────────────────────
+    // A rating given HERE (the app's own sheet) left the card on the Lock Screen
+    // still asking for the same rating — the two surfaces disagreed about a
+    // question that was already settled, and the card only went away when it went
+    // stale. This one transition re-plans both sides from the stored Task: the
+    // person who just answered no longer gets an ask, so their card ends; the
+    // counterpart still owes one, so their ask is unchanged (and suppressed as a
+    // duplicate, never re-pushed).
+    //
+    // It can never fail the review: the review is already written, so a dispatch
+    // problem is reported nowhere but the logs.
+    await runTaskTransition({ base44, task }).catch((error) => {
+      console.error('live activity sync after review failed:', error?.message || error);
+    });
 
     return Response.json({ success: true, new_rating: result.new_rating });
   } catch (error) {

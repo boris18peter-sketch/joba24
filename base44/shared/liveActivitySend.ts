@@ -27,6 +27,7 @@
  * never contacts Apple.
  */
 import { buildBackendSnapshot } from './liveActivitySnapshot.ts';
+import { buildCompletionRatingCard } from './liveActivityRating.ts';
 import {
   planLiveActivityDispatch, stateAfterPlan, shouldInvalidateToken, nextRevision, TERMINAL_TASK_STATUSES,
 } from './liveActivityDispatch.ts';
@@ -773,7 +774,33 @@ export async function dispatchRecipient(input) {
     return { kind: 'none', decision: 'no_active_tokens', revision: state?.revision || 0, contactedApns: false };
   }
 
-  const snapshot = buildBackendSnapshot({
+  // ── A FINISHED CARD'S LAST JOB: THE RATING ───────────────────────────────
+  // The planner has always been able to push ONE non-ending snapshot for a
+  // completed task — the star row — but nothing on THIS path ever built it. The
+  // flow snapshot was passed instead, its phase is not `rate`, so the planner
+  // took its terminal branch and the card was simply ENDED: the stars the widget
+  // draws never reached a phone, on iOS or on Android. The ask was only ever
+  // produced as a RESPONSE from `liveActivityAction`, i.e. after a tap on a card
+  // that no longer existed.
+  //
+  // So the card is built here, where the completion is actually dispatched, and
+  // it replaces the flow snapshot. It covers BOTH transports from one snapshot:
+  // APNs carries it as the content-state the widget decodes, and the Android
+  // data message carries the same object verbatim.
+  //
+  // Only a participant who has NOT rated yet gets it (`buildCompletionRatingCard`
+  // re-derives that from the stored Task and the Review), so: cancelled, expired,
+  // and a side that already answered all keep ending exactly as they always did.
+  const ratingCard = terminalTask && task.status === 'COMPLETED'
+    ? await buildCompletionRatingCard(base44, {
+        task,
+        role,
+        recipientId,
+        revision: nextRevision(state),
+      }).catch(() => null)
+    : null;
+
+  const snapshot = ratingCard || buildBackendSnapshot({
     task,
     role,
     userId: recipientId,

@@ -136,6 +136,25 @@ async function verifyLiveCards(activities, userId) {
     const task = await base44.entities.Task.get(card.taskId).catch(() => null);
     if (isLiveForRole(task, card.role, userId)) {
       live.push({ taskId: card.taskId, role: card.role });
+      continue;
+    }
+
+    // ── A FINISHED JOB'S CARD HAS ONE LAST JOB: THE STARS ────────────────
+    // A completed task is not "tracked", so the rule above called this card an
+    // orphan and ended it — on the very pass that runs right after the approval,
+    // i.e. exactly when the person is looking at the phone. The rating ask the
+    // server had just pushed was wiped before the star row could be seen.
+    //
+    // A card for a task this user was part of, which they have NOT rated yet, is
+    // therefore kept: it IS the ask. Once the review exists it is no longer
+    // protected and the next pass closes it — which is also what closes it after
+    // a rating given in the app's own sheet.
+    if (task && task.status === 'COMPLETED' && (task.client_id === userId || task.worker_id === userId)) {
+      const reviewed = await base44.entities.Review
+        .filter({ task_id: task.id, reviewer_id: userId }, { limit: 1 })
+        .catch(() => ({ items: [] }));
+      const rows = Array.isArray(reviewed) ? reviewed : (reviewed?.items || []);
+      if (!rows.length) live.push({ taskId: card.taskId, role: card.role });
     }
   }
   return live;

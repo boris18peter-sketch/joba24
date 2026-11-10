@@ -20,6 +20,11 @@
  * pays, refunds or assigns anything.
  */
 import { authorizeActivity } from './taskActivitySnapshot.ts';
+// The rating ask's own phase name. It was USED in the terminal branch below
+// without being imported, so the branch threw a ReferenceError on every terminal
+// task that carried a snapshot — the dispatch was then swallowed by the caller's
+// catch and the card was never updated (nor closed) with the star row.
+import { RATING_PHASE } from './liveActivityRating.ts';
 
 /** Statuses after which a Live Activity must close. */
 export const TERMINAL_TASK_STATUSES = ['COMPLETED', 'CANCELLED', 'EXPIRED'];
