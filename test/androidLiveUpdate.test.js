@@ -914,21 +914,41 @@ describe('Android Live Update — the designed card', () => {
   it('never leaves a tap with nowhere to go', () => {
     const notifier = source('JobaLiveUpdateNotifier.java');
     const receiver = source('JobaLiveUpdateActionReceiver.java');
+    const plugin = source('JobaLiveUpdatePlugin.java');
 
     // ── THE REGRESSION THIS LOCKS DOWN ────────────────────────────────────
-    // The no-capability branch used to hand the tap to a getActivity
-    // PendingIntent carrying `joba_open_task` — an extra nothing on the Android
-    // side ever read. The app opened on the feed and the button visibly did
-    // nothing. Every tap must therefore reach the receiver, which is the only
-    // place that records the task for the web layer.
+    // A tap that cannot act in place must still be honoured by the OS. That was
+    // NOT true while the fallback was a broadcast whose receiver called
+    // `startActivity`: Android 10+ refuses a background activity start from a
+    // receiver, so the button produced nothing at all — the reported "the
+    // buttons do not respond".
+    //
+    // Two branches, and both must exist:
+    //   • with a capability → broadcast, acted in place, no app opens;
+    //   • without one      → an ACTIVITY PendingIntent, which the OS always
+    //     launches, carrying the task id in `joba_open_task`.
     expect(notifier).toContain('new Intent(context, JobaLiveUpdateActionReceiver.class)');
-    expect(notifier).not.toContain('PendingIntent.getActivity(context');
     expect(notifier).toContain('PendingIntent.getBroadcast(context, requestCode, intent, flags)');
+    expect(notifier).toContain('PendingIntent.getActivity(context, requestCode, intent, flags)');
+    expect(notifier).toContain('mayActInPlace(context, payload)');
+    // …and the extra that tap carries is READ, so the app lands on that task
+    // instead of the feed (the reason the old version looked like a no-op).
+    expect(plugin).toContain('getStringExtra("joba_open_task")');
 
     // The task is recorded BEFORE any decision, so no path can end in silence…
     expect(receiver).toContain('store.setPendingOpenTask(taskId);');
     // …and a failed request opens the task instead of doing nothing.
     expect(receiver).toContain('if (!applied) openTask(appContext, taskId);');
+  });
+
+  it('keeps the card out of the app\'s notification group', () => {
+    const notifier = source('JobaLiveUpdateNotifier.java');
+    // A grouped notification is drawn in its collapsed, inset form — that is
+    // the "the widget is tiny and squashed" report. The card must have a group
+    // of its own, in BOTH builders, so it is drawn full width.
+    const groups = notifier.match(/setGroup\(GROUP_KEY\)/g) || [];
+    expect(groups.length).toBeGreaterThanOrEqual(2);
+    expect(notifier).toContain('setGroupSummary(false)');
   });
 
   it('installs the layouts into the generated project', () => {
