@@ -15,8 +15,18 @@ import LiveWorkerAvatars from '@/components/LiveWorkerAvatars';
  */
 export default function WorkerAvailabilityIndicator({ category, city }) {
   const { t, isRTL } = useLanguage();
-  const { count, hasCategory, hasCity } = useWorkerStats(category, city);
   const { map: categoryMap } = useGlobalCategories();
+
+  // ── WHOSE NUMBER IS THIS? THE CATEGORY'S ──────────────────────────────────
+  // The bar reports how many professionals work in the CATEGORY, not in the one
+  // service the publisher narrowed to. Handing the raw selection to the count let
+  // a sub-service key resolve to itself wherever the map was not ready yet, and
+  // the number then moved every time the service changed — the same trade showing
+  // two different totals while the publisher was still choosing. The key is
+  // resolved to its canonical category FIRST, and that resolved key feeds both the
+  // count and the label, so the two can never disagree.
+  const rootKey = category ? rootKeyFor(category, categoryMap) : '';
+  const { count, hasCategory, hasCity } = useWorkerStats(rootKey || category, city);
 
   // Animated count-up
   const [displayCount, setDisplayCount] = useState(0);
@@ -42,7 +52,6 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
   // the single service here ("בעיית אינסטלציה אחרת") next to the whole trade's
   // count was exactly the mismatch the publisher saw: a big number under a
   // service nobody had actually subscribed to.
-  const rootKey = hasCategory ? rootKeyFor(category, categoryMap) : '';
   const catLabel = hasCategory ? (categoryMap[rootKey]?.label || getCategoryLabel(rootKey || category, t)) : '';
 
   const mainLabel = (() => {

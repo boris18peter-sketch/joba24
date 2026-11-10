@@ -45,6 +45,8 @@ import PublishWizardNav from '@/components/publish/PublishWizardNav';
 import PublishStepIntro from '@/components/publish/PublishStepIntro';
 import PublishHelpVideo from '@/components/publish/PublishHelpVideo';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
+import { checkGibberish, checkCategoryDescriptionMatch } from '@/lib/taskTextChecks';
+import { bestServiceForText } from '@/lib/descriptionCategoryMatch';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // Which step of the slider the publisher had reached. A visitor who is asked to
@@ -294,6 +296,9 @@ export default function CreateTask() {
   // persisted on the Task as 'other' with its brand key kept in category_details.
   const { brandId } = useBrand();
   const { categories: brandCategories, globalMap, taskCategoryFor, formFieldsFor, contentFor, isLoading: categoriesLoading } = useBrandCategories();
+  // One stable signature of the offered services, so the description → service
+  // sync below never restarts its timer on an unrelated re-render.
+  const serviceKeySignature = brandCategories.map((c) => c.value).join('|');
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
@@ -642,6 +647,13 @@ export default function CreateTask() {
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [moderationErrors, setModerationErrors] = useState({});
   const [checkingModeration, setCheckingModeration] = useState('');
+  // Why the last publish attempt did not go through, in the publisher's words.
+  // Kept apart from the required-field banner so a real reason is never replaced
+  // by a generic "something is missing".
+  const [publishError, setPublishError] = useState('');
+  // Set when the service was moved onto the description by itself, so the
+  // publisher is TOLD what changed instead of finding a different choice.
+  const [categorySyncNote, setCategorySyncNote] = useState(null);
   // Address is confirmed if we have a location (repost/edit pre-fills it, free text also accepted)
   const [addressConfirmed, setAddressConfirmed] = useState(!!form.location_name);
 
@@ -704,66 +716,6 @@ export default function CreateTask() {
     return () => clearTimeout(draftTimerRef.current);
   }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, form.scheduled_time, isRepost]);
 
-  // Category keywords now live in taskFlowConfig.js — single source of truth
-  const CATEGORY_KEYWORDS = Object.fromEntries(
-    CATEGORIES.filter(c => c.value !== 'other').map(c => [c.value, getCategoryKeywords(c.value)])
-  );
-
-  // Check if text looks like gibberish (random key mashing)
-  // Returns error string if looks like gibberish, null if ok
-  const checkGibberish = (text, fieldLabel) => {
-    fieldLabel = fieldLabel || t('ct_field_text');
-    if (!text || text.trim().length < 4) return null;
-    const t = text.trim();
-    // Too short overall
-    if (t.length < 5) return null;
-    // Check for very long runs of consonants with no spaces or vowels (Hebrew gibberish)
-    const hebrewConsonants = /[בגדהוזחטיכלמנסעפצקרשתךםןף]/g;
-    const matches = t.match(hebrewConsonants);
-    const hebrewLetters = t.replace(/[^א-ת]/g, '');
-    // Detect if the string is mostly random short sequences with no recognizable words
-    const words = t.split(/\s+/).filter(w => w.length > 0);
-    if (words.length > 0) {
-      const avgLen = words.reduce((s, w) => s + w.length, 0) / words.length;
-      // Hebrew words are usually 2-8 chars, gibberish is often 1-2 random chars
-      const tinyWords = words.filter(w => w.replace(/[^א-ת]/g,'').length > 0 && w.replace(/[^א-ת]/g,'').length <= 1).length;
-      const tinyRatio = words.length > 0 ? tinyWords / words.length : 0;
-      if (tinyRatio > 0.65 && words.length >= 3) {
-        return t('ct_gibberish_invalid', { field: fieldLabel });
-      }
-    }
-    // Check for runs of 5+ consecutive same/similar chars (lbgbmtz style)
-    if (/(.)\1{4,}/.test(t)) {
-      return t('ct_gibberish_repeat', { field: fieldLabel });
-    }
-    // Check for all-consonant Hebrew with no vowel helpers (e.g. לבגבמצ)
-    if (hebrewLetters.length >= 4) {
-      const hebrewVowelLike = /[אויהא]/g;
-      const vowelCount = (hebrewLetters.match(hebrewVowelLike) || []).length;
-      const ratio = vowelCount / hebrewLetters.length;
-      if (ratio < 0.05 && hebrewLetters.length > 6) {
-        return t('ct_gibberish_random', { field: fieldLabel });
-      }
-    }
-    return null;
-  };
-
-  // Auto-detect category from description text
-  const autoDetectCategory = (description) => {
-    if (!description || description.trim().length < 5) return null;
-    const combined = description.toLowerCase();
-    let bestCategory = null;
-    let bestScore = 0;
-    for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-      const score = keywords.filter(kw => combined.includes(kw.toLowerCase())).length;
-      if (score > bestScore) {
-        bestScore = score;
-        bestCategory = cat;
-      }
-    }
-    return bestScore >= 1 ? bestCategory : null;
-  };
-
   // Suggested title generated in the background from the full description.
   // The LLM reads the ENTIRE description and returns a concise title that
   // captures all the requested work — so a multi-task post (e.g. a Facebook
@@ -788,44 +740,6 @@ export default function CreateTask() {
     }, 1200);
     return () => { cancelled = true; clearTimeout(titleTimerRef.current); };
   }, [form.description, isEditMode, isRepost]);
-
-  // Check if the combined title+description matches the selected category
-  // Returns error string if mismatch, null if ok
-  const checkCategoryDescriptionMatch = (category, description, title = '') => {
-    if (!category || category === 'other') return null;
-    const keywords = CATEGORY_KEYWORDS[category];
-    if (!keywords) return null;
-
-    const combined = `${title} ${description}`.toLowerCase();
-    // Must have some meaningful content
-    if (combined.trim().length < 15) return null;
-
-    // 1. Check if the combined text has ANY keyword from the chosen category
-    const hasMatch = keywords.some(kw => combined.includes(kw.toLowerCase()));
-
-    // 2. Check if the combined text strongly matches a DIFFERENT category (cross-category pollution)
-    let detectedOtherCategory = null;
-    if (!hasMatch) {
-      for (const [otherCat, otherKws] of Object.entries(CATEGORY_KEYWORDS)) {
-        if (otherCat === category) continue;
-        const otherMatchCount = otherKws.filter(kw => combined.includes(kw.toLowerCase())).length;
-        if (otherMatchCount >= 1) {
-          detectedOtherCategory = otherCat;
-          break;
-        }
-      }
-    }
-
-    if (!hasMatch) {
-      const catLabel = getCategoryLabel(category, t);
-      if (detectedOtherCategory) {
-        const detectedLabel = getCategoryLabel(detectedOtherCategory, t);
-        return t('ct_cat_mismatch_detected', { detected: detectedLabel, selected: catLabel });
-      }
-      return t('ct_cat_mismatch_generic', { selected: catLabel });
-    }
-    return null;
-  };
 
   const checkFieldModeration = async (field, text) => {
     if (!text || text.trim().length < 4) {
@@ -1054,8 +968,8 @@ export default function CreateTask() {
         return;
       }
       // Gibberish check for edit mode too
-      const tg = checkGibberish(form.title, t('ct_field_title'));
-      const dg = checkGibberish(form.description, t('ct_field_desc'));
+      const tg = checkGibberish(form.title, t('ct_field_title'), t);
+      const dg = checkGibberish(form.description, t('ct_field_desc'), t);
       if (tg || dg) {
         setModerationErrors({ title: tg || undefined, description: dg || undefined });
         setShowErrorBanner(true);
@@ -1120,7 +1034,7 @@ export default function CreateTask() {
     setLoading(true);
 
     // Gibberish / meaningless content check (fast, no API) — description only
-    const descGibberish = checkGibberish(form.description, t('ct_field_desc'));
+    const descGibberish = checkGibberish(form.description, t('ct_field_desc'), t);
     if (descGibberish) {
       setModerationErrors({ description: descGibberish });
       setShowErrorBanner(true);
@@ -1727,7 +1641,12 @@ export default function CreateTask() {
             onBlur={() => {
               checkFieldModeration('description', form.description);
               // Don't auto-change category from "other" — respect user's explicit choice
-              const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
+              const mismatch = checkCategoryDescriptionMatch({
+                category: form.category,
+                description: form.description,
+                title: form.title,
+                translate: t,
+              });
               setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
             }}
             style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={5}
