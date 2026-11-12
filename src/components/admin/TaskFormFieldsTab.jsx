@@ -247,7 +247,14 @@ export default function TaskFormFieldsTab() {
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-1)' }}>{child.label}</div>
+                      {/* A question that lives INSIDE another one says so, so the
+                          admin sees where the switch actually lands on the form. */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-1)' }}>{child.label}</span>
+                        <span style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-2)', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 99, padding: '1px 7px' }}>
+                          בתוך {section.label}
+                        </span>
+                      </div>
                       <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.45 }}>{child.desc}</div>
                     </div>
                     <Switch checked={childOn} onCheckedChange={() => toggle(child.key)} />

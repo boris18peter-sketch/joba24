@@ -16,7 +16,7 @@ import { useLanguage } from '@/lib/LanguageContext';
  * The value handed to the form is always an ACTIONABLE category key — the one
  * that owns the global task form and its Brand-aware content.
  */
-export default function CategoryServiceSelector({ value, onChange, allowHistorical = false }) {
+export default function CategoryServiceSelector({ value, onChange, allowHistorical = false, onRootChange }) {
   // `rootGroups` is the shared grouping (categoryTree.categoryRootGroups) — the
   // same list the published-tasks empty state renders, so the picker here and the
   // category rail there can never diverge in content or order.
@@ -27,6 +27,10 @@ export default function CategoryServiceSelector({ value, onChange, allowHistoric
     roots.find((r) => r.key === value || r.services.some((s) => s.value === value))?.key || '';
   const [root, setRoot] = useState(selectedRoot);
   useEffect(() => { if (selectedRoot) setRoot(selectedRoot); }, [selectedRoot]);
+  // The trade the picker is showing is published to the form, so a main category
+  // chosen WITHOUT its service is still a known starting point: the description
+  // picks the service from that trade instead of the choice being lost.
+  useEffect(() => { if (selectedRoot) onRootChange?.(selectedRoot); }, [selectedRoot, onRootChange]);
 
   if (isLoading) return <p className="text-sm text-jtext-3">{t('loading')}</p>;
   if (!categories.length && !allowHistorical) return <p className="text-sm text-jtext-3">אין שירותים זמינים במותג זה.</p>;
@@ -62,6 +66,7 @@ export default function CategoryServiceSelector({ value, onChange, allowHistoric
     <select className="j-input p-3" aria-label={t('ct_category')} value={root} onChange={(e) => {
       const key = e.target.value;
       setRoot(key);
+      onRootChange?.(key);
       const r = roots.find((x) => x.key === key);
       const isDirect = !!r && r.services.length === 1 && r.services[0].value === r.key;
       onChange(isDirect ? r.key : '');

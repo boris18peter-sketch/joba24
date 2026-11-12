@@ -40,7 +40,11 @@ export default function useServiceSync({
   onSwitchRef.current = onSwitch;
 
   const sync = useCallback(() => {
-    if (!enabled || !currentKey) return null;
+    // An EMPTY selection is the case this must not skip: a publisher who picked
+    // only the main category ("חשמל") and then wrote the job out has exactly the
+    // information needed to name the service, and requiring a choice first is
+    // what made the description count for nothing and blocked publishing.
+    if (!enabled) return null;
     const services = String(serviceSignature || '').split('|').filter(Boolean);
     if (services.length < 2) return null;
 

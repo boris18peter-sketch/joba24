@@ -1,28 +1,35 @@
 import { useRef, useState } from 'react';
-import { Plus, Loader2, X, Play, Camera } from 'lucide-react';
+import { Loader2, X, Play, Camera, ImagePlus, Video } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 /**
- * PublishMediaUploader — photos and one video, on the description step.
+ * PublishMediaUploader — photos and one video, as a toolbar INSIDE the
+ * description box.
  *
- * ── WHY THERE ARE TWO BUTTONS ───────────────────────────────────────────────
- * There was one: a single <input accept="image/*,video/*"> with no `capture`
- * attribute. On Android the WebView only hands a file input the GALLERY, so a
- * publisher standing in front of the broken thing he needs fixed could only pick
- * a photo he had already taken — "on Android I can only choose an existing photo,
- * I cannot take one". It is not a device-version limitation: Capacitor's own file
- * chooser launches the camera intent when, and only when, the input carries
- * `capture`, and the manifest patch already grants both the CAMERA permission and
- * the intent visibility that makes `resolveActivity` succeed.
+ * ── WHY IT IS A TOOLBAR NOW ─────────────────────────────────────────────────
+ * It used to be two large dashed tiles under the text, on a block of its own
+ * with a "מדיה" heading and a divider. That cost a full screen-height of
+ * scrolling to say one thing — "a photo is part of describing the job" — and it
+ * read as a separate step bolted onto the description. It is now the row of
+ * controls attached to the text box itself: two small pills and the thumbnails
+ * they produce, in the same frame as the words. Nothing about the upload,
+ * limits or the camera changed.
  *
- * So the camera is its own input with `capture="environment"` — the rear camera,
- * which is the one that photographs a job — and its own button. Gallery keeps the
- * plain input, so both routes are one press away and neither hides the other.
+ * ── WHY THERE ARE STILL TWO BUTTONS ─────────────────────────────────────────
+ * A single <input accept="image/*,video/*"> with no `capture` attribute only
+ * ever opens the GALLERY on Android — "I can only choose an existing photo, I
+ * cannot take one". Capacitor launches the camera intent when, and only when,
+ * the input carries `capture`. So the camera is its own input with
+ * `capture="environment"` (the rear camera, the one that photographs a job) and
+ * the gallery keeps the plain input.
  */
-export default function PublishMediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChange, t }) {
+const MAX_IMAGES = 4;
+
+export default function PublishMediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChange }) {
   const [uploading, setUploading] = useState(false);
   const galleryRef = useRef(null);
   const cameraRef = useRef(null);
+  const videoRef = useRef(null);
 
   const handleFiles = async (files) => {
     if (!files?.length) return;
@@ -34,8 +41,8 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
       if (file.type.startsWith('video/')) {
         newVideo = file_url;
         onVideoChange(file_url);
-      } else {
-        if (newImages.length < 4) newImages.push(file_url);
+      } else if (newImages.length < MAX_IMAGES) {
+        newImages.push(file_url);
       }
     }
     onImagesChange(newImages);
@@ -44,82 +51,87 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
   };
 
   const removeImage = (idx) => onImagesChange(images.filter((_, i) => i !== idx));
-  const hasMedia = images.length > 0 || videoUrl;
+  const hasMedia = images.length > 0 || !!videoUrl;
 
-  const tileStyle = {
-    position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden',
-    border: '1.5px solid #dce8f5',
+  const pill = {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    height: 34, padding: '0 11px', borderRadius: 999,
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border-1)',
+    color: 'var(--brand-primary)',
+    fontSize: 12, fontWeight: 800, cursor: 'pointer',
+    minHeight: 'unset', minWidth: 'unset',
+    WebkitTapHighlightColor: 'transparent',
   };
-  const removeStyle = {
-    position: 'absolute', top: 4, insetInlineEnd: 4, width: 22, height: 22, borderRadius: '50%',
-    background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer',
+
+  const thumb = {
+    position: 'relative', width: 46, height: 46, borderRadius: 11, overflow: 'hidden',
+    border: '1px solid var(--border-2)', flexShrink: 0,
+  };
+
+  const removeBtn = {
+    position: 'absolute', top: 2, insetInlineEnd: 2, width: 18, height: 18, borderRadius: '50%',
+    background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     minHeight: 'unset', minWidth: 'unset',
   };
 
   return (
-    <div>
+    <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <button type="button" onClick={() => cameraRef.current?.click()} disabled={uploading} style={pill}>
+          <Camera size={14} strokeWidth={2.2} />
+          צילום
+        </button>
+        <button type="button" onClick={() => videoRef.current?.click()} disabled={uploading} style={pill}>
+          <Video size={14} strokeWidth={2.2} />
+          וידאו
+        </button>
+        <button type="button" onClick={() => galleryRef.current?.click()} disabled={uploading} style={pill}>
+          <ImagePlus size={14} strokeWidth={2.2} />
+          העלאה
+        </button>
+
+        {uploading && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 700, color: 'var(--text-3)' }}>
+            <Loader2 size={13} className="animate-spin" />
+            מעלה...
+          </span>
+        )}
+
+        <span style={{ flex: 1 }} />
+
+        {!uploading && (
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)' }}>
+            {images.length}/{MAX_IMAGES}
+          </span>
+        )}
+      </div>
+
+      {/* The media the publisher actually attached — same row, under the text */}
       {hasMedia && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginTop: 8, paddingBottom: 2 }}>
           {images.map((url, i) => (
-            <div key={i} style={tileStyle}>
+            <div key={url + i} style={thumb}>
               <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button onClick={() => removeImage(i)} style={removeStyle} aria-label="הסרה">
-                <X size={12} color="white" />
+              <button type="button" onClick={() => removeImage(i)} style={removeBtn} aria-label="הסרה">
+                <X size={11} color="white" />
               </button>
             </div>
           ))}
           {videoUrl && (
-            <div style={{ ...tileStyle, background: '#000' }}>
-              <video src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+            <div style={{ ...thumb, background: '#000' }}>
+              <video src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} muted playsInline />
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                <Play size={18} color="white" fill="white" />
+                <Play size={14} color="white" fill="white" />
               </div>
-              <button onClick={() => onVideoChange('')} style={removeStyle} aria-label="הסרה">
-                <X size={12} color="white" />
+              <button type="button" onClick={() => onVideoChange('')} style={removeBtn} aria-label="הסרה">
+                <X size={11} color="white" />
               </button>
             </div>
           )}
         </div>
       )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {/* Gallery — photos and a video that already exist on the phone */}
-        <button
-          type="button"
-          onClick={() => galleryRef.current?.click()}
-          disabled={uploading}
-          style={{
-            borderRadius: 16, border: '2px dashed var(--border-2)', background: '#f0f7ff',
-            cursor: uploading ? 'not-allowed' : 'pointer', padding: '18px 6px',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7,
-          }}
-        >
-          {uploading
-            ? <Loader2 size={22} className="animate-spin" color="var(--brand-primary)" />
-            : <Plus size={22} color="var(--brand-primary)" strokeWidth={2.5} />}
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--brand-primary)', textAlign: 'center', lineHeight: 1.3 }}>
-            {t('add_photos_video')}
-          </span>
-        </button>
-
-        {/* Camera — `capture` is what makes Android open the camera at all */}
-        <button
-          type="button"
-          onClick={() => cameraRef.current?.click()}
-          disabled={uploading}
-          style={{
-            borderRadius: 16, border: '2px dashed var(--border-2)', background: '#f0f7ff',
-            cursor: uploading ? 'not-allowed' : 'pointer', padding: '18px 6px',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7,
-          }}
-        >
-          <Camera size={22} color="var(--brand-primary)" strokeWidth={2.2} />
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--brand-primary)', textAlign: 'center', lineHeight: 1.3 }}>
-            צילום תמונה
-          </span>
-        </button>
-      </div>
 
       <input
         ref={galleryRef}
@@ -133,6 +145,16 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
         ref={cameraRef}
         type="file"
         accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={e => { handleFiles(e.target.files); e.target.value = ''; }}
+      />
+      {/* Video capture — `capture` with a video type is what opens the camera in
+          RECORDING mode; the gallery input can only ever offer existing files. */}
+      <input
+        ref={videoRef}
+        type="file"
+        accept="video/*"
         capture="environment"
         style={{ display: 'none' }}
         onChange={e => { handleFiles(e.target.files); e.target.value = ''; }}

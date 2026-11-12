@@ -43,27 +43,23 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
   const photoKey = (images || []).join(',');
   const hasPhotos = photoKey.length > 0;
 
+  // ── WHAT THE ANALYSIS NEEDS BEFORE IT CAN SAY ANYTHING TAILORED ──────────
+  // A service to price, and something to price: free text, a photo, the filled
+  // structured fields or the ticked requirements. Structured details count as
+  // "described" — a move with the addresses and floors filled in is analysable
+  // with a short text.
+  const hasDetails = (detailsText || '').trim().length > 0;
+  const hasRequirements = (requirementsText || '').trim().length > 0;
+  const hasText = (description || '').trim().length >= 15;
+  const ready = !!category && (hasText || hasPhotos || hasDetails || hasRequirements);
+
   useEffect(() => {
-    if (!category) return;
+    if (!category || !ready) return;
     let cancelled = false;
     const fallback = () => {
       const r = getRateRange(category, isHourly);
       return { min: r.min, max: r.max, reason: t('ps_market_fallback'), confidence: 'low' };
     };
-    // The full analysis consumes integration credits on every run, so it only
-    // fires once the publisher has actually described the job (or attached a
-    // photo). Before that we show the free curated range instantly.
-    // Structured form details count as "described" — a moving job with the
-    // addresses and floors filled in is analysable even with a short text.
-    const hasDetails = (detailsText || '').trim().length > 0;
-    // Requirements the publisher ticked are a description of the job in their
-    // own right — "truck + 3 floors + piano" prices a move with no prose at
-    // all, so they count as "described" exactly like the free text does.
-    const hasRequirements = (requirementsText || '').trim().length > 0;
-    if ((description || '').trim().length < 15 && !hasPhotos && !hasDetails && !hasRequirements) {
-      setResult(fallback());
-      return;
-    }
     // Longer debounce than a text-only suggestion: the analysis also searches
     // live market prices, so we don't want a run per keystroke pause.
     const timer = setTimeout(async () => {
@@ -80,18 +76,48 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     }, 1200);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [category, categoryLabel, estimatedTime, description, location, isHourly, distance, photoKey, lang, t, detailsText, requirementsText]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, categoryLabel, estimatedTime, description, location, isHourly, distance, photoKey, lang, t, detailsText, requirementsText, ready]);
 
-  if (!category) return null;
+  // ── THE CARD IS ALWAYS ON SCREEN ─────────────────────────────────────────
+  // It used to disappear entirely until a service was chosen, and until then
+  // the price block simply had nothing where the recommendation belongs. It now
+  // has two honest faces and never a blank:
+  //
+  //   • not ready — the card says, in one professional line, exactly what it
+  //     needs before a TAILORED recommendation exists (a service, a description,
+  //     a location). It carries no price, because inventing one would be a
+  //     number the publisher could act on for the wrong job.
+  //   • ready — the curated market range is drawn immediately and the AI
+  //     recommendation replaces it the moment it arrives, so there is no spinner
+  //     to be stuck behind.
+  if (!ready) {
+    return (
+      <div
+        dir={isRTL ? 'rtl' : 'ltr'}
+        style={{
+          display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left',
+          background: 'var(--surface-2)',
+          border: '1.5px dashed var(--border-2)',
+          borderRadius: 14,
+          padding: '12px 14px',
+          marginTop: 8,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Wand2 size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12.5, color: 'var(--text-1)', fontWeight: 800 }}>
+            {t('ps_title', 'המלצת מחיר חכמה')}
+          </span>
+        </div>
+        <p style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6, fontWeight: 600 }}>
+          {t('ps_need_details',
+            'ההמלצה תופיע כאן אוטומטית לאחר מילוי פרטי המשימה — בחירת סוג השירות, תיאור העבודה, המיקום והיקף העבודה. מרגע שהפרטים יוזנו, נחשב עבורכם טווח מחיר מותאם לשוק המקומי.')}
+        </p>
+      </div>
+    );
+  }
 
-  // ── THE CARD IS NEVER ABSENT ─────────────────────────────────────────────
-  // It used to have three states: a spinner while nothing was known, then the
-  // result. The spinner is what the publisher was left looking at whenever the
-  // analysis was slow or silently failed — and an EMPTY gap is what he saw when
-  // the whole block was waiting on it. The curated category range is known
-  // synchronously, so it is drawn at once and the AI recommendation replaces it
-  // the moment it arrives. There is therefore nothing to wait for and no state
-  // in which this recommendation simply "does not appear".
   const curatedRange = getRateRange(category, isHourly);
   const view = result || {
     min: curatedRange.min,
@@ -102,10 +128,11 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
   };
 
   const conf = CONFIDENCE_STYLE[view.confidence] || CONFIDENCE_STYLE.low;
+  const midpoint = Math.round(((view.min + view.max) / 2) / 10) * 10;
 
   return (
     <button
-      onClick={() => onAccept(Math.round((result.min + result.max) / 2 / 10) * 10)}
+      onClick={() => onAccept(midpoint)}
       style={{
         display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left', cursor: 'pointer',
         background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
@@ -128,7 +155,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
         </div>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--brand-primary)', fontWeight: 700, background: '#dbeafe', borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap' }}>
           {view.analyzing && <Loader2 size={9} className="animate-spin" />}
-          {view.hasPhotos ? t('ps_based_on_photo') : t('ps_based_on_desc')}
+          {view.hasPhotos || hasPhotos ? t('ps_based_on_photo') : t('ps_based_on_desc')}
         </span>
       </div>
 

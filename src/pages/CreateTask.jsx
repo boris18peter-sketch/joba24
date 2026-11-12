@@ -49,6 +49,7 @@ import PublishMediaUploader from '@/components/publish/PublishMediaUploader';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 import { checkGibberish, checkCategoryDescriptionMatch } from '@/lib/taskTextChecks';
 import useServiceSync from '@/hooks/useServiceSync';
+import { bestServiceForText } from '@/lib/descriptionCategoryMatch';
 import PublishIssueBanner from '@/components/publish/PublishIssueBanner';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
@@ -215,6 +216,21 @@ export default function CreateTask() {
       setMicError('unsupported');
       return;
     }
+    // ── THE PHONE'S OWN SHEET IS THE ONLY PROMPT THAT ASKS ─────────────────
+    // getUserMedia is what raises the DEVICE's official permission dialog, so it
+    // is always the call that asks — never a sheet of our own in its place. The
+    // device's current answer is read first only to tell the two outcomes apart:
+    // while it is undetermined the dialog appears exactly as the OS draws it
+    // ("Allow Joba24 to access the microphone?"), and once it is denied no API
+    // can reopen that dialog, which is the one case our popup explains.
+    let permission = 'prompt';
+    try {
+      const status = await navigator.permissions?.query?.({ name: 'microphone' });
+      permission = status?.state || 'prompt';
+    } catch {
+      // Permissions API unsupported (Safari) — ask the device and let it answer.
+    }
+    if (permission === 'denied') { setMicError('denied'); return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
@@ -263,10 +279,19 @@ export default function CreateTask() {
   // offers (falls back to the platform catalogue). A brand-specific category is
   // persisted on the Task as 'other' with its brand key kept in category_details.
   const { brandId } = useBrand();
-  const { categories: brandCategories, globalMap, taskCategoryFor, formFieldsFor, contentFor, isLoading: categoriesLoading } = useBrandCategories();
+  const { categories: brandCategories, rootGroups, globalMap, taskCategoryFor, formFieldsFor, contentFor, isLoading: categoriesLoading } = useBrandCategories();
+  // The trade the publisher opened in the picker. Kept here because the SERVICE
+  // must never be the reason a finished task cannot be published: once a trade is
+  // chosen, its services are the only candidates the description can pick from,
+  // and one of them stands in until the description says otherwise.
+  const [rootKey, setRootKey] = useState('');
+  const rootServices = useMemo(() => {
+    const group = (rootGroups || []).find((r) => r.key === rootKey);
+    return (group?.services || []).map((s) => s.value);
+  }, [rootGroups, rootKey]);
   // One stable signature of the offered services, so the description → service
   // sync below never restarts its timer on an unrelated re-render.
-  const serviceKeySignature = brandCategories.map((c) => c.value).join('|');
+  const serviceKeySignature = (rootServices.length ? rootServices : brandCategories.map((c) => c.value)).join('|');
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
@@ -642,6 +667,33 @@ export default function CreateTask() {
       setPublishError('');
     },
   });
+  // ── A TRADE WITHOUT ITS SERVICE IS NEVER A DEAD END ───────────────────────
+  // Picking a main category ("חשמל") leaves `category` empty until one of its
+  // services is chosen, and that empty value WAS the publish blocker: the button
+  // reported "בחירת סוג השירות" and nothing the publisher had already written
+  // counted. The description now decides — the service whose keywords appear in
+  // it — and when the text names none of them, the trade's own first service
+  // stands in, so the form always holds a publishable service. The publisher can
+  // still change it, and the sync above keeps refining it as the text grows.
+  useEffect(() => {
+    if (isEditMode || !rootKey || form.category) return;
+    if (!rootServices.length) return;
+    const match = bestServiceForText({
+      text: `${form.description || ''} ${form.title || ''}`,
+      services: rootServices,
+      keywordsFor: (key) => getCategoryKeywords(key) || [],
+      map: globalMap,
+      currentKey: '',
+    });
+    const next = match || rootServices[0];
+    if (!next) return;
+    setForm((prev) => ({ ...prev, category: next, category_details: {} }));
+    setCategoryDetails({});
+    setExtraFieldsText('');
+    setErrors((prev) => ({ ...prev, categoryForm: false }));
+    setModerationErrors((prev) => ({ ...prev, categoryMismatch: null }));
+  }, [rootKey, rootServices.join('|'), form.category, form.description, form.title]);
+
   // Address is confirmed if we have a location (repost/edit pre-fills it, free text also accepted)
   const [addressConfirmed, setAddressConfirmed] = useState(!!form.location_name);
 
@@ -1577,7 +1629,7 @@ export default function CreateTask() {
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
           <div ref={fieldRefs.categoryPicker}>
-          <CategoryServiceSelector value={form.category} allowHistorical={isEditMode} onChange={val => {
+          <CategoryServiceSelector value={form.category} allowHistorical={isEditMode} onRootChange={setRootKey} onChange={val => {
             set('category', val);
             setCategoryDetails({});
             setExtraFieldsText('');
@@ -1646,6 +1698,18 @@ export default function CreateTask() {
               {t('recording_press_stop')}
             </div>
           )}
+          {/* ── ONE BOX FOR THE JOB: THE WORDS AND THEIR MEDIA ────────────────
+              The photo/video controls were a block of their own under the text —
+              a heading, a divider and two large tiles, i.e. a screen-height of
+              scrolling to say "a photo is part of describing the job". They are
+              the toolbar of THIS box now: the description and the media attached
+              to it are one thing in one frame, with nothing to scroll past. */}
+          <div style={{
+            borderRadius: 14,
+            border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`,
+            background: 'var(--input-bg)',
+            padding: '10px 12px 8px',
+          }}>
           <Textarea placeholder={contentFor(form.category)?.descriptionExample || t('ct_describe_ph')}
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
@@ -1660,8 +1724,12 @@ export default function CreateTask() {
               });
               setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
             }}
-            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={5}
+            style={{ background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', padding: 0, resize: 'none', minHeight: 100 }} rows={4}
           />
+          {fieldOn('media') && (
+            <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
+          )}
+          </div>
           {checkingModeration === 'description' && <p style={{ fontSize: 11, color: 'var(--brand-primary)', marginTop: 4 }}>{t('ct_checking')}</p>}
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{t('ct_required')}</p>}
           {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
@@ -1707,18 +1775,6 @@ export default function CreateTask() {
             )
           )}
 
-          {/* ── IMAGES + VIDEO — THE SAME STEP AS THE DESCRIPTION ─────────────
-              They were a step of their own, so a publisher who had just said
-              what he needs was handed a whole screen whose only message was
-              "add a picture" — one more screen to get through, and one more
-              place to give up. A photo is part of describing the job, so it
-              now sits in the same card, directly under the text. */}
-          {fieldOn('media') && (
-            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
-              <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
-              <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
-            </div>
-          )}
         </SectionCard>
 
         </div>
