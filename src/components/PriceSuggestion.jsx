@@ -106,13 +106,12 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <Wand2 size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 12.5, color: 'var(--text-1)', fontWeight: 800 }}>
-            {t('ps_title', 'המלצת מחיר חכמה')}
+          <span style={{ fontSize: 13, color: 'var(--text-1)', fontWeight: 800 }}>
+            {t('ps_title', 'המלצת מחיר AI')}
           </span>
         </div>
-        <p style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6, fontWeight: 600 }}>
-          {t('ps_need_details',
-            'ההמלצה תופיע כאן אוטומטית לאחר מילוי פרטי המשימה — בחירת סוג השירות, תיאור העבודה, המיקום והיקף העבודה. מרגע שהפרטים יוזנו, נחשב עבורכם טווח מחיר מותאם לשוק המקומי.')}
+        <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5, fontWeight: 600 }}>
+          {t('ps_need_details', 'כתבו כמה מילים על המשימה — ההמלצה תופיע כאן מיד.')}
         </p>
       </div>
     );

@@ -29,6 +29,7 @@ import IosIapRecovery from '@/components/IosIapRecovery';
 import PermissionPrompt from '@/components/PermissionPrompt';
 import NativeOAuthBounce from '@/components/NativeOAuthBounce';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
+import RootEntry from '@/components/RootEntry';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 import AppDownloadPopup from '@/components/AppDownloadPopup';
 import FirstTaskPublishedFlow from '@/components/FirstTaskPublishedFlow';
@@ -348,7 +349,10 @@ const AuthenticatedApp = () => {
 
             <Route path="/lp" element={<Landing />} />
             <Route element={<Layout />}>
-              <Route path="/" element={<HomeFeed />} />
+              {/* The first-run decision is made by the router, not by a redirect
+                  effect: a visitor with no account who never finished the intro
+                  is sent to Welcome before the feed can be mistaken for it. */}
+              <Route path="/" element={<RootEntry><HomeFeed /></RootEntry>} />
               <Route path="/map" element={<MapView />} />
               <Route path="/task/:id" element={<TaskDetailRedirect />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
