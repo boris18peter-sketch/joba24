@@ -142,6 +142,23 @@ Deno.serve(async (req) => {
       savedId = updated?.id || plan.existingId;
     }
 
+    // ── ONE ROW PER TOKEN ───────────────────────────────────────────────────
+    // Two registrations of the SAME activity token that run side by side both
+    // read "no row yet" and both created one, so a single card ended up with
+    // three "active" rows (seen in the data: three rows, one token). Every
+    // dispatch then addressed that card three times. The row just saved stands;
+    // its duplicates are retired here.
+    const duplicates = existingTokens.filter((row) => (
+      row && row.id !== savedId && row.token === token && row.user_id === user.id && row.status !== 'invalid'
+    ));
+    if (duplicates.length) {
+      await Promise.allSettled(duplicates.map((row) => base44.entities.LiveActivityToken.update(row.id, {
+        status: 'invalid',
+        invalidated_at: nowIso,
+        invalidated_reason: 'duplicate_registration',
+      })));
+    }
+
     // A device that re-registers after a rotation retires its previous tokens.
     // Bounded and best-effort: a failure here never fails the registration.
     if (plan.retireTokenIds.length) {

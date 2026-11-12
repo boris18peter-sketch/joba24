@@ -319,6 +319,35 @@ export default function RealTaskActivityBridge() {
         // that turns out to have nothing else to do.
         flushActionStages();
 
+        // ── ONE CARD, ALWAYS ────────────────────────────────────────────────
+        // The Lock Screen stacks every activity that was never closed, so a job
+        // the user finished yesterday could still be sitting there beside the one
+        // they are doing now: the same widget, several times, which is exactly
+        // what was reported. Nothing closed the extras — the planner ended at
+        // most ONE per pass, and a completed card waiting for a rating was
+        // protected for ever, so every finished job left one more behind.
+        //
+        // Here the card set is corrected on every pass: exactly one card survives
+        // — the tracked (task, role) — and any duplicate of that same pair is
+        // closed too. The rating ask is not lost by this: it is also raised in the
+        // app's own sheet, and keeping a stale card for ever is what produced the
+        // duplicates in the first place.
+        const keepTaskId = tracked?.task?.id || '';
+        const keepRole = tracked?.role || '';
+        const keptPairs = new Set();
+        for (const card of activities || []) {
+          if (!card?.taskId || card.taskId === DEMO_ACTIVITY_TASK_ID) continue;
+          if (!RUNNING_ACTIVITY_STATES.includes(card.activityState)) continue;
+          const pair = `${card.taskId}|${card.role}`;
+          const isKept = card.taskId === keepTaskId && card.role === keepRole && !keptPairs.has(pair);
+          if (isKept) { keptPairs.add(pair); continue; }
+          await endTaskActivity({ taskId: card.taskId, role: card.role, dismissAfter: 0 });
+          clearActivityAction({ taskId: card.taskId, role: card.role });
+          if (appliedRef.current?.taskId === card.taskId && appliedRef.current?.role === card.role) {
+            appliedRef.current = null;
+          }
+        }
+
         let plan = planActivityStep({
           task: tracked?.task || null,
           role: tracked?.role || null,

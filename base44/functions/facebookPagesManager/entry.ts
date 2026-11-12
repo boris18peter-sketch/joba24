@@ -1,8 +1,22 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+// 0.8.54 — the same SDK every other function in this app runs on. This file was
+// pinned to 0.8.44, whose entity client rejects the `filter(query, options)`
+// form (HTTP 400). The guard below reads the post log with a filter, so on the
+// old version that read always failed — which is what silently stopped every
+// Facebook post. See the note on `logRows`.
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { getJobaSettings } from '../../shared/jobaSettings.ts';
 import { APP_URL, formatFacebookPost } from '../../shared/facebookPost.ts';
 
 const GRAPH_API = 'https://graph.facebook.com/v25.0';
+
+/**
+ * How long one run's claim blocks a second run before it is treated as abandoned.
+ * A run that dies mid-upload must not lock a task out for ever, and a run that is
+ * genuinely posting must not be joined by a second one.
+ */
+const CLAIM_TTL_MS = 10 * 60 * 1000;
+/** A short pause so this run's own claim is visible to a run that started beside it. */
+const CLAIM_SETTLE_MS = 400;
 
 const CATEGORY_LABELS: Record<string, string> = {
   plumbing: 'אינסטלציה',
@@ -100,40 +114,107 @@ export default async function(req: Request): Promise<Response> {
       const pageToken = await getPageAccessToken(accessToken, settings.facebook_page_id);
       if (!pageToken) return Response.json({ error: 'Selected page no longer accessible — reconnect Facebook' }, { status: 400 });
 
-      // ── ONE POST PER TASK — A CLAIM, NOT A CHECK ──────────────────────────
+      // ── ONE POST PER TASK — ONE ROW, CLAIMED, NEVER DELETED ───────────────
       // Two runs of this function for the same task (a re-delivered or retried
       // workflow run, or a second trigger arriving while the first is still
       // uploading photos) both read "no post yet" and both publish — that is
-      // what put every task on the Page twice.
+      // what put every task on the Page twice. So the right to post is CLAIMED
+      // before anything is published.
       //
-      // A read-then-write check can never close that window: the window is the
-      // whole time between the check and the post. So the right to post is
-      // CLAIMED first and decided afterwards, exactly like the Live Activity
-      // dispatch claims a revision. Every run writes its own claim row, then
-      // reads the task's claims back: rows are ordered by creation, so the
-      // EARLIEST claim is the same row for every run — one owner, every other
-      // run backs off, whichever order the two happened to start in.
-      const claim = await base44.asServiceRole.entities.FacebookPostLog.create({
-        task_id: task.id,
-        page_id: settings.facebook_page_id,
-        task_title: task.title,
-        status: 'claim',
-      });
+      // ── WHY THIS NO LONGER DELETES ITS OWN ROW ─────────────────────────────
+      // The claim used to be decided by writing a fresh row and reading the
+      // task's rows back. When that read came back EMPTY — a read immediately
+      // after the write, before the row is visible — the run concluded "somebody
+      // else owns this" and DELETED its own claim. The result was the worst of
+      // both worlds: the task was never posted (every run backed off) and the
+      // table stayed empty, so nothing anywhere recorded a failure. That is
+      // exactly "the Facebook posting simply stopped".
+      //
+      // The task now keeps ONE log row. It is created if missing and otherwise
+      // re-claimed in place, it is never removed, and a row that belongs to
+      // another run is left alone. A lost race costs a skip, never a post and
+      // never the evidence.
+      // ── A LOG WE COULD NOT READ IS NOT A LOG THAT SAYS "NOT POSTED" ────────
+      // The first version of this treated a failed read as "no row yet" and
+      // posted: one unreachable read meant a second post on the Page. The read
+      // is now explicit about its own failure, and a failure REFUSES to post —
+      // "once" can only be promised when the record can be read.
+      const logRows = async (): Promise<{ rows: any[]; error: string | null }> => {
+        try {
+          // No options argument: the query is the same on every SDK version, and
+          // the task's own rows are few — the sort below is what decides order.
+          const page = await base44.asServiceRole.entities.FacebookPostLog
+            .filter({ task_id: task.id });
+          const rows = page?.items || (Array.isArray(page) ? page : []);
+          return {
+            error: null,
+            rows: rows.slice().sort((a: any, b: any) =>
+              String(a.created_date || '').localeCompare(String(b.created_date || '')) ||
+              String(a.id).localeCompare(String(b.id))),
+          };
+        } catch (e) {
+          return { rows: [], error: (e as Error).message };
+        }
+      };
 
-      const owner = await claimOwner(base44, task.id);
-      if (!owner || owner.id !== claim.id) {
-        // Lost the claim — this task is already posted (or is being posted) by
-        // the run that got there first. Nothing is published, and our own claim
-        // row is removed so it can never block a genuine retry later.
-        await base44.asServiceRole.entities.FacebookPostLog.delete(claim.id).catch(() => {});
-        return Response.json({ skipped: true, reason: 'already_posted', post_url: owner?.post_url || null });
+      const firstRead = await logRows();
+      if (firstRead.error) {
+        return Response.json({ error: `post_log_unreadable: ${firstRead.error}` }, { status: 500 });
+      }
+      const before = firstRead.rows;
+      const postedRow = before.find((r: any) => r.status === 'posted');
+      if (postedRow) {
+        // Posted already — the Page is the truth and this is where it happened.
+        return Response.json({ skipped: true, reason: 'already_posted', post_url: postedRow.post_url || null });
+      }
+      const freshClaim = before.find((r: any) => (
+        r.status === 'claim' && Date.now() - new Date(r.created_date || 0).getTime() < CLAIM_TTL_MS
+      ));
+      if (freshClaim) return Response.json({ skipped: true, reason: 'in_flight' });
+
+      let claimId: string | null = null;
+      try {
+        const row = {
+          task_id: task.id,
+          page_id: settings.facebook_page_id,
+          task_title: task.title,
+          status: 'claim',
+          error: '',
+        };
+        const existingRow = before[0] || null;
+        const saved = existingRow
+          ? await base44.asServiceRole.entities.FacebookPostLog.update(existingRow.id, row)
+          : await base44.asServiceRole.entities.FacebookPostLog.create(row);
+        claimId = saved?.id || existingRow?.id || null;
+      } catch (e) {
+        // Without the log there is no way to promise "once"; refuse rather than
+        // risk a second post.
+        return Response.json({ error: `post_log_unavailable: ${(e as Error).message}` }, { status: 500 });
       }
 
       // Every exit below records the outcome against the claim, so the log is
       // always the truth about what reached the Page.
       const settle = async (patch: Record<string, any>) => {
-        await base44.asServiceRole.entities.FacebookPostLog.update(claim.id, patch).catch(() => {});
+        if (!claimId) return;
+        await base44.asServiceRole.entities.FacebookPostLog.update(claimId, patch).catch(() => {});
       };
+
+      // ── THE READ-AFTER-WRITE GAP, HANDLED INSTEAD OF PUNISHED ─────────────
+      // A run that started beside this one may have written its row a moment
+      // later. The earliest row is the same row for both of us, so one short
+      // pause and a single re-read is enough to agree on the owner — and the
+      // loser only skips.
+      await new Promise((resolve) => setTimeout(resolve, CLAIM_SETTLE_MS));
+      const settleRead = await logRows();
+      if (settleRead.error) {
+        await settle({ status: 'failed', error: `post_log_unreadable: ${settleRead.error}` });
+        return Response.json({ error: `post_log_unreadable: ${settleRead.error}` }, { status: 500 });
+      }
+      const owner = settleRead.rows.find((r: any) => r.status !== 'failed');
+      if (owner && claimId && owner.id !== claimId) {
+        await settle({ status: 'failed', error: 'superseded_by_concurrent_run' });
+        return Response.json({ skipped: true, reason: 'already_posted', post_url: owner.post_url || null });
+      }
 
       // ── A SECOND NET: THE PAGE ITSELF ─────────────────────────────────────
       // The task's own link is the identity. A post that already carries it
@@ -332,35 +413,6 @@ async function getPageAccessToken(userToken: string, pageId: string): Promise<st
   }
 
   return null;
-}
-
-/**
- * Which run owns the post for this task?
- *
- * Reads every claim row for the task and returns the EARLIEST one — the same row
- * for every caller, whatever order the runs started in — so exactly one of them
- * proceeds. Failed attempts are ignored, because a failure must never stop the
- * task from being published later.
- *
- * A read that fails returns null, and the caller then treats itself as the
- * loser: not posting is always safer than posting twice.
- */
-async function claimOwner(base44: any, taskId: string): Promise<any | null> {
-  try {
-    const page = await base44.asServiceRole.entities.FacebookPostLog.filter(
-      { task_id: taskId },
-      { sort: 'created_date', limit: 50 },
-    );
-    const rows: any[] = page?.items || (Array.isArray(page) ? page : []);
-    return rows
-      .filter((r: any) => r.status !== 'failed')
-      .sort((a: any, b: any) =>
-        String(a.created_date || '').localeCompare(String(b.created_date || '')) ||
-        String(a.id).localeCompare(String(b.id)),
-      )[0] || null;
-  } catch {
-    return null;
-  }
 }
 
 /**

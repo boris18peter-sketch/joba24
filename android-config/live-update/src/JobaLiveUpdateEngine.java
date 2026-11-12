@@ -91,6 +91,21 @@ public final class JobaLiveUpdateEngine {
         }
 
         store.commit(payload);
+
+        // ── ONE CARD ON THE PHONE, ALWAYS ───────────────────────────────────
+        // A card is identified by (task, role), so every job this device ever
+        // drew a card for could leave its own notification behind: the shade and
+        // the Lock Screen then show the SAME widget several times, most of them
+        // about work that finished long ago. A phone tracks the job in hand and
+        // nothing else, so every other card this engine still holds is closed
+        // here — at the moment a new one is drawn, which is the only moment the
+        // set can change.
+        for (String[] other : store.runningKeys()) {
+            if (other == null || other.length < 2) continue;
+            if (JobaLiveUpdateStore.keyOf(other[0], other[1]).equals(key)) continue;
+            cancel(context, other[0], other[1]);
+        }
+
         Log.i(TAG, "applied " + key + " @" + payload.revision + " phase=" + payload.phase);
         return new Result(true, false, "applied");
     }

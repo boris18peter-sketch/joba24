@@ -315,9 +315,26 @@ export async function loadSnapshotInputs(base44, input) {
     forceSnapshot = false,
   } = input || {};
 
-  const tokenPage = await base44.asServiceRole.entities.LiveActivityToken
-    .filter({ user_id: recipientId }, { limit: 50 })
-    .catch(() => ({ items: [] }));
+  // ── TWO TARGETED READS, NOT ONE SHARED PAGE ──────────────────────────────
+  // One page of 50 rows for the user looked sufficient and was not. A device
+  // that has run a card for ten jobs holds more than fifty rows, so the page
+  // filled with OLD activity tokens and the install's Push-to-Start token was
+  // often not in it at all. `startTokens` then came back empty, every automatic
+  // start was skipped as "no_start_token", and a card could only appear once the
+  // app was opened — the "sometimes the widget pops up, sometimes it never does"
+  // report. Each kind is now asked for by name, so a long history cannot hide
+  // the one token a start needs.
+  const [activityPage, startPage] = await Promise.all([
+    base44.asServiceRole.entities.LiveActivityToken
+      .filter({ user_id: recipientId }, { limit: 200, sort: '-created_date' })
+      .catch(() => ({ items: [] })),
+    base44.asServiceRole.entities.LiveActivityToken
+      .filter({ user_id: recipientId, kind: 'start' }, { limit: 20, sort: '-created_date' })
+      .catch(() => ({ items: [] })),
+  ]);
+  const tokenPage = {
+    items: [...(activityPage?.items || []), ...(startPage?.items || [])],
+  };
 
   // ── ADDRESS THIS CARD, NOT EVERY CARD THIS USER HAS ──────────────────────
   // A phone can show the publisher's card and the worker's card at once (and a
@@ -329,7 +346,12 @@ export async function loadSnapshotInputs(base44, input) {
     limit: config?.max_tokens_per_dispatch,
     taskId: task?.id || '',
     role,
-  });
+  // ── ONE CARD IS ONE TOKEN ────────────────────────────────────────────────
+  // The same activity token can have been registered more than once (two
+  // registrations ran side by side), and addressing every duplicate row sent the
+  // same revision to the same card two or three times — visible in the dispatch
+  // log as three identical "sent" rows for one revision.
+  }).filter((row, index, list) => list.findIndex((other) => other.token === row.token) === index);
   // The install's Push-to-Start tokens, from the same read. Only a `start` push
   // goes here; every update and end stays on the activity tokens above. A start
   // token belongs to the install rather than to a card, so it is not scoped.
