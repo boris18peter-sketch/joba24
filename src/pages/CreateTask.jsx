@@ -1576,6 +1576,10 @@ export default function CreateTask() {
         );
       })()}
 
+      {/* The explainer video: a slim strip belonging to the form's own header —
+          pinned under it, never floating over a field, dismissible with one ×. */}
+      <PublishHelpVideo />
+
       <div ref={wizardScrollRef} className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
         {/* What THIS step is asking, in the publisher's own question — not the
             field's internal name. Re-keyed on the step so it animates in with
@@ -2478,9 +2482,6 @@ export default function CreateTask() {
           onNext={() => setStepIdx(i => Math.min(wizardTotal - 1, i + 1))}
         />
       )}
-
-      {/* The explainer video — an icon-sized pill that never opens by itself. */}
-      <PublishHelpVideo />
 
       {/* A dictation that could not start tells the publisher why, and offers
           the one press that fixes it. */}

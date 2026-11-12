@@ -1011,10 +1011,33 @@ describe('Android Live Update — the designed card', () => {
     //   • with a capability → broadcast, acted in place, no app opens;
     //   • without one      → an ACTIVITY PendingIntent, which the OS always
     //     launches, carrying the task id in `joba_open_task`.
-    expect(notifier).toContain('new Intent(context, JobaLiveUpdateActionReceiver.class)');
-    expect(notifier).toContain('PendingIntent.getBroadcast(context, requestCode, intent, flags)');
+    // ── THE CONTRACT NOW, AND WHY IT IS ONE PATH ──────────────────────────
+    // Both of the old branches could end in complete silence: the broadcast when
+    // the POST failed, and the activity fallback when it was launched FROM the
+    // broadcast (blocked since Android 10, a banned trampoline since 12). So the
+    // button has exactly ONE tap path, and it is the launch the OS never drops:
+    // an ACTIVITY PendingIntent into a window that draws nothing.
+    expect(notifier).toContain('new Intent(context, JobaLiveUpdateActionActivity.class)');
     expect(notifier).toContain('PendingIntent.getActivity(context, requestCode, intent, flags)');
-    expect(notifier).toContain('mayActInPlace(context, payload)');
+    // The star taps ride the same path, for the same reason.
+    expect(notifier).toContain('PendingIntent.getActivity(\n                context, notificationId(payload.key()) + 10 + stars, intent, flags)');
+    // No button may ever be bound to a broadcast again.
+    expect(notifier).not.toContain('new Intent(context, JobaLiveUpdateActionReceiver.class)');
+    expect(notifier).not.toContain('mayActInPlace');
+
+    // The transparent activity: it draws NOTHING (no content view), runs the
+    // receiver's own logic, and closes itself — so the tap lands without the app
+    // appearing on screen.
+    const activity = source('JobaLiveUpdateActionActivity.java');
+    expect(activity).toContain('extends Activity');
+    expect(activity).not.toContain('setContentView');
+    expect(activity).toContain('JobaLiveUpdateActionReceiver.runAction(');
+    expect(activity).toContain('finish();');
+    // …and it is installed and declared, or the tap has nowhere to land.
+    const patch = read(PATCHER);
+    expect(patch).toContain('"JobaLiveUpdateActionActivity.java"');
+    expect(patch).toContain('("{activity}", "JobaLiveUpdateActionActivity")'.replace('{activity}', 'activity'));
+    expect(patch).toContain('.JobaLiveUpdateActionActivity"');
     // …and the extra that tap carries is READ, so the app lands on that task
     // instead of the feed (the reason the old version looked like a no-op).
     expect(plugin).toContain('getStringExtra("joba_open_task")');

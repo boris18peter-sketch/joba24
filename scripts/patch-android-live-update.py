@@ -88,6 +88,10 @@ JAVA_FILES = [
     "JobaLiveUpdateEngine.java",
     "JobaLiveUpdateMessagingService.java",
     "JobaLiveUpdateActionReceiver.java",
+    # The card's action button launches THIS, not a broadcast: a notification
+    # PendingIntent that starts an activity is the one tap Android never drops,
+    # and the activity draws nothing at all (translucent, no title, no recents).
+    "JobaLiveUpdateActionActivity.java",
     "JobaLiveUpdateOpenReceiver.java",
     "JobaLiveUpdatePlugin.java",
 ]
@@ -131,6 +135,9 @@ LIVE_COMPONENTS = (
     ("service", "JobaLiveUpdateMessagingService"),
     ("receiver", "JobaLiveUpdateActionReceiver"),
     ("receiver", "JobaLiveUpdateOpenReceiver"),
+    # The tap that performs the action. An activity, because a notification
+    # PendingIntent that launches one is the only launch the OS always honours.
+    ("activity", "JobaLiveUpdateActionActivity"),
 )
 
 MESSAGING_EVENT = 'name="com.google.firebase.MESSAGING_EVENT"'
@@ -371,6 +378,25 @@ def build_block(package):
     <receiver
         android:name="{package}.JobaLiveUpdateOpenReceiver"
         android:exported="false" />
+
+    <!--
+        THE CARD'S BUTTON TAP.
+
+        An ACTIVITY, not a broadcast, and one that draws nothing: the theme is
+        the platform's translucent no-title theme, there is no content view, no
+        animation, no Recents entry, and it closes itself as soon as the tap has
+        been resolved. A notification PendingIntent that launches an activity is
+        the one launch Android always honours; the alternative — a broadcast that
+        tried to bring the app up — is blocked on Android 10+ and banned as a
+        trampoline on Android 12+, which is why a tap could do nothing at all.
+    -->
+    <activity
+        android:name="{package}.JobaLiveUpdateActionActivity"
+        android:exported="false"
+        android:excludeFromRecents="true"
+        android:taskAffinity=""
+        android:noHistory="true"
+        android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     {END}"""
 
 

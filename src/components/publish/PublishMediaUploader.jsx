@@ -93,13 +93,19 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
     WebkitTapHighlightColor: 'transparent',
   };
 
+  // ── BIG ENOUGH TO SEE, AND OBVIOUSLY TAPPABLE ─────────────────────────────
+  // A 46px square was a strip too small to recognise your own photo in, let
+  // alone aim at — so the full-screen viewer existed while being hard to find.
+  // The thumbnail is now the size of a thumbnail: 78px, the picture legible, the
+  // tap target the whole square.
   const thumb = {
-    position: 'relative', width: 46, height: 46, borderRadius: 11, overflow: 'hidden',
+    position: 'relative', width: 78, height: 78, borderRadius: 14, overflow: 'hidden',
     border: '1px solid var(--border-2)', flexShrink: 0,
+    boxShadow: 'var(--shadow-xs)',
   };
 
   const removeBtn = {
-    position: 'absolute', top: 2, insetInlineEnd: 2, width: 18, height: 18, borderRadius: '50%',
+    position: 'absolute', top: 3, insetInlineEnd: 3, width: 22, height: 22, borderRadius: '50%',
     background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     minHeight: 'unset', minWidth: 'unset', zIndex: 1,
@@ -147,7 +153,7 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
 
       {/* The media the publisher actually attached — same row, under the text */}
       {hasMedia && (
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginTop: 8, paddingBottom: 2 }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginTop: 10, paddingBottom: 2 }}>
           {images.map((url, i) => (
             <div key={url + i} style={thumb}>
               <button
@@ -159,7 +165,7 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
                 <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </button>
               <button type="button" onClick={() => removeImage(i)} style={removeBtn} aria-label="הסרה">
-                <X size={11} color="white" />
+                <X size={13} color="white" />
               </button>
             </div>
           ))}
@@ -172,10 +178,10 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
                 aria-label="צפייה בווידאו"
               >
                 <video src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} muted playsInline />
-                <Play size={14} color="white" fill="white" style={{ position: 'absolute' }} />
+                <Play size={22} color="white" fill="white" style={{ position: 'absolute' }} />
               </button>
               <button type="button" onClick={() => onVideoChange('')} style={removeBtn} aria-label="הסרה">
-                <X size={11} color="white" />
+                <X size={13} color="white" />
               </button>
             </div>
           )}

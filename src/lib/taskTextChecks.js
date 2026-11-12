@@ -17,6 +17,7 @@
  */
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { getCategoryKeywords } from '@/lib/taskFlowConfig';
+import { textMentions } from '@/lib/keywordMatch';
 
 /**
  * Text that is not words at all — random key mashing, a wall of one repeated
@@ -81,7 +82,15 @@ export function checkCategoryDescriptionMatch({ category, description, title = '
   const combined = `${title} ${description}`.toLowerCase();
   if (combined.trim().length < 15) return null;
 
-  const hasMatch = keywords.some((keyword) => combined.includes(String(keyword).toLowerCase()));
+  // ── WHOLE WORDS, IN BOTH DIRECTIONS ───────────────────────────────────────
+  // A plain substring test read half-words: "רכב" (a vehicle) sits inside
+  // "הרכבת" (assembling), so "הרכבת שולחן אוכל" was announced as a CAR job to a
+  // publisher who had chosen הנדימן. See keywordMatch.js.
+  //
+  // The chosen service is read generously (a plausible inflection counts, so a
+  // correct choice is never accused). A DIFFERENT trade is only ever named on an
+  // exact word — an accusation has to be certain, a defence only has to be fair.
+  const hasMatch = textMentions(combined, keywords, { fuzzy: true });
   if (hasMatch) return null;
 
   // The text may clearly belong to a DIFFERENT trade — naming it is what turns
@@ -89,7 +98,7 @@ export function checkCategoryDescriptionMatch({ category, description, title = '
   for (const other of CATEGORIES) {
     if (other.value === category || other.value === 'other') continue;
     const otherKeywords = getCategoryKeywords(other.value) || [];
-    if (otherKeywords.some((keyword) => combined.includes(String(keyword).toLowerCase()))) {
+    if (textMentions(combined, otherKeywords, { fuzzy: false })) {
       return say('ct_cat_mismatch_detected', {
         detected: getCategoryLabel(other.value, say),
         selected: getCategoryLabel(category, say),

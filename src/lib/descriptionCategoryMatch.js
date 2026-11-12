@@ -19,18 +19,18 @@
  * the text says "מטפטף" — the exact job can stay the publisher's to refine.
  */
 import { ancestorsOf } from '@/lib/brand/categoryTree';
+import { countKeywordHits, textMentions } from '@/lib/keywordMatch';
 
-/** How many of a service's own keywords the text contains. */
-export function keywordScore(text, keywords = []) {
-  const combined = String(text || '').toLowerCase();
-  if (!combined.trim()) return 0;
-  let hits = 0;
-  for (const keyword of keywords) {
-    const needle = String(keyword || '').trim().toLowerCase();
-    if (!needle) continue;
-    if (combined.includes(needle)) hits += 1;
-  }
-  return hits;
+/**
+ * How many of a service's own keywords the text contains — as WORDS.
+ *
+ * It used to count substrings, which made "הרכבת שולחן אוכל" score 1 for the car
+ * service (the letters of "רכב" sit inside "הרכבת") and could switch a handyman
+ * task to רכב. See keywordMatch.js.
+ */
+export function keywordScore(text, keywords = [], { fuzzy = false } = {}) {
+  if (!String(text || '').trim()) return 0;
+  return countKeywordHits(text, keywords, { fuzzy });
 }
 
 /**
@@ -53,8 +53,13 @@ export function bestServiceForText({ text, services, keywordsFor, map, currentKe
     depth: ancestorsOf(map?.[key], map || {}).length,
   }));
 
+  // The service already chosen is read with the generous reading, so a choice
+  // that plausibly fits the text is never traded away for another one.
   const current = scores.find((entry) => entry.key === currentKey);
-  if (current && current.score > 0) return currentKey;
+  if (current && (current.score > 0
+      || textMentions(combined, keywordsFor(currentKey), { fuzzy: true }))) {
+    return currentKey;
+  }
 
   const best = scores
     .filter((entry) => entry.score > 0)

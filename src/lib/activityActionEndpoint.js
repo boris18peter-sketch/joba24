@@ -19,14 +19,26 @@
  * work); a native shell, which has no https origin at all, posts to the public
  * app domain.
  */
-const PUBLIC_APP_ORIGIN = 'https://joba24.com';
+// ── THE HOST THE NATIVE APPS MUST POST TO ───────────────────────────────────
+// The app's own functions are served from its Base44 origin. A custom domain
+// fronts the WEB app, and any hop there may answer a POST on /functions/... with
+// a redirect or with the web app's index.html — and Android's HttpURLConnection
+// does not resend a POST body across a redirect, while an HTML answer arrives
+// with status 200 and was read as success. Either way the tap was lost in
+// silence. This is the origin the platform itself documents for a function URL.
+const BASE44_APP_ORIGIN = 'https://joba24.base44.app';
 
 export function actionEndpoint() {
   try {
     const origin = window.location?.origin || '';
-    if (/^https:\/\//.test(origin)) return `${origin}/functions/liveActivityAction`;
+    // A browser build is served from the app itself, so its own origin is exact.
+    // A native shell has no https origin (capacitor://localhost, or the empty
+    // string), so it gets the canonical function origin.
+    if (/^https:\/\//.test(origin) && !/^https:\/\/joba24\.com/.test(origin)) {
+      return `${origin}/functions/liveActivityAction`;
+    }
   } catch {
-    // No window, or a container that exposes no origin — use the public domain.
+    // No window, or a container that exposes no origin — use the app's own.
   }
-  return `${PUBLIC_APP_ORIGIN}/functions/liveActivityAction`;
+  return `${BASE44_APP_ORIGIN}/functions/liveActivityAction`;
 }

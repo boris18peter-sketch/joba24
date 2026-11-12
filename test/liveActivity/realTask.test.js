@@ -439,9 +439,14 @@ describe('a card is closed only on the task\'s own evidence', () => {
     for (const file of [endpoint, native, android]) {
       expect(file).not.toContain('`${window.location.origin}/functions/liveActivityAction`');
     }
-    // Only an https origin is accepted; the shell falls back to the public app.
-    expect(endpoint).toContain("if (/^https:\\/\\//.test(origin)) return `${origin}/functions/liveActivityAction`");
-    expect(endpoint).toContain("'https://joba24.com'");
+    // Only an https origin is accepted, and a shell — which has none — falls back
+    // to the app's OWN function origin. That origin is the Base44 app host, not
+    // the custom domain that fronts the web app: a custom domain may answer a
+    // POST on /functions/... with a redirect (which Android's HTTP stack does not
+    // resend a body across) or with the web app's index.html (which arrives as a
+    // 200 and was read as success). Either one lost the tap in silence.
+    expect(endpoint).toContain("if (/^https:\\/\\//.test(origin) && !/^https:\\/\\/joba24\\.com/.test(origin))");
+    expect(endpoint).toContain("'https://joba24.base44.app'");
 
     // Both platforms consume that single definition.
     expect(native).toContain("export { actionEndpoint } from '@/lib/activityActionEndpoint';");

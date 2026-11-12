@@ -9,24 +9,20 @@ import HelpVideoPlayer from '@/components/publish/HelpVideoPlayer';
  *
  * It is deliberately the quietest thing on the screen. Nobody filling the form
  * needs a video; somebody who does not understand the MODEL needs one, once. So
- * it is a small pill in the corner that never moves, never opens by itself,
- * never covers a field and never competes with the publish button — and the
- * video only exists while the sheet is open, so nothing is downloaded or played
- * behind the form.
+ * it never opens by itself, the video only exists while the sheet is open, and
+ * nothing is downloaded or played behind the form.
+ *
+ * ── WHY IT IS A STRIP AND NOT A FLOATING PILL ANY MORE ──────────────────────
+ * It used to be a pill fixed to the bottom-left corner, floating OVER the form.
+ * On a phone that put it on top of whatever field happened to be there: it moved
+ * with nothing, sat above the content the publisher was reading, and looked like
+ * an accident. It is now a slim strip that belongs to the form's own header —
+ * full width, pinned directly under the blue header, with a hairline beneath it —
+ * so it is tidy, it never covers a field, and it scrolls with nothing because it
+ * is part of the chrome. The × retires it for good on this device.
  */
-
 const VIDEO_URL = EXPLAINER_VIDEO_URL;
 
-/**
- * The pill can be put away for good.
- *
- * It floats over the form, so a publisher who already knows how the app works
- * had no way to get it off the screen — and on a phone it sat right on top of
- * whatever field happened to be there. One press on the small × retires it, and
- * the choice is remembered on this device so it never comes back to someone who
- * has already said he does not want it. (Clearing the site's data brings it
- * back, which is the correct way to undo it.)
- */
 const HIDDEN_KEY = 'joba24_publish_help_video_hidden';
 
 export default function PublishHelpVideo() {
@@ -50,51 +46,50 @@ export default function PublishHelpVideo() {
     try { localStorage.setItem(HIDDEN_KEY, '1'); } catch { /* private mode: hidden for this visit */ }
   };
 
-  // The pill is a ROW of two controls, never one control inside another: a press
-  // on the × must retire the pill, and it must not also open the video.
   return (
     <>
       {!hidden && (
         <div
           dir="rtl"
           style={{
-            position: 'fixed',
-            left: 14,
-            bottom: 'calc(96px + env(safe-area-inset-bottom))',
-            zIndex: 9000,
-            display: 'flex', alignItems: 'center', gap: 2,
-            height: 40, paddingInlineStart: 4, paddingInlineEnd: 5,
-            borderRadius: 99,
+            flexShrink: 0,
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '6px 12px 7px',
             background: 'var(--surface-2)',
-            border: '1.5px solid var(--border-1)',
-            boxShadow: '0 6px 20px rgba(15,40,107,0.16)',
-            animation: 'cardFadeIn 0.24s ease both',
+            borderBottom: '1px solid var(--border-1)',
           }}
         >
+          {/* The whole middle is the button — one tap target, no dead text. */}
           <button
             type="button"
             onClick={() => setOpen(true)}
             aria-label="סרטון הסבר למפרסמים"
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              height: '100%', paddingInlineStart: 8, paddingInlineEnd: 6,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-2)', fontSize: 12.5, fontWeight: 800,
-              borderRadius: 99, minHeight: 'unset', minWidth: 'unset',
+              flex: 1, minWidth: 0,
+              display: 'flex', alignItems: 'center', gap: 9,
+              background: 'none', border: 'none', padding: '4px 0',
+              cursor: 'pointer', textAlign: 'start',
+              minHeight: 'unset', minWidth: 'unset',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
             <span style={{
-              width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+              width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
               background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 3px 10px rgba(26,111,212,0.24)',
             }}>
               <Play size={11} color="#fff" fill="#fff" />
             </span>
-            איך זה עובד?
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 12.5, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.3 }}>
+                איך זה עובד?
+              </span>
+              <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', lineHeight: 1.3 }}>
+                סרטון קצר על פרסום משימה
+              </span>
+            </span>
           </button>
-
-          <span style={{ width: 1, height: 18, background: 'var(--border-1)', flexShrink: 0 }} />
 
           <button
             type="button"
@@ -102,14 +97,14 @@ export default function PublishHelpVideo() {
             aria-label="הסתר את הסרטון"
             title="הסתר"
             style={{
-              width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
               background: 'var(--surface-3)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               minHeight: 'unset', minWidth: 'unset',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <X size={13} color="var(--text-3)" />
+            <X size={14} color="var(--text-3)" />
           </button>
         </div>
       )}

@@ -540,32 +540,28 @@ public final class JobaLiveUpdateNotifier {
         // push while the app was closed has none — and that is the case the
         // buttons used to die in: the broadcast ran, could not act, tried to
         // start the activity from a receiver, and Android refused it. Silence.
-        if (mayActInPlace(context, payload)) {
-            Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
-            intent.setAction(ACTION_BUTTON);
-            intent.putExtra("task_id", payload.taskId);
-            intent.putExtra("role", payload.role);
-            intent.putExtra("action_id", payload.actionId);
-            intent.putExtra("action_step", payload.actionStep);
-            return PendingIntent.getBroadcast(context, requestCode, intent, flags);
-        }
-
-        // No capability: the tap opens the app on this task, where the same
-        // action is one press away. A notification PendingIntent may launch an
-        // activity on every Android version, so this tap can never be swallowed.
-        return openTaskIntent(context, payload, requestCode);
-    }
-
-    /** True when a tap can be performed without bringing the app forward. */
-    private static boolean mayActInPlace(Context context, JobaLiveUpdatePayload payload) {
-        if (!payload.hasAction()) return false;
-        try {
-            JobaLiveUpdateStore store = new JobaLiveUpdateStore(context);
-            String key = JobaLiveUpdateStore.keyOf(payload.taskId, payload.role);
-            return store.canAct(key) || store.canActAsInstall();
-        } catch (Throwable ignored) {
-            return false;
-        }
+        // ── AN ACTIVITY, ALWAYS — THE ONE TAP ANDROID NEVER DROPS ────────────
+        // This was a broadcast whenever a capability existed, and an activity
+        // PendingIntent only when it did not. Both halves could end in complete
+        // silence: the broadcast when the POST failed (a refused or expired
+        // capability, a redirect the HTTP stack would not follow, an HTML answer)
+        // and the activity fallback when it was launched FROM THE BROADCAST,
+        // which Android 10+ blocks and Android 12+ bans as a trampoline.
+        //
+        // A notification PendingIntent that launches an activity is the one
+        // launch the OS always honours. It points at a window that draws nothing
+        // and closes itself (JobaLiveUpdateActionActivity), so the visible
+        // behaviour is unchanged — the status advances, the app never appears.
+        Intent intent = new Intent(context, JobaLiveUpdateActionActivity.class);
+        intent.setAction(ACTION_BUTTON);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_NO_ANIMATION
+                | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        intent.putExtra("task_id", payload.taskId);
+        intent.putExtra("role", payload.role);
+        intent.putExtra("action_id", payload.actionId);
+        intent.putExtra("action_step", payload.actionStep);
+        return PendingIntent.getActivity(context, requestCode, intent, flags);
     }
 
     /** Open the app on this task — the tap that always lands somewhere. */
@@ -687,15 +683,14 @@ public final class JobaLiveUpdateNotifier {
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
 
-        // A star can only be recorded by the server, so without a capability the
-        // tap opens the task (where the same question is asked) instead of being
-        // swallowed by a broadcast that has nothing to post.
-        if (!mayActInPlace(context, payload)) {
-            return openTaskIntent(context, payload, notificationId(payload.key()) + 10 + stars);
-        }
-
-        Intent intent = new Intent(context, JobaLiveUpdateActionReceiver.class);
+        // Same launch as the action button, for the same reason: a star tap has
+        // to reach our code every time, and a capability it may or may not hold
+        // decides what that code does — never whether the tap arrives at all.
+        Intent intent = new Intent(context, JobaLiveUpdateActionActivity.class);
         intent.setAction(ACTION_BUTTON);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_NO_ANIMATION
+                | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         intent.putExtra("task_id", payload.taskId);
         intent.putExtra("role", payload.role);
         intent.putExtra("action_id", RATING_ACTION_ID);
@@ -704,7 +699,7 @@ public final class JobaLiveUpdateNotifier {
         // One request code per star, offset past the open and action intents: with
         // a shared code the five PendingIntents would be the SAME object, and every
         // star would post whichever value was bound last.
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getActivity(
                 context, notificationId(payload.key()) + 10 + stars, intent, flags);
     }
 

@@ -39,9 +39,35 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
     private static final int CONNECT_TIMEOUT_MS = 8000;
     private static final int READ_TIMEOUT_MS = 10000;
 
+    /**
+     * A broadcast arrival (kept for a sender that is already holding one of these
+     * PendingIntents). The card itself no longer uses it — see
+     * JobaLiveUpdateActionActivity for why an activity PendingIntent is the only
+     * tap that can never be swallowed.
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null) return;
+        final PendingResult pending = goAsync();
+        runAction(context, intent, new Runnable() {
+            @Override
+            public void run() {
+                try { pending.finish(); } catch (Throwable ignored) { }
+            }
+        });
+    }
+
+    /**
+     * Perform one tap. Shared by the broadcast above and by the transparent
+     * activity, so both paths behave identically.
+     *
+     * @param onDone run on the worker thread once the tap has fully resolved.
+     */
+    public static void runAction(final Context rawContext, Intent intent, final Runnable onDone) {
+        if (intent == null) {
+            if (onDone != null) onDone.run();
+            return;
+        }
 
         String taskId = intent.getStringExtra("task_id");
         String role = intent.getStringExtra("role");
@@ -50,9 +76,12 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
         // A star tap carries its value; every flow action carries none. 0 means
         // "this tap is not a rating", so the body stays exactly as it was.
         final int stars = intent.getIntExtra("stars", 0);
-        if (taskId == null || taskId.isEmpty()) return;
+        if (taskId == null || taskId.isEmpty()) {
+            if (onDone != null) onDone.run();
+            return;
+        }
 
-        final Context appContext = context.getApplicationContext();
+        final Context appContext = rawContext.getApplicationContext();
         final JobaLiveUpdateStore store = new JobaLiveUpdateStore(appContext);
         final String key = JobaLiveUpdateStore.keyOf(taskId, role);
 
@@ -86,12 +115,13 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
             // capability (and the applicant list) exists. A tap that promised an
             // action must never end in silence.
             openTask(appContext, taskId);
+            if (onDone != null) onDone.run();
             return;
         }
 
-        // A receiver's work is cut off when onReceive returns, so the request runs
-        // on a thread that holds the process alive until it is finished.
-        final PendingResult pending = goAsync();
+        // The request never runs on the calling thread: a broadcast's work is cut
+        // off the moment onReceive returns, and an activity must stay free to
+        // finish its own window without waiting for the network.
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -108,13 +138,13 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
                 // nothing. Opening the task is the honest outcome — the action is
                 // one tap away, with a live session and a fresh capability.
                 if (!applied) openTask(appContext, taskId);
-                try { pending.finish(); } catch (Throwable ignored) { }
+                if (onDone != null) onDone.run();
             }
         }).start();
     }
 
-    /** Returns true only when the server accepted the action (2xx). */
-    private boolean post(
+    /** Returns true only when the server accepted the action (2xx AND an answer). */
+    private static boolean post(
             Context context,
             String endpoint,
             String token,
@@ -168,17 +198,31 @@ public class JobaLiveUpdateActionReceiver extends BroadcastReceiver {
 
             // A refused capability must not be retried forever: drop it, so the
             // next tap opens the task instead of posting a token we know is dead.
-            if (status == 401 || response.contains("expired") || response.contains("missing_token")) {
+            if (status == 401 || has(response, "expired") || has(response, "missing_token")) {
                 new JobaLiveUpdateStore(context)
                         .putActionAuth(JobaLiveUpdateStore.keyOf(taskId, role), "", "", 0L);
             }
 
-            // The caller opens the task when this is false, so only a real 2xx
-            // counts as "the tap did what its label promised".
-            return status >= 200 && status < 300;
+            // ── A 200 IS NOT PROOF THAT THE ACTION WAS APPLIED ───────────────
+            // The endpoint used to be reached over the app's own domain, and any
+            // hop that answers a POST with the web app's index.html answers 200
+            // with HTML. Treated as success, that produced the worst possible
+            // outcome: the card was never corrected, the app never opened, and the
+            // tap left no trace anywhere. Only a JSON answer can be an answer.
+            return status >= 200 && status < 300 && looksLikeActionAnswer(response);
         } finally {
             if (connection != null) connection.disconnect();
         }
+    }
+
+    /** A refusal or a success — both are JSON objects; an HTML page is neither. */
+    private static boolean looksLikeActionAnswer(String response) {
+        if (response == null) return false;
+        return response.trim().startsWith("{");
+    }
+
+    private static boolean has(String value, String needle) {
+        return value != null && value.contains(needle);
     }
 
     /**
