@@ -44,7 +44,7 @@ import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/l
 import PublishWizardNav from '@/components/publish/PublishWizardNav';
 import PublishStepIntro from '@/components/publish/PublishStepIntro';
 import PublishHelpVideo from '@/components/publish/PublishHelpVideo';
-import MicPermissionPopup from '@/components/publish/MicPermissionPopup';
+import { showPermissionPopup } from '@/lib/permissionPopup';
 import PublishMediaUploader from '@/components/publish/PublishMediaUploader';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 import { checkGibberish, checkCategoryDescriptionMatch } from '@/lib/taskTextChecks';
@@ -187,8 +187,6 @@ export default function CreateTask() {
   const [searchingTaskLocation, setSearchingTaskLocation] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
-  // 'denied' | 'unsupported' | null — see startRecording.
-  const [micError, setMicError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -208,12 +206,12 @@ export default function CreateTask() {
   // permission (or the WebView has no capture support), the promise rejected with
   // nobody listening and the button did precisely nothing. The publisher pressed
   // "record", nothing happened, and there was no message, no prompt and no way to
-  // fix it. Every failure now raises MicPermissionPopup with the reason.
+  // fix it. Every failure now raises the app's shared permission sheet.
   //   denied       the microphone is blocked → ask again, or point at Settings
   //   unsupported  this build cannot capture audio at all → say so plainly
   const startRecording = async () => {
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      setMicError('unsupported');
+      showPermissionPopup({ kind: 'microphone', mode: 'unsupported' });
       return;
     }
     // ── THE PHONE'S OWN SHEET IS THE ONLY PROMPT THAT ASKS ─────────────────
@@ -230,7 +228,10 @@ export default function CreateTask() {
     } catch {
       // Permissions API unsupported (Safari) — ask the device and let it answer.
     }
-    if (permission === 'denied') { setMicError('denied'); return; }
+    if (permission === 'denied') {
+      showPermissionPopup({ kind: 'microphone', mode: 'denied', onRetry: () => startRecording() });
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
@@ -251,13 +252,12 @@ export default function CreateTask() {
       };
       mr.start();
       mediaRecorderRef.current = mr;
-      setMicError(null);
       setRecording(true);
     } catch (err) {
       // NotAllowedError / SecurityError = the permission itself was refused.
       // Anything else (no device, capture already in use) is reported the same
       // way, because the publisher's next step is identical: try once more.
-      setMicError('denied');
+      showPermissionPopup({ kind: 'microphone', mode: 'denied', onRetry: () => startRecording() });
     }
   };
 
@@ -2483,13 +2483,6 @@ export default function CreateTask() {
         />
       )}
 
-      {/* A dictation that could not start tells the publisher why, and offers
-          the one press that fixes it. */}
-      <MicPermissionPopup
-        kind={micError}
-        onRetry={() => { setMicError(null); startRecording(); }}
-        onClose={() => setMicError(null)}
-      />
     </div>
   );
 }

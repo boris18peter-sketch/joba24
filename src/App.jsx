@@ -36,6 +36,7 @@ import FirstTaskPublishedFlow from '@/components/FirstTaskPublishedFlow';
 import AppLoading from '@/components/AppLoading';
 import SplashVideo from '@/components/SplashVideo';
 import ConsentBanner from '@/components/ConsentBanner';
+import PermissionSheet from '@/components/PermissionSheet';
 import { lazyRetry } from '@/lib/lazyRetry';
 
 // Add page imports here
@@ -466,6 +467,10 @@ function App() {
                 <FirstTaskPublishedFlow />
                 {/* Advertising-consent notice — shown until the visitor chooses */}
                 <ConsentBanner />
+                {/* THE permission sheet: microphone, camera and location. Raised
+                    from whichever flow hits a blocked permission, so the answer
+                    looks and behaves the same everywhere. */}
+                <PermissionSheet />
               </TaskSheetProvider>
             </Router>
             <Toaster />

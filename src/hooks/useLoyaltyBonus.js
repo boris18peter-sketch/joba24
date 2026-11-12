@@ -23,7 +23,7 @@ import { expectBonus, resolveBonusWindow } from '@/lib/bonusWindow';
  * note, which had long since given up waiting for it. That is exactly the report
  * "the bonus popup comes very late, after the completion popup".
  */
-const RATING_WAIT_MS = 12000;
+const RATING_WAIT_MS = 4000;
 
 /**
  * useLoyaltyBonus — detects a Joba bonus for the current user and raises it as a
@@ -188,9 +188,12 @@ export function useLoyaltyBonus(user) {
     // bonus would sit until the next gate change, i.e. until the sheet closed
     // and something else happened. It runs only while a bonus is actually
     // pending, so it costs nothing in the ordinary case.
+    // 200ms, not 700ms: this tick is what releases a bonus the moment the rating
+    // sheet steps aside, and at a seventh of a second the worst case is a wait
+    // nobody can feel. It runs only while a bonus is actually pending.
     const holdTick = setInterval(() => {
       if (pendingRef.current) flush();
-    }, 700);
+    }, 200);
     const onVisible = () => {
       if (document.visibilityState === 'visible') refresh();
     };

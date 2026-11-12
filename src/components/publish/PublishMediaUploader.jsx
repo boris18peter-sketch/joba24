@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
-import { Loader2, X, Play, Camera, ImagePlus, Video } from 'lucide-react';
+import { Loader2, X, Camera, ImagePlus, Video } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import MediaLightbox from '@/components/MediaLightbox';
+import VideoThumb from '@/components/VideoThumb';
 import { compressImage } from '@/lib/imageCompress';
+import { permissionState, showPermissionPopup } from '@/lib/permissionPopup';
 
 /**
  * PublishMediaUploader — photos and one video, as a toolbar INSIDE the
@@ -73,6 +75,21 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
     }
   };
 
+  // ── A CAMERA TAP THE DEVICE REFUSES MUST SAY SO ───────────────────────────
+  // A file input with `capture` opens the camera only while the permission is
+  // granted; once it has been denied the tap does nothing at all, and nothing on
+  // screen explains why. The permission is read first (without asking — the OS
+  // refuses to ask twice anyway) and a blocked camera is explained by the app's
+  // shared permission sheet, with a retry that re-opens this same camera.
+  const openCamera = async (ref) => {
+    const state = await permissionState('camera');
+    if (state === 'denied') {
+      showPermissionPopup({ kind: 'camera', mode: 'denied', onRetry: () => openCamera(ref) });
+      return;
+    }
+    ref.current?.click();
+  };
+
   const removeImage = (idx) => onImagesChange(images.filter((_, i) => i !== idx));
   const hasMedia = images.length > 0 || !!videoUrl;
 
@@ -122,11 +139,11 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
   return (
     <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-1)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <button type="button" onClick={() => cameraRef.current?.click()} disabled={uploading} style={pill}>
+        <button type="button" onClick={() => openCamera(cameraRef)} disabled={uploading} style={pill}>
           <Camera size={14} strokeWidth={2.2} />
           צילום
         </button>
-        <button type="button" onClick={() => videoRef.current?.click()} disabled={uploading} style={pill}>
+        <button type="button" onClick={() => openCamera(videoRef)} disabled={uploading} style={pill}>
           <Video size={14} strokeWidth={2.2} />
           וידאו
         </button>
@@ -170,15 +187,16 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
             </div>
           ))}
           {videoUrl && (
-            <div style={{ ...thumb, background: '#000' }}>
+            <div style={thumb}>
               <button
                 type="button"
                 onClick={() => setViewerIndex(images.length)}
                 style={thumbOpen}
                 aria-label="צפייה בווידאו"
               >
-                <video src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} muted playsInline />
-                <Play size={22} color="white" fill="white" style={{ position: 'absolute' }} />
+                {/* The video's OWN first frame, so the publisher recognises what
+                    they attached instead of a black square. */}
+                <VideoThumb src={videoUrl} playSize={22} />
               </button>
               <button type="button" onClick={() => onVideoChange('')} style={removeBtn} aria-label="הסרה">
                 <X size={13} color="white" />

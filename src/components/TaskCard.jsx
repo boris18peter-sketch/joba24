@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, CheckCircle2, ChevronDown, ChevronUp, Play, RefreshCw } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, CheckCircle2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
 import TaskImage from '@/components/TaskImage';
+import VideoThumb from '@/components/VideoThumb';
 import useTaskServiceLabel from '@/components/useTaskServiceLabel';
 import { useGlobalCategories } from '@/lib/brand/globalCategories';
 import { resolveStatusFlow, statusLabel } from '@/lib/taskStatusFlow';
@@ -683,12 +684,9 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   // so a long feed still fetches only what is near the viewport.
                   <TaskImage src={cur.url} priority={!!task._isFirstCard} />
                 ) : (
-                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    <video src={cur.url} preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
-                      <Play size={16} color="white" fill="white" />
-                    </div>
-                  </div>
+                  // The task's own first frame — a bare <video> paints a black
+                  // square until it is played, which read as a broken photo.
+                  <VideoThumb src={cur.url} playSize={16} />
                 )}
                 {allMedia.length > 1 && (
                   <div style={{ position: 'absolute', bottom: 3, right: 3, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '1px 5px', fontSize: 9, color: 'white', fontWeight: 700 }}>

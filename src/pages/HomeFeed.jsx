@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
+import { showPermissionPopup } from '@/lib/permissionPopup';
 // HomeFeed — main dashboard
 import { base44 } from '@/api/base44Client';
 import { fetchPublicTasks } from '@/lib/publicTasks';
@@ -417,12 +418,24 @@ export default function HomeFeed() {
     return () => {unsubTask();unsubApp();};
   }, [me?.id, queryClient, wsTick, brandId, isPlatformBrand]);
 
+  // ── A BLOCKED LOCATION IS EXPLAINED, NOT SILENT ───────────────────────────
+  // This is the app's first location request, and it had no error path at all:
+  // when the device refused, every distance and every "near me" simply stayed
+  // blank with nothing to explain it. A refusal (code 1) now raises the shared
+  // permission sheet, whose retry runs this same request again.
   useEffect(() => {
-    if (navigator.geolocation) {
-      getCurrentPosition((pos) => {
+    if (!navigator.geolocation) return;
+    const locate = () => getCurrentPosition(
+      (pos) => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      });
-    }
+      },
+      (err) => {
+        if (err?.code === 1) {
+          showPermissionPopup({ kind: 'location', mode: 'denied', onRetry: locate });
+        }
+      },
+    );
+    locate();
   }, []);
 
   // Auto price bump is handled server-side by the "Auto Bump Task Prices" scheduled
