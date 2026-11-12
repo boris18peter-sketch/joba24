@@ -84,20 +84,24 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
 
   if (!category) return null;
 
-  // Nothing to show yet — show progress rather than an empty gap. Once a result
-  // exists it stays on screen while a newer one is computed (no flicker).
-  if (!result) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#f8faff', border: '1px solid #dbeafe', borderRadius: 14, marginTop: 8 }}>
-        <Loader2 size={14} color="var(--brand-primary)" className="animate-spin" />
-        <span style={{ fontSize: 12, color: 'var(--brand-primary)', fontWeight: 600 }}>
-          {hasPhotos ? t('ps_analyzing') : t('ps_loading')}
-        </span>
-      </div>
-    );
-  }
+  // ── THE CARD IS NEVER ABSENT ─────────────────────────────────────────────
+  // It used to have three states: a spinner while nothing was known, then the
+  // result. The spinner is what the publisher was left looking at whenever the
+  // analysis was slow or silently failed — and an EMPTY gap is what he saw when
+  // the whole block was waiting on it. The curated category range is known
+  // synchronously, so it is drawn at once and the AI recommendation replaces it
+  // the moment it arrives. There is therefore nothing to wait for and no state
+  // in which this recommendation simply "does not appear".
+  const curatedRange = getRateRange(category, isHourly);
+  const view = result || {
+    min: curatedRange.min,
+    max: curatedRange.max,
+    reason: '',
+    confidence: 'low',
+    analyzing: true,
+  };
 
-  const conf = CONFIDENCE_STYLE[result.confidence] || CONFIDENCE_STYLE.low;
+  const conf = CONFIDENCE_STYLE[view.confidence] || CONFIDENCE_STYLE.low;
 
   return (
     <button
@@ -122,15 +126,16 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
           <Wand2 size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: '#1e40af', fontWeight: 800 }}>{t('ps_recommended')}</span>
         </div>
-        <span style={{ fontSize: 10, color: 'var(--brand-primary)', fontWeight: 700, background: '#dbeafe', borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap' }}>
-          {result.hasPhotos ? t('ps_based_on_photo') : t('ps_based_on_desc')}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--brand-primary)', fontWeight: 700, background: '#dbeafe', borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap' }}>
+          {view.analyzing && <Loader2 size={9} className="animate-spin" />}
+          {view.hasPhotos ? t('ps_based_on_photo') : t('ps_based_on_desc')}
         </span>
       </div>
 
       {/* Price + accept pill */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 6 }}>
         <div dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: '#0f2b6b', letterSpacing: -0.5, unicodeBidi: 'isolate' }}>
-          ₪{result.min}–₪{result.max}{isHourly ? t('ps_hourly_suffix') : ''}
+          ₪{view.min}–₪{view.max}{isHourly ? t('ps_hourly_suffix') : ''}
         </div>
         <div style={{ background: 'var(--brand-primary)', color: 'white', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
           {t('ps_use')}
@@ -138,14 +143,14 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       </div>
 
       {/* Visual analysis */}
-      {result.identified && (
-        <AnalysisRow icon={<Search size={12} color="#3b82f6" />} label={t('ps_identified')} value={result.identified} />
+      {view.identified && (
+        <AnalysisRow icon={<Search size={12} color="#3b82f6" />} label={t('ps_identified')} value={view.identified} />
       )}
-      {result.requiredWork && (
-        <AnalysisRow icon={<Wrench size={12} color="#3b82f6" />} label={t('ps_required')} value={result.requiredWork} />
+      {view.requiredWork && (
+        <AnalysisRow icon={<Wrench size={12} color="#3b82f6" />} label={t('ps_required')} value={view.requiredWork} />
       )}
-      {result.materials && (
-        <AnalysisRow icon={<Package size={12} color="#3b82f6" />} label={t('ps_materials')} value={result.materials} />
+      {view.materials && (
+        <AnalysisRow icon={<Package size={12} color="#3b82f6" />} label={t('ps_materials')} value={view.materials} />
       )}
 
       {/* Confidence + how many real jobs the estimate leans on */}
@@ -153,9 +158,9 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
         <span style={{ fontSize: 10, fontWeight: 700, background: conf.bg, color: conf.color, border: `1px solid ${conf.border}`, borderRadius: 999, padding: '2px 8px' }}>
           {t('ps_confidence')}: {t(conf.key)}
         </span>
-        {result.historyCount > 0 && (
+        {view.historyCount > 0 && (
           <span style={{ fontSize: 10, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: 999, padding: '2px 8px' }}>
-            {t('ps_history', { n: result.historyCount })}
+            {t('ps_history', { n: view.historyCount })}
           </span>
         )}
       </div>
@@ -163,8 +168,8 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       <div style={{ fontSize: 10, color: '#3b82f6', marginTop: 6, lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
         <Sparkles size={11} style={{ flexShrink: 0 }} />
         {/* Only a genuinely short reason fits the footer line — the analysis rows above carry the detail */}
-        {result.reason && result.reason.length <= 70 && <span>{result.reason} · </span>}
-        {t('ps_market_based')}
+        {view.reason && view.reason.length <= 70 && <span>{view.reason} · </span>}
+        {view.analyzing ? t('ps_analyzing') : t('ps_market_based')}
       </div>
       <div style={{ fontSize: 10, color: '#64748b', marginTop: 4, fontWeight: 600 }}>
         {t('ps_disclaimer')}

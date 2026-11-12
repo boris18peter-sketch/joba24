@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { isPopupBlocked, setPopupBlock, subscribePopupGate } from '@/lib/popupGate';
 import { hasAnnouncedBonus, rememberBonusAnnounced } from '@/lib/bonusAnnouncement';
 import { hasAskedCompletionPrompt } from '@/lib/completionPrompt';
-import { resolveBonusWindow } from '@/lib/bonusWindow';
+import { expectBonus, resolveBonusWindow } from '@/lib/bonusWindow';
 
 /**
  * How long a task-earned bonus waits for that task's rating sheet.
@@ -11,12 +11,19 @@ import { resolveBonusWindow } from '@/lib/bonusWindow';
  * The bonus and the ask are one flow, and the ask always comes first: a worker
  * who is told "you got a bonus" before being asked to rate has been paid for a
  * review he is then asked to write, which reads as a bribe and buries the sheet
- * he is actually supposed to answer. The wait is generous because it only costs
- * the worker a few seconds — and it expires so a bonus is never lost if the
- * rating can never be raised (the task was already reviewed, or the sheet was
- * dismissed through a path that recorded no ask).
+ * he is actually supposed to answer. The wait is short — the rating sheet is
+ * raised within a second or two of the completion — and it expires so a bonus is
+ * never lost when the rating can never be raised (the task was already reviewed,
+ * or the sheet was dismissed through a path that recorded no ask).
+ *
+ * ── WHY 45 SECONDS WAS WRONG ────────────────────────────────────────────────
+ * It was the ceiling of a wait that almost never needed to be that long, and in
+ * the one case it did get used — the ask was never raised for this task — the
+ * bonus sat for three quarters of a minute and then landed on top of the closing
+ * note, which had long since given up waiting for it. That is exactly the report
+ * "the bonus popup comes very late, after the completion popup".
  */
-const RATING_WAIT_MS = 45000;
+const RATING_WAIT_MS = 12000;
 
 /**
  * useLoyaltyBonus — detects a Joba bonus for the current user and raises it as a
@@ -161,6 +168,14 @@ export function useLoyaltyBonus(user) {
         taskId: isProfile ? '' : (tx.task_id || ''),
         since: Date.now(),
       };
+      // ── THE CLOSING NOTE MUST NOT OVERTAKE A BONUS THAT IS ALREADY QUEUED ──
+      // A bonus found NOW is only held while that task's rating sheet is open, so
+      // the window the note watches has to cover the same wait. Without this the
+      // note's 3.5s window expired, the note took the screen, and the bonus came
+      // up behind it a moment later — the order was inverted for exactly the
+      // bonus the user was most likely to notice. The window is closed either way:
+      // by the bonus being shown (flush → resolveBonusWindow) or by this ceiling.
+      expectBonus(RATING_WAIT_MS);
       flush();
       return true;
     };

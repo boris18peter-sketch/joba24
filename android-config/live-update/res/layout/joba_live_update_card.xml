@@ -53,9 +53,9 @@
 
         <ImageView
             android:id="@+id/joba_card_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="9dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
             android:background="@drawable/joba_live_bubble"
             android:scaleType="fitCenter"
             android:contentDescription="@null" />
@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:ellipsize="end"
-                android:textSize="15sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#0D1E40"
                 android:includeFontPadding="false" />
@@ -84,10 +84,10 @@
                 android:id="@+id/joba_card_subtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:maxLines="2"
+                android:layout_marginTop="3dp"
+                android:maxLines="3"
                 android:ellipsize="end"
-                android:textSize="12sp"
+                android:textSize="13.5sp"
                 android:textColor="#4B6083"
                 android:lineSpacingExtra="1dp" />
         </LinearLayout>
@@ -98,10 +98,10 @@
             android:layout_height="wrap_content"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            android:paddingTop="3dp"
-            android:paddingBottom="3dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:background="@drawable/joba_live_chip"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="#1A6FD4"
             android:maxLines="1" />
@@ -114,8 +114,8 @@
     <LinearLayout
         android:id="@+id/joba_card_segments"
         android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginTop="12dp"
+        android:layout_height="8dp"
+        android:layout_marginTop="14dp"
         android:orientation="horizontal"
         android:layoutDirection="rtl">
 
@@ -167,7 +167,7 @@
             android:gravity="center"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textSize="10.5sp"
+            android:textSize="11.5sp"
             android:textColor="#94A3B8"
             android:includeFontPadding="false" />
 
@@ -179,7 +179,7 @@
             android:gravity="center"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textSize="10.5sp"
+            android:textSize="11.5sp"
             android:textColor="#94A3B8"
             android:includeFontPadding="false" />
 
@@ -191,7 +191,7 @@
             android:gravity="center"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textSize="10.5sp"
+            android:textSize="11.5sp"
             android:textColor="#94A3B8"
             android:includeFontPadding="false" />
 
@@ -203,7 +203,7 @@
             android:gravity="center"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textSize="10.5sp"
+            android:textSize="11.5sp"
             android:textColor="#94A3B8"
             android:includeFontPadding="false" />
     </LinearLayout>
@@ -231,10 +231,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:minHeight="46dp"
+            android:minHeight="52dp"
             android:gravity="center"
             android:text="★"
-            android:textSize="26sp"
+            android:textSize="30sp"
             android:textColor="#D4E2F5"
             android:includeFontPadding="false" />
 
@@ -246,7 +246,7 @@
             android:minHeight="46dp"
             android:gravity="center"
             android:text="★"
-            android:textSize="26sp"
+            android:textSize="30sp"
             android:textColor="#D4E2F5"
             android:includeFontPadding="false" />
 
@@ -258,7 +258,7 @@
             android:minHeight="46dp"
             android:gravity="center"
             android:text="★"
-            android:textSize="26sp"
+            android:textSize="30sp"
             android:textColor="#D4E2F5"
             android:includeFontPadding="false" />
 
@@ -270,7 +270,7 @@
             android:minHeight="46dp"
             android:gravity="center"
             android:text="★"
-            android:textSize="26sp"
+            android:textSize="30sp"
             android:textColor="#D4E2F5"
             android:includeFontPadding="false" />
 
@@ -282,7 +282,7 @@
             android:minHeight="46dp"
             android:gravity="center"
             android:text="★"
-            android:textSize="26sp"
+            android:textSize="30sp"
             android:textColor="#D4E2F5"
             android:includeFontPadding="false" />
     </LinearLayout>
@@ -295,15 +295,15 @@
         android:id="@+id/joba_card_action"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:minHeight="46dp"
+        android:layout_marginTop="14dp"
+        android:minHeight="52dp"
         android:gravity="center"
         android:background="@drawable/joba_live_button"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp"
-        android:textSize="14.5sp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF"
         android:maxLines="2"

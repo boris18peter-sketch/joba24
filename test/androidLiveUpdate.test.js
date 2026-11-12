@@ -969,17 +969,23 @@ describe('Android Live Update — the designed card', () => {
     expect(CARD).toContain('android:layoutDirection="rtl"');
   });
 
-  it('does not replace the Android 16 Live Update with our own view', () => {
+  it('always draws the designed card, promoted or not', () => {
     const notifier = source('JobaLiveUpdateNotifier.java');
     const promoted = notifier.slice(
       notifier.indexOf('private static Notification buildPromoted('),
       notifier.indexOf('private static Notification buildOngoing('),
     );
-    // The promoted card is drawn by the platform from ProgressStyle; forcing a
-    // custom view there would drop the status-bar chip and the Lock Screen slot.
-    expect(promoted).toContain('if (style == null) {');
-    const beforeGuard = promoted.slice(0, promoted.indexOf('if (style == null) {'));
-    expect(beforeGuard).not.toContain('setCustomBigContentView');
+    // ── THE REGRESSION THIS LOCKS DOWN ────────────────────────────────────
+    // The designed card used to be attached ONLY when ProgressStyle could not be
+    // built. Building the style does not mean the notification is promoted — the
+    // platform decides that — so on a phone where the style built and no
+    // promotion happened, the user got a standard two-line system row: the "very
+    // small, impossible to understand" card that was reported. Our own card is
+    // now attached on every path, so the shade always shows the same blocks the
+    // iOS Lock Screen does.
+    expect(promoted).not.toContain('if (style == null)');
+    expect(promoted).toContain('builder.setCustomContentView(compact != null ? compact : card)');
+    expect(promoted).toContain('builder.setCustomBigContentView(card)');
   });
 
   it('gives the button a real tap target on both surfaces', () => {

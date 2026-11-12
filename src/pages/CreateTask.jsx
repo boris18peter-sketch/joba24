@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, ChevronRight, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, ChevronRight, X, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import { clearTaskDraft } from '@/lib/taskDraft';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
@@ -44,6 +44,8 @@ import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/l
 import PublishWizardNav from '@/components/publish/PublishWizardNav';
 import PublishStepIntro from '@/components/publish/PublishStepIntro';
 import PublishHelpVideo from '@/components/publish/PublishHelpVideo';
+import MicPermissionPopup from '@/components/publish/MicPermissionPopup';
+import PublishMediaUploader from '@/components/publish/PublishMediaUploader';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 import { checkGibberish, checkCategoryDescriptionMatch } from '@/lib/taskTextChecks';
 import useServiceSync from '@/hooks/useServiceSync';
@@ -97,69 +99,11 @@ function SocialProofBar() {
   );
 }
 
-function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChange, t }) {
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef(null);
-
-  const handleFiles = async (files) => {
-    if (!files?.length) return;
-    setUploading(true);
-    const newImages = [...images];
-    let newVideo = videoUrl;
-    for (const file of Array.from(files)) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      if (file.type.startsWith('video/')) {
-        newVideo = file_url;
-        onVideoChange(file_url);
-      } else {
-        if (newImages.length < 4) newImages.push(file_url);
-      }
-    }
-    onImagesChange(newImages);
-    onVideoChange(newVideo);
-    setUploading(false);
-  };
-
-  const removeImage = (idx) => onImagesChange(images.filter((_, i) => i !== idx));
-  const hasMedia = images.length > 0 || videoUrl;
-
-  return (
-    <div>
-      {hasMedia && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
-          {images.map((url, i) => (
-            <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden', border: '1.5px solid #dce8f5' }}>
-              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button onClick={() => removeImage(i)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={12} color="white" />
-              </button>
-            </div>
-          ))}
-          {videoUrl && (
-            <div style={{ position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden', background: '#000', border: '1.5px solid #dce8f5' }}>
-              <video src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}><Play size={18} color="white" fill="white" /></div>
-              <button onClick={() => onVideoChange('')} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={12} color="white" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={uploading}
-        style={{ width: '100%', borderRadius: 16, border: '2px dashed var(--border-2)', background: '#f0f7ff', cursor: uploading ? 'not-allowed' : 'pointer', padding: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-      >
-        {uploading
-          ? <Loader2 size={22} className="animate-spin" color="var(--brand-primary)" />
-          : <Plus size={22} color="var(--brand-primary)" strokeWidth={2.5} />}
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-primary)' }}>{t('add_photos_video')}</span>
-      </button>
-      <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
-    </div>
-  );
+// Photos and one video now live in their own component: it owns the gallery AND
+// camera entry points, and keeping them here made this page carry a second
+// form's worth of upload logic. See components/publish/PublishMediaUploader.
+function MediaUploader(props) {
+  return <PublishMediaUploader {...props} />;
 }
 
 function SectionCard({ children }) {
@@ -242,6 +186,8 @@ export default function CreateTask() {
   const [searchingTaskLocation, setSearchingTaskLocation] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  // 'denied' | 'unsupported' | null — see startRecording.
+  const [micError, setMicError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -256,24 +202,47 @@ export default function CreateTask() {
     markPublisherContext();
   }, []);
 
+  // ── DICTATION THAT CANNOT START MUST SAY SO ───────────────────────────────
+  // This used to open the microphone with no guard at all: when the phone refused
+  // permission (or the WebView has no capture support), the promise rejected with
+  // nobody listening and the button did precisely nothing. The publisher pressed
+  // "record", nothing happened, and there was no message, no prompt and no way to
+  // fix it. Every failure now raises MicPermissionPopup with the reason.
+  //   denied       the microphone is blocked → ask again, or point at Settings
+  //   unsupported  this build cannot capture audio at all → say so plainly
   const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
-    audioChunksRef.current = [];
-    mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-    mr.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
-      setTranscribing(true);
-      const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
-      const file = new File([blob], 'recording.webm', { type: mr.mimeType });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
-      set('description', form.description ? form.description + '\n' + text : text);
-      setTranscribing(false);
-    };
-    mr.start();
-    mediaRecorderRef.current = mr;
-    setRecording(true);
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setMicError('unsupported');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+      audioChunksRef.current = [];
+      mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        setTranscribing(true);
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
+          const file = new File([blob], 'recording.webm', { type: mr.mimeType });
+          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
+          set('description', form.description ? form.description + '\n' + text : text);
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setMicError(null);
+      setRecording(true);
+    } catch (err) {
+      // NotAllowedError / SecurityError = the permission itself was refused.
+      // Anything else (no device, capture already in use) is reported the same
+      // way, because the publisher's next step is identical: try once more.
+      setMicError('denied');
+    }
   };
 
   const stopRecording = () => {
@@ -2456,6 +2425,14 @@ export default function CreateTask() {
 
       {/* The explainer video — an icon-sized pill that never opens by itself. */}
       <PublishHelpVideo />
+
+      {/* A dictation that could not start tells the publisher why, and offers
+          the one press that fixes it. */}
+      <MicPermissionPopup
+        kind={micError}
+        onRetry={() => { setMicError(null); startRecording(); }}
+        onClose={() => setMicError(null)}
+      />
     </div>
   );
 }

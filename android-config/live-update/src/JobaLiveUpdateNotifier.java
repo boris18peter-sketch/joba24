@@ -259,21 +259,31 @@ public final class JobaLiveUpdateNotifier {
 
             applyLargeIcon(builder, context);
 
-            // ── ONLY WHEN THERE IS NO SYSTEM CARD TO SHOW ─────────────────────
-            // A device that builds the progress style gets the platform's own
-            // promoted Live Update, and a custom view there would replace the
-            // system card with ours — losing the status-bar chip and the Lock
-            // Screen placement that make it a Live Update at all. When the style
-            // could NOT be built (reflection is version-dependent), this
-            // notification is just an ordinary shade card, so it gets the designed
-            // layout like every other Android version.
-            if (style == null) {
-                RemoteViews card = buildCardViews(context, payload, openIntent, buttonIntent);
-                if (card != null) {
-                    RemoteViews compact = buildCompactViews(context, payload, openIntent, buttonIntent);
-                    builder.setCustomContentView(compact != null ? compact : card);
-                    builder.setCustomBigContentView(card);
-                }
+            // ── THE DESIGNED CARD, ON EVERY VERSION ──────────────────────────
+            // This used to be conditional: a device that could build the progress
+            // style got the platform's card, and only a device that could not got
+            // ours. The reasoning was that a custom view replaces the system card
+            // and its status-bar chip — but the assumption behind it was wrong.
+            //
+            // ProgressStyle being buildable says nothing about whether the card is
+            // actually PROMOTED: the platform decides that itself (the user's Live
+            // Update setting, the launcher, whether the notification qualifies).
+            // On a phone where the style built and the promotion did not happen,
+            // the result was a standard, compact system notification — two lines of
+            // text and a chevron in the shade, which is exactly the "very small and
+            // impossible to understand" card that was reported. Our card was
+            // written, tested and then never drawn on that device.
+            //
+            // So the designed card is now ALWAYS attached. It is the same card on
+            // every Android version: the icon bubble, the two lines, the flow
+            // position, the step rail with its labels, and the full-width action.
+            // A promoted notification still gets its platform treatment, and one
+            // that is not promoted now shows a real card instead of a text row.
+            RemoteViews card = buildCardViews(context, payload, openIntent, buttonIntent);
+            if (card != null) {
+                RemoteViews compact = buildCompactViews(context, payload, openIntent, buttonIntent);
+                builder.setCustomContentView(compact != null ? compact : card);
+                builder.setCustomBigContentView(card);
             }
 
             return builder.build();
