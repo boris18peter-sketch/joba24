@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getCurrentPosition } from '@/lib/nativeGeolocation';
+import { getCurrentPosition, checkLocationPermission } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -376,14 +376,22 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
   const queryClient = useQueryClient();
   const { brandId, isPlatformBrand } = useBrand();
 
+  // The bar only ORDERs stories by distance, so a position is a nice-to-have —
+  // never a reason to ask. Requesting it on mount opened the OS location dialog
+  // the moment the feed appeared; it now uses a position only if the device has
+  // already allowed one.
   useEffect(() => {
-    if (navigator.geolocation) {
-      getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {},
-        { timeout: 5000 }
-      );
-    }
+    if (!navigator.geolocation) return;
+    checkLocationPermission()
+      .then((state) => {
+        if (state !== 'granted') return;
+        getCurrentPosition(
+          (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => {},
+          { timeout: 5000 }
+        );
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

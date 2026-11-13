@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { getCurrentPosition } from '@/lib/nativeGeolocation';
+import { getCurrentPosition, checkLocationPermission } from '@/lib/nativeGeolocation';
+import { showPermissionPopup } from '@/lib/permissionPopup';
 import { MapPin, CheckCircle, Loader2, Locate, Clock } from 'lucide-react';
 
 const RECENT_KEY = 'joba24_recent_addresses';
@@ -36,9 +37,13 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
   const debounceRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Try to get user location once for prioritization + reverse-geocoded city
-  useEffect(() => {
-    if (!navigator.geolocation) return;
+  // Use the position for prioritisation ONLY when it is already allowed.
+  // Opening this form used to request the position outright, so the OS location
+  // dialog met the publisher before they had asked for anything — a form must
+  // never ask for a permission on load. The position is collected here only if
+  // the device already permits it, and a refusal is explained only when the
+  // visitor presses "השתמש במיקום הנוכחי שלי" (see locateMe below).
+  const locateSilently = () => {
     getCurrentPosition(
       async pos => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -54,6 +59,13 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
       () => {},
       { timeout: 5000 }
     );
+  };
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    checkLocationPermission()
+      .then(state => { if (state === 'granted') locateSilently(); })
+      .catch(() => {});
   }, []);
 
   // Sync if parent resets value or sets it externally
@@ -162,7 +174,14 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
           applySelection({ ...d, lat: d.lat, lon: d.lon });
         } catch { setLocating(false); }
       },
-      () => setLocating(false),
+      (err) => {
+        setLocating(false);
+        // The visitor asked for this exact thing, so a refusal is explained —
+        // and the sheet's retry runs the same request again.
+        if (err?.code === 1) {
+          showPermissionPopup({ kind: 'location', mode: 'denied', onRetry: locateMe });
+        }
+      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };

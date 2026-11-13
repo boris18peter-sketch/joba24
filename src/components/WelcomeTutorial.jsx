@@ -16,7 +16,7 @@ import { getOnboardingTrack } from '@/lib/onboardingTrack';
  * element with a glowing golden border over a dimmed background — with a floating white
  * card pointing to it (matching the supplied design reference).
  *
- * Gated by localStorage 'joba_welcome_seen'.
+ * Gated by localStorage 'joba_welcome_seen_<track>' — once per journey.
  */
 
 // Remembered PER TRACK, so finishing the tour as a publisher does not silently
@@ -131,17 +131,17 @@ export default function WelcomeTutorial() {
     // navigated away, which is how the publish button appeared dead.
     if (pathname !== '/') return;
     const track = getOnboardingTrack();
-    // ── ONLY THE ORDINARY ENTRY GETS THE GENERAL TOUR ───────────────────────
-    // A visitor who arrived by choosing a journey — the publisher's or the
-    // worker's — is here to do ONE specific thing, and the journey's own
-    // explainer screens already told them what they need. A general walkthrough
-    // in front of that is an obstacle, not a help.
+    // ── A CHOSEN JOURNEY GETS ITS OWN TOUR, NOT NONE ────────────────────────
+    // A visitor who picked the worker or the publisher journey used to skip the
+    // walkthrough entirely, on the theory that the explainer screens had covered
+    // it. They had not: the explainer screens describe the app, while the tour is
+    // the only thing that points at the real controls — the bonus in the credits
+    // pill, the profile banner, the apply button. A worker who registered through
+    // the journey therefore never saw any of it.
     //
-    // Their track is remembered, so this holds on every later visit too, and the
-    // tour is deliberately NOT marked as seen: nothing was shown, so nothing is
-    // recorded. Someone who arrives through the ordinary route afterwards still
-    // meets it.
-    if (track) return;
+    // The track now only SELECTS the steps (see `candidates` below), and the
+    // "seen" flag stays per track, so finishing the worker tour does not silence
+    // the publisher one.
     if (localStorage.getItem(STORAGE_KEY(track))) return;
     // Only the steps that belong to the track this person chose. With no track
     // saved the full list is kept, exactly as before.

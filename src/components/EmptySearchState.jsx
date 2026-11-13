@@ -5,7 +5,7 @@ import { SearchX } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function EmptySearchState({ hasFilters, onReset }) {
-  const { t, isRTL } = useLanguage();
+  const { isRTL } = useLanguage();
 
   return (
     <>
@@ -40,13 +40,13 @@ export default function EmptySearchState({ hasFilters, onReset }) {
           <SearchX size={30} color="var(--text-3)" strokeWidth={1.4} />
         </div>
 
-        {/* Title */}
+        {/* Title — this screen only ever means "your search hid the tasks" */}
         <p style={{
           fontWeight: 900, fontSize: 18,
           color: 'var(--text-1)', margin: '0 0 8px', textAlign: 'center',
           lineHeight: 1.35,
         }}>
-          {t('no_tasks')}
+          לא נמצאו משימות מתאימות
         </p>
 
         {/* Subtitle */}
@@ -54,7 +54,7 @@ export default function EmptySearchState({ hasFilters, onReset }) {
           fontSize: 13, color: 'var(--text-3)', margin: '0 0 24px',
           textAlign: 'center', lineHeight: 1.6, maxWidth: 260,
         }}>
-          {t('no_tasks_sub')}
+          נסו לשנות את הסינון או את מילות החיפוש
         </p>
 
         {/* Reset button — only if filter is active */}
@@ -75,7 +75,7 @@ export default function EmptySearchState({ hasFilters, onReset }) {
             onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(26,111,212,0.35)'; }}
             onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(26,111,212,0.35)'; }}
           >
-            {t('filter')}
+            נקו סינונים
           </button>
         )}
       </div>

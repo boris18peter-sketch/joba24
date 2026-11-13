@@ -9,6 +9,31 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 let globalInitDone = false;
 let globalInitPromise = null;
 
+/**
+ * enablePushNotifications — ask for the notification permission, obtain the
+ * device token and persist it on the user's record.
+ *
+ * Exported as a plain function so a screen that only needs "turn notifications
+ * on" (the empty feed) can do it WITHOUT mounting the hook a second time — a
+ * second instance would register the native tap listener twice.
+ */
+export async function enablePushNotifications() {
+  const permission = await requestNotificationPermission();
+  if (permission !== 'granted') return { permission, token: null };
+  const fcmToken = await getFCMToken();
+  if (!fcmToken) return { permission: 'granted', token: null };
+  try {
+    const me = await base44.auth.me();
+    const existing = me?.fcm_tokens || [];
+    if (!existing.includes(fcmToken)) {
+      await base44.auth.updateMe({ fcm_tokens: [...existing, fcmToken] });
+    }
+  } catch {
+    /* a token that could not be saved is simply asked for again next time */
+  }
+  return { permission: 'granted', token: fcmToken };
+}
+
 export default function usePushNotifications() {
   const [token, setToken] = useState(null);
   const [permission, setPermission] = useState(() => {
@@ -43,17 +68,15 @@ export default function usePushNotifications() {
 
   // Request permission and get token
   const enableNotifications = useCallback(async () => {
-    const perm = await requestNotificationPermission();
+    const { permission: perm, token: fcmToken } = await enablePushNotifications();
     setPermission(perm);
     if (perm !== 'granted') return null;
-
-    const fcmToken = await getFCMToken();
     if (fcmToken) {
       setToken(fcmToken);
-      await saveToken(fcmToken);
+      tokenRef.current = fcmToken;
     }
     return fcmToken;
-  }, [saveToken]);
+  }, []);
 
   // Auto-init on mount — runs only once globally to prevent duplicate token registrations
   useEffect(() => {

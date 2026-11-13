@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Mic, Camera, MapPin, RefreshCw } from 'lucide-react';
+import { Mic, Camera, MapPin, BellRing, RefreshCw } from 'lucide-react';
 import PopupClose from '@/components/ui/PopupClose';
 import { useLanguage } from '@/lib/LanguageContext';
 import {
@@ -59,6 +59,15 @@ const CONTENT = {
       body: 'הדפדפן או הגרסה הזאת לא מאפשרים לפתוח המצלמה. אפשר לצרף תמונה או סרטון קיימים מהגלריה.',
       hint: '',
       retry: '',
+    },
+  },
+  notifications: {
+    denied: {
+      icon: BellRing,
+      title: 'ההתראות חסומות במכשיר',
+      body: 'כדי לעדכן אתכם כשיתפרסמו משימות חדשות, Joba24 צריך הרשאת התראות. המכשיר כבר סירב לבקשה, ולכן הוא לא פותח בקשה חדשה — צריך לאשר אותה פעם אחת בהגדרות.',
+      hint: 'הגדרות המכשיר › Joba24 › התראות. אחרי האישור חוזרים לכאן ולוחצים "נסה שוב".',
+      retry: 'נסה שוב',
     },
   },
   location: {

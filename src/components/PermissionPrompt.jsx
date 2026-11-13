@@ -2,30 +2,27 @@ import { useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 import { hasCapacitorBridge, isAndroidWebView } from '@/lib/nativeEnv';
-import {
-  checkLocationPermission,
-  getCurrentPosition,
-  waitForLocationPermissionSettled,
-} from '@/lib/nativeGeolocation';
 
 /**
- * Startup runtime-permission prompt — runs ONCE per app load and asks the OS for
- * the two permissions the app needs, in a fixed order:
+ * Startup runtime-permission prompt — asks for NOTIFICATIONS, once per app load.
  *
- *   1. Location
- *   2. Notifications
+ * ── LOCATION IS NOT ASKED FOR HERE ANY MORE ────────────────────────────────
+ * It used to be asked at startup, before anything else, so every visitor met the
+ * OS location dialog — or, once refused, the "location blocked" sheet — before
+ * they had asked the app for a single thing. A feed can order itself without a
+ * position; only distances and the "nearby" section need one.
  *
- * There is no custom UI: the OS dialogs are the only thing the user sees. While a
- * permission is still undecided the OS keeps allowing the dialog, so it is
- * re-triggered on every app entry; once the user has answered (granted OR denied)
- * the OS refuses to show it again and we stay silent — no nagging.
+ * Location is now requested at the moment it is actually wanted: the empty
+ * feed's "הפעילו מיקום" button, the map, or "use my current location" in the
+ * publish form. Whichever of those asks explains a refusal, because only then
+ * did the visitor ask for anything. See isLocationWanted paths in HomeFeed and
+ * AddressAutocomplete.
  *
- * ORDER MATTERS ON ANDROID. The system shows only ONE runtime-permission dialog at
- * a time, and the feed already opens the location dialog on startup. Asking for
- * notifications while that dialog is still on screen makes Android DROP the
- * notification request silently — the dialog simply never appears. So we always
- * let the location dialog finish first (waitForLocationPermissionSettled), then ask
- * for notifications. Never reverse this order or run the two in parallel.
+ * Notifications stay here deliberately: an update that arrives while the app is
+ * closed is the feature, so a user who never opens a "turn on notifications"
+ * screen still has to be asked once. The answer is final — the OS refuses to
+ * re-open the dialog once it has been given, and nothing here tries again on a
+ * later launch.
  */
 let ranThisLoad = false;
 
@@ -64,19 +61,6 @@ export default function PermissionPrompt() {
     };
 
     /**
-     * Opens the OS location dialog. The position call is what triggers it, and it
-     * is bounded by its own timeout — so an ignored dialog can never hang the
-     * notification request that comes after it.
-     */
-    const openLocationDialog = () => new Promise((resolve) => {
-      getCurrentPosition(() => resolve(), () => resolve(), {
-        enableHighAccuracy: false,
-        timeout: 15000,
-        maximumAge: 60000,
-      });
-    });
-
-    /**
      * Asks for notification permission.
      * Returns true when the OS has an answer (granted/denied) so there is nothing
      * left to ask; false while the dialog is still unanswered, so it can be retried
@@ -100,23 +84,7 @@ export default function PermissionPrompt() {
     };
 
     (async () => {
-      // ── 1) LOCATION FIRST ──
-      // The feed opens the location dialog on startup. Wait for it to be answered
-      // before doing anything else, so we never collide with it.
-      if (hasCapacitorBridge()) await waitForLocationPermissionSettled(4000);
-      if (cancelled) return;
-
-      if (!inEmbeddedFrame()) {
-        const loc = await checkLocationPermission();
-        // Only ask while undecided — an answered permission returns instantly with
-        // no dialog, so this never nags.
-        if (loc === 'default') await openLocationDialog();
-      }
-      if (cancelled) return;
-
-      // ── 2) NOTIFICATIONS, once the location dialog is off the screen ──
-      if (hasCapacitorBridge()) await waitForLocationPermissionSettled(4000);
-      if (cancelled) return;
+      if (inEmbeddedFrame()) return;
 
       // Already granted on the web path → just refresh the token, never re-ask.
       if (!hasCapacitorBridge() && typeof Notification !== 'undefined' && Notification.permission === 'granted') {

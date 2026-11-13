@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { getCurrentPosition } from '@/lib/nativeGeolocation';
+import { getCurrentPosition, checkLocationPermission } from '@/lib/nativeGeolocation';
 import { showPermissionPopup } from '@/lib/permissionPopup';
 // HomeFeed — main dashboard
 import { base44 } from '@/api/base44Client';
@@ -13,6 +13,7 @@ import PullToRefreshIndicator from '@/components/PullToRefreshIndicator';
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import TaskCardSkeleton from '@/components/TaskCardSkeleton';
 import EmptySearchState from '@/components/EmptySearchState';
+import EmptyFeedState from '@/components/empty/EmptyFeedState';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
@@ -423,24 +424,81 @@ export default function HomeFeed() {
   // when the device refused, every distance and every "near me" simply stayed
   // blank with nothing to explain it. A refusal (code 1) now raises the shared
   // permission sheet, whose retry runs this same request again.
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    const locate = () => getCurrentPosition(
+  // ── LOCATION IS NEVER ASKED FOR AT STARTUP ───────────────────────────────
+  // The feed used to request the position the moment it mounted, so every
+  // visitor met the OS location dialog — or, once it had been refused, the
+  // "location blocked" sheet — before they had asked the app for anything. The
+  // feed orders itself without a position; only distances and the "nearby"
+  // section need one.
+  //
+  // A position is collected in exactly two ways now:
+  //   · silently, when the permission is ALREADY granted (no dialog can appear);
+  //   · on the visitor's own request — the empty feed's "הפעילו מיקום" button —
+  //     and only then is a refusal explained, because only then did they ask.
+  const [locationPermission, setLocationPermission] = useState('prompt');
+  const gotPositionRef = useRef(false);
+
+  const locate = useCallback(({ interactive = false } = {}) => new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(false); return; }
+    getCurrentPosition(
       (pos) => {
+        gotPositionRef.current = true;
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationPermission('granted');
+        resolve(true);
       },
       (err) => {
         if (err?.code === 1) {
-          showPermissionPopup({ kind: 'location', mode: 'denied', onRetry: locate });
+          setLocationPermission('denied');
+          if (interactive) {
+            showPermissionPopup({
+              kind: 'location',
+              mode: 'denied',
+              onRetry: () => locate({ interactive: true }),
+            });
+          }
         }
+        resolve(false);
       },
     );
-    locate();
-  }, []);
+  }), []);
+
+  // Re-read the device's answer on every return to the app: a permission can be
+  // changed in the phone's settings while the app is in the background.
+  useEffect(() => {
+    let alive = true;
+    const sync = async () => {
+      const state = await checkLocationPermission();
+      if (!alive) return;
+      if (state !== 'granted') {
+        setLocationPermission(state === 'denied' ? 'denied' : 'prompt');
+        return;
+      }
+      setLocationPermission('granted');
+      if (!gotPositionRef.current) locate();
+    };
+    sync();
+    const onVisible = () => { if (document.visibilityState === 'visible') sync(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { alive = false; document.removeEventListener('visibilitychange', onVisible); };
+  }, [locate]);
 
   // Auto price bump is handled server-side by the "Auto Bump Task Prices" scheduled
   // automation (every 5 minutes) — see base44/functions/autoBumpTaskPrices. WebSocket
   // events propagate the updated price to all clients and caches in real time.
+
+  // How many tasks are on offer AT ALL — the search and every filter ignored.
+  // This is the question that decides which empty screen is honest: telling a
+  // visitor to clear a filter they never set is worse than saying nothing.
+  const availableTaskCount = useMemo(
+    () => tasks.filter(t => t.status === 'OPEN' && !dismissedTasks.has(t.id)).length,
+    [tasks, dismissedTasks],
+  );
+
+  const resetFeedFilters = useCallback(() => {
+    setSearch('');
+    setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false });
+  }, []);
 
   // ── Smart Ranking Engine ──────────────────────────────────────────────────
   // Build worker profile for category matching
@@ -963,10 +1021,14 @@ export default function HomeFeed() {
                 <TaskCardSkeleton count={5} />
               </div> :
             displayedTasks.length === 0 ?
-              <EmptySearchState
-                hasFilters={!!(search || hasFilters)}
-                onReset={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false }); }}
-              /> :
+              (availableTaskCount > 0
+                /* There ARE tasks — the visitor's own search or filters hide them */
+                ? <EmptySearchState hasFilters={!!(search || hasFilters)} onReset={resetFeedFilters} />
+                /* Nothing is available at all, filters or not */
+                : <EmptyFeedState
+                    onEnableLocation={() => locate({ interactive: true })}
+                    onPickCity={() => setShowFilters(true)}
+                  />) :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {preparedTasks.map((task, index) => {
                   const isOwn = !!me?.id && task.client_id === me.id;
