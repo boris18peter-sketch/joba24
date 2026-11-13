@@ -1027,7 +1027,6 @@ export default function HomeFeed() {
                 /* Nothing is available at all, filters or not */
                 : <EmptyFeedState
                     onEnableLocation={() => locate({ interactive: true })}
-                    onPickCity={() => setShowFilters(true)}
                   />) :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {preparedTasks.map((task, index) => {

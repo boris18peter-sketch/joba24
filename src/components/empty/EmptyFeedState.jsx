@@ -54,7 +54,45 @@ const Pill = ({ children, ...rest }) => (
   </button>
 );
 
-export default function EmptyFeedState({ onEnableLocation, onPickCity }) {
+/* A permission that IS granted: one quiet green line, no button. */
+const StatusLine = ({ children }) => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '2px 0' }}>
+    <Check size={14} color="var(--color-success)" strokeWidth={2.8} style={{ flexShrink: 0 }} />
+    <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--color-success)' }}>{children}</span>
+  </div>
+);
+
+/* A permission the screen still has to do something about — one full-width row,
+   the SAME height and shape for both notifications and location, so the two
+   never look like different kinds of thing. `primary` is reserved for the main
+   ask (notifications); the other is a bordered row on the card surface. */
+const PermRow = ({ icon: Icon, variant = 'outline', busy, children, ...rest }) => {
+  const primary = variant === 'primary';
+  return (
+    <button
+      type="button"
+      {...rest}
+      style={{
+        width: '100%', height: 50, borderRadius: 14,
+        border: primary ? 'none' : '1.5px solid var(--border-1)',
+        background: primary
+          ? 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))'
+          : 'var(--surface-2)',
+        color: primary ? '#fff' : 'var(--text-1)',
+        fontWeight: primary ? 900 : 800,
+        fontSize: primary ? 15 : 14,
+        cursor: rest.disabled ? 'wait' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        boxShadow: primary ? '0 6px 20px rgba(26,111,212,0.3)' : 'none',
+      }}
+    >
+      {busy ? <Loader2 size={17} className="animate-spin" /> : <Icon size={primary ? 17 : 16} strokeWidth={2.2} />}
+      {children}
+    </button>
+  );
+};
+
+export default function EmptyFeedState({ onEnableLocation }) {
   const { isRTL } = useLanguage();
   const { user, refreshUser } = useAuth();
   const { push, location, refresh } = useDevicePermissions();
@@ -98,6 +136,19 @@ export default function EmptyFeedState({ onEnableLocation, onPickCity }) {
     } finally {
       setLocBusy(false);
     }
+  };
+
+  // The device has blocked the location for good, so the OS will not show the
+  // dialog again: the shared sheet explains where to reopen it, exactly as it
+  // does for notifications.
+  const explainBlockedLocation = () => {
+    showPermissionPopup({
+      kind: 'location',
+      mode: 'denied',
+      onRetry: async () => {
+        await refresh();
+      },
+    });
   };
 
   const community = [
@@ -160,83 +211,51 @@ export default function EmptyFeedState({ onEnableLocation, onPickCity }) {
         </p>
 
         {/* ── ONE SENTENCE, AND IT DEPENDS ON THE TRUTH ────────────────────
-            This line used to ask for notifications no matter what, directly
-            above a box that confirmed they were already on — the screen
-            contradicted itself. When they are on, the line stops asking and
-            simply says what happens next. */}
+            It never asks for something that is already on, and it says what the
+            visitor actually gets: a task that fits them, not "an update". */}
         <p style={{
           fontSize: 13, color: 'var(--text-3)', margin: '0 0 22px',
-          textAlign: 'center', lineHeight: 1.6, maxWidth: 280,
+          textAlign: 'center', lineHeight: 1.6, maxWidth: 300,
         }}>
           {notificationsOn
-            ? 'אין כרגע משימות זמינות. נעדכן אתכם כשיתפרסמו משימות חדשות.'
-            : 'הפעילו התראות ונדאג לעדכן אתכם כשיתפרסמו משימות חדשות'}
+            ? 'אין כרגע משימות זמינות. תקבל עדכון על משימות שמתאימות לפרופיל ולמיקום שלך.'
+            : 'הפעל התראות וקבל עדכון על משימות שמתאימות לפרופיל ולמיקום שלך.'}
         </p>
 
         <div style={{ width: '100%', maxWidth: 330, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-          {/* ── Notifications ── */}
+          {/* ── THE TWO PERMISSIONS, IN THE SAME SHAPE ────────────────────
+              Notifications and location are one idea here — "let us reach you
+              when a task fits" — so they answer the visitor identically:
+                granted   → one quiet green line, no button at all;
+                blocked   → the sheet that explains how to reopen it (the OS
+                            refuses to ask a second time, so asking again would
+                            be a dead button);
+                askable   → one full-width button that asks, once.
+              The location used to fall back to a city picker when blocked,
+              which looked like a different feature entirely. */}
           {notificationsOn ? (
-            /* A STATUS, NOT A BUTTON: a framed green card read almost like the
-               screen's primary action while carrying one word of information. */
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '2px 0' }}>
-              <Check size={14} color="var(--color-success)" strokeWidth={2.8} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--color-success)' }}>
-                ההתראות פעילות — נעדכן אתכם!
-              </span>
-            </div>
+            <StatusLine>ההתראות פעילות — תקבל עדכון על משימות מתאימות לך</StatusLine>
           ) : push === 'denied' ? (
-            <button
-              type="button"
-              onClick={explainBlockedNotifications}
-              style={{
-                width: '100%', height: 48, borderRadius: 14,
-                background: 'var(--surface-2)', border: '1.5px solid var(--border-1)',
-                color: 'var(--text-1)', fontWeight: 800, fontSize: 14, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-            >
-              <Settings size={16} strokeWidth={2.2} />
-              ההתראות חסומות — פתחו הגדרות
-            </button>
+            <PermRow icon={Settings} onClick={explainBlockedNotifications}>
+              ההתראות חסומות — פתח הגדרות
+            </PermRow>
           ) : (
-            <button
-              type="button"
-              onClick={askNotifications}
-              disabled={pushBusy}
-              style={{
-                width: '100%', height: 50, borderRadius: 14, border: 'none',
-                background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark))',
-                color: '#fff', fontWeight: 900, fontSize: 15,
-                cursor: pushBusy ? 'wait' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 6px 20px rgba(26,111,212,0.3)',
-              }}
-            >
-              {pushBusy ? <Loader2 size={17} className="animate-spin" /> : <Bell size={17} strokeWidth={2.2} />}
-              הפעילו התראות
-            </button>
+            <PermRow variant="primary" icon={Bell} onClick={askNotifications} busy={pushBusy}>
+              הפעל התראות
+            </PermRow>
           )}
 
-          {/* ── Location — a quiet extra, and only while it would help ──────
-              Absent the moment the location is on: there is nothing left to
-              switch on, so a line about it would be one more thing to read for
-              no reason. While it is off it stays a small secondary pill under
-              the notifications area — a suggestion, never a second main action. */}
-          {location !== 'granted' && (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              {location === 'denied' ? (
-                <Pill type="button" onClick={onPickCity}>
-                  <MapPin size={13} strokeWidth={2.2} />
-                  בחרו עיר
-                </Pill>
-              ) : (
-                <Pill type="button" onClick={askLocation} disabled={locBusy}>
-                  {locBusy ? <Loader2 size={13} className="animate-spin" /> : <Navigation size={13} strokeWidth={2.2} />}
-                  הפעילו מיקום
-                </Pill>
-              )}
-            </div>
+          {location === 'granted' ? (
+            <StatusLine>המיקום פעיל — תקבל עדכון על משימות באזורך</StatusLine>
+          ) : location === 'denied' ? (
+            <PermRow icon={MapPin} onClick={explainBlockedLocation}>
+              המיקום חסום — פתח הגדרות
+            </PermRow>
+          ) : (
+            <PermRow icon={Navigation} onClick={askLocation} busy={locBusy}>
+              הפעל מיקום
+            </PermRow>
           )}
 
           {/* ── Community — only the links that were really configured ── */}

@@ -4,8 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import VerificationStatusBanner from '@/components/VerificationStatusBanner';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
-import SocialConnectBanner from '@/components/SocialConnectBanner';
-import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { isUserVerified } from '@/lib/utils';
 
 const ROTATE_MS = 5000;
 const MAX_AUTO_ROTATIONS = 2; // auto-rotate twice, then manual-only (swipe / dots)
@@ -26,19 +25,21 @@ export default function HomeBannersCarousel({ me: meProp }) {
   const touchStartX = useRef(null);
 
   const showVerify = !!(me && !isUserVerified(me));
-  const showSocial = !!(me && isUserVerified(me) && !hasSocialVerified(me));
   const showProfile = !!(me && !(me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0));
 
+  // The gold-check (social connect) banner is NOT here: it is a profile-level
+  // offer, and it lives on the Profile screen with the rest of the social links.
+  // On the feed it was one more coloured block above the tasks, competing with
+  // the thing the screen is for.
   const items = [];
   if (showVerify) items.push({ key: 'verify', node: <VerificationStatusBanner key="verify" me={me} /> });
-  if (showSocial) items.push({ key: 'social', node: <SocialConnectBanner key="social" me={me} /> });
   if (showProfile) items.push({ key: 'profile', node: <ProfileCompletionBanner key="profile" me={me} /> });
 
   const count = items.length;
   const safeIdx = Math.min(idx, Math.max(count - 1, 0));
 
   // Reset paging when the set of visible banners changes
-  useEffect(() => { setIdx(0); setAutoRotations(0); }, [showVerify, showSocial, showProfile]);
+  useEffect(() => { setIdx(0); setAutoRotations(0); }, [showVerify, showProfile]);
 
   // Auto-rotate up to MAX_AUTO_ROTATIONS times, then stop (manual only)
   useEffect(() => {
