@@ -159,26 +159,30 @@ export default function EmptyFeedState({ onEnableLocation, onPickCity }) {
           המשימות הבאות יופיעו בקרוב
         </p>
 
+        {/* ── ONE SENTENCE, AND IT DEPENDS ON THE TRUTH ────────────────────
+            This line used to ask for notifications no matter what, directly
+            above a box that confirmed they were already on — the screen
+            contradicted itself. When they are on, the line stops asking and
+            simply says what happens next. */}
         <p style={{
           fontSize: 13, color: 'var(--text-3)', margin: '0 0 22px',
           textAlign: 'center', lineHeight: 1.6, maxWidth: 280,
         }}>
-          הפעילו התראות ונדאג לעדכן אתכם כשיתפרסמו משימות חדשות
+          {notificationsOn
+            ? 'אין כרגע משימות זמינות. נעדכן אתכם כשיתפרסמו משימות חדשות.'
+            : 'הפעילו התראות ונדאג לעדכן אתכם כשיתפרסמו משימות חדשות'}
         </p>
 
         <div style={{ width: '100%', maxWidth: 330, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* ── Notifications ── */}
           {notificationsOn ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'var(--color-success-bg)',
-              border: '1px solid var(--color-success-border)',
-              borderRadius: 14, padding: '11px 14px',
-            }}>
-              <Check size={16} color="var(--color-success)" strokeWidth={2.6} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-success)', lineHeight: 1.45 }}>
-                ההתראות פעילות! נעדכן אתכם כשיתפרסמו משימות חדשות
+            /* A STATUS, NOT A BUTTON: a framed green card read almost like the
+               screen's primary action while carrying one word of information. */
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '2px 0' }}>
+              <Check size={14} color="var(--color-success)" strokeWidth={2.8} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--color-success)' }}>
+                ההתראות פעילות — נעדכן אתכם!
               </span>
             </div>
           ) : push === 'denied' ? (
@@ -214,44 +218,25 @@ export default function EmptyFeedState({ onEnableLocation, onPickCity }) {
             </button>
           )}
 
-          {/* ── Location — only while it is not already granted ── */}
+          {/* ── Location — a quiet extra, and only while it would help ──────
+              Absent the moment the location is on: there is nothing left to
+              switch on, so a line about it would be one more thing to read for
+              no reason. While it is off it stays a small secondary pill under
+              the notifications area — a suggestion, never a second main action. */}
           {location !== 'granted' && (
-            <>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               {location === 'denied' ? (
-                <button
-                  type="button"
-                  onClick={onPickCity}
-                  style={{
-                    width: '100%', height: 46, borderRadius: 14,
-                    background: 'var(--surface-2)', border: '1px solid var(--border-1)',
-                    color: 'var(--text-2)', fontWeight: 700, fontSize: 13.5, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}
-                >
-                  <MapPin size={15} strokeWidth={2.2} />
-                  המיקום חסום — בחרו עיר
-                </button>
+                <Pill type="button" onClick={onPickCity}>
+                  <MapPin size={13} strokeWidth={2.2} />
+                  בחרו עיר
+                </Pill>
               ) : (
-                <button
-                  type="button"
-                  onClick={askLocation}
-                  disabled={locBusy}
-                  style={{
-                    width: '100%', height: 46, borderRadius: 14,
-                    background: 'var(--surface-2)', border: '1px solid var(--border-1)',
-                    color: 'var(--text-2)', fontWeight: 700, fontSize: 13.5,
-                    cursor: locBusy ? 'wait' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}
-                >
-                  {locBusy ? <Loader2 size={15} className="animate-spin" /> : <Navigation size={15} strokeWidth={2.2} />}
+                <Pill type="button" onClick={askLocation} disabled={locBusy}>
+                  {locBusy ? <Loader2 size={13} className="animate-spin" /> : <Navigation size={13} strokeWidth={2.2} />}
                   הפעילו מיקום
-                </button>
+                </Pill>
               )}
-              <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>
-                המיקום משמש רק כדי להציג משימות באזור שלכם, בזמן השימוש באפליקציה.
-              </div>
-            </>
+            </div>
           )}
 
           {/* ── Community — only the links that were really configured ── */}

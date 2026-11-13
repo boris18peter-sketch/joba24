@@ -42,6 +42,9 @@ import TaskChatInterface from '@/components/TaskChatInterface';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { isTaskFormFieldOn, taskFormSectionOrder, TASK_FORM_SECTIONS } from '@/lib/taskFormFields';
 import PublishWizardNav from '@/components/publish/PublishWizardNav';
+import SectionCard from '@/components/publish/SectionCard';
+import PublishRequirementsCard from '@/components/publish/PublishRequirementsCard';
+import PublishStoryCard from '@/components/publish/PublishStoryCard';
 import PublishStepIntro from '@/components/publish/PublishStepIntro';
 import PublishHelpVideo from '@/components/publish/PublishHelpVideo';
 import { showPermissionPopup } from '@/lib/permissionPopup';
@@ -107,13 +110,6 @@ function MediaUploader(props) {
   return <PublishMediaUploader {...props} />;
 }
 
-function SectionCard({ children }) {
-  return (
-    <div style={{ background: 'var(--card-bg)', borderRadius: 20, padding: '18px 16px', border: '1px solid var(--border-1)', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
-      {children}
-    </div>
-  );
-}
 
 const DEFAULT_FORM = {
   title: '',
@@ -934,16 +930,26 @@ export default function CreateTask() {
     // Prompting earlier is a dead end — they sign in and still cannot publish —
     // so every required field is checked first, and while one is missing the
     // user is scrolled straight to it instead of being sent to the login popup.
-    if (categoriesLoading) return;
+    // ── A PRESS ALWAYS ANSWERS ──────────────────────────────────────────────
+    // This was `if (categoriesLoading) return;` — the publisher pressed publish,
+    // nothing happened, and nothing on screen said why. That silent return is
+    // exactly what "the button does not react" looks like.
+    if (categoriesLoading) {
+      toast.error('רגע, רשימת השירותים עוד נטענת — נסו שוב בעוד שנייה');
+      return;
+    }
     setPublishError('');
     // The description may have just moved the service. Settle it now and stop:
     // the checks below read the service's own questions, so running them against
     // a choice that is being replaced would report a field that no longer exists.
     if (serviceSync.sync()) {
       fieldRefs.categoryPicker.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      toast.info('השירות עודכן לפי מה שכתבת — בדקו ואשרו, ואז נסו לפרסם שוב');
       return;
     }
-    if (!form.category || (!isEditMode && !brandCategories.some(c => c.value === form.category))) {
+    // An EMPTY catalogue is "not loaded yet", never "nothing is offered": blocking
+    // on it left the publish button looking enabled and swallowing every press.
+    if (!form.category || (brandCategories.length > 0 && !isEditMode && !brandCategories.some(c => c.value === form.category))) {
       // Nothing filled in yet? The service choice IS the missing field, so that
       // is where the user is taken — never a toast they might not even see.
       setShowErrorBanner(true);
@@ -976,13 +982,28 @@ export default function CreateTask() {
       setShowLoginPrompt(true);
       return;
     }
-    doSubmit();
+    // A stray exception anywhere inside the submit would have left
+    // `submittingRef` set, and EVERY later press returned silently at the top of
+    // doSubmit — a publish button that is dead until the app is reloaded. The
+    // refusal is caught here, the lock is released, and the publisher is told.
+    Promise.resolve(doSubmit()).catch(() => {
+      submittingRef.current = false;
+      setLoading(false);
+      setPublishError(t('ct_publish_err'));
+      setShowErrorBanner(true);
+      toast.error(t('ct_publish_err'));
+    });
   };
 
   const doSubmit = async () => {
     if (submittingRef.current) return;
-    if (categoriesLoading || (!isEditMode && !brandCategories.some(c => c.value === form.category))) {
-      toast.error('יש לבחור שירות זמין במותג'); return;
+    // A catalogue that is still loading (or offers nothing at all) must never be
+    // what stops a finished task — the server resolves the category itself.
+    if (categoriesLoading || (brandCategories.length > 0 && !isEditMode && !brandCategories.some(c => c.value === form.category))) {
+      toast.error(categoriesLoading
+        ? 'רגע, רשימת השירותים עוד נטענת — נסו שוב בעוד שנייה'
+        : 'יש לבחור שירות זמין במותג');
+      return;
     }
     const formError = globalFormError(formFieldsFor(form.category), categoryDetails);
     if (formError) {
@@ -1895,48 +1916,17 @@ export default function CreateTask() {
         </>))}
 
         {/* Story — only when creating new task */}
-        {void (sections.story = (<>
-        {!isEditMode && fieldOn('story') && <div
-          onClick={() => {
-            if (!form.is_story) {
-              // Trying to enable — check credits
-              const currentCredits = me?.worker_credits ?? 0;
-              if (currentCredits < 10) {
-                setShowNoCreditsModal(true);
-                return;
-              }
-            }
-            set('is_story', !form.is_story);
-          }}
-          style={{
-            background: form.is_story ? 'linear-gradient(135deg,#fdf4ff,#f3e8ff)' : 'var(--card-bg)',
-            border: `2px solid ${form.is_story ? '#a855f7' : 'var(--border-1)'}`,
-            borderRadius: 20, padding: '16px', cursor: 'pointer',
-            boxShadow: form.is_story ? '0 4px 20px rgba(168,85,247,0.2)' : '0 2px 12px rgba(26,111,212,0.06)',
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.is_story ? '#a855f7' : '#cbd5e1'}`, background: form.is_story ? '#a855f7' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {form.is_story && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 11 }}>✓</span>}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: form.is_story ? '#7e22ce' : '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={15} color="#a855f7" /> {t('ct_story')}
-                <span style={{ fontSize: 10, fontWeight: 800, background: '#f59e0b', color: 'var(--brand-btn-primary-text, white)', padding: '2px 7px', borderRadius: 20, marginRight: 4 }}>{t('ct_recommended')}</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : 'var(--surface-3)', borderRadius: 12, padding: '10px 12px' }}>
-            <Zap size={18} color="#a855f7" />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : 'var(--text-1)' }}>{t('ct_story_3x')}</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{t('ct_story_help')}</div>
-            </div>
-          </div>
-        </div>}
-
-        </>))}
+        {void (sections.story = (
+          !isEditMode && fieldOn('story') ? (
+            <PublishStoryCard
+              isStory={form.is_story}
+              credits={me?.worker_credits ?? 0}
+              onNeedCredits={() => setShowNoCreditsModal(true)}
+              onToggle={() => set('is_story', !form.is_story)}
+              t={t}
+            />
+          ) : null
+        ))}
 
         {/* Location */}
         {void (sections.location_name = (<>
@@ -2015,81 +2005,20 @@ export default function CreateTask() {
         {/* Worker Pool Scanner banners removed */}
 
         {/* Requirements */}
-        {void (sections.requirements = (<>
-        {fieldOn('requirements') && (
-        <SectionCard>
-          <button type="button" onClick={() => setShowRequirements(v => !v)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showRequirements ? 14 : 0 }}>
-            <div>
-              <Label className="text-sm font-bold flex items-center gap-1" style={{ color: 'var(--text-1)', cursor: 'pointer', margin: 0 }}>
-                <CheckSquare size={14} /> {t('ct_extra_req')}
-              </Label>
-              <div style={{ fontSize: 11, color: '#f97316', fontWeight: 600, marginTop: 2 }}>{t('ct_req_warn')}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0) + (form.requires_invoice ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', borderRadius: 20, padding: '2px 8px', border: '1px solid var(--border-2)' }}>{t('ct_selected', { count })}</span> : <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('ct_click_add')}</span>; })()}
-              {showRequirements ? <ChevronUp size={16} color="var(--text-2)" /> : <ChevronDown size={16} color="var(--text-2)" />}
-            </div>
-          </button>
-          {showRequirements && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Invoice — always first */}
-              <button type="button" onClick={() => set('requires_invoice', !form.requires_invoice)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: form.requires_invoice ? '#faf5ff' : 'var(--surface-3)', border: `1.5px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-                  background: form.requires_invoice ? '#7c3aed18' : 'var(--input-bg)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: `1.5px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`,
-                }}>
-                  <FileText size={18} color={form.requires_invoice ? '#7c3aed' : 'var(--text-3)'} />
-                </div>
-                <div style={{ flex: 1, textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: form.requires_invoice ? '#7c3aed' : 'var(--text-1)' }}>{t('ct_invoice')}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>{t('ct_invoice_help')}</div>
-                </div>
-                <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.requires_invoice ? '#7c3aed' : 'var(--border-1)'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {form.requires_invoice && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 11 }}>✓</span>}
-                </div>
-              </button>
-              {getRequirementCategories(form.category, t).map(cat => (
-                <div key={cat.label}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                    {cat.items.map(({ key, label }) => {
-                      const isSuggested = getSuggestedExtras(form.category).includes(key);
-                      const isActive = !!form.requirements[key];
-                      return (
-                        <button key={key} onClick={() => setReq(key, !form.requirements[key])}
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', position: 'relative',
-                            background: isActive ? 'rgba(59,130,246,0.08)' : isSuggested ? '#fffbeb' : 'var(--surface-3)',
-                            border: `1px solid ${isActive ? 'var(--border-2)' : isSuggested ? '#fde68a' : 'var(--border-1)'}`,
-                            transition: 'all 0.15s' }}>
-                          <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${isActive ? 'var(--brand-primary)' : isSuggested ? '#f59e0b' : 'var(--border-1)'}`, background: isActive ? 'var(--brand-primary)' : isSuggested ? '#fffbeb' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {isActive && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 9, lineHeight: 1 }}>✓</span>}
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: isSuggested ? 700 : 600, color: isActive ? 'var(--brand-primary-dark)' : isSuggested ? '#92400e' : 'var(--text-2)' }}>{label}</span>
-                          {isSuggested && !isActive && (
-                            <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'var(--brand-btn-primary-text, white)', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>{t('ct_recommended')}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}>{t('ct_custom_req')}</div>
-                <input type="text" placeholder={t('ct_custom_req_ph')}
-                  value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
-              </div>
-            </div>
-          )}
-        </SectionCard>
-        )}
-
-        </>))}
+        {void (sections.requirements = (
+          fieldOn('requirements') ? (
+            <PublishRequirementsCard
+              requirements={form.requirements}
+              requiresInvoice={form.requires_invoice}
+              onToggleInvoice={() => set('requires_invoice', !form.requires_invoice)}
+              onToggleRequirement={(key) => setReq(key, !form.requirements[key])}
+              onSetCustom={(value) => setReq('custom', value)}
+              categories={getRequirementCategories(form.category, t)}
+              suggested={getSuggestedExtras(form.category)}
+              t={t}
+            />
+          ) : null
+        ))}
 
         {/* Verification Requirement */}
         {void (sections.verification = (<>
@@ -2439,7 +2368,12 @@ export default function CreateTask() {
               )}
               <button
                 onClick={handleSubmit}
-                disabled={loading || !!checkingModeration || categoriesLoading || (!isEditMode && !brandCategories.length)}
+                // ONLY a publish in flight disables this button. A disabled button
+                // that looks exactly like an enabled one is the worst failure this
+                // form can have: the press does nothing and nothing explains why.
+                // Every other blocker now ANSWERS — a banner, a toast, or a jump
+                // to the field that still needs an answer.
+                disabled={loading}
                 className="btn-tap"
                 style={{
                   flex: 1, minWidth: 0, height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
