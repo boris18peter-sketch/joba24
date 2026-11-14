@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
 
     // ── Email to worker (retained — only NotificationConfig.send_email controls email via manager) ──
     if (worker?.email) {
-      const workerName = worker.full_name || 'עובד';
+      const workerName = worker.display_name || worker.full_name || 'עובד';
       await base44.integrations.Core.SendEmail({
         to: worker.email,
         template_name: 'TaskCompletedWorker',
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     // ── Email to client ──
     if (client?.email) {
-      const clientName = client.full_name || 'לקוח';
+      const clientName = client.display_name || client.full_name || 'לקוח';
       const workerName = worker?.full_name || 'העובד';
       await base44.integrations.Core.SendEmail({
         to: client.email,

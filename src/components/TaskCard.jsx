@@ -426,6 +426,19 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     }
   }
 
+  // ── "היש חשבונית" — SO THE HISTORY CAN BE SCANNED ───────────────────────
+  // The invoice lives INSIDE the task (`invoice_html`), so finding the jobs that
+  // have one meant opening them one by one. The tag says it on the card. It is
+  // UNSHIFTED so the two-tag limit can never cut it: it is the fact the publisher
+  // opened the list to find.
+  if (task.invoice_html) {
+    headerTags.unshift(
+      <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20, background: 'var(--color-success-bg)', color: 'var(--color-success)', border: '1px solid var(--color-success-border)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+        🧾 {t('invoice_tag')}
+      </span>
+    );
+  }
+
   return (
     <>
       <div

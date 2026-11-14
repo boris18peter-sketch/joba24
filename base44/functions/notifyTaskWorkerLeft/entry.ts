@@ -63,6 +63,9 @@ Deno.serve(async (req) => {
         worker_name: workerName,
         task_title: data.title || '',
         task_id: data.id || event?.entity_id || '',
+        // The id is what lets the manager show the CURRENT name instead of the
+        // copy frozen on the task when this worker was approved.
+        worker_id: old_data?.worker_id || data?.worker_id || '',
       },
     });
 

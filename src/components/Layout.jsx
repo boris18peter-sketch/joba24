@@ -390,6 +390,16 @@ export default function Layout() {
   // per task instead of on every trigger.
   const reviewedRef = useRef(new Set());
 
+  // ── A CLOSING NOTE BELONGS ONLY TO A COMPLETION THAT JUST HAPPENED ───────
+  // ONE rule, asked by every path that can raise the note. It used to live only
+  // inside showCongrats — so the path that raises the note after a RATING (the
+  // one a task opened from the history takes) skipped it entirely, and rating an
+  // old job closed with "the job is done!" about work that ended days earlier.
+  const isRecentCompletion = useCallback((task) => {
+    const completedAt = new Date(task?.completed_at || task?.updated_date || 0).getTime();
+    return Number.isFinite(completedAt) && Date.now() - completedAt <= CLOSING_NOTE_WINDOW_MS;
+  }, []);
+
 
   // ── THE CLOSING NOTE STANDS ON ITS OWN ────────────────────────────────────
   // It used to be handed over by the rating's own onClose, so a completion the
@@ -407,8 +417,7 @@ export default function Layout() {
     // queued, for a moment that is long gone. An old finished task may still
     // ask for its RATING (once), and nothing else: no closing notes attached to
     // it, ever again.
-    const completedAt = new Date(task.completed_at || task.updated_date || 0).getTime();
-    if (!Number.isFinite(completedAt) || Date.now() - completedAt > CLOSING_NOTE_WINDOW_MS) return;
+    if (!isRecentCompletion(task)) return;
     // The note never lands on top of its own ask.
     if (ratingPendingRef.current.has(task.id)) return;
     // Asked at most once per task per user, and marked NOW — at show time — so a
@@ -426,7 +435,7 @@ export default function Layout() {
     // hook's own answer, so a user with no bonus waits one quick read, not 3.5s.
     expectBonus();
     setPendingCongrats({ task, role: me.id === task.worker_id ? 'worker' : 'client' });
-  }, [me?.id, sheetTaskId, closeTaskSheet]);
+  }, [me?.id, sheetTaskId, closeTaskSheet, isRecentCompletion]);
 
   // ── THE NOTE TAKES ITS TURN, LAST ─────────────────────────────────────────
   // One order, always: the rating, then the bonus that rating released (if there
@@ -1016,10 +1025,21 @@ export default function Layout() {
           // moment the rating is behind the user. What comes next (the bonus it
           // earned, then the note) is queued behind that release.
           setPopupBlock('rating', false);
-          setPendingCongrats({
-            task: ratingTask,
-            role: me.id === ratingTask.worker_id ? 'worker' : 'client',
-          });
+          // ── ONLY A COMPLETION THAT JUST HAPPENED GETS ITS THANK-YOU ───────
+          // This is the path a rating given from the HISTORY takes: the ask is
+          // raised for a finished task whenever it is opened, and this used to
+          // queue the closing note unconditionally — so rating a job that closed
+          // last week was followed immediately by "the job is done!". The ask is
+          // right at any time; the celebration is not. The note follows the same
+          // freshness rule every other raise site already used.
+          if (isRecentCompletion(ratingTask)) {
+            setPendingCongrats({
+              task: ratingTask,
+              role: me.id === ratingTask.worker_id ? 'worker' : 'client',
+            });
+          } else {
+            setPendingCongrats(null);
+          }
           setRatingTask(null);
         }} />,
         document.body

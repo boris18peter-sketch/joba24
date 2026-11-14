@@ -170,6 +170,7 @@ export const he = {
     high_pay_tag: 'שכר גבוה',
     funded_tag: 'ממומן',
     nearby_tag: 'קרוב אליך',
+    invoice_tag: 'יש חשבונית',
     delete_task: 'מחק משימה',
     scanning_texts: ['מאותת לעובדים', 'סורק עובדים', 'מחפש התאמות', 'מגביר חשיפה', 'מפיץ את המשימה', 'מרחיב חשיפה'],
     task_exposed: 'המשימה נחשפת לעובדים באזור',

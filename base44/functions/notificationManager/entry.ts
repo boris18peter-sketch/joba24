@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { isServiceRoleCall, forbidden } from '../../shared/internalAuth.ts';
 import { validRecordIds } from '../../shared/recordIds.ts';
+import { withLiveNotificationNames } from '../../shared/userDisplayNames.ts';
 
 /**
  * ── NotificationManager ──────────────────────────────────────────────────
@@ -375,11 +376,22 @@ Deno.serve(async (req) => {
       return forbidden();
     }
 
-    const { event_key, user_ids, variables = {}, task_id, occurrence_key, force = false } = await req.json();
+    const { event_key, user_ids, variables: rawVariables = {}, task_id, occurrence_key, force = false } = await req.json();
 
     if (!event_key || !user_ids || !user_ids.length) {
       return Response.json({ error: 'Missing event_key or user_ids' }, { status: 400 });
     }
+
+    // ── THE NAME IN THE TEXT IS THE PERSON'S CURRENT ONE ────────────────────
+    // Every trigger sends the counterpart's name as a COPY frozen on the record
+    // it fired for, so a person who renamed themselves kept being announced under
+    // their old name ("hello הגיש בקשה" long after hello became ליאם). The id is
+    // the only stable part of that, so when a trigger sends one, the name is
+    // resolved from the User record HERE — once, for every channel this function
+    // feeds (push, in-app popup, email). A trigger that sends no id, or an id
+    // that no longer resolves, keeps the stored copy, so a notification can never
+    // go out with a blank name.
+    const variables = await withLiveNotificationNames(base44, rawVariables);
 
     // 1. שליפת קונפיג מהדאטהבייס
     const configs = await base44.asServiceRole.entities.NotificationConfig.filter({ event_key });

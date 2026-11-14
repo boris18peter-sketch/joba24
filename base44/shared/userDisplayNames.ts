@@ -45,6 +45,26 @@ export async function resolveLiveNames(base44: any, ids: string[], limit = MAX_I
 }
 
 /**
+ * A notification's own variables, with the counterpart's name replaced by the
+ * person's CURRENT one.
+ *
+ * A trigger passes `worker_name` / `client_name` as a copy frozen on the task or
+ * application it fired for, which is why a notification kept announcing somebody
+ * under the name they had months ago. When the trigger also supplies the id, the
+ * name is resolved from the User record and wins. No id, or an id that does not
+ * resolve, keeps the stored copy — a notification is never sent with a blank
+ * name.
+ */
+export async function withLiveNotificationNames(base44: any, variables: Record<string, any>) {
+  const vars = variables || {};
+  const names = await resolveLiveNames(base44, [vars.worker_id, vars.client_id]);
+  const out = { ...vars };
+  if (vars.worker_id && names[vars.worker_id]) out.worker_name = names[vars.worker_id];
+  if (vars.client_id && names[vars.client_id]) out.client_name = names[vars.client_id];
+  return out;
+}
+
+/**
  * The task, with every name it carries replaced by the person's current one.
  *
  * Purely a presentation fix: ids, statuses, prices and every rule that decides

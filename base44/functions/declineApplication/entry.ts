@@ -116,6 +116,8 @@ Deno.serve(async (req) => {
           task_title: task.title || '',
           task_id: taskId,
           worker_name: app.worker_name || '',
+          // Resolved to the person's current name by notificationManager.
+          worker_id: app.worker_id || '',
           credits: creditsToRefund,
           credits_line: creditsToRefund > 0
             ? ` — ${creditsToRefund} ג׳ובות הוחזרו לחשבונך`
