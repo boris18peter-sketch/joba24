@@ -403,12 +403,17 @@
           "$and": [
             {
               "data.origin_brand_id": {
-                "$in": "{{user.data.brand_ids}}"
+                "$exists": true
               }
             },
             {
               "data.origin_brand_id": {
                 "$ne": null
+              }
+            },
+            {
+              "data.origin_brand_id": {
+                "$in": "{{user.data.brand_ids}}"
               }
             }
           ]
