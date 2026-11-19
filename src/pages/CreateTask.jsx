@@ -50,7 +50,7 @@ import PublishHelpVideo from '@/components/publish/PublishHelpVideo';
 import { showPermissionPopup } from '@/lib/permissionPopup';
 import PublishMediaUploader from '@/components/publish/PublishMediaUploader';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
-import { checkGibberish, checkCategoryDescriptionMatch } from '@/lib/taskTextChecks';
+import { checkGibberish } from '@/lib/taskTextChecks';
 import useServiceSync from '@/hooks/useServiceSync';
 import { bestServiceForText } from '@/lib/descriptionCategoryMatch';
 import PublishIssueBanner from '@/components/publish/PublishIssueBanner';
@@ -1668,13 +1668,6 @@ export default function CreateTask() {
           </div>
         </SectionCard>
 
-        {/* Category mismatch warning — shown right below category picker */}
-        {moderationErrors.categoryMismatch && (
-          <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 14, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <AlertTriangle size={15} color="#f97316" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 13, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>{moderationErrors.categoryMismatch}</p>
-          </div>
-        )}
         </div>
         )}
 
@@ -1731,7 +1724,7 @@ export default function CreateTask() {
               to it are one thing in one frame, with nothing to scroll past. */}
           <div style={{
             borderRadius: 14,
-            border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`,
+            border: `1.5px solid ${errors.description || moderationErrors.description ? '#ef4444' : 'var(--border-1)'}`,
             background: 'var(--input-bg)',
             padding: '10px 12px 8px',
           }}>
@@ -1740,14 +1733,13 @@ export default function CreateTask() {
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {
               checkFieldModeration('description', form.description);
-              // Don't auto-change category from "other" — respect user's explicit choice
-              const mismatch = checkCategoryDescriptionMatch({
-                category: form.category,
-                description: form.description,
-                title: form.title,
-                translate: t,
-              });
-              setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
+              // ── THE SERVICE FOLLOWS THE TEXT, QUIETLY ─────────────────────
+              // When the words clearly describe another OFFERED service, the
+              // service moves to it and the form says so in one calm line.
+              // Nothing is ever flagged here: the old orange "doesn't match"
+              // warning read as a blocker, and publishing a job must never
+              // depend on the publisher and the list agreeing on the same word.
+              serviceSync.sync();
             }}
             style={{ background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', padding: 0, resize: 'none', minHeight: 100 }} rows={4}
           />

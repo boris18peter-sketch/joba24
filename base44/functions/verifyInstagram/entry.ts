@@ -285,12 +285,22 @@ async function verifyInParallel(platform, username, code, base44) {
   return new Promise((resolve) => {
     let remaining = 3;
     let settled = false;
+    let deadline;
 
     const finish = (result) => {
       if (settled) return;
       settled = true;
+      clearTimeout(deadline);
       resolve(result);
     };
+
+    // ── ONE CEILING FOR THE WHOLE SCAN ─────────────────────────────────────
+    // The three methods used to be able to run to ~30s together, which is
+    // exactly the client's own timeout: the app gave up as the server was still
+    // thinking, retried, and the publisher waited twice with no verdict. A
+    // "not found" answered quickly is better than a perfect answer too late —
+    // the bio may simply not have propagated yet, and the retry covers that.
+    deadline = setTimeout(() => finish({ found: false, method: 'timeout' }), 14000);
 
     const checkDone = () => {
       remaining--;

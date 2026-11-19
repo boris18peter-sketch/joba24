@@ -4,6 +4,7 @@ import { calculateTrustScore, getTrustLevel, getCompletedCount, getTrustLevelLab
 import { isUserVerified } from '@/lib/utils';
 import { Star, X, Shield, Briefcase, TrendingUp } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
+import HomeCtaBanner from '@/components/HomeCtaBanner';
 import { useLanguage } from '@/lib/LanguageContext';
 
 // One clean metric row for the trust breakdown.
@@ -43,17 +44,26 @@ function NextStep({ user, completedCount, trustScore, onVerify, color }) {
   const verified = isUserVerified(user);
   const tasksToMax = Math.max(0, 20 - completedCount);
 
-  let step = null;
+  // ── THE UNVERIFIED STEP IS THE APP'S OWN BANNER ────────────────────────────
+  // The same green-check banner the feed and the profile show: same mark, same
+  // copy, same tap target. This sheet used to draw a look-alike card of its own,
+  // so the badge promised here was not the badge the app actually shows.
   if (!verified) {
-    step = {
-      icon: <Shield size={15} color="var(--brand-primary)" />,
-      title: t('tc_verify_identity'),
-      desc: t('tc_verify_desc'),
-      ctaLabel: t('tc_verify_now'),
-      cta: onVerify,
-      color: 'var(--brand-primary)',
-    };
-  } else if (tasksToMax > 0) {
+    return (
+      <div style={{ marginTop: 14 }}>
+        <HomeCtaBanner
+          theme="green"
+          iconType="verify"
+          label={t('tc_verify_identity')}
+          sublabel={t('tc_verify_desc')}
+          onClick={onVerify}
+        />
+      </div>
+    );
+  }
+
+  let step = null;
+  if (tasksToMax > 0) {
     step = {
       icon: <Briefcase size={15} color="#059669" />,
       title: t('tc_do_more_tasks', { n: tasksToMax }),

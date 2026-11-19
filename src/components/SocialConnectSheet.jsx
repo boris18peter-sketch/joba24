@@ -107,10 +107,11 @@ export default function SocialConnectSheet({ user, onClose }) {
     const attempt = async (attemptNum) => {
       setVerifyAttempt(attemptNum);
       try {
-        // 30s timeout — prevents endless loading when scraping methods are slow
+        // 20s — above the server's own 14s scan ceiling, so the answer is
+        // always the server's verdict rather than a client timeout racing it.
         const res = await Promise.race([
           base44.functions.invoke('verifyInstagram', { action: 'verify_code', platform }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 20000)),
         ]);
         if (res.data?.error) {
           toast.error(res.data.error);
@@ -133,8 +134,11 @@ export default function SocialConnectSheet({ user, onClose }) {
     // Attempt 1
     success = await attempt(1);
 
-    // Auto-retry once if not found (bio may need a few seconds to propagate)
+    // Auto-retry once if not found — after a short pause, because the bio needs
+    // a moment to propagate and a second identical request a millisecond later
+    // would only ask the same stale page again.
     if (!success) {
+      await new Promise((r) => setTimeout(r, 2500));
       success = await attempt(2);
     }
 
