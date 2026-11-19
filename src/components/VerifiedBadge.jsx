@@ -1,21 +1,15 @@
+import VerifiedCheckMark from '@/components/VerifiedCheckMark';
+
 /**
- * VerifiedBadge — מוצג ליד שם משתמש מאומת
+ * VerifiedBadge — מוצג ליד שם משתמש מאומת.
+ *
+ * The mark itself now comes from the ONE shared component (VerifiedCheckMark),
+ * so the tick beside a name, the tick on the verification banner and the tick
+ * inside the verification popup are the same drawing at three sizes.
+ *
  * Props:
  *   size: 'sm' | 'md' (default 'sm')
  */
 export default function VerifiedBadge({ size = 'sm' }) {
-  const dim = size === 'md' ? 20 : 15;
-  const font = size === 'md' ? 10 : 8;
-  return (
-    <span title="משתמש מאומת" style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: dim, height: dim, borderRadius: '50%',
-      background: 'linear-gradient(135deg,#16a34a,#059669)',
-      flexShrink: 0,
-    }}>
-      <svg width={dim * 0.58} height={dim * 0.58} viewBox="0 0 10 10" fill="none">
-        <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    </span>
-  );
+  return <VerifiedCheckMark size={size === 'md' ? 20 : 15} />;
 }

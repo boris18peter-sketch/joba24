@@ -7,6 +7,8 @@ import {
   Lock, Clock, ChevronDown, ChevronUp, UserCheck, Star
 } from 'lucide-react';
 import { toast } from 'sonner';
+import VerifiedCheckMark from '@/components/VerifiedCheckMark';
+import PrivateImage from '@/components/PrivateImage';
 
 /**
  * Identity verification (KYC).
@@ -138,8 +140,13 @@ export default function VerifyModal({ onClose, onSuccess }) {
       return;
     }
     setUploadingId(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setIdPhotoUrl(file_url);
+    // ── THE ID PHOTO IS PERSONAL DATA ─────────────────────────────────────
+    // It used to be uploaded to PUBLIC storage, so a national ID card sat at a
+    // permanent, unauthenticated URL that anyone holding the link could open.
+    // It is now stored privately; the record keeps the private uri and the
+    // picture is rendered through a short-lived signed URL.
+    const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+    setIdPhotoUrl(file_uri);
     setUploadingId(false);
     setErrors(prev => ({ ...prev, id_photo: null }));
   };
@@ -246,9 +253,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
                   <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: 'radial-gradient(circle, rgba(22,163,74,0.28) 0%, transparent 70%)' }} />
-                  <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: GREEN_SHADOW }}>
-                    <CheckCircle size={32} color="white" strokeWidth={2.2} />
-                  </div>
+                  {/* The ONE green mark — the same drawing as the badge on the
+                      verification banner, only larger. */}
+                  <VerifiedCheckMark size={56} shadow={GREEN_SHADOW} />
                 </div>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-modal-title, var(--text-1))', letterSpacing: -0.3 }}>אימות זהות</div>
@@ -383,7 +390,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
 
                 {idPhotoUrl ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--color-success-bg)', border: '1.5px solid var(--color-success-border)', borderRadius: 14, padding: '12px 16px' }}>
-                    <img src={idPhotoUrl} alt="ת.ז." style={{ width: 52, height: 36, objectFit: 'cover', borderRadius: 8 }} />
+                    <PrivateImage value={idPhotoUrl} alt="ת.ז." style={{ width: 52, height: 36, objectFit: 'cover', borderRadius: 8 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <CheckCircle size={14} color="var(--color-success)" /> הצילום הועלה
@@ -463,14 +470,8 @@ export default function VerifyModal({ onClose, onSuccess }) {
         ) : (
           /* Step 2: Success */
           <div style={{ padding: '16px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, textAlign: 'center' }}>
-            <div style={{
-              width: 88, height: 88, borderRadius: '50%',
-              background: 'linear-gradient(135deg,#10b981,#059669)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 32px rgba(16,185,129,0.3)',
-              marginBottom: 20,
-            }}>
-              <CheckCircle size={44} color="white" strokeWidth={2} />
+            <div style={{ marginBottom: 20 }}>
+              <VerifiedCheckMark size={88} shadow="0 8px 32px rgba(22,163,74,0.3)" />
             </div>
 
             <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--brand-modal-title, var(--text-1))', marginBottom: 8, letterSpacing: -0.3 }}>

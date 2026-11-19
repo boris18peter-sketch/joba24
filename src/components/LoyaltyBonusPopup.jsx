@@ -151,7 +151,7 @@ export default function LoyaltyBonusPopup({ amount = 0, kind = 'rating', user, o
             disabled={claimed}
             style={{
               width: '100%', height: 52, borderRadius: 14, border: 'none',
-              background: claimed ? '#d1d5db' : THEME.gradient, color: 'white', fontWeight: 800, fontSize: 15,
+              background: claimed ? 'var(--surface-3)' : THEME.gradient, color: claimed ? 'var(--text-3)' : 'white', fontWeight: 800, fontSize: 15,
               cursor: claimed ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: claimed ? 'none' : `0 6px 20px ${THEME.glow}`,
               letterSpacing: 0.2,

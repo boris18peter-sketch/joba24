@@ -13,8 +13,14 @@ const THEME = {
   gradient: 'linear-gradient(160deg, #f59e0b 0%, #d97706 60%, #b45309 100%)',
   glow: 'rgba(217,119,6,0.45)',
   accent: '#f59e0b',
-  soft: '#fffbeb',
-  border: '#fde68a',
+  // ── FROM THE TOKENS, NEVER BAKED IN ─────────────────────────────────────
+  // These two were a literal cream while the perk lines inside them are painted
+  // with `var(--text-1)`. In dark mode that token turns near-white, so the
+  // checklist stayed white on cream that never changed — the text was simply
+  // invisible. The warning tokens flip with the scheme, so the box and its ink
+  // always move together.
+  soft: 'var(--color-warning-bg)',
+  border: 'var(--color-warning-border)',
   badgeBg: 'linear-gradient(135deg, #fbbf24, #d97706)',
 };
 
@@ -169,7 +175,7 @@ export default function SignupGiftModal({ onClose }) {
           {/* Perks — same container style as verification popup */}
           <div style={{ background: THEME.soft, border: `1px solid ${THEME.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 22 }}>
             {PERKS.map((perk, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < PERKS.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < PERKS.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
                 <div style={{ width: 26, height: 26, borderRadius: 8, background: THEME.badgeBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <CheckCircle2 size={15} color="white" strokeWidth={2.4} />
                 </div>

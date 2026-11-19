@@ -86,7 +86,7 @@ export default function SocialLinksSection({ user }) {
                         style={{ height: 28, padding: '0 12px', borderRadius: 8, background: '#dc2626', border: 'none', color: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                         {loading ? <Loader2 size={11} className="animate-spin" /> : t('sl_yes')}
                       </button>
-                      <button onClick={() => setConfirmDisconnect(null)} style={{ height: 28, width: 28, borderRadius: 8, background: 'white', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>×</button>
+                      <button onClick={() => setConfirmDisconnect(null)} style={{ height: 28, width: 28, borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>×</button>
                     </div>
                   </div>
                 );

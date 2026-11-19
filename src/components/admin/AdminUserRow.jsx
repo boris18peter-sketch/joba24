@@ -89,7 +89,7 @@ export function SendCreditsModal({ user, onClose, onSave }) {
           <Coins size={18} color="#d97706" /> שליחת ג'ובות
         </div>
         <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>{user.full_name} · {user.email}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 16, padding: '8px 10px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 16, padding: '8px 10px', background: 'var(--color-warning-bg)', borderRadius: 10, border: '1px solid var(--color-warning-border)' }}>
           יתרה נוכחית: <strong style={{ color: '#d97706' }}>{user.worker_credits ?? 0}</strong> ג'ובות
         </div>
         <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>כמות ג'ובות (חיובי להוספה, שלילי להפחתה)</label>

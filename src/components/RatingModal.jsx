@@ -136,7 +136,7 @@ export default function RatingModal({ task, me, onClose }) {
         }}
       >
         {/* Handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 20px' }} />
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -157,7 +157,7 @@ export default function RatingModal({ task, me, onClose }) {
           {[1,2,3,4,5].map(s => (
             <button key={s} onClick={() => setRating(s)} onMouseEnter={() => setHovered(s)} onMouseLeave={() => setHovered(0)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, transform: (hovered || rating) >= s ? 'scale(1.18)' : 'scale(1)', transition: 'transform 0.1s' }}>
-              <Star size={38} color={(hovered || rating) >= s ? '#fbbf24' : '#e2e8f0'} fill={(hovered || rating) >= s ? '#fbbf24' : '#e2e8f0'} />
+              <Star size={38} color={(hovered || rating) >= s ? '#fbbf24' : 'var(--border-2)'} fill={(hovered || rating) >= s ? '#fbbf24' : 'var(--border-2)'} />
             </button>
           ))}
         </div>

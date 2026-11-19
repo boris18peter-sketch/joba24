@@ -6,6 +6,7 @@ import { Loader2, Ban, CheckCircle2, RefreshCw, Shield, Instagram, Facebook, Mus
 import { toast } from 'sonner';
 import GoldBadge from '@/components/GoldBadge';
 import CopyableId from '@/components/CopyableId';
+import PrivateImage from '@/components/PrivateImage';
 import { hasSocialVerified } from '@/lib/utils';
 
 function KycButtons({ user, kycStatus }) {
@@ -190,11 +191,13 @@ export default function AdminKycTab({ kycUsers, pendingKyc, onOpenLightbox, refe
                     📷 צילום תעודת זהות
                     <span style={{ fontSize: 9, color: '#1a6fd4', fontWeight: 700 }}>(לחץ להגדלה)</span>
                   </div>
-                  <img
-                    src={user.id_photo_url}
+                  {/* Stored privately: the picture is signed on demand, so the
+                      ID photo is never reachable without a granted session. */}
+                  <PrivateImage
+                    value={user.id_photo_url}
                     alt="ת.ז."
-                    onClick={(e) => { e.stopPropagation(); onOpenLightbox({ url: user.id_photo_url, name: user.full_name }); }}
-                    style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff', cursor: 'pointer' }}
+                    onClick={(url) => url && onOpenLightbox({ url, name: user.full_name })}
+                    style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: 'var(--surface-3)', cursor: 'pointer' }}
                   />
                 </div>
               )}

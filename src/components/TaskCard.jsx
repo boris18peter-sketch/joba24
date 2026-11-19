@@ -419,7 +419,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       : null;
     if (softLabel) {
       headerTags.push(
-        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: 'var(--text-2)', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', whiteSpace: 'nowrap' }}>
           {softLabel}
         </span>
       );

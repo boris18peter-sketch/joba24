@@ -1,5 +1,6 @@
 import { useLanguage } from '@/lib/LanguageContext';
 import GoldCheckBadge from '@/components/GoldCheckBadge';
+import VerifiedCheckMark from '@/components/VerifiedCheckMark';
 
 /**
  * HomeCtaBanner — the one call-to-action card used across the feed AND the
@@ -25,17 +26,6 @@ const THEMES = {
   blue:  { tint: 'var(--brand-primary-light)', color: 'var(--brand-primary)' },
 };
 
-const BADGE_GRADIENTS = {
-  green: 'linear-gradient(135deg,#16a34a,#059669)',
-  gold:  'linear-gradient(135deg,#fbbf24,#d97706)',
-};
-
-const CheckSvg = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 10 10" fill="none">
-    <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 function BannerIcon({ iconType, icon: Icon, theme }) {
   const t = THEMES[theme] || THEMES.green;
   // The gold mark is the SHARED component — the connect sheet draws the same
@@ -49,15 +39,9 @@ function BannerIcon({ iconType, icon: Icon, theme }) {
       flexShrink: 0,
     }}>
       {iconType === 'social' && <GoldCheckBadge size={28} />}
-      {iconType === 'verify' && (
-        <div style={{
-          width: 26, height: 26, borderRadius: '50%',
-          background: BADGE_GRADIENTS.green,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <CheckSvg size={15} />
-        </div>
-      )}
+      {/* The SAME mark the verification popup shows — one shared component, so
+          the badge promised here is literally the badge the user receives. */}
+      {iconType === 'verify' && <VerifiedCheckMark size={26} />}
       {!iconType && Icon && <Icon size={20} color={t.color} strokeWidth={2} />}
     </div>
   );
