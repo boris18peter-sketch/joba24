@@ -79,6 +79,21 @@ function localCheck(text) {
   return HE_REGEX.some((r) => r.test(text)) || EN_REGEX.some((r) => r.test(text));
 }
 
+// ── A CHECK MUST NEVER HOLD UP THE PUBLISH BUTTON ──────────────────────────
+// The moderation call runs on the critical path of publishing. A request that
+// neither answered nor failed left the button spinning on "מפרסם…" for ever,
+// with nothing the publisher could do. A slow check is not a verdict: after
+// this window it is treated as "not flagged" and publishing continues.
+const MODERATION_TIMEOUT_MS = 6000;
+
+function withTimeout(promise, ms = MODERATION_TIMEOUT_MS) {
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve({ flagged: false, timed_out: true }), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 export async function moderateText(text) {
   if (!text || text.trim().length < 1) return { flagged: false };
 
@@ -90,7 +105,7 @@ export async function moderateText(text) {
   // 2. LLM check for context-based violations
   if (text.trim().length < 3) return { flagged: false };
   try {
-    const res = await base44.functions.invoke('moderateContent', { text });
+    const res = await withTimeout(base44.functions.invoke('moderateContent', { text }));
     return res.data || { flagged: false };
   } catch {
     return { flagged: false };
@@ -100,7 +115,7 @@ export async function moderateText(text) {
 export async function moderateImage(imageUrl) {
   if (!imageUrl) return { flagged: false };
   try {
-    const res = await base44.functions.invoke('moderateContent', { imageUrl });
+    const res = await withTimeout(base44.functions.invoke('moderateContent', { imageUrl }));
     return res.data || { flagged: false };
   } catch {
     return { flagged: false };
