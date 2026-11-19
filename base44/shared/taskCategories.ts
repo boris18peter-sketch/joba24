@@ -86,7 +86,10 @@ export function normalizeTaskCategory(task, map) {
 export function validateGlobalForm(row, values = {}) {
   for (const field of (row.fields || []).filter(f => f.enabled !== false)) {
     const value = values[field.key], empty = value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length);
-    if (field.required && empty) return `יש למלא: ${field.label || field.key}`;
+    // The client no longer blocks on a missing category answer (see
+    // globalFormError), so the server must agree: a question the publisher left
+    // blank is not a reason to refuse a task that is otherwise complete. A value
+    // that WAS given is still validated below.
     if (empty) continue;
     const rule = field.validation || {};
     if (field.type === 'number' && (!Number.isFinite(Number(value)) || (rule.min !== undefined && Number(value) < rule.min) || (rule.max !== undefined && Number(value) > rule.max))) return `ערך לא תקין: ${field.label || field.key}`;

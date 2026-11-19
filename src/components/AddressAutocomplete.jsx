@@ -17,6 +17,42 @@ function saveRecent(addr) {
   } catch { return loadRecent(); }
 }
 
+// ── A PLACE NAME, NEVER AN ADMINISTRATIVE PREFIX ─────────────────────────────
+// Nominatim answers a city with its whole administrative stack — "הרצליה, נפת
+// תל אביב, מחוז תל אביב" — and this field used to print the first three parts of
+// that. Typing a city and getting "נפת …" back reads like the app answered a
+// different question, and a district is not a place anyone navigates to. Only
+// real place names are ever shown, and district / province parts are dropped.
+const isAdminPart = (s) =>
+  /^(נפת|מחוז|מחוזות|מדינת)(\s|$)/.test(s) ||
+  /^(state|district|county|region|province|subdistrict|governorate)(\s|$)/i.test(s);
+
+/** The city a result belongs to, or '' when the only candidate is a district. */
+const cityOf = (a = {}) => {
+  const direct = a.city || a.town || a.village || a.municipality || a.suburb || a.hamlet || '';
+  if (direct) return direct;
+  const county = a.county || '';
+  return county && !isAdminPart(county) ? county : '';
+};
+
+const streetOf = (a = {}) => {
+  const road = a.road || a.pedestrian || a.footway || a.square || '';
+  if (!road) return '';
+  return a.house_number ? `${road} ${a.house_number}` : road;
+};
+
+/** The label a publisher should SEE for a result — clean, and only real places. */
+const placeLabel = (item = {}) => {
+  const a = item.address || {};
+  const city = cityOf(a);
+  const street = streetOf(a);
+  if (street && city) return `${street}, ${city}`;
+  if (street) return street;
+  if (city) return city;
+  const parts = String(item.display_name || '').split(',').map((s) => s.trim()).filter(Boolean);
+  return parts.find((p) => !isAdminPart(p)) || parts[0] || '';
+};
+
 /**
  * AddressAutocomplete — uses Nominatim (OpenStreetMap) — no API key needed.
  * - Prioritizes results near the user's location / matching the user's city.
@@ -36,6 +72,9 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
   const [showQuickPick, setShowQuickPick] = useState(false);
   const debounceRef = useRef(null);
   const containerRef = useRef(null);
+  // Every query this session has already answered, so typing a letter and
+  // deleting it again is instant instead of a second round trip.
+  const cacheRef = useRef(new Map());
 
   // Use the position for prioritisation ONLY when it is already allowed.
   // Opening this form used to request the position outright, so the OS location
@@ -76,7 +115,9 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
   }, [value]);
 
   const search = async (q) => {
-    if (q.length < 2) { setSuggestions([]); return; }
+    const key = q.trim();
+    if (key.length < 2) { setSuggestions([]); return; }
+    if (cacheRef.current.has(key)) { setSuggestions(cacheRef.current.get(key)); setLoading(false); return; }
     setLoading(true);
 
     let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=8&accept-language=he&countrycodes=il`;
@@ -91,15 +132,30 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
       data = await res.json();
     } catch { data = []; }
 
-    // Sort: results in the user's city first (by name), then by distance.
+    // ── RANKED BY WHAT THE PUBLISHER IS ACTUALLY TYPING ────────────────────
+    // A place whose own name matches the text comes first (an exact city match
+    // above a prefix), then a street that starts with it, then the user's own
+    // city, and only then distance. Typing "הרצליה" therefore puts Herzliya at
+    // the top of the list instead of a street in another town that happens to
+    // sit closer to the device.
     let sorted = data;
     if (data.length > 1) {
+      const ql = key.toLowerCase();
+      const rank = (r) => {
+        const a = r.address || {};
+        const city = cityOf(a).toLowerCase();
+        const road = streetOf(a).toLowerCase();
+        let s = 0;
+        if (city && city === ql) s += 5;
+        else if (city && city.startsWith(ql)) s += 4;
+        else if (city && city.includes(ql)) s += 2;
+        if (road && road.startsWith(ql)) s += 3;
+        if (userCity && city && city.includes(userCity.toLowerCase())) s += 1;
+        return s;
+      };
       sorted = [...data].sort((a, b) => {
-        const aCity = (a.address?.city || a.address?.town || a.address?.village || a.address?.county || '').trim();
-        const bCity = (b.address?.city || b.address?.town || b.address?.village || b.address?.county || '').trim();
-        const aInCity = userCity && aCity && aCity.includes(userCity);
-        const bInCity = userCity && bCity && bCity.includes(userCity);
-        if (aInCity !== bInCity) return aInCity ? -1 : 1;
+        const d = rank(b) - rank(a);
+        if (d) return d;
         if (userLocation) {
           const distA = Math.hypot(parseFloat(a.lat) - userLocation.lat, parseFloat(a.lon) - userLocation.lng);
           const distB = Math.hypot(parseFloat(b.lat) - userLocation.lat, parseFloat(b.lon) - userLocation.lng);
@@ -109,17 +165,17 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
       });
     }
 
+    cacheRef.current.set(key, sorted);
     setSuggestions(sorted);
     setLoading(false);
   };
 
   const applySelection = (item) => {
     const addr = item.address || {};
-    const city = addr.city || addr.town || addr.village || addr.county || '';
-    const road = addr.road || addr.pedestrian || addr.neighbourhood || '';
-    const houseNumber = addr.house_number || '';
-    const street = road + (houseNumber ? ` ${houseNumber}` : '');
-    const display = street ? `${street}, ${city}` : item.display_name.split(',').slice(0, 3).join(',').trim();
+    const city = cityOf(addr);
+    // Built from real place names only: "הרצליה" stays "הרצליה" and never
+    // becomes "הרצליה, נפת תל אביב, מחוז תל אביב".
+    const display = placeLabel(item);
 
     setQuery(display);
     setSuggestions([]);
@@ -137,7 +193,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
     setShowQuickPick(false);
     onSelect({ location_name: v, city: '', lat: null, lng: null });
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(v), 300);
+    debounceRef.current = setTimeout(() => search(v), 220);
   };
 
   // Allow confirming typed free text (press Enter on first suggestion)
@@ -320,10 +376,11 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
           {/* Search results */}
           {query && suggestions.map((item, i) => {
             const addr = item.address || {};
-            const city = addr.city || addr.town || addr.village || addr.county || '';
-            const road = addr.road || addr.pedestrian || addr.neighbourhood || '';
-            const houseNumber = addr.house_number || '';
-            const label = road ? `${road}${houseNumber ? ` ${houseNumber}` : ''}` : item.display_name.split(',')[0];
+            const city = cityOf(addr);
+            const label = placeLabel(item);
+            // The second line shows the city only when the label is not already
+            // the city itself — a city result never repeats its own name.
+            const sub = city && !label.includes(city) ? city : '';
             const inUserCity = userCity && city && city.includes(userCity);
             return (
               <button
@@ -341,9 +398,12 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
                 <MapPin size={14} color={inUserCity ? '#16a34a' : 'var(--brand-input-focus, var(--brand-primary))'} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{label}</div>
-                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>
-                    {city}{inUserCity && <span style={{ color: '#16a34a', fontWeight: 700 }}> · בעיר שלך</span>}
-                  </div>
+                  {(sub || inUserCity) && (
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>
+                      {sub}{sub && inUserCity ? ' · ' : ''}
+                      {inUserCity && <span style={{ color: '#16a34a', fontWeight: 700 }}>בעיר שלך</span>}
+                    </div>
+                  )}
                 </div>
               </button>
             );

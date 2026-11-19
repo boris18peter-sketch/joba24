@@ -143,24 +143,41 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     return (
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
-        style={{
-          display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left',
-          background: 'var(--surface-2)',
-          border: '1.5px solid var(--border-1)',
-          borderRadius: 14,
-          padding: '12px 14px',
-          marginTop: 8,
-        }}
+        className="j-ai-card"
+        style={{ display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left', marginTop: 8 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <Wand2 size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: 800 }}>{t('ps_title', 'המלצת מחיר AI')}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 8 }}>
-          <Loader2 size={14} className="animate-spin" color="var(--brand-primary)" />
-          <span style={{ fontSize: 12.5, color: 'var(--text-2)', fontWeight: 600 }}>
-            {t('ps_analyzing')}
-          </span>
+        <div className="j-ai-inner" style={{ padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span className="j-ai-pill"><Sparkles size={10} /> AI</span>
+            <span style={{ fontSize: 12.5, color: 'var(--text-2)', fontWeight: 800 }}>
+              {t('ps_title', 'המלצת מחיר AI')}
+            </span>
+          </div>
+
+          {/* ── THE WAIT HAS TO LOOK LIKE WORK ──────────────────────────────
+              This used to be one 12.5px line with a small spinner, and it was
+              read as "the AI is not working at all" — the card looked like a
+              finished, empty card. The wait is now the loudest thing on the
+              card: a large spinner beside a headline that names what is
+              happening, then the price's own shimmering placeholder where the
+              number will appear, so it is obvious the figure is being worked
+              out rather than missing. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+            <Loader2 size={26} className="animate-spin" color="var(--brand-primary)" style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -0.2 }}>
+                {t('ps_calculating', 'מחשב מחיר מתאים…')}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-2)', fontWeight: 600, marginTop: 2, lineHeight: 1.45 }}>
+                {t('ps_calculating_sub', 'בודק מחירי שוק ועבודות דומות — עוד רגע')}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14 }}>
+            <div className="j-img-skeleton" style={{ position: 'relative', height: 26, width: 132, borderRadius: 8, overflow: 'hidden' }} />
+            <div style={{ background: 'var(--surface-3)', borderRadius: 10, height: 32, width: 64 }} />
+          </div>
         </div>
       </div>
     );

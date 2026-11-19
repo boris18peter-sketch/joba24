@@ -224,7 +224,15 @@ export function globalFormError(fields, values) {
     // A question the user cannot see must never block submission.
     if (!isFieldVisible(f, values)) continue;
     const v = values?.[f.key], empty = v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length);
-    if (f.required && empty) return `יש למלא: ${f.label || f.key}`;
+    // ── AN UNANSWERED QUESTION NEVER REFUSES A PUBLISH ─────────────────────
+    // "כמה פריטים להרכבה?" is marked required on furniture assembly, and an
+    // empty answer there stopped the whole task from being published. The
+    // publisher had already described the job in their own words, and because
+    // that question sits further down a long form nothing on screen said what
+    // was missing — the press simply did nothing. A category question is
+    // context the worker reads; it is never the reason a finished task cannot
+    // go out. Answers that WERE given are still checked below, so a value that
+    // is structurally wrong is still reported.
     if (empty) continue;
     if (f.type === 'number' && (!Number.isFinite(Number(v)) || (f.validation?.min !== undefined && Number(v) < Number(f.validation.min)) || (f.validation?.max !== undefined && Number(v) > Number(f.validation.max)))) return `ערך לא תקין: ${f.label || f.key}`;
     if (f.validation?.min_length && String(v).length < Number(f.validation.min_length)) return `ערך קצר מדי: ${f.label || f.key}`;
