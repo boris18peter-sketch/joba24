@@ -136,9 +136,8 @@ export default function SocialLinksSection({ user }) {
           </div>
         )}
 
-        {isConnected ? (
-          <div style={{ padding: '0 16px 14px' }}>
-            <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ padding: '0 16px 14px' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowConnect(true)} disabled={loading}
                 style={{ flex: 1, height: 46, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'var(--surface-3)', color: 'var(--text-1)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
@@ -147,9 +146,8 @@ export default function SocialLinksSection({ user }) {
               <button onClick={() => setShowManage(true)} style={{ height: 46, width: 46, borderRadius: 12, cursor: 'pointer', background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-2)' }}>
                 <Unlink size={16} />
               </button>
-            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {showConnect && createPortal(

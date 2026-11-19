@@ -154,6 +154,13 @@ export function classifyApnsResponse(status, bodyText = '') {
     return { ok: false, category: 'expired_provider_token', reason, retryable: true, invalidateToken: false };
   }
   if (status === 403) {
+    // ── A 403 IS ANSWERED BY RE-SIGNING, NOT BY GIVING UP ──────────────────
+    // Apple answers 403 / InvalidProviderToken when the bearer token it was given
+    // is no longer acceptable, and its own guidance is to mint a new one. The
+    // sender now drops the cached JWT and retries the same payload once (see
+    // sendLiveActivityPush). This classification stays "not retryable" on
+    // purpose: the dispatcher must not keep re-queuing a revision that a fresh
+    // token did not fix.
     return { ok: false, category: 'auth_error', reason, retryable: false, invalidateToken: false };
   }
   if (status === 429) {
@@ -194,7 +201,7 @@ export async function sendLiveActivityPush(input) {
     return { ok: false, category: 'bad_payload', status: null, apnsId: null, retryable: false, invalidateToken: false };
   }
 
-  try {
+  const attempt = async () => {
     const jwt = await buildProviderToken({
       keyId: credentials.keyId,
       teamId: credentials.teamId,
@@ -222,6 +229,26 @@ export async function sendLiveActivityPush(input) {
       status: response.status,
       apnsId: response.headers?.get?.('apns-id') || null,
     };
+  };
+
+  try {
+    let result = await attempt();
+
+    // ── ONE RETRY, WITH A FRESHLY SIGNED TOKEN ─────────────────────────────
+    // The provider token is cached for 50 minutes, so a rejection of it is
+    // replayed on every dispatch until the cache turns over. Apple's instruction
+    // for a rejected token is to mint a new one, which is exactly what this does:
+    // drop the cached JWT and try the same payload once more. A device or
+    // credential problem fails again immediately, so this can never turn into a
+    // loop, and a transient rejection no longer costs the user their update.
+    if (result.category === 'auth_error') {
+      resetProviderTokenCache();
+      const retried = await attempt();
+      if (retried.ok) return retried;
+      result = retried;
+    }
+
+    return result;
   } catch (error) {
     const name = error?.name || '';
     const category = name === 'TimeoutError' || name === 'AbortError' ? 'timeout' : 'network_error';
