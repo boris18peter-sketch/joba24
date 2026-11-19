@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Sparkles, Loader2, Wand2, Search, Wrench, Package } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useGlobalCategories, globalFieldChain } from '@/lib/brand/globalCategories';
-import { analyzePrice, getRateRange } from '@/lib/priceInsights';
+import { analyzePrice, getRateRange, priceSignature } from '@/lib/priceInsights';
 
 // Confidence → chip styling. Keys match the `confidence` values the engine returns.
 const CONFIDENCE_STYLE = {
@@ -28,6 +28,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
   const { t, isRTL, lang } = useLanguage();
   const { map: categoryMap } = useGlobalCategories();
   const [result, setResult] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   // The model must receive the category as a HUMAN NAME with its taxonomy
   // context, never the raw slug: "elec_panel" means nothing to it, while
@@ -53,9 +54,22 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
   const hasText = (description || '').trim().length >= 15;
   const ready = !!category && (hasText || hasPhotos || hasDetails || hasRequirements);
 
+  // ── ONE STABLE KEY FOR "THE DETAILS THE PRICE DEPENDS ON" ────────────────
+  // The effect used to depend on a long list of props, several of which change
+  // IDENTITY without changing meaning (a translated string function, a rebuilt
+  // details string). Any one of them re-ran the whole analysis, and since the
+  // model reasons over live market prices, each run answered with a different
+  // range: a publisher filled in a wardrobe assembly, read 230–500, and two
+  // seconds later the same screen said 300–660. A signature of the actual
+  // content is the only thing that may trigger a new recommendation.
+  const signature = priceSignature({
+    category, isHourly, estimatedTime, description, location, distance, images, lang, detailsText, requirementsText,
+  });
+
   useEffect(() => {
     if (!category || !ready) return;
     let cancelled = false;
+    setAnalyzing(true);
     const fallback = () => {
       const r = getRateRange(category, isHourly);
       return { min: r.min, max: r.max, reason: t('ps_market_fallback'), confidence: 'low' };
@@ -72,12 +86,14 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       } catch {
         // Analysis unavailable — fall back to the curated category range
         if (!cancelled) setResult(fallback());
+      } finally {
+        if (!cancelled) setAnalyzing(false);
       }
-    }, 1200);
+    }, 900);
 
     return () => { cancelled = true; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, categoryLabel, estimatedTime, description, location, isHourly, distance, photoKey, lang, t, detailsText, requirementsText, ready]);
+  }, [signature, ready]);
 
   // ── THE CARD IS ALWAYS ON SCREEN ─────────────────────────────────────────
   // It used to disappear entirely until a service was chosen, and until then
@@ -88,9 +104,9 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
   //     needs before a TAILORED recommendation exists (a service, a description,
   //     a location). It carries no price, because inventing one would be a
   //     number the publisher could act on for the wrong job.
-  //   • ready — the curated market range is drawn immediately and the AI
-  //     recommendation replaces it the moment it arrives, so there is no spinner
-  //     to be stuck behind.
+  //   • ready — the recommendation itself, drawn once it exists. There is no
+  //     provisional number to be replaced a moment later: the first range shown
+  //     is the one the publisher can act on.
   if (!ready) {
     return (
       <div
@@ -117,15 +133,40 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     );
   }
 
-  const curatedRange = getRateRange(category, isHourly);
-  const view = result || {
-    min: curatedRange.min,
-    max: curatedRange.max,
-    reason: '',
-    confidence: 'low',
-    analyzing: true,
-  };
+  // ── NO NUMBER UNTIL THERE IS A REAL ANSWER ────────────────────────────────
+  // The card used to draw the curated category range immediately and then
+  // REPLACE it with the AI's range a moment later. That replacement was read as
+  // an unstable recommendation: two different numbers on one screen, seconds
+  // apart, with nothing in between to explain the change. The first range a
+  // publisher sees is now the final one for the details they actually entered.
+  if (!result) {
+    return (
+      <div
+        dir={isRTL ? 'rtl' : 'ltr'}
+        style={{
+          display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left',
+          background: 'var(--surface-2)',
+          border: '1.5px solid var(--border-1)',
+          borderRadius: 14,
+          padding: '12px 14px',
+          marginTop: 8,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Wand2 size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: 800 }}>{t('ps_title', 'המלצת מחיר AI')}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 8 }}>
+          <Loader2 size={14} className="animate-spin" color="var(--brand-primary)" />
+          <span style={{ fontSize: 12.5, color: 'var(--text-2)', fontWeight: 600 }}>
+            {t('ps_analyzing')}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
+  const view = result;
   const conf = CONFIDENCE_STYLE[view.confidence] || CONFIDENCE_STYLE.low;
   const midpoint = Math.round(((view.min + view.max) / 2) / 10) * 10;
 
@@ -153,7 +194,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
           <span style={{ fontSize: 12, color: '#1e40af', fontWeight: 800 }}>{t('ps_recommended')}</span>
         </div>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--brand-primary)', fontWeight: 700, background: '#dbeafe', borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap' }}>
-          {view.analyzing && <Loader2 size={9} className="animate-spin" />}
+          {analyzing && <Loader2 size={9} className="animate-spin" />}
           {view.hasPhotos || hasPhotos ? t('ps_based_on_photo') : t('ps_based_on_desc')}
         </span>
       </div>
@@ -195,7 +236,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
         <Sparkles size={11} style={{ flexShrink: 0 }} />
         {/* Only a genuinely short reason fits the footer line — the analysis rows above carry the detail */}
         {view.reason && view.reason.length <= 70 && <span>{view.reason} · </span>}
-        {view.analyzing ? t('ps_analyzing') : t('ps_market_based')}
+        {analyzing ? t('ps_analyzing') : t('ps_market_based')}
       </div>
       <div style={{ fontSize: 10, color: '#64748b', marginTop: 4, fontWeight: 600 }}>
         {t('ps_disclaimer')}

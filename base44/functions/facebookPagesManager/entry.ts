@@ -59,7 +59,33 @@ export default async function(req: Request): Promise<Response> {
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden — admin only' }, { status: 403 });
 
     // ── Get Facebook OAuth connection ──
-    const { accessToken } = await base44.asServiceRole.connectors.getConnection('facebook_pages');
+    // ── A LOST CONNECTION MUST BE VISIBLE, NOT SILENT ──────────────────────
+    // `getConnection` THROWS once the builder's Facebook grant has expired or
+    // been revoked. The throw escaped before any log row was written, so the
+    // page simply stopped receiving posts with no trace anywhere: no 'failed'
+    // row, nothing in the admin view, and the only symptom was silence. A post
+    // attempt now records why it could not run, and says so in the response.
+    let accessToken: string;
+    try {
+      const connection = await base44.asServiceRole.connectors.getConnection('facebook_pages');
+      accessToken = connection?.accessToken;
+    } catch (connErr: any) {
+      const reason = 'facebook_not_connected';
+      console.error('[FacebookPagesManager] No Facebook connection:', connErr?.message || connErr);
+      if (action === 'post' && body?.task_id) {
+        await base44.asServiceRole.entities.FacebookPostLog
+          .create({
+            task_id: body.task_id,
+            status: 'failed',
+            error: `${reason}: reconnect the Facebook Pages connector`,
+          })
+          .catch(() => {});
+      }
+      return Response.json(
+        { error: 'Facebook not connected — authorize the connector first', reason },
+        { status: 400 },
+      );
+    }
     if (!accessToken) return Response.json({ error: 'Facebook not connected — authorize the connector first' }, { status: 400 });
 
     // ── LIST PAGES ──

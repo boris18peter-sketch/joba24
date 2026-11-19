@@ -2,16 +2,27 @@ import { useLanguage } from '@/lib/LanguageContext';
 import GoldCheckBadge from '@/components/GoldCheckBadge';
 
 /**
- * HomeCtaBanner — unified call-to-action used across the home feed AND profile.
- * One brand color per purpose (green = verify, gold = social, blue = profile),
- * identical layout for all three so the UI stays cohesive and minimal.
- * Official badge icons: verify = green-check badge, social = gold-check badge,
- * profile completion = clock (waiting). No chevron — clean and action-focused.
+ * HomeCtaBanner — the one call-to-action card used across the feed AND the
+ * profile (verify / gold social check / profile completion).
+ *
+ * ── ONE NEUTRAL CARD, ONE COLOURED MARK ─────────────────────────────────────
+ * It used to be a full-bleed colour block: a saturated green, gold or blue
+ * rectangle sitting on top of the feed. Three of them stacked read as three
+ * competing advertisements, and on a light screen they shouted louder than the
+ * tasks the screen exists for.
+ *
+ * The card is now the app's OWN surface — the same background, hairline border
+ * and soft shadow as every other card — and the only coloured thing on it is
+ * the mark inside: the green check, the gold check, or the profile gift. That
+ * keeps each banner recognisable at a glance while it belongs to the interface
+ * instead of sitting on top of it. Because every banner in the app renders
+ * through this component, they all change together and stay identical wherever
+ * they appear.
  */
 const THEMES = {
-  green: { gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)', glow: 'rgba(5,150,105,0.28)' },
-  gold:  { gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', glow: 'rgba(217,119,6,0.30)' },
-  blue:  { gradient: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)', glow: 'rgba(26,111,212,0.28)' },
+  green: { tint: 'rgba(22,163,74,0.12)', color: '#16a34a' },
+  gold:  { tint: 'rgba(245,158,11,0.16)', color: '#d97706' },
+  blue:  { tint: 'var(--brand-primary-light)', color: 'var(--brand-primary)' },
 };
 
 const BADGE_GRADIENTS = {
@@ -25,45 +36,35 @@ const CheckSvg = ({ size = 16 }) => (
   </svg>
 );
 
-function BannerIcon({ iconType, icon: Icon }) {
+function BannerIcon({ iconType, icon: Icon, theme }) {
+  const t = THEMES[theme] || THEMES.green;
   // The gold mark is the SHARED component — the connect sheet draws the same
   // one, so the badge the user is promised here is the badge they receive
   // inside the sheet. Only the green (KYC) mark is drawn locally.
-  if (iconType === 'social') return <GoldCheckBadge size={42} />;
-  if (iconType === 'verify') {
-    return (
-      <div style={{
-        width: 42, height: 42, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.97)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-      }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%',
-          background: BADGE_GRADIENTS[iconType === 'verify' ? 'green' : 'gold'],
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <CheckSvg size={16} />
-        </div>
-      </div>
-    );
-  }
-  // Lucide icon (e.g. Clock for profile completion) on a translucent white container
   return (
     <div style={{
       width: 42, height: 42, borderRadius: '50%',
-      background: 'rgba(255,255,255,0.2)',
+      background: t.tint,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       flexShrink: 0,
     }}>
-      {Icon && <Icon size={20} color="white" strokeWidth={2} />}
+      {iconType === 'social' && <GoldCheckBadge size={28} />}
+      {iconType === 'verify' && (
+        <div style={{
+          width: 26, height: 26, borderRadius: '50%',
+          background: BADGE_GRADIENTS.green,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <CheckSvg size={15} />
+        </div>
+      )}
+      {!iconType && Icon && <Icon size={20} color={t.color} strokeWidth={2} />}
     </div>
   );
 }
 
 export default function HomeCtaBanner({ theme = 'green', iconType, icon: Icon, label, sublabel, onClick, id }) {
   const { isRTL } = useLanguage();
-  const t = THEMES[theme] || THEMES.green;
   return (
     <button
       id={id}
@@ -76,10 +77,11 @@ export default function HomeCtaBanner({ theme = 'green', iconType, icon: Icon, l
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        background: `linear-gradient(135deg, var(--brand-banner-bg, transparent), var(--brand-banner-bg-2, transparent)), ${t.gradient}`,
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-1)',
         borderRadius: 14,
         padding: '12px 14px',
-        boxShadow: `0 3px 14px ${t.glow}`,
+        boxShadow: 'var(--shadow-xs)',
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'transparent',
         boxSizing: 'border-box',
@@ -87,11 +89,11 @@ export default function HomeCtaBanner({ theme = 'green', iconType, icon: Icon, l
         zIndex: 1,
       }}
     >
-      <BannerIcon iconType={iconType} icon={Icon} />
-      <div style={{ flex: 1, minWidth: 0, color: 'var(--brand-banner-text, white)', textAlign: 'start' }}>
-        <div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.3 }}>{label}</div>
+      <BannerIcon iconType={iconType} icon={Icon} theme={theme} />
+      <div style={{ flex: 1, minWidth: 0, textAlign: 'start' }}>
+        <div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.3, color: 'var(--text-1)' }}>{label}</div>
         {sublabel && (
-          <div style={{ fontSize: 11.5, color: 'var(--brand-banner-text, rgba(255,255,255,0.85))', fontWeight: 500, marginTop: 2, lineHeight: 1.35 }}>
+          <div style={{ fontSize: 11.5, color: 'var(--text-2)', fontWeight: 500, marginTop: 2, lineHeight: 1.35 }}>
             {sublabel}
           </div>
         )}

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { setPopupBlock } from '@/lib/popupGate';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star, X, CheckCircle2, Loader2 } from 'lucide-react';
+import { Star, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { moderateText } from '@/hooks/useModeration';
 import { getCategoryConfig } from '@/lib/categoryConfig';
@@ -30,7 +30,6 @@ export default function RatingModal({ task, me, onClose }) {
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [structured, setStructured] = useState({
     arrivedOnTime: null, professional: null,
     goodCommunication: null, fairPricing: null, wouldHireAgain: null,
@@ -47,14 +46,16 @@ export default function RatingModal({ task, me, onClose }) {
   const revieweeId = isOwner ? task.worker_id : task.client_id;
   const revieweeName = isOwner ? task.worker_name : task.client_name;
   const role = isOwner ? 'client' : 'worker';
-  const canSubmit = rating > 0 && paymentConfirmed;
+  // ── THE STARS ARE THE WHOLE ANSWER ────────────────────────────────────────
+  // The sheet used to hold a tick-box that had to be confirmed first ("the task
+  // really was carried out") before the review could be sent. By the time this
+  // sheet opens the completion has ALREADY been approved by both sides, so the
+  // extra confirmation asked the user to approve the same fact twice and made
+  // the rating feel like paperwork. The stars alone are enough.
+  const canSubmit = rating > 0;
 
   const handleSubmit = async () => {
     if (loading || !canSubmit) return;
-    if (!paymentConfirmed) {
-      toast.error(isOwner ? catConfig.rating.ownerErrorToast : catConfig.rating.workerErrorToast);
-      return;
-    }
     setLoading(true);
 
     if (comment && comment.trim().length > 3) {
@@ -183,22 +184,6 @@ export default function RatingModal({ task, me, onClose }) {
             </div>
           </div>
         )}
-
-        {/* Payment confirm */}
-        <button onClick={() => setPaymentConfirmed(v => !v)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 'var(--r-md)', marginBottom: 16, cursor: 'pointer', border: paymentConfirmed ? '2px solid var(--color-success)' : '2px solid var(--border-1)', background: paymentConfirmed ? 'var(--color-success-bg)' : 'var(--surface-3)', textAlign: 'right', transition: 'all 0.2s' }}>
-          <div style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0, background: paymentConfirmed ? '#059669' : 'white', border: paymentConfirmed ? '2px solid #059669' : '2px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-            {paymentConfirmed && <CheckCircle2 size={15} color="white" strokeWidth={2.5} />}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? 'var(--color-success)' : 'var(--text-1)' }}>
-              {isOwner ? catConfig.rating.ownerConfirmTitle : catConfig.rating.workerConfirmTitle}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--brand-modal-text, #64748b)', marginTop: 2 }}>
-              {isOwner ? catConfig.rating.ownerConfirmSub : catConfig.rating.workerConfirmSub}
-            </div>
-          </div>
-        </button>
 
         <textarea
           placeholder={t('add_verbal_review')}

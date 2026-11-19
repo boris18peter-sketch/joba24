@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { isServiceRoleCall, forbidden } from '../../shared/internalAuth.ts';
 import { validRecordIds } from '../../shared/recordIds.ts';
 import { withLiveNotificationNames } from '../../shared/userDisplayNames.ts';
+import { sendPushToUsers } from '../../shared/pushSender.ts';
 
 /**
  * ── NotificationManager ──────────────────────────────────────────────────
@@ -391,10 +392,26 @@ Deno.serve(async (req) => {
     // feeds (push, in-app popup, email). A trigger that sends no id, or an id
     // that no longer resolves, keeps the stored copy, so a notification can never
     // go out with a blank name.
-    const variables = await withLiveNotificationNames(base44, rawVariables);
+    // Only real record IDs may reach the queries below: the entity layer rejects
+    // an `$in` list containing anything else, and it rejects the WHOLE list —
+    // not just the offending entry — so one demo/legacy id would otherwise lose
+    // the entire notification for every real recipient. An unusable id now
+    // costs only its own recipient.
+    const userIdsArr = validRecordIds(user_ids);
+    if (!userIdsArr.length) {
+      return Response.json({ sent: 0, reason: 'No valid recipient ids' });
+    }
 
-    // 1. שליפת קונפיג מהדאטהבייס
-    const configs = await base44.asServiceRole.entities.NotificationConfig.filter({ event_key });
+    // ── THE THREE INDEPENDENT READS RUN AT ONCE ────────────────────────────
+    // The live-name lookup, the event's config and the recipient records were
+    // three sequential round-trips before anything could be decided. None of
+    // them depends on another, and on the notification path a round-trip is
+    // exactly the delay the user feels. They are issued together.
+    const [variables, configs, users] = await Promise.all([
+      withLiveNotificationNames(base44, rawVariables),
+      base44.asServiceRole.entities.NotificationConfig.filter({ event_key }),
+      base44.asServiceRole.entities.User.filter({ id: { $in: userIdsArr } }),
+    ]);
     let config = configs[0];
 
     // Fallback לקונפיג ברירת מחדל אם אין בדאטהבייס
@@ -413,18 +430,6 @@ Deno.serve(async (req) => {
 
     const cooldownMs = (config.cooldown_minutes || 0) * 60 * 1000;
     const targetSegments = config.segments || ['all'];
-    // Only real record IDs may reach the query below: the entity layer rejects an
-    // `$in` list containing anything else, and it rejects the WHOLE list — not
-    // just the offending entry — so one demo/legacy id would otherwise lose the
-    // entire notification for every real recipient. An unusable id now costs
-    // only its own recipient.
-    const userIdsArr = validRecordIds(user_ids);
-    if (!userIdsArr.length) {
-      return Response.json({ sent: 0, reason: 'No valid recipient ids' });
-    }
-
-    // 2. שליפת נתוני משתמשים לבדיקת סגמנט
-    const users = await base44.asServiceRole.entities.User.filter({ id: { $in: userIdsArr } });
 
     const eligibleUserIds = [];
     const skippedUsers = [];
@@ -488,21 +493,28 @@ Deno.serve(async (req) => {
     const deepLink = fillTemplate(config.deep_link, variables);
     const tag = fillTemplate(config.tag_template || 'joba24', variables);
 
-    // 4. שליחה דרך sendPushNotification
-    const pushResult = await base44.asServiceRole.functions.invoke('sendPushNotification', {
-      user_ids: eligibleUserIds,
+    // 4. שליחה — IN PROCESS, NOT THROUGH A SECOND FUNCTION
+    // This used to invoke `sendPushNotification` as another function, which paid
+    // a second cold start, a second SDK bootstrap and a second read of the very
+    // same user records this function had just loaded — for one push. The shared
+    // sender does the same FCM work in this process, with bounded requests, so
+    // the notification leaves immediately instead of queueing behind a nested
+    // invocation.
+    const pushResult = await sendPushToUsers({
+      base44,
+      userIds: eligibleUserIds,
       title,
       body,
       url: deepLink,
       tag,
     });
 
-    const sentCount = pushResult?.data?.sent ?? pushResult?.sent ?? 0;
+    const sentCount = pushResult?.sent ?? 0;
 
     // 5. רישום ללוג — reflect actual delivery: if FCM sent 0 (no device tokens),
     // log as 'failed' so the admin dashboard shows the real status and isn't misled.
     const deliveryStatus = sentCount > 0 ? 'sent' : 'failed';
-    const deliveryReason = sentCount === 0 ? (pushResult?.data?.reason || 'no_device_token') : null;
+    const deliveryReason = sentCount === 0 ? (pushResult?.reason || 'no_device_token') : null;
 
     // ── The log is written in BATCHES, not one insert per recipient ─────────
     // The serial loops that used to sit here were the single biggest cost in

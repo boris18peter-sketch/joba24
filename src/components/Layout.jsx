@@ -1025,21 +1025,18 @@ export default function Layout() {
           // moment the rating is behind the user. What comes next (the bonus it
           // earned, then the note) is queued behind that release.
           setPopupBlock('rating', false);
-          // ── ONLY A COMPLETION THAT JUST HAPPENED GETS ITS THANK-YOU ───────
-          // This is the path a rating given from the HISTORY takes: the ask is
-          // raised for a finished task whenever it is opened, and this used to
-          // queue the closing note unconditionally — so rating a job that closed
-          // last week was followed immediately by "the job is done!". The ask is
-          // right at any time; the celebration is not. The note follows the same
-          // freshness rule every other raise site already used.
-          if (isRecentCompletion(ratingTask)) {
-            setPendingCongrats({
-              task: ratingTask,
-              role: me.id === ratingTask.worker_id ? 'worker' : 'client',
-            });
-          } else {
-            setPendingCongrats(null);
-          }
+          // ── THE THANK-YOU IS RAISED THROUGH THE ONE GATE ──────────────────
+          // This used to queue the note DIRECTLY, bypassing the "asked once"
+          // check that every other raise site goes through. So closing the
+          // rating sheet queued the note every single time: dismiss it, open the
+          // task again, rate, and it came back — a note that was supposed to
+          // happen once repeated for as long as the task stayed fresh.
+          //
+          // showCongrats owns both rules: the freshness rule (a job that closed
+          // last week gets no celebration) and the once-per-task-per-user rule
+          // (the mark is written when the note is raised, and survives a
+          // relaunch). One completion, one thank-you, whatever path raised it.
+          showCongrats(ratingTask);
           setRatingTask(null);
         }} />,
         document.body

@@ -98,10 +98,45 @@ function normalizeConfidence(raw, hasPhotos, description) {
   return 'low';
 }
 
+// ── ONE RECOMMENDATION PER SET OF DETAILS ───────────────────────────────────
+// The model is asked to reason about live market prices, so two calls with the
+// SAME details legitimately return slightly different numbers — and the card
+// re-ran on every render-driven input identity change, so a publisher watched a
+// range they had already read change under them for no reason they could see.
+//
+// A recommendation is therefore memoised against a signature of exactly the
+// details it was computed from. Same details → the same answer, instantly, for
+// as long as the user keeps working on this task (including after stepping back
+// and forth through the publish wizard). A detail that actually changes the job
+// produces a new signature and therefore a new, honest recommendation.
+const RESULT_TTL = 20 * 60 * 1000;
+const resultCache = new Map();
+
+export function priceSignature(input) {
+  const i = input || {};
+  return [
+    i.category || '',
+    i.isHourly ? 'hourly' : 'total',
+    i.estimatedTime || '',
+    (i.description || '').trim(),
+    i.location || '',
+    i.distance == null ? '' : Math.round(Number(i.distance) * 10) / 10,
+    (i.images || []).filter(Boolean).join(','),
+    (i.detailsText || '').trim(),
+    (i.requirementsText || '').trim(),
+    i.lang || '',
+  ].join('|');
+}
+
 // ── The analysis call ──
 // Returns null when the LLM produced nothing usable (caller falls back to the
 // curated category range).
-export async function analyzePrice({ category, categoryLabel, estimatedTime, description, location, isHourly, distance, images, lang, detailsText, requirementsText }) {
+export async function analyzePrice(input) {
+  const { category, categoryLabel, estimatedTime, description, location, isHourly, distance, images, lang, detailsText, requirementsText } = input || {};
+  const signature = priceSignature(input);
+  const cachedResult = resultCache.get(signature);
+  if (cachedResult && Date.now() - cachedResult.ts < RESULT_TTL) return cachedResult.data;
+
   const configRange = getRateRange(category, isHourly);
   // The category reaches the model as the catalogue's own name with its
   // taxonomy path ("חשמל › לוח חשמל"), never the internal slug — a slug tells
@@ -240,7 +275,7 @@ ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר:
     if (finalMax - finalMin < minSpread) finalMax = finalMin + minSpread;
   }
 
-  return {
+  const analysis = {
     min: finalMin,
     max: finalMax,
     identified: result.identified || '',
@@ -251,4 +286,6 @@ ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר:
     hasPhotos,
     historyCount: history?.count || 0,
   };
+  resultCache.set(signature, { ts: Date.now(), data: analysis });
+  return analysis;
 }
