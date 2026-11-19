@@ -95,6 +95,13 @@ const DEFAULT_SEED_CONFIGS = [
     deep_link: '/', tag_template: 'retention_3d',
     segments: ['experienced_worker'], is_active: true, cooldown_minutes: 10080, priority: 'low', sort_order: 60 },
 
+  // ── מעורבות מפרסמים ──
+  { event_key: 'publish_abandoned', event_label: 'תזכורת לפרסום משימה שלא הושלם 📝', category: 'engagement',
+    title_template: 'המשימה שלך מחכה לך 📝', body_template: 'התחלת לפרסם משימה ולא סיימת. זה לוקח פחות מדקה — לחץ כדי להשלים',
+    deep_link: '/create-task', tag_template: 'publish_abandoned',
+    segments: ['all'], is_active: true, send_email: false, email_subject_template: 'המשימה שלך ב-Joba24 מחכה לך',
+    cooldown_minutes: 10080, priority: 'normal', sort_order: 61 },
+
   // ── סוכנים — התראות דרבון אוטומטיות ──
   { event_key: 'agent_daily_referral_summary', event_label: 'סיכום יומי הפניות לסוכן 🌟', category: 'engagement',
     title_template: 'סיכום יומי: {count} {count_label} היום 🌟', body_template: 'הבאת {count} {count_label} חדשות היום! {encourage} המשך לשתף את הקישור ולבנות את הרשת שלך.',
@@ -191,6 +198,47 @@ Deno.serve(async (req) => {
         force: true,
       });
       return Response.json({ success: true, result: result?.data ?? result });
+    }
+
+    // ── action: send_test_email — שליחת מייל בדיקה למנהל שמבקש אותה ──
+    // The real email body, filled with sample values, delivered to the admin's
+    // own address. It exists so a subject or wording change can be seen in an
+    // inbox before it reaches anyone else.
+    if (action === 'send_test_email') {
+      if (!event_key) return Response.json({ error: 'Missing event_key' }, { status: 400 });
+      const configs = await base44.asServiceRole.entities.NotificationConfig.filter({ event_key });
+      const cfg = configs[0];
+      if (!cfg) return Response.json({ error: 'Config not found' }, { status: 404 });
+
+      const sample = {
+        worker_name: 'דנה כהן',
+        task_title: 'הרכבת ארון בחדר שינה',
+        task_id: 'demo',
+        category_label: 'הרכבות',
+        sender_name: 'יוסי',
+        message_preview: 'היי, אפשר להתחיל ב-10:00?',
+        credits_line: '',
+        count: '3',
+        count_label: 'הרשמות',
+        encourage: '',
+      };
+      const fill = (tpl: string) =>
+        String(tpl || '').replace(/\{(\w+)\}/g, (m, key) => (sample[key] !== undefined ? sample[key] : m));
+
+      const subject = fill(cfg.email_subject_template || cfg.title_template);
+      const body = fill(cfg.body_template);
+
+      const result = await base44.asServiceRole.integrations.Core.SendEmail({
+        to: admin.email,
+        template_name: 'Notification',
+        variables: {
+          title: subject,
+          body,
+          action_url: `https://joba24.com${cfg.deep_link || '/'}`,
+        },
+      });
+
+      return Response.json({ success: true, sent_to: admin.email, subject, result });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

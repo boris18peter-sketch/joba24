@@ -36,6 +36,29 @@ export default function SocialLinksSection({ user }) {
   const isConnected = verifiedPlatforms.length > 0;
   const isKycVerified = isUserVerified(user);
 
+  // ── NOT CONNECTED: THE BANNER IS THE WHOLE BLOCK ──────────────────────────
+  // The call to action used to sit inside this section's own card, under its
+  // "רשתות חברתיות" header — a banner wrapped in a second banner. The CTA is
+  // already a complete card, so when there is nothing connected it stands on
+  // its own, with no container and no header repeating what it says.
+  if (!isConnected) {
+    return (
+      <>
+        <HomeCtaBanner
+          theme="gold"
+          iconType="social"
+          label={t('cta_social')}
+          sublabel={!isKycVerified ? t('sl_gold_after_verify') : undefined}
+          onClick={() => setShowConnect(true)}
+        />
+        {showConnect && createPortal(
+          <SocialConnectSheet user={user} onClose={() => setShowConnect(false)} />,
+          document.body
+        )}
+      </>
+    );
+  }
+
   const handleDisconnect = async (platform) => {
     setLoading(true);
     try {
@@ -125,16 +148,6 @@ export default function SocialLinksSection({ user }) {
                 <Unlink size={16} />
               </button>
             </div>
-          </div>
-        ) : (
-          <div style={{ padding: '0 16px 14px' }}>
-            <HomeCtaBanner
-              theme="gold"
-              iconType="social"
-              label={t('cta_social')}
-              sublabel={!isKycVerified ? t('sl_gold_after_verify') : undefined}
-              onClick={() => setShowConnect(true)}
-            />
           </div>
         )}
       </div>

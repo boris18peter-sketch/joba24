@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, ListChecks, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store, Filter, MapPin } from 'lucide-react';
+import { Users, ClipboardList, ListChecks, Flag, Shield, Search, RefreshCw, X, Loader2, UserCheck, Headphones, Send, Coins, Award, ShieldCheck, Bell, Mail, Trash2, TrendingUp, Download, UserX, Tag, Wallet, Store, Filter, MapPin } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import NotificationManagerTab from '@/components/NotificationManagerTab';
+import AdminEmailsTab from '@/components/admin/AdminEmailsTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
 import JobaSettingsTab from '@/components/JobaSettingsTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
@@ -52,6 +53,7 @@ const TAB_GROUPS = [
   ] },
   { label: 'מערכת', tabs: [
     { key: 'notifications', label: 'התראות', icon: Bell, desc: 'ניהול התראות המערכת למשתמשים' },
+    { key: 'emails', label: 'מיילים', icon: Mail, desc: 'אילו אירועים שולחים מייל, הנושא של כל אחד ושליחת בדיקה' },
     { key: 'brands', label: 'מותגים', icon: Store, desc: 'ניהול המותגים והסביבות במרקטפלייס' },
     { key: 'categories', label: 'קטגוריות', icon: Tag, desc: 'קטלוג הקטגוריות וטפסי המשימות הגלובליים' },
   ] },
@@ -968,6 +970,11 @@ export default function AdminDashboard() {
         {/* NOTIFICATIONS MANAGER TAB */}
         {tab === 'notifications' && (
           <NotificationManagerTab />
+        )}
+
+        {/* EMAIL CENTRE — the email side of every notification event */}
+        {tab === 'emails' && (
+          <AdminEmailsTab />
         )}
 
         {/* REFERRALS TAB */}

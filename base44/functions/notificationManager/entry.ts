@@ -247,6 +247,15 @@ const DEFAULT_CONFIGS = {
     cooldown_minutes: 10080,
     priority: 'normal',
   },
+  publish_abandoned: {
+    title_template: 'המשימה שלך מחכה לך 📝',
+    body_template: 'התחלת לפרסם משימה ולא סיימת. זה לוקח פחות מדקה — לחץ כדי להשלים',
+    deep_link: '/create-task',
+    tag_template: 'publish_abandoned',
+    segments: ['all'],
+    cooldown_minutes: 10080,
+    priority: 'normal',
+  },
   low_balance: {
     title_template: 'היתרה שלך נמוכה 💸',
     body_template: 'זה אומר שאתה מפספס משימות שוות. קנה ג\'ובות עכשיו כדי לא להישאר מאחור.',
