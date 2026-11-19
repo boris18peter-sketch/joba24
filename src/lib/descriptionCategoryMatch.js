@@ -53,11 +53,23 @@ export function bestServiceForText({ text, services, keywordsFor, map, currentKe
     depth: ancestorsOf(map?.[key], map || {}).length,
   }));
 
+  // ── A SERVICE WITH NO KEYWORDS OF ITS OWN CANNOT BE JUDGED ───────────────
+  // The global catalogue's services ("הרכבת רהיטים", "תליית טלוויזיות", …) own
+  // their questions but no keyword list, so the text can never "match" them —
+  // and that made them lose EVERY comparison. A publisher picked "הרכבת רהיטים",
+  // wrote the job out, and the form silently traded their choice for carpentry,
+  // whose legacy keyword "הרכבת ריהוט" does appear in the text. Pressing publish
+  // re-ran the same comparison, switched the service again and returned, so the
+  // button never published anything. When there is nothing to compare, the
+  // publisher's own choice is the answer.
+  const currentKeywords = keywordsFor(currentKey) || [];
+  const current = scores.find((entry) => entry.key === currentKey);
+  if (current && !currentKeywords.length) return currentKey;
+
   // The service already chosen is read with the generous reading, so a choice
   // that plausibly fits the text is never traded away for another one.
-  const current = scores.find((entry) => entry.key === currentKey);
   if (current && (current.score > 0
-      || textMentions(combined, keywordsFor(currentKey), { fuzzy: true }))) {
+      || textMentions(combined, currentKeywords, { fuzzy: true }))) {
     return currentKey;
   }
 

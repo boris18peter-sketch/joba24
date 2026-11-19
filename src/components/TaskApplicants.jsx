@@ -528,16 +528,19 @@ export default function TaskApplicants({ task, onApprove }) {
             <div style={{ borderTop: `1px solid ${isApproved ? '#bbf7d0' : 'var(--border-1)'}`, padding: '8px 14px', display: 'flex', gap: 8 }}>
               {isApproved ? (
                 !workerStarted && (
+                  /* A compact pill, not a full-width banner: cancelling is a
+                     secondary, reversible action and it was taking a whole row
+                     of the card at primary-button size. */
                   <button
                     onClick={() => setShowCancelWorkerConfirm(true)}
                     style={{
-                      flex: 1, height: 40, borderRadius: 11,
-                      background: '#fff1f2', border: '1.5px solid #fca5a5',
-                      color: '#dc2626', fontWeight: 700, fontSize: 13,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      flexShrink: 0, alignSelf: 'flex-start', height: 32, padding: '0 11px', borderRadius: 9,
+                      background: '#fff1f2', border: '1px solid #fca5a5',
+                      color: '#dc2626', fontWeight: 700, fontSize: 11.5,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                     }}
                   >
-                    <UserX size={15} /> {t('ta_cancel_worker_btn')}
+                    <UserX size={13} /> {t('ta_cancel_worker_btn')}
                   </button>
                 )
               ) : !approvedApp ? (
@@ -569,16 +572,16 @@ export default function TaskApplicants({ task, onApprove }) {
                     onClick={() => setDeclineTarget(app)}
                     disabled={isBeingDeclined}
                     style={{
-                      flexShrink: 0, height: 46, padding: '0 12px', borderRadius: 12,
+                      flexShrink: 0, alignSelf: 'center', height: 34, padding: '0 10px', borderRadius: 9,
                       background: 'transparent', border: 'none',
                       color: isBeingDeclined ? 'var(--text-3)' : 'var(--text-2)',
-                      fontWeight: 700, fontSize: 12,
+                      fontWeight: 700, fontSize: 11.5,
                       cursor: isBeingDeclined ? 'not-allowed' : 'pointer',
                       opacity: isBeingDeclined ? 0.6 : 1,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                     }}
                   >
-                    {isBeingDeclined ? <Loader2 size={14} className="animate-spin" /> : <><X size={14} /> {t('ta_decline_btn')}</>}
+                    {isBeingDeclined ? <Loader2 size={13} className="animate-spin" /> : <><X size={13} /> {t('ta_decline_btn')}</>}
                   </button>
                 </>
               ) : null}

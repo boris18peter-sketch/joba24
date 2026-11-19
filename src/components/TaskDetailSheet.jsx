@@ -84,6 +84,33 @@ export default function TaskDetailSheet() {
     }
   }, [sheetTaskId]);
 
+  // ── NO RUBBER-BAND INSIDE THE SHEET ───────────────────────────────────────
+  // Pulling the content down at its top edge made the sheet's own surface show
+  // through as a large empty band above the card, which reads as a broken
+  // screen. `overscroll-behavior` alone does not stop the bounce in every
+  // WebView the app runs in, so the drag that would overscroll is refused at the
+  // two edges. It is attached to THIS scroll container only, while the sheet is
+  // open, so no other scroll in the app pays for it.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!sheetTaskId || !el) return undefined;
+    let startY = 0;
+    const onStart = (e) => { startY = e.touches?.[0]?.clientY ?? 0; };
+    const onMove = (e) => {
+      const y = e.touches?.[0]?.clientY ?? 0;
+      const dy = y - startY;
+      const atTop = el.scrollTop <= 0;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      if ((atTop && dy > 0) || (atBottom && dy < 0)) e.preventDefault();
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+    };
+  }, [sheetTaskId]);
+
   if (!sheetTaskId) return null;
 
   return createPortal(
@@ -132,6 +159,7 @@ export default function TaskDetailSheet() {
             overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain',
+            overscrollBehaviorY: 'none',
           }}
         >
           {/* ── A SKELETON, NOT A SPINNER ─────────────────────────────────────

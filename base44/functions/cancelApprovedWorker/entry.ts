@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { applyCreditDeltas } from '../../shared/userCredits.ts';
 import { fetchUserMap } from '../../shared/userLookup.ts';
+import { runTaskTransition } from '../../shared/taskTransitionFastLane.ts';
 
 /**
  * cancelApprovedWorker — Called by task owner to cancel an approved worker BEFORE they start moving.
@@ -87,6 +88,11 @@ Deno.serve(async (req) => {
     const activeAppsAfter = apps.filter(a => a.status === 'pending');
 
     // Reset task to OPEN
+    const resetApplicants = activeAppsAfter.map(a => ({
+      worker_id: a.worker_id,
+      worker_name: a.worker_name,
+      applied_at: a.created_date,
+    }));
     await base44.asServiceRole.entities.Task.update(taskId, {
       status: 'OPEN',
       worker_id: null,
@@ -94,12 +100,39 @@ Deno.serve(async (req) => {
       worker_status: null,
       worker_rating: null,
       worker_verified: null,
-      applicants: activeAppsAfter.map(a => ({
-        worker_id: a.worker_id,
-        worker_name: a.worker_name,
-        applied_at: a.created_date,
-      })),
+      applicants: resetApplicants,
     });
+
+    // ── THE LOCK SCREEN MOVES WITH THE TAP ──────────────────────────────────
+    // The card only moved when the Task entity workflow got round to the write,
+    // so a cancelled worker could stay on the publisher's Lock Screen long after
+    // the cancel. The dispatch is made HERE, in the same request that already
+    // wrote the record, through the one shared transition module every other
+    // task action uses.
+    const resetTask = {
+      ...task,
+      status: 'OPEN',
+      worker_id: null,
+      worker_name: null,
+      worker_status: null,
+      worker_rating: null,
+      worker_verified: null,
+      applicants: resetApplicants,
+      updated_date: new Date().toISOString(),
+    };
+    // A Live Activity must never be able to fail a cancel that already happened.
+    await runTaskTransition({ base44, task: resetTask }).catch(() => null);
+
+    // The cancelled worker's own card belongs to a job they no longer have, and
+    // the reset record no longer names them — so their card is closed explicitly,
+    // for them alone: with no `client_id` on this copy the publisher is not a
+    // recipient of it, and their own card is untouched.
+    if (cancelledWorkerId) {
+      await runTaskTransition({
+        base44,
+        task: { ...resetTask, client_id: null, worker_id: cancelledWorkerId, status: 'CANCELLED' },
+      }).catch(() => null);
+    }
 
     console.log(`✅ cancelApprovedWorker: task ${taskId} reset to OPEN, ${approvedApps.length} apps refunded`);
     return Response.json({ success: true, cancelledWorkerId });
