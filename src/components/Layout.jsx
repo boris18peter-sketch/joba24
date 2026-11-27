@@ -61,7 +61,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import usePermissionStatus from '@/hooks/usePermissionStatus';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
-import { readPendingTask, hasTaskLinkLaunch } from '@/lib/pendingTask';
+import { readPendingTask, hasTaskLinkLaunch, taskLinkFromUrl } from '@/lib/pendingTask';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
@@ -767,7 +767,15 @@ export default function Layout() {
     // took the page out from under it. They continue as a GUEST instead — which
     // is exactly the audience a shared link is written for — and the sheet opens
     // over the home surface.
-    if (readPendingTask()) {
+    // ── THE URL IS EVIDENCE, NOT ONLY STORAGE ─────────────────────────────
+    // The share format is `/?open_task=ID`, and the id reaches storage in
+    // DeepLinkHandler's mount effect — which runs AFTER the first render. Reading
+    // storage alone therefore saw "no task" on a cold open, and this gate fired
+    // before the task was ever recorded. The URL is available at that instant.
+    const taskLink = readPendingTask()
+      || taskLinkFromUrl(window.location.search, window.location.pathname)
+      || hasTaskLinkLaunch();
+    if (taskLink) {
       if (!effectiveGuest && guestAccessEnabled) enterGuestMode();
       if (location.pathname !== '/') navigate('/', { replace: true });
       return;
@@ -807,7 +815,7 @@ export default function Layout() {
       // shared link lets an unauthenticated visitor see the task, so treating
       // that guest as a first-run visitor sent them to /welcome — the exact
       // screen they had just bypassed by tapping a task. A task link is a task.
-      if (!hasSeenFirstRun() && location.pathname === '/' && !hasTaskLinkLaunch()) {
+      if (!hasSeenFirstRun() && location.pathname === '/' && !taskLink) {
         navigate('/welcome', { replace: true });
       }
       return;
@@ -833,7 +841,7 @@ export default function Layout() {
     // and the visitor was then sent to the destination of their old track
     // (/welcome). The launch marker is what keeps them on the task they asked
     // for, for the whole of that launch.
-    if (hasTaskLinkLaunch()) {
+    if (taskLink) {
       if (location.pathname !== '/') navigate('/', { replace: true });
       return;
     }

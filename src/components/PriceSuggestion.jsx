@@ -1,50 +1,49 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, Loader2, Search, Wrench, Package, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-react';
+import { Sparkles, Loader2, Search, Wrench, Package, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useGlobalCategories, globalFieldChain } from '@/lib/brand/globalCategories';
 import { analyzePrice, getRateRange, priceSignature } from '@/lib/priceInsights';
 
 // Confidence → chip styling. Keys match the `confidence` values the engine returns.
 const CONFIDENCE_STYLE = {
-  high:   { key: 'ps_conf_high',   bg: 'rgba(22,163,74,0.12)', color: '#15803d' },
-  medium: { key: 'ps_conf_medium', bg: 'rgba(217,119,6,0.14)', color: '#b45309' },
-  low:    { key: 'ps_conf_low',    bg: 'rgba(100,116,139,0.14)', color: '#475569' },
+  high:   { key: 'ps_conf_high',   label: 'גבוהה', bg: 'rgba(22,163,74,0.14)',  color: '#15803d' },
+  medium: { key: 'ps_conf_medium', label: 'בינונית', bg: 'rgba(217,119,6,0.16)', color: '#b45309' },
+  low:    { key: 'ps_conf_low',    label: 'בסיסית', bg: 'rgba(100,116,139,0.16)', color: '#475569' },
 };
 
-// One line of the DETAILS panel — never shown up front, only when opened.
+// One line of the analysis. Kept to a single short sentence: the panel is there
+// to show the recommendation has a basis, not to explain the model.
 function AnalysisRow({ icon, label, value }) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const short = text.length > 110 ? `${text.slice(0, 110).trimEnd()}…` : text;
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 5 }}>
-      <span style={{ flexShrink: 0, marginTop: 2 }}>{icon}</span>
-      <span style={{ fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.5, fontWeight: 400 }}>
-        <strong style={{ fontWeight: 600 }}>{label}:</strong> {value}
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 4 }}>
+      <span style={{ flexShrink: 0, marginTop: 1.5 }}>{icon}</span>
+      <span style={{ fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.45, fontWeight: 400 }}>
+        <strong style={{ fontWeight: 700, color: 'var(--text-1)' }}>{label}:</strong> {short}
       </span>
     </div>
   );
 }
 
 /**
- * PriceSuggestion — one price, one tap.
+ * PriceSuggestion — one recommended price, its estimated range, and the
+ * analysis it is based on, in ONE clickable blue box.
  *
- * ── WHY THIS IS SMALL AGAIN ─────────────────────────────────────────────────
- * The card had grown into a report: a range, three amounts to choose between, an
- * "use" action and the whole analysis laid out underneath. A publisher does not
- * need to audit the model to accept its price — they need to read one number,
- * understand in a second that tapping it fills the budget, and move on.
- *
- * So the card is ONE clickable block: the recommended amount, one line saying
- * what it is based on, and one line saying what a tap does. Everything the
- * analysis found lives in a details dropdown that is closed by default. Tapping
- * anywhere on the card writes the amount into the budget field; it is never
- * applied on its own.
+ * ── THE SHAPE OF THIS CARD IS THE POINT ─────────────────────────────────────
+ * The recommendation is the largest thing on the card, the range sits under it
+ * as supporting context (never as a set of options), and the analysis is always
+ * visible rather than folded behind a dropdown: seeing what the model read in
+ * the task is what makes the number believable. The whole box is the action —
+ * one tap writes the amount into the budget — and the budget stays editable
+ * afterwards.
  */
 export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, distance, images, detailsText, requirementsText, onAccept }) {
   const { t, isRTL, lang } = useLanguage();
   const { map: categoryMap } = useGlobalCategories();
   const [result, setResult] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
   const [applied, setApplied] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   // The model must receive the category as a HUMAN NAME with its taxonomy
   // context, never the raw slug: "elec_panel" means nothing to it, while
@@ -75,10 +74,8 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
   useEffect(() => {
     if (!category || !ready) return;
     let cancelled = false;
-    setAnalyzing(true);
     setResult(null);
     setApplied(false);
-    setShowDetails(false);
     const fallback = () => {
       const r = getRateRange(category, isHourly);
       return { min: r.min, max: r.max, reason: t('ps_market_fallback'), confidence: 'low' };
@@ -92,8 +89,6 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
         if (!cancelled) setResult(res || fallback());
       } catch {
         if (!cancelled) setResult(fallback());
-      } finally {
-        if (!cancelled) setAnalyzing(false);
       }
     }, 900);
 
@@ -148,111 +143,93 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     );
   }
 
-  // ── STATE 3 — ONE RECOMMENDED AMOUNT ──────────────────────────────────────
-  // A single figure: the middle of what the engine considers fair for these
-  // details, which is the number the budget field should hold. A range made the
-  // publisher do the choosing; the recommendation should answer, not ask.
-  const amount = Math.round(((result.min + result.max) / 2) / 10) * 10;
+  // ── STATE 3 — THE RECOMMENDATION ──────────────────────────────────────────
+  const round10 = (n) => Math.round(Number(n) / 10) * 10;
+  const low = round10(result.min);
+  const high = Math.max(round10(result.max), low + 10);
+  // The single figure is the middle of the estimated range: the number the
+  // budget field should hold. The range stays visible as context, never as a
+  // choice — the recommendation is supposed to answer, not ask.
+  const amount = round10((result.min + result.max) / 2);
+
   const conf = CONFIDENCE_STYLE[result.confidence] || CONFIDENCE_STYLE.low;
   const hasAnalysis = !!(result.identified || result.requiredWork || result.materials);
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
-
-  const apply = () => {
-    onAccept(amount);
-    setApplied(true);
-  };
+  const suffix = isHourly ? t('ps_hourly_suffix') : '';
+  const divider = <div style={{ height: 1, background: 'var(--border-2)', margin: '7px 0' }} />;
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ marginTop: 8 }}>
-      {/* THE WHOLE CARD IS THE ACTION — no inner button, no separate control. */}
+      {/* THE WHOLE BOX IS THE ACTION — price, range, analysis and note are one
+          element, so nothing inside needs its own control. */}
       <button
         type="button"
-        onClick={apply}
-        style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-          textAlign: isRTL ? 'right' : 'left',
-          background: 'var(--brand-primary-light)',
-          border: 'none', borderRadius: 12,
-          padding: '9px 11px', cursor: 'pointer',
-          boxShadow: 'none', minHeight: 'unset',
-          WebkitTapHighlightColor: 'transparent',
-        }}
+        onClick={() => { onAccept(amount); setApplied(true); }}
+        style={{ ...surface, marginTop: 0, cursor: 'pointer', boxShadow: 'none', minHeight: 'unset', WebkitTapHighlightColor: 'transparent', display: 'block' }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Sparkles size={12} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>
-              {t('ps_title', 'המלצת מחיר AI')}
-            </span>
-          </div>
-
-          <div dir="ltr" style={{
-            fontSize: 21, fontWeight: 800, color: 'var(--brand-primary)',
-            letterSpacing: -0.4, lineHeight: 1.15, marginTop: 1,
-            textAlign: isRTL ? 'right' : 'left',
-          }}>
-            ₪{amount}{isHourly ? t('ps_hourly_suffix') : ''}
-          </div>
-
-          <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 400, marginTop: 1 }}>
-            {t('ps_based_on_your_input', 'לפי פרטי המשימה שהזנת')}
-          </div>
-
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 4, marginTop: 2,
-            fontSize: 11.5, fontWeight: 500,
-            color: applied ? 'var(--color-success)' : 'var(--brand-primary)',
-          }}>
-            {applied
-              ? <><Check size={12} /> {t('ps_price_updated', 'המחיר עודכן')}</>
-              : t('ps_tap_to_apply', 'לחץ לעדכון התקציב')}
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <Sparkles size={12} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-2)' }}>
+            {t('ps_title', 'המלצת מחיר AI')}
+          </span>
         </div>
 
-        {/* The affordance: a small chevron on the card's left edge. It becomes
-            a tick once the tap has landed, so the state is the same element. */}
-        {applied
-          ? <Check size={16} color="var(--color-success)" style={{ flexShrink: 0 }} />
-          : <Chevron size={16} color="var(--brand-primary)" style={{ flexShrink: 0, opacity: 0.7 }} />}
-      </button>
+        {/* THE RECOMMENDED PRICE — the largest thing on the card */}
+        <div dir="ltr" style={{
+          fontSize: 26, fontWeight: 900, color: 'var(--brand-primary)',
+          letterSpacing: -0.6, lineHeight: 1.1, marginTop: 2,
+          textAlign: isRTL ? 'right' : 'left',
+        }}>
+          ₪{amount}{suffix}
+        </div>
 
-      {/* The analysis, folded away. Nothing about how the model reasoned is in
-          the publisher's way unless they ask for it. */}
-      {hasAnalysis && (
-        <>
-          <button
-            type="button"
-            onClick={() => setShowDetails(v => !v)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              background: 'none', border: 'none', padding: '4px 0 0', cursor: 'pointer',
-              color: 'var(--text-3)', fontSize: 11, fontWeight: 500,
-              minHeight: 'unset', minWidth: 'unset',
-            }}
-          >
-            {t('ps_details', 'פירוט הניתוח')}
-            <ChevronDown size={12} style={{ transform: showDetails ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-          </button>
+        {/* THE RANGE — context, not options */}
+        <div style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>
+          {t('ps_range_label', 'טווח מחירים משוער')}:{' '}
+          <span dir="ltr" style={{ fontWeight: 700, color: 'var(--text-1)' }}>{low}–{high} ₪{suffix}</span>
+        </div>
 
-          {showDetails && (
-            <div style={{ marginTop: 2 }}>
-              {result.identified && <AnalysisRow icon={<Search size={11} color="var(--brand-primary)" />} label={t('ps_identified')} value={result.identified} />}
-              {result.requiredWork && <AnalysisRow icon={<Wrench size={11} color="var(--brand-primary)" />} label={t('ps_required')} value={result.requiredWork} />}
-              {result.materials && <AnalysisRow icon={<Package size={11} color="var(--brand-primary)" />} label={t('ps_materials')} value={result.materials} />}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-2)' }}>{t('ps_confidence')}:</span>
-                <span style={{ fontSize: 10, fontWeight: 600, background: conf.bg, color: conf.color, borderRadius: 999, padding: '1px 7px' }}>
-                  {t(conf.key)}
-                </span>
-              </div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-2)', fontWeight: 400, marginTop: 1 }}>
+          {t('ps_based_on_your_input', 'בהתבסס על פרטי המשימה שהזנת')}
+        </div>
+
+        {/* THE AFFORDANCE — a chevron before, a single tick after */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 4, marginTop: 5,
+          fontSize: 11.5, fontWeight: 700,
+          color: applied ? 'var(--color-success)' : 'var(--brand-primary)',
+        }}>
+          {applied
+            ? <><Check size={13} /> {t('ps_price_updated', 'המחיר עודכן')}</>
+            : <>{t('ps_tap_to_apply', 'לחץ לעדכון התקציב')} <Chevron size={13} /></>}
+        </div>
+
+        {/* ── THE ANALYSIS — always visible, inside the same box ───────────── */}
+        {hasAnalysis && (
+          <>
+            {divider}
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.2 }}>
+              {t('ps_analysis_title', 'ניתוח פרטי המשימה שלך')}
             </div>
-          )}
-        </>
-      )}
+            <AnalysisRow icon={<Search size={11} color="var(--brand-primary)" />} label={t('ps_identified')} value={result.identified} />
+            <AnalysisRow icon={<Wrench size={11} color="var(--brand-primary)" />} label={t('ps_required')} value={result.requiredWork} />
+            <AnalysisRow icon={<Package size={11} color="var(--brand-primary)" />} label={t('ps_materials')} value={result.materials} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-2)' }}>{t('ps_confidence')}:</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, background: conf.bg, color: conf.color, borderRadius: 999, padding: '1px 7px' }}>
+                {t(conf.key, conf.label)}
+              </span>
+            </div>
+          </>
+        )}
 
-      <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.45, fontWeight: 400 }}>
-        {t('ps_estimate_only', 'המלצת מחיר בלבד. התקציב לבחירתך.')}
-      </div>
+        {divider}
+
+        {/* THE DISCLOSURE — always present, and readable (never the faintest ink) */}
+        <div style={{ fontSize: 10.5, color: 'var(--text-2)', fontWeight: 500, lineHeight: 1.45 }}>
+          {t('ps_estimate_only', 'זוהי הערכת מחיר בלבד, בהתאם לפרטים שהזנת. התקציב לבחירתך.')}
+        </div>
+      </button>
     </div>
   );
 }

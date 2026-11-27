@@ -104,3 +104,21 @@ export function hasTaskLinkLaunch() {
   if (Date.now() - at > LINK_MAX_AGE_MS) return false;
   return true;
 }
+
+/**
+ * The task a URL itself asks for.
+ *
+ * `/?open_task=ID` is the app's share format (TaskCard and TaskDetail build it),
+ * and `/task/ID` is the route form. Reading this is what lets the entry gate
+ * decide correctly on the FIRST render, before any effect has run — the parked
+ * id only reaches storage in an effect, which is a moment too late for a
+ * render-time redirect.
+ */
+export function taskLinkFromUrl(search, pathname) {
+  try {
+    const id = new URLSearchParams(search || '').get('open_task');
+    if (id) return id;
+  } catch { /* malformed query string */ }
+  const match = /^\/task\/([^/?#]+)/.exec(pathname || '');
+  return match ? decodeURIComponent(match[1]) : null;
+}

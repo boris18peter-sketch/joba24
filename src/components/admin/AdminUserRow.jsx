@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import GoldBadge from '@/components/GoldBadge';
 import CopyableId from '@/components/CopyableId';
+import { socialProfileUrl } from '@/lib/socialProfileUrl';
 import PermissionChips from '@/components/admin/PermissionChips';
 import { getCategoryLabel } from '@/lib/categories';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
@@ -268,7 +269,7 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {user.instagram_username && (
-                  <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noreferrer"
+                  <a href={socialProfileUrl('instagram', user.instagram_username)} target="_blank" rel="noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.instagram_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
                     <Instagram size={12} color="#dc2743" />
                     @{user.instagram_username}
@@ -276,7 +277,7 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
                   </a>
                 )}
                 {user.facebook_username && (
-                  <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noreferrer"
+                  <a href={socialProfileUrl('facebook', user.facebook_username)} target="_blank" rel="noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.facebook_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
                     <Facebook size={12} color="#1877F2" />
                     @{user.facebook_username}
@@ -284,7 +285,7 @@ export default function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits
                   </a>
                 )}
                 {user.tiktok_username && (
-                  <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noreferrer"
+                  <a href={socialProfileUrl('tiktok', user.tiktok_username)} target="_blank" rel="noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.tiktok_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
                     <Music2 size={12} color="#000" />
                     @{user.tiktok_username}

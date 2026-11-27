@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Ban, CheckCircle2, RefreshCw, Shield, Instagram, Facebook, Music2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { socialProfileUrl } from '@/lib/socialProfileUrl';
 import GoldBadge from '@/components/GoldBadge';
 import CopyableId from '@/components/CopyableId';
 import PrivateImage from '@/components/PrivateImage';
@@ -148,19 +149,19 @@ export default function AdminKycTab({ kycUsers, pendingKyc, onOpenLightbox, refe
                 {(user.instagram_username || user.facebook_username || user.tiktok_username) && (
                   <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
                     {user.instagram_username && (
-                      <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                      <a href={socialProfileUrl('instagram', user.instagram_username)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                         style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
                         <Instagram size={10} color="#dc2743" /> @{user.instagram_username}
                       </a>
                     )}
                     {user.facebook_username && (
-                      <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                      <a href={socialProfileUrl('facebook', user.facebook_username)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                         style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
                         <Facebook size={10} color="#1877F2" /> @{user.facebook_username}
                       </a>
                     )}
                     {user.tiktok_username && (
-                      <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                      <a href={socialProfileUrl('tiktok', user.tiktok_username)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                         style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
                         <Music2 size={10} color="#000" /> @{user.tiktok_username}
                       </a>

@@ -49,25 +49,77 @@ export function cleanSocialHandle(raw) {
   return /^[A-Za-z0-9._-]{2,60}$/.test(v) ? v : '';
 }
 
+const CANONICAL_HOST = {
+  facebook: /(^|\.)facebook\.com$/i,
+  instagram: /(^|\.)instagram\.com$/i,
+  tiktok: /(^|\.)tiktok\.com$/i,
+};
+
+// A redirect host, not a profile path: its short code is the only thing that
+// resolves, so such a URL is kept exactly as it was stored.
+const SHORT_LINK_HOST = /^(vm|vt)\.|^fb\.watch$/i;
+
+function asNetworkUrl(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) {
+    try { return new URL(v); } catch { return null; }
+  }
+  if (NETWORK_HOST.test(v.split('/')[0])) {
+    try { return new URL(`https://${v}`); } catch { return null; }
+  }
+  return null;
+}
+
 /**
  * A working profile URL for a stored handle, or null when there is nothing to
  * link to. A display name falls back to the network's search for that name.
  */
 export function socialProfileUrl(platform, raw) {
-  const handle = cleanSocialHandle(raw);
-  const name = String(raw || '').trim();
+  const stored = String(raw || '').trim();
+  if (!stored) return null;
+
+  // ── A STORED URL IS NOT REWRITTEN ────────────────────────────────────────
+  // Real records hold facebook.com/share/<token>, /people/<name>/<id>, /p/…,
+  // profile.php?id=… and m.facebook.com/<name>. Reducing every one of them to
+  // its FIRST path segment produced "facebook.com/share" — a dead link — while
+  // the original resolved perfectly. Only a plain single-segment handle is
+  // rebuilt canonically; anything else keeps the path (and query) it was stored
+  // with, on the network's own host.
+  const url = asNetworkUrl(stored);
+  if (url) {
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname.replace(/\/+$/, '');
+    const segments = path.split('/').filter(Boolean);
+
+    if (SHORT_LINK_HOST.test(host)) return `https://${host}${path}${url.search}`;
+
+    const plainHandle = (CANONICAL_HOST[platform] || /$^/).test(host)
+      && segments.length === 1
+      && !url.search
+      && !/\.php$/i.test(segments[0])
+      && /^@?[A-Za-z0-9._-]{2,60}$/.test(segments[0]);
+
+    if (!plainHandle && (CANONICAL_HOST[platform] || /$^/).test(host)) {
+      return `https://www.${platform}.com${path}${url.search}`;
+    }
+  }
+
+  const handle = cleanSocialHandle(stored);
 
   if (platform === 'facebook') {
     if (handle) return `https://www.facebook.com/${handle}`;
-    return name ? `https://www.facebook.com/search/top?q=${encodeURIComponent(name)}` : null;
+    // A display name has no profile URL anywhere — Facebook has no public
+    // name-based profile address. The people search is the honest destination.
+    return `https://www.facebook.com/search/people/?q=${encodeURIComponent(stored)}`;
   }
   if (platform === 'instagram') {
     if (handle) return `https://www.instagram.com/${handle}`;
-    return name ? `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(name)}` : null;
+    return `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(stored)}`;
   }
   if (platform === 'tiktok') {
     if (handle) return `https://www.tiktok.com/@${handle}`;
-    return name ? `https://www.tiktok.com/search?q=${encodeURIComponent(name)}` : null;
+    return `https://www.tiktok.com/search?q=${encodeURIComponent(stored)}`;
   }
   return null;
 }

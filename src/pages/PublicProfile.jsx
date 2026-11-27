@@ -19,6 +19,7 @@ import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
 import { socialProfileUrl, cleanSocialHandle, displaySocialHandle } from '@/lib/socialProfileUrl';
+import { openExternalBrowser } from '@/lib/nativeEnv';
 import { calculateTrustScore } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -209,8 +210,18 @@ export default function PublicProfile() {
                 { key: 'instagram', label: 'Instagram', username: user.instagram_username, verified: user.instagram_verified, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
                 { key: 'facebook', label: 'Facebook', username: user.facebook_username, verified: user.facebook_verified, icon: Facebook, color: '#1877F2' },
                 { key: 'tiktok', label: 'TikTok', username: user.tiktok_username, verified: user.tiktok_verified, icon: Music2, color: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)' },
-              ].filter(p => p.username && p.verified).map(p => (
-                <a key={p.key} href={socialProfileUrl(p.key, p.username)} target="_blank" rel="noopener noreferrer"
+              ].filter(p => p.username && p.verified).map(p => {
+                const profileUrl = socialProfileUrl(p.key, p.username);
+                if (!profileUrl) return null;
+                return (
+                <a key={p.key} href={profileUrl} target="_blank" rel="noopener noreferrer"
+                  // ── OPENED OUTSIDE THE WEBVIEW ────────────────────────────
+                  // `target="_blank"` is ignored inside the native WebView, so
+                  // tapping a connected network did nothing at all there. The
+                  // app's own helper opens the system browser on native and a
+                  // new tab on web, which is the path every other external link
+                  // in the app already uses.
+                  onClick={(e) => { e.preventDefault(); openExternalBrowser(profileUrl); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-4)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 10px', textDecoration: 'none' }}>
                   <span style={{ width: 36, height: 36, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
                     <p.icon size={17} color="white" />
@@ -225,7 +236,8 @@ export default function PublicProfile() {
                     <ShieldCheck size={11} color="#d97706" /> {t('pp_verified')}
                   </span>
                 </a>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
