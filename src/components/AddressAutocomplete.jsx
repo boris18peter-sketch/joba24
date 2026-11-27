@@ -278,7 +278,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
           onBlur={handleBlur}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
-          placeholder="הקלד רחוב, מספר בית ועיר..."
+          placeholder="רחוב, מספר בית ועיר"
           dir="rtl"
           style={{
             width: '100%',

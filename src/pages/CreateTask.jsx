@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, ChevronRight, X, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, HelpCircle, Mic, MicOff, ChevronDown, ChevronUp, ChevronRight, X, CreditCard, FileText, Phone, Calendar, ShieldCheck, Eye } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import { clearTaskDraft } from '@/lib/taskDraft';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
@@ -54,6 +54,7 @@ import { checkGibberish } from '@/lib/taskTextChecks';
 import useServiceSync from '@/hooks/useServiceSync';
 import { bestServiceForText } from '@/lib/descriptionCategoryMatch';
 import PublishIssueBanner from '@/components/publish/PublishIssueBanner';
+import PublishPreviewSheet from '@/components/publish/PublishPreviewSheet';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 // Which step of the slider the publisher had reached. A visitor who is asked to
@@ -264,6 +265,9 @@ export default function CreateTask() {
   const [showNoCreditsModal, setShowNoCreditsModal] = useState(false);
   const [showRequirements, setShowRequirements] = useState(false);
   const [chatMode, setChatMode] = useState(false);
+  // The optional "how will this look?" sheet. Never a step: opening it creates
+  // nothing, and publishing from inside it is the same publish button.
+  const [showPreview, setShowPreview] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [extraFieldsText, setExtraFieldsText] = useState('');
   const [categoryDetails, setCategoryDetails] = useState({});
@@ -1501,6 +1505,32 @@ export default function CreateTask() {
           type="publish"
         />
       )}
+      {/* Optional preview — the task as a professional will see it. Rendered
+          from the form's own state, so it can never show anything that would
+          not be published, and it creates nothing. */}
+      {showPreview && (
+        <PublishPreviewSheet
+          t={t}
+          isRTL={isRTL}
+          publishing={loading}
+          task={{
+            title: suggestedTitle || heuristicTitle(form.description) || t('preview_empty_title'),
+            description: form.description,
+            price: Number(form.price) || 0,
+            images: form.images,
+            video_url: form.video_url,
+            category: form.category,
+            category_details: getFinalCategoryDetails(),
+            location_name: form.location_name,
+            city: form.city,
+            urgency_tag: form.urgency_tag,
+            scheduled_time: form.scheduled_time,
+            requirements: form.requirements,
+          }}
+          onClose={() => setShowPreview(false)}
+          onPublish={() => { setShowPreview(false); handleSubmit(); }}
+        />
+      )}
       {/* Sticky header + progress bar combined */}
       {(() => {
         // Measured against the fields the admin actually kept — including the
@@ -1539,23 +1569,31 @@ export default function CreateTask() {
                 onClick={closeForm}
                 aria-label="סגירה"
                 style={{
-                  width: 34, height: 34, borderRadius: 11, flexShrink: 0, cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
+                  width: 26, height: 26, borderRadius: 8, flexShrink: 0, cursor: 'pointer',
+                  background: 'transparent', border: 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0.9, padding: 0,
                   WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
                 }}
               >
-                <X size={18} color="var(--brand-hero-text, white)" strokeWidth={2.4} />
+                <X size={17} color="var(--brand-hero-text, white)" strokeWidth={2.6} />
               </button>
-              <span style={{
-                // The headline now carries the whole promise — free to post, and
-                // people will answer — so it is sized to wrap onto a second line
-                // in the bar instead of being clipped to one.
-                fontWeight: 800, fontSize: 15.5, lineHeight: 1.32,
-                color: 'var(--brand-hero-text, white)', flex: 1, minWidth: 0,
-              }}>
-        {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
-      </span>
+              {/* ── THE HEADER SAYS WHAT THE FORM IS AND WHY IT IS FREE ──────
+                  One short headline, then the one line that answers the two
+                  questions a publisher arrives with ("what does it cost?" and
+                  "will anyone actually come?"). The old single line carried the
+                  whole promise in a sentence, which wrapped into the bar and made
+                  the header as heavy as the form. */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 900, fontSize: 17, lineHeight: 1.2, letterSpacing: -0.3, color: 'var(--brand-hero-text, white)' }}>
+                  {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_form_title')}
+                </div>
+                {!isEditMode && (
+                  <div style={{ fontSize: 11.5, fontWeight: 600, lineHeight: 1.35, marginTop: 2, color: 'rgba(255,255,255,0.72)' }}>
+                    {t('publish_form_subtitle')}
+                  </div>
+                )}
+              </div>
               {/* Chat feature button — temporarily disabled
               <button
                 onClick={() => setChatMode(m => !m)}
@@ -1582,16 +1620,14 @@ export default function CreateTask() {
                 the screen — a single small line, not a step tracker — because a
                 row of pips told the publisher how MANY screens were left and
                 made a short form feel like a long one. */}
-            <div style={{ padding: isSliderForm ? '0 16px 10px' : '0 16px 12px' }}>
-              {!isSliderForm && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{t('form_progress')}</span>
-                  <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ ' + t('ready_to_publish') : ''}</span>
-                </div>
-              )}
-              <div style={{ height: isSliderForm ? 3 : 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
+            {/* One thin line and its percentage. The "השלמת הטופס" caption is
+                gone: the bar already says how far along this is, and naming it
+                only added a row of small type above the fields. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 16px 4px' }}>
+              <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.16)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.8)', borderRadius: 99, transition: 'width 0.4s ease' }} />
               </div>
+              <span style={{ fontSize: 10.5, fontWeight: 800, minWidth: 30, textAlign: 'end', color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)' }}>{pct}%</span>
             </div>
           </div>
         );
@@ -1601,7 +1637,7 @@ export default function CreateTask() {
           pinned under it, never floating over a field, dismissible with one ×. */}
       <PublishHelpVideo />
 
-      <div ref={wizardScrollRef} className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+      <div ref={wizardScrollRef} className="px-4 pt-4 space-y-5" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 20 }}>
         {/* What THIS step is asking, in the publisher's own question — not the
             field's internal name. Re-keyed on the step so it animates in with
             the content it belongs to. */}
@@ -1652,7 +1688,7 @@ export default function CreateTask() {
         {(!isSliderForm || stepIdx === 0) && (
         <div className="j-step-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
+          <Label style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', display: 'block', marginBottom: 8 }}>{t('ct_category')}</Label>
           <div ref={fieldRefs.categoryPicker}>
           <CategoryServiceSelector value={form.category} allowHistorical={isEditMode} onRootChange={setRootKey} onChange={val => {
             set('category', val);
@@ -1698,13 +1734,16 @@ export default function CreateTask() {
         {fieldOn('description') && (
         <div ref={fieldRefs.description} style={errors.description ? { borderRadius: 18, outline: '2px solid #ef4444', outlineOffset: 4 } : undefined}>
         <SectionCard>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{t('ct_describe_task')}</Label>
+          {/* The question the publisher is answering, at the weight of a heading,
+              with dictation offered as a quiet blue action beside it instead of a
+              filled pill that competed with the field itself. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+            <Label style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', margin: 0 }}>{t('ct_describe_task')}</Label>
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
               disabled={transcribing}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : 'var(--brand-primary-light)', color: recording ? 'var(--color-danger)' : 'var(--brand-primary)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 0', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 700, color: recording ? 'var(--color-danger)' : 'var(--brand-primary)', minHeight: 'unset', minWidth: 'unset' }}
             >
               {transcribing ? <Loader2 size={13} className="animate-spin" /> : recording ? <MicOff size={13} /> : <Mic size={13} />}
               {transcribing ? t('processing') : recording ? t('stop_recording') : t('record_description')}
@@ -1741,11 +1780,21 @@ export default function CreateTask() {
               // depend on the publisher and the list agreeing on the same word.
               serviceSync.sync();
             }}
-            style={{ background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', padding: 0, resize: 'none', minHeight: 100 }} rows={4}
+            // The field starts at a comfortable writing height and grows with the
+            // text, so a detailed description is never typed inside a small box —
+            // and an empty one does not take a third of the screen.
+            onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = `${Math.min(Math.max(el.scrollHeight, 116), 320)}px`; }}
+            style={{ background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', padding: 0, resize: 'none', minHeight: 116, lineHeight: 1.55 }} rows={4}
           />
           {fieldOn('media') && (
             <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
           )}
+          </div>
+          {/* A gentle nudge, not a requirement: the AI reads the description and
+              the photos, so saying so once is what makes a publisher write more. */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 8, fontSize: 11.5, fontWeight: 600, lineHeight: 1.45, color: 'var(--text-3)' }}>
+            <Sparkles size={13} color="var(--brand-primary)" style={{ flexShrink: 0, marginTop: 1 }} />
+            {t('ct_desc_ai_hint')}
           </div>
           {checkingModeration === 'description' && <p style={{ fontSize: 11, color: 'var(--brand-primary)', marginTop: 4 }}>{t('ct_checking')}</p>}
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{t('ct_required')}</p>}
@@ -1827,9 +1876,11 @@ export default function CreateTask() {
           {(fieldOn('urgency') || fieldOn('exact_datetime')) && (
           <div style={{ marginTop: fieldOn('expiry') ? 18 : 0, paddingTop: fieldOn('expiry') ? 16 : 0, borderTop: fieldOn('expiry') ? '1px solid var(--border-1)' : 'none' }}>
           {fieldOn('urgency') && (<>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-            <Zap size={14} color="var(--text-3)" strokeWidth={1.8} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{t('ct_when_worker')}</span>
+          {/* Two columns, two rows, four short answers. The selected one is the
+              brand's own blue rather than four different accent colours: four
+              unrelated hues turned a simple question into a colour-coded quiz. */}
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>
+            {t('ct_when_worker')}
           </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {URGENCY_TAGS.map(tag => {
@@ -1838,11 +1889,11 @@ export default function CreateTask() {
                   <button key={tag.value}
                     onClick={() => set('urgency_tag', isActive ? '' : tag.value)}
                     style={{
-                      padding: '10px 14px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+                      minHeight: 44, padding: '0 10px', borderRadius: 12, fontSize: 13.5, fontWeight: 700,
                       cursor: 'pointer', textAlign: 'center',
-                      background: isActive ? tag.bg : 'var(--surface-3)',
-                      color: isActive ? tag.color : 'var(--text-2)',
-                      border: isActive ? `1.5px solid ${tag.border}` : '1px solid var(--border-1)',
+                      background: isActive ? 'var(--brand-primary-light)' : 'var(--surface-2)',
+                      color: isActive ? 'var(--brand-primary)' : 'var(--text-2)',
+                      border: `1.5px solid ${isActive ? 'var(--brand-primary)' : 'var(--border-1)'}`,
                       transition: 'all 0.15s',
                     }}
                   >
@@ -1924,9 +1975,7 @@ export default function CreateTask() {
         {void (sections.location_name = (<>
         {fieldOn('location_name') && (
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
-            <MapPin size={14} /> {t('ct_location_req')}
-          </Label>
+          <Label style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', display: 'block', marginBottom: 8 }}>{t('ct_location_req')}</Label>
           <div ref={fieldRefs.location_name}>
             <AddressAutocomplete
               value={form.location_name}
@@ -2327,73 +2376,53 @@ export default function CreateTask() {
             })()
           : sectionOrder.map(key => (sections[key] ? <React.Fragment key={key}>{sections[key]}</React.Fragment> : null))}
 
-        {/* Submit — the slider's last step, the end of the form otherwise */}
-        {(!isSliderForm || stepIdx === wizardTotal - 1) && (() => {
-          // Ready means every remaining required field is filled — the same list
-          // the validation uses, so the green button can never lie.
-          const values = requiredValues();
-          const isReady = requiredFieldOrder().every(k => values[k]);
-          return (
-            <div ref={fieldRefs.publishBtn} style={{ marginTop: 8, paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
-              {/* ── THE LAST STEP IS STILL A STEP ──────────────────────────────
-                  Publishing used to be the only thing on this screen, so a
-                  publisher who wanted to change one detail had to leave the
-                  form and start again. The way back now sits beside the publish
-                  button, in the same row and at the same height. */}
-              <div style={{ display: 'flex', alignItems: 'stretch', gap: 10 }}>
-              {isSliderForm && stepIdx > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setStepIdx(i => Math.max(0, i - 1))}
-                  aria-label="חזרה"
-                  style={{
-                    width: 60, height: 60, flexShrink: 0, cursor: 'pointer',
-                    borderRadius: 18,
-                    background: 'var(--surface-2)',
-                    border: '1.5px solid var(--border-2)',
-                    color: 'var(--text-2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <ChevronRight size={24} strokeWidth={2.6} />
-                </button>
-              )}
-              <button
-                onClick={handleSubmit}
-                // ONLY a publish in flight disables this button. A disabled button
-                // that looks exactly like an enabled one is the worst failure this
-                // form can have: the press does nothing and nothing explains why.
-                // Every other blocker now ANSWERS — a banner, a toast, or a jump
-                // to the field that still needs an answer.
-                disabled={loading}
-                className="btn-tap"
-                style={{
-                  flex: 1, minWidth: 0, height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
-                  color: 'var(--brand-btn-primary-text, white)', border: 'none',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  background: isReady
-                    ? 'linear-gradient(135deg, var(--brand-btn-primary-bg, #059669), var(--brand-btn-primary-bg, #047857))'
-                    : 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
-                  boxShadow: isReady
-                    ? '0 8px 28px rgba(5,150,105,0.4)'
-                    : '0 8px 28px rgba(26,111,212,0.4)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  marginBottom: 10, transition: 'background 0.35s ease, box-shadow 0.35s ease',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                {loading
-                  ? <><Loader2 size={22} className="animate-spin" /> {t('publishing_btn')}</>
-                  : isReady
-                    ? (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_now')} ✓</>)
-                    : (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_new_task')}</>)}
-              </button>
-              </div>
-              {!isEditMode && <SocialProofBar />}
-            </div>
-          );
-        })()}
       </div>
+
+      {/* ── THE ACTION BAR ───────────────────────────────────────────────────
+          Publishing used to be the last thing INSIDE the scroller, so on a long
+          form the one action that finishes it only existed once the publisher
+          had scrolled all the way down — the form's own length was the last
+          obstacle between them and a posted task.
+
+          It is now its own bar under the form: always visible, never covering a
+          field (the scroller ends above it), and padded for the iPhone home
+          indicator and the Android system bar. The optional preview is quiet
+          blue text above it, so the primary action stays the loudest thing on
+          the screen. Same handler, same validation, same double-publish guard —
+          only its position changed. */}
+      {(!isSliderForm || stepIdx === wizardTotal - 1) && (
+        <div ref={fieldRefs.publishBtn} style={{ flexShrink: 0, background: 'var(--surface-1)', borderTop: '1px solid var(--border-1)', padding: '4px 16px max(10px, env(safe-area-inset-bottom))' }}>
+          {!isEditMode && (
+            <button
+              type="button"
+              onClick={() => setShowPreview(true)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, background: 'none', border: 'none', padding: '6px 0', cursor: 'pointer', color: 'var(--brand-primary)', fontSize: 12.5, fontWeight: 800, minHeight: 'unset' }}
+            >
+              <Eye size={14} /> {t('preview_action')}
+            </button>
+          )}
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="btn-tap"
+            style={{
+              width: '100%', height: 52, borderRadius: 14, fontSize: 16, fontWeight: 900,
+              color: 'var(--brand-btn-primary-text, white)', border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
+              boxShadow: '0 6px 20px rgba(26,111,212,0.32)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {loading
+              ? <><Loader2 size={19} className="animate-spin" /> {t('publishing_btn')}</>
+              : isEditMode
+                ? <><Save size={18} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</>
+                : <><Zap size={18} />{t('publish_new_task')}</>}
+          </button>
+        </div>
+      )}
 
       {/* The slider's motion through the form. Publishing itself stays the same
           button at the end of the last step — this bar only moves between steps. */}

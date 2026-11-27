@@ -76,14 +76,14 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
       borderRadius: 12,
       border: '1px solid rgba(255,255,255,0.08)',
     }}>
-      {/* Live indicator dot */}
-      <span style={{
-        width: 7, height: 7, borderRadius: '50%',
-        background: '#4ade80',
-        boxShadow: '0 0 6px rgba(74,222,128,0.6)',
-        flexShrink: 0,
-        animation: 'waiPulse 2s infinite',
-      }} />
+      {/* ── NO "ONLINE" DOT ──────────────────────────────────────────────────
+          There was a pulsing green dot here, and it claimed something the number
+          does not mean: the count is how many professionals are REGISTERED for
+          this trade (and city), not how many are connected right now. A green
+          "live" light beside it told a publisher that people were waiting online,
+          which the data cannot support. The count and the faces already say
+          "there are real professionals here", so the dot is simply gone rather
+          than repainted in another colour. */}
 
       {/* Count */}
       <span style={{ color: 'white', fontSize: 16, fontWeight: 900, flexShrink: 0, lineHeight: 1 }}>

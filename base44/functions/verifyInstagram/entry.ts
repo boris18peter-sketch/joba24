@@ -35,6 +35,33 @@ function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+// ── A PROFILE LINK IS A USERNAME TOO ─────────────────────────────────────────
+// Publishers paste what they have: "@name", "name", a full
+// "https://www.facebook.com/name?locale=he_IL" link, or a numeric
+// "profile.php?id=1000…" address. All of them name the same profile, and all of
+// them used to be stored verbatim — so the scan fetched a URL built from a URL
+// and found nothing. The identifier is extracted here, once, before it is saved.
+function normalizeUsername(platform, raw) {
+  let v = String(raw || '').trim();
+  v = v.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  if (platform === 'facebook') {
+    const id = v.match(/profile\.php\?id=(\d+)/i);
+    if (id) return id[1];
+    v = v.replace(/^[a-z0-9.-]*facebook\.com\//i, '');
+    v = v.split(/[?#]/)[0].replace(/\/+$/, '');
+    return v.replace(/^@/, '').trim().toLowerCase();
+  }
+  if (platform === 'instagram') {
+    v = v.replace(/^[a-z0-9.-]*instagram\.com\//i, '');
+    return v.split(/[?#/]/)[0].replace(/^@/, '').trim().toLowerCase();
+  }
+  if (platform === 'tiktok') {
+    v = v.replace(/^[a-z0-9.-]*tiktok\.com\//i, '');
+    return v.split(/[?#/]/)[0].replace(/^@/, '').trim().toLowerCase();
+  }
+  return v.replace(/^@/, '').trim().toLowerCase();
+}
+
 function decodeEntities(str) {
   if (!str) return '';
   return str
@@ -277,13 +304,82 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
   }
 }
 
+// ── Facebook: the public page as a CRAWLER sees it ──────────────────────────
+// This is the fix for "I connected Facebook and never got the gold badge".
+//
+// A Facebook profile is a login wall to a normal browser user agent: the server
+// got a sign-in page, the bio was never in it, and the scan answered "code not
+// found" for essentially every user — so facebook_verified stayed false and the
+// gold badge never appeared.
+//
+// The same profile IS public to the crawlers Facebook serves link previews to,
+// and there the intro/bio is returned in the page's og:description. Asking as
+// one of those agents (and as the mobile/basic hosts, which are lighter) is what
+// makes the code readable. Every combination is tried at once, and the first one
+// that contains the code wins — the whole sweep is bounded by its own ceiling so
+// it can never outlive the request.
+const FB_AGENTS = [
+  'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+  'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+  'Twitterbot/1.0',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+];
+
+async function checkFacebookPublicBio(username, code) {
+  const urls = [
+    `https://www.facebook.com/${username}`,
+    `https://www.facebook.com/${username}/about`,
+    `https://m.facebook.com/${username}`,
+    `https://mbasic.facebook.com/${username}`,
+  ];
+
+  const probe = async (ua, url) => {
+    try {
+      const res = await fetchWithTimeout(url, {
+        headers: {
+          'User-Agent': ua,
+          'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+          'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
+        },
+        redirect: 'follow',
+      }, 6000);
+      const text = await res.text().catch(() => '');
+      if (!text || text.length < 100) return null;
+      if (decodeEntities(text).includes(code)) return 'facebook-page';
+      for (const prop of ['og:description', 'description']) {
+        const meta = extractMetaTag(text, prop);
+        if (meta && meta.includes(code)) return `facebook-${prop}`;
+      }
+    } catch (e) {
+      // A blocked or timed-out agent is simply not the one that answers.
+    }
+    return null;
+  };
+
+  const combos = [];
+  for (const ua of FB_AGENTS) for (const url of urls) combos.push({ ua, url });
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result) => { if (!settled) { settled = true; clearTimeout(deadline); resolve(result); } };
+    const deadline = setTimeout(() => finish({ found: false, method: 'timeout' }), 8000);
+
+    Promise.all(combos.map(({ ua, url }) => probe(ua, url)))
+      .then((results) => {
+        const hit = results.find(Boolean);
+        finish(hit ? { found: true, method: hit } : { found: false, method: 'not-found' });
+      })
+      .catch(() => finish({ found: false, method: 'not-found' }));
+  });
+}
+
 // ── Race all methods in parallel — return as soon as any finds the code ──
 async function verifyInParallel(platform, username, code, base44) {
   const p = PLATFORM_CONFIG[platform];
   const profileUrl = p.profileUrl(username);
 
   return new Promise((resolve) => {
-    let remaining = 3;
+    let remaining = platform === 'facebook' ? 4 : 3;
     let settled = false;
     let deadline;
 
@@ -326,6 +422,14 @@ async function verifyInParallel(platform, username, code, base44) {
       if (r.found) finish(r);
       else checkDone();
     }).catch(() => checkDone());
+
+    // Method 4 (Facebook only): the public page read as a crawler sees it.
+    if (platform === 'facebook') {
+      checkFacebookPublicBio(username, code).then(r => {
+        if (r.found) finish(r);
+        else checkDone();
+      }).catch(() => checkDone());
+    }
   });
 }
 
@@ -347,15 +451,23 @@ export default async function(req) {
 
     // ── Connect: save username + generate code ──
     if (action === 'connect_code') {
-      let clean = (username || '').replace(/^@/, '').trim().toLowerCase();
+      const clean = normalizeUsername(platform, username);
       if (!clean || clean.length < 2 || clean.length > 50) {
         return Response.json({ error: 'שם משתמש לא תקין' }, { status: 400 });
       }
       const code = generateCode();
+      // ── A NEW CODE IS NOT A REVOCATION ──────────────────────────────────
+      // Generating a code used to clear the verified flag unconditionally, so a
+      // user who was ALREADY gold and simply re-opened the sheet lost the badge
+      // for as long as the new scan took (and for ever, if that scan failed).
+      // The badge is only cleared when the profile being connected is a
+      // different one from the profile that was verified.
+      const existing = await base44.asServiceRole.entities.User.filter({ id: user.id }).catch(() => []);
+      const sameHandle = existing?.[0]?.[usernameField] === clean;
       await base44.asServiceRole.entities.User.update(user.id, {
         [usernameField]: clean,
-        [verifiedField]: false,
         [codeField]: code,
+        ...(sameHandle ? {} : { [verifiedField]: false }),
       });
       return Response.json({ success: true, code, username: clean, platform });
     }
