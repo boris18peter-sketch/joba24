@@ -75,19 +75,24 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
     }
   };
 
-  // ── A CAMERA TAP THE DEVICE REFUSES MUST SAY SO ───────────────────────────
-  // A file input with `capture` opens the camera only while the permission is
-  // granted; once it has been denied the tap does nothing at all, and nothing on
-  // screen explains why. The permission is read first (without asking — the OS
-  // refuses to ask twice anyway) and a blocked camera is explained by the app's
-  // shared permission sheet, with a retry that re-opens this same camera.
-  const openCamera = async (ref) => {
-    const state = await permissionState('camera');
-    if (state === 'denied') {
-      showPermissionPopup({ kind: 'camera', mode: 'denied', onRetry: () => openCamera(ref) });
-      return;
-    }
+  // ── THE TAP MUST OPEN THE CAMERA SYNCHRONOUSLY (iOS) ──────────────────────
+  // This used to await the permission state BEFORE clicking the input. On iOS
+  // that await is fatal: a file input may only be opened from inside the user's
+  // own tap, and once the handler has awaited anything the gesture is over — so
+  // WKWebView silently ignores the click and the button looks dead even though
+  // the camera is allowed in Settings. (Safari also cannot answer a camera
+  // permission query at all, so the wait bought nothing.)
+  //
+  // The click is therefore the FIRST thing that happens. The permission is then
+  // checked in the background, purely to EXPLAIN a camera that is blocked —
+  // it can no longer stand between the tap and the picker.
+  const openCamera = (ref) => {
     ref.current?.click();
+    permissionState('camera').then((state) => {
+      if (state === 'denied') {
+        showPermissionPopup({ kind: 'camera', mode: 'denied', onRetry: () => ref.current?.click() });
+      }
+    }).catch(() => {});
   };
 
   const removeImage = (idx) => onImagesChange(images.filter((_, i) => i !== idx));

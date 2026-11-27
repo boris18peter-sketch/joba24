@@ -68,6 +68,12 @@ export default function SocialConnectSheet({ user, onClose }) {
   const [loading, setLoading] = useState(false);
   const [verifyAttempt, setVerifyAttempt] = useState(0);
   const [copied, setCopied] = useState(false);
+  // Facebook answers every automatic read with a sign-in wall, so a failed scan
+  // there is final rather than "try again". These track that state and the
+  // manual review that replaces it.
+  const [failedOnce, setFailedOnce] = useState(false);
+  const [reviewSent, setReviewSent] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [oauthError, setOauthError] = useState('');
   const popupRef = useRef(null);
   // The close-poll for the OAuth popup. Held in a ref so the sheet's own close
@@ -154,6 +160,8 @@ export default function SocialConnectSheet({ user, onClose }) {
   const handleSelectPlatform = (key) => {
     setSelected(key);
     setOauthError('');
+    setFailedOnce(false);
+    setReviewSent(false);
     const u = user?.[`${key}_username`];
     const c = user?.[`${key}_verify_code`];
     const isVerified = user?.[`${key}_verified`];
@@ -291,6 +299,24 @@ export default function SocialConnectSheet({ user, onClose }) {
   const handleVerifyClick = async () => {
     const ok = await handleVerify(selected);
     if (ok) setVerified(true);
+    else setFailedOnce(true);
+  };
+
+  // ── Manual review — the way out of an unreadable Facebook profile ─────────
+  // The request lands in the support inbox with the profile link and the code,
+  // and the badge is granted from the dashboard. The user is told plainly that
+  // it awaits approval, instead of being asked to retry a scan that cannot work.
+  const handleRequestReview = async () => {
+    setReviewLoading(true);
+    try {
+      const res = await base44.functions.invoke('verifyInstagram', { action: 'request_review', platform: selected });
+      if (res.data?.error) { toast.error(res.data.error); return; }
+      setReviewSent(true);
+    } catch (e) {
+      toast.error('שליחת הבקשה נכשלה. נסה שוב.');
+    } finally {
+      setReviewLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -600,6 +626,36 @@ export default function SocialConnectSheet({ user, onClose }) {
                     <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>
                       {t('sl_ensure_public')}
                     </div>
+                  )}
+
+                  {/* Facebook cannot be read by any server, so a failed scan is
+                      replaced by a request the team can actually act on. */}
+                  {selected === 'facebook' && !loading && failedOnce && (
+                    reviewSent ? (
+                      <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 14px', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 12 }}>
+                        <CheckCircle size={16} color="var(--color-success)" style={{ flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: 12.5, color: 'var(--color-success)', lineHeight: 1.5, fontWeight: 700 }}>
+                          הבקשה נשלחה לבדיקה. הווי הזהוב יופיע לאחר אישור הצוות.
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: 12, padding: '12px 14px', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                          <AlertCircle size={15} color="var(--text-2)" style={{ flexShrink: 0, marginTop: 1 }} />
+                          <span style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>
+                            פייסבוק חוסמת קריאה אוטומטית של פרופילים. אפשר לשלוח את הבקשה לבדיקה ידנית של הצוות.
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleRequestReview}
+                          disabled={reviewLoading}
+                          style={{ marginTop: 10, width: '100%', height: 42, borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--border-2)', color: 'var(--text-1)', fontSize: 13, fontWeight: 800, cursor: reviewLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                        >
+                          {reviewLoading ? <Loader2 size={15} className="animate-spin" /> : <AlertCircle size={15} />}
+                          שליחת בקשה לבדיקה ידנית
+                        </button>
+                      </div>
+                    )
                   )}
                 </>
               )}

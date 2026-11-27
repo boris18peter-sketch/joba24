@@ -500,8 +500,47 @@ export default async function(req) {
         success: true,
         verified: false,
         method: result.method,
+        // ── FACEBOOK CANNOT BE READ AUTOMATICALLY ANY MORE ──────────────────
+        // Facebook now answers every server-side request (crawler agents
+        // included) with a sign-in wall, so a scan can neither confirm nor
+        // deny the code. Retrying is a dead end, so the client is told to offer
+        // the manual review below instead of an endless "try again".
+        manual_review: platform === 'facebook',
         note: `הקוד ${code} לא נמצא בפרופיל ה${p.label}. ודא ש: (1) העתקת את הקוד לביו, (2) הפרופיל ציבורי, (3) שמרת את השינויים. נסה שוב.`,
       });
+    }
+
+    // ── Manual review: the way out when the profile cannot be read ───────────
+    // Facebook serves a login wall to every agent, so its code can never be
+    // found by the scan. Instead of leaving the user in a loop, the request is
+    // handed to the team: it arrives in the support inbox with the profile link
+    // and the code, and an admin grants the badge from the dashboard.
+    if (action === 'request_review') {
+      const users = await base44.asServiceRole.entities.User.filter({ id: user.id });
+      const currentUser = users[0];
+      const socialUsername = currentUser?.[usernameField];
+      const code = currentUser?.[codeField];
+      if (!socialUsername || !code) {
+        return Response.json({ error: 'אין בקשת אימות פעילה' }, { status: 400 });
+      }
+
+      const link = p.profileUrl(socialUsername);
+      await base44.asServiceRole.entities.SupportMessage.create({
+        user_id: user.id,
+        user_name: currentUser?.full_name || user.full_name || '',
+        sender_role: 'user',
+        read: false,
+        content: [
+          `בקשת אימות ידנית — ${p.label}`,
+          `שם משתמש: ${socialUsername}`,
+          `קישור: ${link}`,
+          `קוד אימות: ${code}`,
+          '',
+          'הקוד אמור להופיע בביו/בהיכרות של הפרופיל. יש לאשר את השדה ' + verifiedField + ' בכרטיס המשתמש.',
+        ].join('\n'),
+      });
+
+      return Response.json({ success: true, requested: true });
     }
 
     // ── OAuth verification — for Instagram (Business/Creator accounts) ──
