@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { hasSeenFirstRun, campaignTrackFromUrl } from '@/lib/onboardingTrack';
-import { readPendingTask } from '@/lib/pendingTask';
+import { readPendingTask, hasTaskLinkLaunch } from '@/lib/pendingTask';
 
 /**
  * RootEntry — the app's FIRST screen, decided while it renders.
@@ -35,7 +35,7 @@ export default function RootEntry({ children }) {
 
   if (!isLoadingAuth && !isAuthenticated && !isGuest && !hasSeenFirstRun()) {
     const campaignTrack = campaignTrackFromUrl();
-    if (!campaignTrack && !readPendingTask()) {
+    if (!campaignTrack && !readPendingTask() && !hasTaskLinkLaunch()) {
       return <Navigate to="/welcome" replace />;
     }
   }

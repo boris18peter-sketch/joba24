@@ -31,6 +31,17 @@
 const KEY = 'joba24_pending_task';
 const MAX_AGE_MS = 10 * 60 * 1000;
 
+// ── THE LAUNCH ITSELF WAS A TASK LINK ──────────────────────────────────────
+// The parked id is CONSUMED as soon as the sheet opens, but the fact that this
+// launch came from a task link has to outlive it: once the id was cleared, the
+// gate in Layout fell through to its "visitor with no account" branch and sent
+// the visitor to /welcome — the task they tapped was replaced by the first-run
+// screen. This marker is written whenever a task is parked and read by the
+// gates, so a task link lands on the task for the whole launch, not for the few
+// seconds the id is still in storage.
+const LINK_KEY = 'joba24_task_link_at';
+const LINK_MAX_AGE_MS = 30 * 60 * 1000;
+
 // Fired whenever a task is parked. DeepLinkHandler listens for it so a link that
 // arrives while the app is ALREADY open (a Universal Link tap, a second shared
 // link) is opened too — its one-time mount check would otherwise ignore every
@@ -43,6 +54,7 @@ function readRaw(store) {
 
 export function setPendingTask(taskId) {
   if (!taskId) return;
+  markTaskLinkLaunch();
   const value = JSON.stringify({ id: taskId, at: Date.now() });
   try { sessionStorage.setItem(KEY, value); } catch { /* storage blocked */ }
   try { localStorage.setItem(KEY, value); } catch { /* storage blocked */ }
@@ -73,4 +85,22 @@ export function readPendingTask() {
 export function clearPendingTask() {
   try { sessionStorage.removeItem(KEY); } catch { /* storage blocked */ }
   try { localStorage.removeItem(KEY); } catch { /* storage blocked */ }
+}
+
+/** Record that this launch was opened by a task link. */
+export function markTaskLinkLaunch() {
+  const value = String(Date.now());
+  try { sessionStorage.setItem(LINK_KEY, value); } catch { /* storage blocked */ }
+  try { localStorage.setItem(LINK_KEY, value); } catch { /* storage blocked */ }
+}
+
+/** True while this launch is still the one a task link started. */
+export function hasTaskLinkLaunch() {
+  let raw = null;
+  try { raw = sessionStorage.getItem(LINK_KEY); } catch { /* storage blocked */ }
+  if (!raw) { try { raw = localStorage.getItem(LINK_KEY); } catch { /* storage blocked */ } }
+  const at = Number(raw);
+  if (!Number.isFinite(at) || !at) return false;
+  if (Date.now() - at > LINK_MAX_AGE_MS) return false;
+  return true;
 }

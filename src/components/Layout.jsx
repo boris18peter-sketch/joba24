@@ -61,7 +61,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import usePermissionStatus from '@/hooks/usePermissionStatus';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
-import { readPendingTask } from '@/lib/pendingTask';
+import { readPendingTask, hasTaskLinkLaunch } from '@/lib/pendingTask';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
@@ -803,7 +803,11 @@ export default function Layout() {
       // the same build on iOS (tested with clean storage) showed it normally.
       // A guest with no finished first run IS a first-run visitor, so the
       // choice screen is shown once and then the normal rules apply.
-      if (!hasSeenFirstRun() && location.pathname === '/') {
+      // …unless this launch came from a TASK LINK. Entering guest mode is how a
+      // shared link lets an unauthenticated visitor see the task, so treating
+      // that guest as a first-run visitor sent them to /welcome — the exact
+      // screen they had just bypassed by tapping a task. A task link is a task.
+      if (!hasSeenFirstRun() && location.pathname === '/' && !hasTaskLinkLaunch()) {
         navigate('/welcome', { replace: true });
       }
       return;
@@ -823,6 +827,16 @@ export default function Layout() {
     // That single line is why closing the app after the publisher onboarding
     // and re-opening it dumped the visitor onto the worker sign-up page, with
     // no way forward that matched what they had picked.
+    // ── A TASK LINK OUTLIVES THE ID IT PARKED ──────────────────────────────
+    // DeepLinkHandler clears the parked id the moment it opens the sheet, so by
+    // the time this effect runs again there is no pending task left to notice —
+    // and the visitor was then sent to the destination of their old track
+    // (/welcome). The launch marker is what keeps them on the task they asked
+    // for, for the whole of that launch.
+    if (hasTaskLinkLaunch()) {
+      if (location.pathname !== '/') navigate('/', { replace: true });
+      return;
+    }
     const seen = hasSeenFirstRun();
     const destination = seen ? destinationForTrack(getOnboardingTrack()) : '/welcome';
     bootMark('route', 'ok', `${seen ? 'returning' : 'first-run'} → ${destination}`);
