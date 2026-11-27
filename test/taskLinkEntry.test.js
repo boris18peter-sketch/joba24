@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { shouldEnterFirstRun, launchHasTask } from '../src/lib/entryGate.js';
-import { socialProfileUrl } from '../src/lib/socialProfileUrl.js';
+import { socialProfileUrl, facebookAppUrl } from '../src/lib/socialProfileUrl.js';
 
 /**
  * The reported bug, pinned down: a shared task link is `/?open_task=ID`, and the
@@ -109,5 +109,23 @@ describe('a stored social value becomes a link that resolves', () => {
 
   it('returns nothing to link for an empty value', () => {
     expect(socialProfileUrl('facebook', '')).toBe(null);
+  });
+});
+
+/**
+ * The Facebook app hand-off: the profile has to open in the app the visitor is
+ * already signed into, on the right profile, instead of a logged-out browser.
+ */
+describe('a Facebook profile is handed to the Facebook app', () => {
+  it('carries the exact profile URL inside the app scheme', () => {
+    const profile = socialProfileUrl('facebook', 'benjmoving');
+    const appUrl = facebookAppUrl(profile);
+    expect(appUrl.startsWith('fb://facewebmodal/f?href=')).toBe(true);
+    expect(decodeURIComponent(appUrl.split('href=')[1])).toBe('https://www.facebook.com/benjmoving');
+  });
+
+  it('has nothing to hand over for another network or no value', () => {
+    expect(facebookAppUrl('https://www.instagram.com/benjmoving')).toBe(null);
+    expect(facebookAppUrl(null)).toBe(null);
   });
 });

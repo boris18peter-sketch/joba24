@@ -8,6 +8,7 @@ import { installDesktopScale } from '@/lib/desktopScale'
 import { hideNativeSplash } from '@/lib/hideNativeSplash'
 import { ensureFreshBuild } from '@/lib/ensureFreshBuild'
 import { captureCampaign } from '@/lib/analytics/campaign'
+import { captureTaskLinkFromUrl } from '@/lib/pendingTask'
 
 // ── "React actually started" — the signal the HTML healers were missing ──────
 // The inline guards in index.html used to decide a launch was broken purely by
@@ -160,6 +161,13 @@ installDesktopScale();
 // before any navigation happens, and kept for the whole session. See
 // src/lib/analytics/campaign.js.
 captureCampaign();
+
+// ── AND THE TASK A SHARED LINK ASKED FOR, BEFORE REACT RENDERS ──────────────
+// A Facebook share link is `/?open_task=ID`. Parking that id in a component
+// effect meant it did not exist yet when the router made its first decision, so
+// a cold open could be treated as "no task here". Captured at boot, the id is
+// already there for every gate and for the sheet.
+captureTaskLinkFromUrl();
 
 console.log('[Joba24] App: React mounting...');
 ReactDOM.createRoot(document.getElementById('root')).render(

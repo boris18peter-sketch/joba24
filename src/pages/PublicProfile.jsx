@@ -19,7 +19,7 @@ import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
 import { socialProfileUrl, cleanSocialHandle, displaySocialHandle } from '@/lib/socialProfileUrl';
-import { openExternalBrowser } from '@/lib/nativeEnv';
+import { openSocialProfile } from '@/lib/openSocialProfile';
 import { calculateTrustScore } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -221,7 +221,7 @@ export default function PublicProfile() {
                   // app's own helper opens the system browser on native and a
                   // new tab on web, which is the path every other external link
                   // in the app already uses.
-                  onClick={(e) => { e.preventDefault(); openExternalBrowser(profileUrl); }}
+                  onClick={(e) => { e.preventDefault(); openSocialProfile(p.key, p.username); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-4)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 10px', textDecoration: 'none' }}>
                   <span style={{ width: 36, height: 36, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
                     <p.icon size={17} color="white" />

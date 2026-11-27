@@ -34,7 +34,7 @@ const FIRST_RUN_PATHS = ['/join', '/welcome'];
 export default function DeepLinkHandler() {
   const { openTaskSheet } = useTaskSheet();
   const { isLoadingAuth, user } = useAuth();
-  const { currentBrandId, isPlatformBrand } = useBrand();
+  const { currentBrandId, isPlatformBrand, isLoading: isBrandLoading } = useBrand();
   const location = useLocation();
   // The task id we have already opened, NOT a boolean. A boolean meant the
   // handler ran once per app load and ignored every later link — including the
@@ -115,14 +115,26 @@ export default function DeepLinkHandler() {
     // been approved stays on the waiting page.
     if (heldByLaunchGate) return;
     if (FIRST_RUN_PATHS.includes(location.pathname)) return;
+    // ── WAIT FOR THE BRAND, DO NOT GUESS IT ────────────────────────────────
+    // The Brand context starts empty and resolves a moment after launch. Asking
+    // it which Brand this task belongs to at that instant compared the task's
+    // Brand against nothing, decided the task lived on another surface, and
+    // redirected to the task's OWN primary domain — a full reload of the page
+    // the visitor was already on, which is why the link appeared to "just go to
+    // the feed" with no sheet. The id was cleared before that redirect too, so
+    // the reloaded page had nothing left to open.
+    if (isBrandLoading) return;
     const pending = readPendingTask();
     if (!pending || openedRef.current === pending) return;
     openedRef.current = pending;
-    clearPendingTask();
     // Resolve the Task's own Brand: a link for a Task created on another Brand
     // opens on THAT Brand's domain instead of failing here as "Task not found".
     resolveTaskBrandUrl(pending, currentBrandId, isPlatformBrand).then((brandUrl) => {
+      // A cross-Brand redirect is a FULL PAGE LOAD. The parked id is the only
+      // thing that can open the sheet on the other side, so it is kept — it is
+      // cleared only once the sheet is actually being opened here.
       if (brandUrl) { window.location.href = brandUrl; return; }
+      clearPendingTask();
       openTaskSheet(pending);
       // The card asked, so the app opens on the ask. Raised after the sheet so
       // the two never race: Layout's rating step closes the sheet itself, which
@@ -131,7 +143,7 @@ export default function DeepLinkHandler() {
         window.dispatchEvent(new CustomEvent(RATE_TASK_EVENT, { detail: { taskId: pending } }));
       }
     });
-  }, [isLoadingAuth, heldByLaunchGate, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand, pendingSignal]);
+  }, [isLoadingAuth, heldByLaunchGate, location.pathname, openTaskSheet, currentBrandId, isPlatformBrand, isBrandLoading, pendingSignal]);
 
   // Foreground notification click → open the sheet immediately
   useEffect(() => {

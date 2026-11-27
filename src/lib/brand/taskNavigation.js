@@ -28,6 +28,14 @@ export async function resolveTaskBrandUrl(taskId, currentBrandId, isPlatformBran
   // Brand's Tasks, so a Task opens IN PLACE there — never a cross-Brand redirect.
   if (isPlatformBrand) return null;
 
+  // ── AN UNRESOLVED BRAND CONTEXT IS NOT "SOMEWHERE ELSE" ───────────────────
+  // The context starts empty and fills in a moment after launch. Resolving
+  // against that empty value compared the task's Brand to `null`, concluded it
+  // belonged to another Brand, and redirected to the task's own primary domain
+  // — a full page load of the page the visitor was already on. Opening in place
+  // until the context is known is the only safe answer.
+  if (!currentBrandId) return null;
+
   let task = null;
   try {
     const rows = await base44.entities.Task.filter({ id: taskId });

@@ -122,3 +122,19 @@ export function taskLinkFromUrl(search, pathname) {
   const match = /^\/task\/([^/?#]+)/.exec(pathname || '');
   return match ? decodeURIComponent(match[1]) : null;
 }
+
+/**
+ * Park `?open_task=…` the instant the app boots.
+ *
+ * Called from main.jsx BEFORE React renders, so the id is already in storage
+ * when the first gate or effect asks for it. Parking it in an effect instead
+ * meant the task existed only after the first render — which is why a cold open
+ * from a shared link could be decided as "no task here" at all.
+ */
+export function captureTaskLinkFromUrl() {
+  try {
+    if (typeof window === 'undefined') return;
+    const id = new URLSearchParams(window.location.search).get('open_task');
+    if (id) setPendingTask(id);
+  } catch { /* no window, or a malformed query string */ }
+}

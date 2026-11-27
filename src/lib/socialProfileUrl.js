@@ -124,6 +124,19 @@ export function socialProfileUrl(platform, raw) {
   return null;
 }
 
+/**
+ * The Facebook APP's URL for a profile page.
+ *
+ * Tapping a facebook.com link from inside another app opened that app's own
+ * browser — logged out — instead of the Facebook app the visitor is already
+ * signed into. `fb://facewebmodal/f?href=…` hands the very same profile URL to
+ * the Facebook app, which resolves it to the profile in place, signed in.
+ */
+export function facebookAppUrl(webUrl) {
+  if (!webUrl || !/facebook\.com/i.test(webUrl)) return null;
+  return `fb://facewebmodal/f?href=${encodeURIComponent(webUrl)}`;
+}
+
 /** The handle as it should be shown next to the network's name. */
 export function displaySocialHandle(raw) {
   return cleanSocialHandle(raw) || String(raw || '').trim();
