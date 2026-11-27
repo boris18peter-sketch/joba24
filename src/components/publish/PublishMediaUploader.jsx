@@ -104,13 +104,18 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
     ...(videoUrl ? [{ url: videoUrl, type: 'video' }] : []),
   ];
 
+  // ── ACTIONS, NOT BUTTONS ────────────────────────────────────────────────────
+  // Three pills with their own fill and border turned the bottom of the text box
+  // into a row of small buttons competing with the text above them. They are
+  // plain blue icon + label now — the same colour the rest of the form uses for
+  // an action — with a comfortable 40px tap area and no frame at all.
   const pill = {
     display: 'inline-flex', alignItems: 'center', gap: 5,
-    height: 34, padding: '0 11px', borderRadius: 999,
-    background: 'var(--surface-2)',
-    border: '1px solid var(--border-1)',
+    height: 40, padding: '0 4px',
+    background: 'none',
+    border: 'none',
     color: 'var(--brand-primary)',
-    fontSize: 12, fontWeight: 800, cursor: 'pointer',
+    fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
     minHeight: 'unset', minWidth: 'unset',
     WebkitTapHighlightColor: 'transparent',
   };
@@ -143,7 +148,7 @@ export default function PublishMediaUploader({ images = [], videoUrl = '', onIma
 
   return (
     <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-1)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => openCamera(cameraRef)} disabled={uploading} style={pill}>
           <Camera size={14} strokeWidth={2.2} />
           צילום

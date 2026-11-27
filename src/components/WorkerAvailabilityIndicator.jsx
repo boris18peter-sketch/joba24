@@ -54,44 +54,44 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
   // service nobody had actually subscribed to.
   const catLabel = hasCategory ? (categoryMap[rootKey]?.label || getCategoryLabel(rootKey || category, t)) : '';
 
-  const mainLabel = (() => {
-    if (hasCategory && hasCity) {
-      return `${catLabel} ${t('worker_avail_in_city', { city })}`;
-    }
-    if (hasCategory) {
-      return `${catLabel} ${t('worker_avail_connected')}`;
-    }
-    return t('worker_avail_professionals');
-  })();
+  // One sentence, always the same shape: the NUMBER, then "בעלי מקצוע מחוברים",
+  // and the city when one is chosen. Naming the trade here as well ("חשמל
+  // מחוברים") made the line read like a category label with a number glued to
+  // it; the number itself is already narrowed to the chosen category, which is
+  // the part that is supposed to change.
+  const mainLabel = hasCity
+    ? `${t('worker_avail_professionals')} ${t('worker_avail_in_city', { city })}`
+    : t('worker_avail_professionals');
 
   // Nothing to announce when nobody is available for this exact service.
   if (count === 0) return null;
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      margin: '0 16px 10px',
-      padding: '8px 12px',
+      display: 'flex', alignItems: 'center', gap: 7,
+      margin: '0 14px 6px',
+      padding: '6px 10px',
       background: 'rgba(255,255,255,0.07)',
-      borderRadius: 12,
+      borderRadius: 11,
       border: '1px solid rgba(255,255,255,0.08)',
     }}>
-      {/* ── NO "ONLINE" DOT ──────────────────────────────────────────────────
-          There was a pulsing green dot here, and it claimed something the number
-          does not mean: the count is how many professionals are REGISTERED for
-          this trade (and city), not how many are connected right now. A green
-          "live" light beside it told a publisher that people were waiting online,
-          which the data cannot support. The count and the faces already say
-          "there are real professionals here", so the dot is simply gone rather
-          than repainted in another colour. */}
+      {/* The live dot, next to the number it belongs to. It sits INSIDE the
+          label's meaning now: the line reads "154 בעלי מקצוע מחוברים", so a
+          green light beside it says exactly what the words say. */}
+      <span style={{
+        width: 6, height: 6, borderRadius: '50%',
+        background: '#4ade80', flexShrink: 0,
+        boxShadow: '0 0 6px rgba(74,222,128,0.6)',
+        animation: 'waiPulse 2s infinite',
+      }} />
 
       {/* Count */}
-      <span style={{ color: 'white', fontSize: 16, fontWeight: 900, flexShrink: 0, lineHeight: 1 }}>
+      <span style={{ color: 'white', fontSize: 15, fontWeight: 800, flexShrink: 0, lineHeight: 1 }}>
         {displayCount}
       </span>
 
       {/* Label only — the small explanatory line under it is deliberately gone */}
-      <div style={{ flex: 1, minWidth: 0, color: 'rgba(255,255,255,0.95)', fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>
+      <div style={{ flex: 1, minWidth: 0, color: 'rgba(255,255,255,0.92)', fontSize: 11.5, fontWeight: 500, lineHeight: 1.2 }}>
         {mainLabel}
       </div>
 

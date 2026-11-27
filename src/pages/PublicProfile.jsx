@@ -18,6 +18,7 @@ import { profileHeroBackground } from '@/lib/profileTier';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
+import { socialProfileUrl, cleanSocialHandle, displaySocialHandle } from '@/lib/socialProfileUrl';
 import { calculateTrustScore } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -205,17 +206,19 @@ export default function PublicProfile() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { key: 'instagram', label: 'Instagram', username: user.instagram_username, verified: user.instagram_verified, url: `https://instagram.com/${user.instagram_username}`, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
-                { key: 'facebook', label: 'Facebook', username: user.facebook_username, verified: user.facebook_verified, url: `https://facebook.com/${user.facebook_username}`, icon: Facebook, color: '#1877F2' },
-                { key: 'tiktok', label: 'TikTok', username: user.tiktok_username, verified: user.tiktok_verified, url: `https://tiktok.com/@${user.tiktok_username}`, icon: Music2, color: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)' },
+                { key: 'instagram', label: 'Instagram', username: user.instagram_username, verified: user.instagram_verified, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
+                { key: 'facebook', label: 'Facebook', username: user.facebook_username, verified: user.facebook_verified, icon: Facebook, color: '#1877F2' },
+                { key: 'tiktok', label: 'TikTok', username: user.tiktok_username, verified: user.tiktok_verified, icon: Music2, color: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)' },
               ].filter(p => p.username && p.verified).map(p => (
-                <a key={p.key} href={p.url} target="_blank" rel="noopener noreferrer"
+                <a key={p.key} href={socialProfileUrl(p.key, p.username)} target="_blank" rel="noopener noreferrer"
                   style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-4)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 10px', textDecoration: 'none' }}>
                   <span style={{ width: 36, height: 36, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
                     <p.icon size={17} color="white" />
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{p.username}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {cleanSocialHandle(p.username) ? `@${cleanSocialHandle(p.username)}` : displaySocialHandle(p.username)}
+                    </div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginTop: 1 }}>{p.label}</div>
                   </div>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>

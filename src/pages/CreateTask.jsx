@@ -1266,7 +1266,7 @@ export default function CreateTask() {
   };
 
   const activeBtn = { background: '#2563EB', color: 'var(--brand-btn-primary-text, white)', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
-  const inactiveBtn = { background: 'var(--surface-3)', color: 'var(--text-2)', border: 'none' };
+  const inactiveBtn = { background: 'var(--pub-bg)', color: 'var(--text-2)', border: '1px solid var(--pub-border)', fontWeight: 500 };
 
   // Publish from chat mode
   const handleChatPublish = async (chatFormData) => {
@@ -1488,7 +1488,7 @@ export default function CreateTask() {
   // height there too; in the flex container `flex: 1` still wins (flex-basis
   // overrides height), so the signed-out path is untouched.
   return (
-    <div style={{ background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="j-pubform" style={{ background: 'var(--pub-bg)', display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerify && (
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
@@ -1543,7 +1543,7 @@ export default function CreateTask() {
         return (
           <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--brand-hero-bg, #0f2b6b), var(--brand-hero-bg, var(--brand-primary)))', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px 6px' }}>
               {/* CLOSE MEANS GO BACK, NOT START OVER.
 
                   Closing the form returns the publisher to the screen he was
@@ -1585,11 +1585,11 @@ export default function CreateTask() {
                   whole promise in a sentence, which wrapped into the bar and made
                   the header as heavy as the form. */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 900, fontSize: 17, lineHeight: 1.2, letterSpacing: -0.3, color: 'var(--brand-hero-text, white)' }}>
+                <div style={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2, letterSpacing: -0.3, color: 'var(--brand-hero-text, white)' }}>
                   {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_form_title')}
                 </div>
                 {!isEditMode && (
-                  <div style={{ fontSize: 11.5, fontWeight: 600, lineHeight: 1.35, marginTop: 2, color: 'rgba(255,255,255,0.72)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 400, lineHeight: 1.3, marginTop: 1, color: 'rgba(255,255,255,0.78)' }}>
                     {t('publish_form_subtitle')}
                   </div>
                 )}
@@ -1623,7 +1623,7 @@ export default function CreateTask() {
             {/* One thin line and its percentage. The "השלמת הטופס" caption is
                 gone: the bar already says how far along this is, and naming it
                 only added a row of small type above the fields. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 16px 4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 14px 2px' }}>
               <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.16)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.8)', borderRadius: 99, transition: 'width 0.4s ease' }} />
               </div>
@@ -1688,7 +1688,7 @@ export default function CreateTask() {
         {(!isSliderForm || stepIdx === 0) && (
         <div className="j-step-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <SectionCard>
-          <Label style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', display: 'block', marginBottom: 8 }}>{t('ct_category')}</Label>
+          <Label style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-1)', display: 'block', marginBottom: 8 }}>{t('ct_category')}</Label>
           <div ref={fieldRefs.categoryPicker}>
           <CategoryServiceSelector value={form.category} allowHistorical={isEditMode} onRootChange={setRootKey} onChange={val => {
             set('category', val);
@@ -1738,7 +1738,7 @@ export default function CreateTask() {
               with dictation offered as a quiet blue action beside it instead of a
               filled pill that competed with the field itself. */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-            <Label style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', margin: 0 }}>{t('ct_describe_task')}</Label>
+            <Label style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-1)', margin: 0 }}>{t('ct_describe_task')}</Label>
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
@@ -1762,10 +1762,10 @@ export default function CreateTask() {
               the toolbar of THIS box now: the description and the media attached
               to it are one thing in one frame, with nothing to scroll past. */}
           <div style={{
-            borderRadius: 14,
-            border: `1.5px solid ${errors.description || moderationErrors.description ? '#ef4444' : 'var(--border-1)'}`,
+            borderRadius: 12,
+            border: `1px solid ${errors.description || moderationErrors.description ? '#ef4444' : 'var(--border-1)'}`,
             background: 'var(--input-bg)',
-            padding: '10px 12px 8px',
+            padding: '8px 12px 6px',
           }}>
           <Textarea placeholder={contentFor(form.category)?.descriptionExample || t('ct_describe_ph')}
             value={form.description}
@@ -1783,8 +1783,8 @@ export default function CreateTask() {
             // The field starts at a comfortable writing height and grows with the
             // text, so a detailed description is never typed inside a small box —
             // and an empty one does not take a third of the screen.
-            onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = `${Math.min(Math.max(el.scrollHeight, 116), 320)}px`; }}
-            style={{ background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', padding: 0, resize: 'none', minHeight: 116, lineHeight: 1.55 }} rows={4}
+            onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = `${Math.min(Math.max(el.scrollHeight, 82), 320)}px`; }}
+            style={{ background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none', padding: 0, resize: 'none', minHeight: 82, lineHeight: 1.55, fontSize: 15, fontWeight: 400 }} rows={3}
           />
           {fieldOn('media') && (
             <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
@@ -1792,8 +1792,8 @@ export default function CreateTask() {
           </div>
           {/* A gentle nudge, not a requirement: the AI reads the description and
               the photos, so saying so once is what makes a publisher write more. */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 8, fontSize: 11.5, fontWeight: 600, lineHeight: 1.45, color: 'var(--text-3)' }}>
-            <Sparkles size={13} color="var(--brand-primary)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, marginTop: 6, fontSize: 12, fontWeight: 400, lineHeight: 1.45, color: 'var(--pub-muted)' }}>
+            <Sparkles size={12} color="var(--brand-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
             {t('ct_desc_ai_hint')}
           </div>
           {checkingModeration === 'description' && <p style={{ fontSize: 11, color: 'var(--brand-primary)', marginTop: 4 }}>{t('ct_checking')}</p>}
@@ -1879,7 +1879,7 @@ export default function CreateTask() {
           {/* Two columns, two rows, four short answers. The selected one is the
               brand's own blue rather than four different accent colours: four
               unrelated hues turned a simple question into a colour-coded quiz. */}
-          <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-1)', marginBottom: 8 }}>
             {t('ct_when_worker')}
           </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -1889,11 +1889,11 @@ export default function CreateTask() {
                   <button key={tag.value}
                     onClick={() => set('urgency_tag', isActive ? '' : tag.value)}
                     style={{
-                      minHeight: 44, padding: '0 10px', borderRadius: 12, fontSize: 13.5, fontWeight: 700,
+                      minHeight: 44, padding: '0 10px', borderRadius: 12, fontSize: 13.5, fontWeight: isActive ? 600 : 500,
                       cursor: 'pointer', textAlign: 'center',
-                      background: isActive ? 'var(--brand-primary-light)' : 'var(--surface-2)',
+                      background: isActive ? 'var(--brand-primary-light)' : 'var(--pub-bg)',
                       color: isActive ? 'var(--brand-primary)' : 'var(--text-2)',
-                      border: `1.5px solid ${isActive ? 'var(--brand-primary)' : 'var(--border-1)'}`,
+                      border: `1.5px solid ${isActive ? 'var(--brand-primary)' : 'var(--pub-border)'}`,
                       transition: 'all 0.15s',
                     }}
                   >
@@ -1975,7 +1975,7 @@ export default function CreateTask() {
         {void (sections.location_name = (<>
         {fieldOn('location_name') && (
         <SectionCard>
-          <Label style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', display: 'block', marginBottom: 8 }}>{t('ct_location_req')}</Label>
+          <Label style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-1)', display: 'block', marginBottom: 8 }}>{t('ct_location_req')}</Label>
           <div ref={fieldRefs.location_name}>
             <AddressAutocomplete
               value={form.location_name}
@@ -2125,7 +2125,7 @@ export default function CreateTask() {
                     value={form.hourly_rate}
                     onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); updateHourly('hourly_rate', v); setErrors(p => ({...p, price: false})); }}
                     disabled={hasActiveApplications}
-                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                    style={{ background: 'var(--input-bg)', border: `1px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 600, opacity: hasActiveApplications ? 0.5 : 1 }}
                   />
                   <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{t('ct_per_hour')}</p>
                 </div>
@@ -2139,7 +2139,7 @@ export default function CreateTask() {
                       value={form.hours}
                       onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9.]/g, ''); updateHourly('hours', v); setErrors(p => ({...p, price: false})); }}
                       disabled={hasActiveApplications}
-                      style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                      style={{ background: 'var(--input-bg)', border: `1px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 600, opacity: hasActiveApplications ? 0.5 : 1 }}
                     />
                   )}
                   <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{scheduleDriven ? t('ct_from_schedule') : t('ct_num_hours')}</p>
@@ -2183,7 +2183,7 @@ export default function CreateTask() {
                   it follows the writing direction instead of being pinned to a
                   screen edge. */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>
+                <Label style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-1)' }}>
                   {t('price_label')} *
                 </Label>
                 <button
@@ -2214,7 +2214,7 @@ export default function CreateTask() {
                   value={form.price}
                   onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
                   disabled={hasActiveApplications}
-                  style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, paddingInlineEnd: 40, opacity: hasActiveApplications ? 0.5 : 1 }}
+                  style={{ background: 'var(--input-bg)', border: `1px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 600, paddingInlineEnd: 40, opacity: hasActiveApplications ? 0.5 : 1, boxShadow: 'none' }}
                 />
                 <span
                   aria-hidden="true"
@@ -2238,11 +2238,11 @@ export default function CreateTask() {
               rather than a promise, so it sits one step quieter underneath. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
             <ShieldCheck size={16} color="var(--color-success)" strokeWidth={2.2} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--color-success)' }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--color-success)' }}>
               {t('ct_no_pay_now')}
             </span>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.55, fontWeight: 600, marginBottom: 8 }}>
+          <p style={{ fontSize: 11.5, color: 'var(--pub-muted)', lineHeight: 1.5, fontWeight: 400, marginBottom: 8 }}>
             {t('ct_budget_explain')}
           </p>
           <PriceSuggestion
@@ -2267,8 +2267,8 @@ export default function CreateTask() {
               {form.auto_bump_enabled && <span style={{ color: 'var(--brand-btn-primary-text, white)', fontSize: 11 }}>✓</span>}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{t('ct_bump_title')}</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 2, lineHeight: 1.4 }}>{t('ct_bump_desc')}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('ct_bump_title')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--pub-muted)', marginTop: 2, lineHeight: 1.4, fontWeight: 400 }}>{t('ct_bump_desc')}</div>
             </div>
           </button>
           {form.auto_bump_enabled && (
@@ -2310,7 +2310,7 @@ export default function CreateTask() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
           {PAYMENT_METHODS.map(pm => (
             <button key={pm.value} onClick={() => { set('payment_method', form.payment_method === pm.value ? '' : pm.value); setErrors(p => ({...p, payment_method: false})); }}
-              style={{ width: '100%', padding: '10px 4px', borderRadius: 10, fontSize: 13, fontWeight: form.payment_method === pm.value ? 700 : 500, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, outline: errors.payment_method ? '1.5px solid #ef4444' : 'none' }) }}
+              style={{ width: '100%', padding: '10px 4px', borderRadius: 12, fontSize: 13, fontWeight: form.payment_method === pm.value ? 600 : 500, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, outline: errors.payment_method ? '1.5px solid #ef4444' : 'none' }) }}
             >{t(pm.i18n_key)}</button>
           ))}
         </div>
@@ -2331,7 +2331,7 @@ export default function CreateTask() {
             <Phone size={14} color={errors.contactPhone ? '#ef4444' : 'var(--text-3)'} strokeWidth={1.8} />
             <Label className="text-sm font-bold" style={{ color: errors.contactPhone ? '#ef4444' : 'var(--text-1)', margin: 0 }}>{t('ct_contact')}</Label>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'var(--pub-muted)', marginBottom: 8, lineHeight: 1.5, fontWeight: 400 }}>
             {t('ct_contact_help')}
           </div>
           <Input
@@ -2391,12 +2391,12 @@ export default function CreateTask() {
           the screen. Same handler, same validation, same double-publish guard —
           only its position changed. */}
       {(!isSliderForm || stepIdx === wizardTotal - 1) && (
-        <div ref={fieldRefs.publishBtn} style={{ flexShrink: 0, background: 'var(--surface-1)', borderTop: '1px solid var(--border-1)', padding: '4px 16px max(10px, env(safe-area-inset-bottom))' }}>
+        <div ref={fieldRefs.publishBtn} style={{ flexShrink: 0, background: 'var(--pub-bg)', borderTop: '1px solid var(--pub-border)', padding: '2px 16px max(8px, env(safe-area-inset-bottom))' }}>
           {!isEditMode && (
             <button
               type="button"
               onClick={() => setShowPreview(true)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, background: 'none', border: 'none', padding: '6px 0', cursor: 'pointer', color: 'var(--brand-primary)', fontSize: 12.5, fontWeight: 800, minHeight: 'unset' }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer', color: 'var(--brand-primary)', fontSize: 12.5, fontWeight: 500, minHeight: 'unset' }}
             >
               <Eye size={14} /> {t('preview_action')}
             </button>
@@ -2406,11 +2406,11 @@ export default function CreateTask() {
             disabled={loading}
             className="btn-tap"
             style={{
-              width: '100%', height: 52, borderRadius: 14, fontSize: 16, fontWeight: 900,
+              width: '100%', height: 52, borderRadius: 14, fontSize: 16, fontWeight: 700,
               color: 'var(--brand-btn-primary-text, white)', border: 'none',
               cursor: loading ? 'not-allowed' : 'pointer',
               background: 'linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-btn-primary-bg, var(--brand-primary-dark)))',
-              boxShadow: '0 6px 20px rgba(26,111,212,0.32)',
+              boxShadow: '0 3px 10px rgba(26,111,212,0.16)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               WebkitTapHighlightColor: 'transparent',
             }}

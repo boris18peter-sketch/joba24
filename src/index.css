@@ -32,6 +32,16 @@
     --brand-modal-title:  var(--text-1);
     --brand-modal-text:   var(--text-2);
 
+    /* ── The publish form's own surface ──
+       The form used to sit on the same tint as its fields, so a field had no
+       edge to be recognised by. It is a WHITE page now with grey-blue fields on
+       it: the separation is what makes the form read as a few short fields
+       rather than one long grey block. */
+    --pub-bg:     #ffffff;
+    --pub-field:  #f5f7fb;
+    --pub-border: #dfe5ef;
+    --pub-muted:  #64748b;
+
     /* ── Header credit pill ──
        The balance number: a deep brand blue on the light pill, and a light blue
        on the dark one, so the figure stays the most legible thing in the pill in
@@ -214,6 +224,12 @@
       --tag-muted:   #475569;
       --white-text:  #f8fafc;
       --j-credit-text: #9ec5ff;
+
+      /* The publish form in dark mode: the same two-step separation, inverted. */
+      --pub-bg:     #16233a;
+      --pub-field:  #101c31;
+      --pub-border: #2b3a55;
+      --pub-muted:  #9db4d6;
 
       /* The light brand tint must not survive into dark mode: as #eff6ff it
          painted bright boxes onto a dark screen (badges, hints, chips). */
@@ -1331,6 +1347,40 @@ html.j-desktop-scale [style*="min-height"][style*="vh"] { min-height: 0 !importa
 html.j-desktop-scale .mobile-sheet              { max-height: calc(var(--app-h) * 0.9); }
 html.j-desktop-scale .sheet-scroll              { max-height: calc(var(--app-h) * 0.9); }
 html.j-desktop-scale .mobile-modal-center > div { max-height: calc(var(--app-h) * 0.88); }
+
+/* ════════════════════════════════════════════════════════════════════
+   THE PUBLISH FORM — ONE field language, for every field, everywhere
+   ════════════════════════════════════════════════════════════════════
+   The form's fields are built in several places (the form itself, the address
+   autocomplete, the category picker, the category's own dynamic fields), and
+   each of them paints itself with the same two tokens: `--input-bg` for the
+   fill and `--border-1` for the hairline.
+
+   Redefining those two tokens INSIDE the form is what makes the new language
+   universal without touching a single field: every existing `var(--input-bg)`
+   and `var(--border-1)` in the form now resolves to the form's own palette,
+   while the rest of the app keeps the platform values untouched. Error states
+   still win, because they are written inline with their own red. */
+.j-pubform {
+  --input-bg: var(--pub-field);
+  --border-1: var(--pub-border);
+  background: var(--pub-bg);
+}
+
+/* Labels answer the field, they do not shout it. */
+.j-pubform label { font-weight: 600 !important; }
+
+/* A placeholder is guidance, not disabled text: readable, still quiet. */
+.j-pubform input::placeholder,
+.j-pubform textarea::placeholder {
+  color: var(--pub-muted) !important;
+  opacity: 1 !important;
+}
+
+/* No field carries a shadow. A fill on a white page is the whole signal. */
+.j-pubform input,
+.j-pubform textarea,
+.j-pubform select { box-shadow: none !important; }
 
 /* ════════════════════════════════════════════════════════════════════
    REDUCED MOTION — honour the device's own preference

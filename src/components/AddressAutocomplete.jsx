@@ -323,7 +323,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
       {showDropdown && (
         <div style={{
           position: 'absolute', top: '100%', right: 0, left: 0, zIndex: 9999,
-          background: 'white', borderRadius: 14, border: '1px solid #dce8f5',
+          background: 'var(--pub-bg, white)', borderRadius: 12, border: '1px solid var(--pub-border, #dce8f5)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)', overflow: 'hidden', marginTop: 4,
         }}>
           {/* Empty-query quick picks: use current location + recent addresses */}
