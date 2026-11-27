@@ -10,6 +10,7 @@ import GoldBadge from '@/components/GoldBadge';
 import HomeCtaBanner from '@/components/HomeCtaBanner';
 import SocialConnectSheet, { PLATFORMS } from '@/components/SocialConnectSheet';
 import { isUserVerified } from '@/lib/utils';
+import { cleanSocialHandle, displaySocialHandle } from '@/lib/socialProfileUrl';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -120,7 +121,9 @@ export default function SocialLinksSection({ user }) {
                     <p.icon size={17} color="white" />
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{username}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {cleanSocialHandle(username) ? `@${cleanSocialHandle(username)}` : displaySocialHandle(username)}
+                    </div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginTop: 1 }}>{p.label}</div>
                   </div>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
@@ -201,7 +204,7 @@ function ManageSheet({ user, onClose, onDisconnect, loading, isKycVerified, t, i
                     <p.icon size={16} color="white" />
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{cleanSocialHandle(u) ? `@${cleanSocialHandle(u)}` : displaySocialHandle(u)}</div>
                     <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? t('sl_verified_check') : t('sl_pending_verify')}</div>
                   </div>
                 </div>
