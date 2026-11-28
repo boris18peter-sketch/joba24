@@ -152,7 +152,14 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
         title={charged ? t('boost_send_tooltip').replace('{n}', BOOST_COST) : t('boost_loading_tooltip').replace('{pct}', pct)}
         style={{
           width: size === 'md' ? '100%' : dim,
-          height: dim,
+          // ── THE SAME HEIGHT AS THE BAR BESIDE IT ─────────────────────────
+          // In the row it shares with the applicants bar, the pill takes the
+          // row's height instead of its own fixed one, so the two controls are
+          // always exactly the same height. On the card (42) it is a tile; in
+          // the sheet (52) it is a taller one — never a small square next to a
+          // taller bar.
+          height: size === 'md' ? '100%' : dim,
+          minHeight: size === 'md' ? 42 : undefined,
           borderRadius: radius,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', position: 'relative',

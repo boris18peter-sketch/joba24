@@ -1249,9 +1249,9 @@ export default function TaskDetail(props) {
                     </button>
                   )}
                   {boostAvailable && (
-                    // Same two equal halves as the task card, so the two
-                    // surfaces show one control in one shape.
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    // Its own column, stretched to the row's height, so the
+                    // pill is exactly as tall as the bar beside it.
+                    <div style={{ width: 54, flexShrink: 0 }}>
                       <BoostPill task={task} size="md" onSheetClose={onSheetClose} onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['task', id] }); }} />
                     </div>
                   )}

@@ -751,12 +751,12 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
           {isMyPublished ? (
             task.status === 'OPEN' ? (
-              // ── TWO EQUAL HALVES ────────────────────────────────────────────
-              // The boost used to be a 54px square sitting beside a full-width
-              // bar, so the row read as one long control with a small tile
-              // clipped onto its end. Both now take the same length, so the row
-              // is symmetric and the two actions are equally reachable.
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              // ── ONE ROW, ONE HEIGHT ─────────────────────────────────────────
+              // The boost keeps its own 54px column at the end of the row, but
+              // the row is stretched so both controls are exactly as tall as
+              // each other — the pill used to be a shorter square beside a
+              // taller bar.
+              <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <ApplicantsGoldButton
                     count={liveApplicantCount}
@@ -766,7 +766,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   />
                 </div>
                 {boostAvailableCard && (
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 54, flexShrink: 0 }}>
                     <BoostPill task={task} size="md" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />
                   </div>
                 )}
