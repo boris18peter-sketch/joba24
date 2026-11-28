@@ -419,6 +419,14 @@
 /* ── Sheets / Modals ── */
 .mobile-sheet {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 100001;
+  /* ── CENTRED, NOT PINNED TO ONE SIDE ───────────────────────────────────────
+     `left:0; right:0` together with a max-width is an over-constrained box: the
+     browser drops one of the two edges, and in RTL it drops `left` — so every
+     one of these sheets opened against the RIGHT edge of a desktop window
+     instead of the middle. Auto margins are resolved before that rule, so the
+     sheet is centred at every width (and a full-width sheet on a phone still
+     spans the whole screen, because its margins then resolve to zero). */
+  margin-left: auto; margin-right: auto;
   background: var(--brand-modal-bg, var(--sheet-bg));
   border-radius: var(--brand-modal-radius, var(--r-2xl)) var(--brand-modal-radius, var(--r-2xl)) 0 0;
   max-height: 90dvh; overflow-y: auto;
