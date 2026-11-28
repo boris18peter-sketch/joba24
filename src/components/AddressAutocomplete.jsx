@@ -323,7 +323,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
       {showDropdown && (
         <div style={{
           position: 'absolute', top: '100%', right: 0, left: 0, zIndex: 9999,
-          background: 'var(--pub-bg, white)', borderRadius: 12, border: '1px solid var(--pub-border, #dce8f5)',
+          background: 'var(--pub-bg, var(--surface-2))', borderRadius: 12, border: '1px solid var(--pub-border, var(--border-1))',
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)', overflow: 'hidden', marginTop: 4,
         }}>
           {/* Empty-query quick picks: use current location + recent addresses */}
@@ -350,6 +350,13 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
               {recent.length > 0 && (
                 <>
                   <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>כתובות אחרונות</div>
+                  {/* ── EVERY ROW BELOW USES THEME TOKENS ────────────────────
+                      The rows were painted with a fixed near-black ink (#111)
+                      and a fixed near-white divider. On the dark sheet that is
+                      dark-on-dark: the suggestions were there, invisible, which
+                      is exactly what "the options can't be seen" meant. The ink,
+                      the divider and the hover now come from the tokens, so the
+                      list is readable in both schemes and follows a Brand. */}
                   {recent.map((addr, i) => (
                     <button
                       key={i}
@@ -357,14 +364,14 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
                       style={{
                         width: '100%', textAlign: 'right', padding: '10px 14px',
                         background: 'none', border: 'none', cursor: 'pointer',
-                        borderBottom: i < recent.length - 1 ? '1px solid #f0f4f8' : 'none',
+                        borderBottom: i < recent.length - 1 ? '1px solid var(--border-1)' : 'none',
                         display: 'flex', alignItems: 'flex-start', gap: 10,
                       }}
                     >
-                      <Clock size={13} color="#9ca3af" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <Clock size={13} color="var(--text-3)" style={{ flexShrink: 0, marginTop: 2 }} />
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{addr.location_name}</div>
-                        {addr.city && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{addr.city}</div>}
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{addr.location_name}</div>
+                        {addr.city && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{addr.city}</div>}
                       </div>
                     </button>
                   ))}
@@ -389,17 +396,17 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
                 style={{
                   width: '100%', textAlign: 'right', padding: '11px 14px',
                   background: 'none', border: 'none', cursor: 'pointer',
-                  borderBottom: i < suggestions.length - 1 ? '1px solid #f0f4f8' : 'none',
+                  borderBottom: i < suggestions.length - 1 ? '1px solid var(--border-1)' : 'none',
                   display: 'flex', alignItems: 'flex-start', gap: 10,
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f0f7ff'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-3)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
                 <MapPin size={14} color={inUserCity ? '#16a34a' : 'var(--brand-input-focus, var(--brand-primary))'} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{label}</div>
                   {(sub || inUserCity) && (
-                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
                       {sub}{sub && inUserCity ? ' · ' : ''}
                       {inUserCity && <span style={{ color: '#16a34a', fontWeight: 700 }}>בעיר שלך</span>}
                     </div>

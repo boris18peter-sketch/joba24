@@ -288,6 +288,20 @@ export default function SocialConnectSheet({ user, onClose }) {
 
   const handleGenerateCode = async () => {
     if (!usernameInput.trim()) return;
+    // ── FACEBOOK NEEDS AN ADDRESS, NOT A NAME ───────────────────────────────
+    // Facebook has no name-based profile URL, so a display name typed here could
+    // only ever lead to Facebook's people search — which is exactly why a tap on
+    // the profile opened the wrong place. A link (or a real username) is
+    // required, and it is stored whole.
+    if (selected === 'facebook') {
+      const v = usernameInput.trim();
+      const isLink = /facebook\.com\/.+/i.test(v);
+      const isHandle = /^@?[A-Za-z0-9._-]{2,60}$/.test(v);
+      if (!isLink && !isHandle) {
+        toast.error(t('sl_fb_link_required', 'הדבק קישור לפרופיל הפייסבוק שלך, למשל https://www.facebook.com/your.name'));
+        return;
+      }
+    }
     const res = await handleConnect(selected, usernameInput);
     if (res?.code) {
       setCode(res.code);
@@ -435,19 +449,25 @@ export default function SocialConnectSheet({ user, onClose }) {
               </div>
 
               <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>{t('sl_your_username', { platform: p.label })}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                  {selected === 'facebook'
+                    ? t('sl_fb_link_label', 'קישור לפרופיל הפייסבוק שלך')
+                    : t('sl_your_username', { platform: p.label })}
+                </div>
                 <input
                   type="text"
                   value={usernameInput}
                   onChange={e => setUsernameInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleGenerateCode(); }}
-                  placeholder={t('sl_username_placeholder')}
+                  placeholder={selected === 'facebook' ? 'https://www.facebook.com/your.name' : t('sl_username_placeholder')}
                   dir="ltr"
                   autoFocus
                   style={{ width: '100%', height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', color: 'var(--text-1)', padding: '0 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box' }}
                 />
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-                  {t('sl_username_hint')}
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>
+                  {selected === 'facebook'
+                    ? t('sl_fb_link_hint', 'פתח את הפרופיל שלך בפייסבוק ← ⋯ ← "העתק קישור", והדבק אותו כאן. הקישור מבטיח שהפרופיל יפתח תמיד בעמוד הנכון.')
+                    : t('sl_username_hint')}
                 </div>
               </div>
 

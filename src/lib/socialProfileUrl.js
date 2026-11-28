@@ -137,7 +137,29 @@ export function facebookAppUrl(webUrl) {
   return `fb://facewebmodal/f?href=${encodeURIComponent(webUrl)}`;
 }
 
-/** The handle as it should be shown next to the network's name. */
+/**
+ * The label shown next to the network's name.
+ *
+ * A stored handle reads as "@handle". A stored PROFILE LINK — which is what a
+ * Facebook member now gives us, because facebook.com/share/<token> and
+ * /people/<name>/<id> have no username at all — reads as the short address it
+ * is ("facebook.com/share/1exa13jzu8"), never as "@share", which is what
+ * reducing a multi-segment link to its first segment produced.
+ */
 export function displaySocialHandle(raw) {
-  return cleanSocialHandle(raw) || String(raw || '').trim();
+  const value = String(raw || '').trim();
+  const handle = cleanSocialHandle(value);
+  if (handle && !handle.includes('/')) return `@${handle}`;
+
+  const asUrl = /^https?:\/\//i.test(value)
+    ? value
+    : (NETWORK_HOST.test(value.split('/')[0]) ? `https://${value}` : null);
+  if (asUrl) {
+    try {
+      const url = new URL(asUrl);
+      const path = url.pathname.replace(/\/+$/, '');
+      if (path) return `${url.hostname.replace(/^www\./i, '')}${path}`;
+    } catch { /* fall through to the raw value */ }
+  }
+  return handle || value;
 }

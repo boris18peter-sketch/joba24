@@ -21,7 +21,10 @@ const PLATFORM_CONFIG = {
   },
   facebook: {
     label: 'Facebook',
-    profileUrl: (u) => `https://www.facebook.com/${u}`,
+    // A stored value may already BE the profile address (a /share/ or /people/
+    // link has no username at all), so an absolute link is passed through
+    // untouched instead of having the host prefixed to it a second time.
+    profileUrl: (u) => (/^https?:\/\//i.test(String(u || '')) ? u : `https://www.facebook.com/${u}`),
     editBioUrl: 'https://www.facebook.com/profile/',
   },
   tiktok: {
@@ -47,9 +50,21 @@ function normalizeUsername(platform, raw) {
   if (platform === 'facebook') {
     const id = v.match(/profile\.php\?id=(\d+)/i);
     if (id) return id[1];
-    v = v.replace(/^[a-z0-9.-]*facebook\.com\//i, '');
-    v = v.split(/[?#]/)[0].replace(/\/+$/, '');
-    return v.replace(/^@/, '').trim().toLowerCase();
+    // ── A PROFILE LINK IS KEPT WHOLE ────────────────────────────────────────
+    // facebook.com/share/<token>, /people/<name>/<id> and /p/<name> carry no
+    // username: their PATH is the address. Reducing them to the first segment
+    // produced "facebook.com/share" — a dead link — and it also threw away the
+    // only exact address the member had given us, which is why a tap opened
+    // Facebook's home page instead of their profile. A single vanity segment is
+    // still stored as a plain handle, which is what the display expects.
+    const rawValue = String(raw || '').trim();
+    const wasUrl = /^https?:\/\//i.test(rawValue) || /facebook\.com\//i.test(rawValue);
+    const path = v.replace(/^[a-z0-9.-]*facebook\.com\//i, '').split(/[?#]/)[0].replace(/\/+$/, '');
+    const segments = path.split('/').filter(Boolean);
+    if (wasUrl && segments.length > 1) {
+      return `https://www.facebook.com/${segments.join('/')}`;
+    }
+    return (segments[0] || '').replace(/^@/, '').trim().toLowerCase();
   }
   if (platform === 'instagram') {
     v = v.replace(/^[a-z0-9.-]*instagram\.com\//i, '');

@@ -445,6 +445,30 @@
   background: var(--brand-modal-bg, var(--sheet-bg));
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   THE ACTION MENU (the task's "⋯" sheet)
+   ════════════════════════════════════════════════════════════════════
+   It used to borrow `.mobile-sheet`, whose fixed `left:0; right:0` is
+   over-constrained the moment the sheet also has a max-width — and in RTL the
+   box resolves to the RIGHT edge. That is why it opened against the side of a
+   desktop window with the page empty beside it, instead of in the middle like
+   every other popup in the app.
+
+   Its geometry is its own now, so it is centred horizontally at every width;
+   from tablet width it becomes a centred card, which is the "in the middle"
+   every other dialog on a wide screen shows. */
+@media (min-width: 768px) {
+  .j-action-overlay { align-items: center !important; padding: 24px; }
+  .j-action-sheet {
+    max-width: 420px !important;
+    border-radius: var(--r-2xl) !important;
+    box-shadow: var(--shadow-xl) !important;
+    animation: fadeIn 0.2s ease both !important;
+  }
+  /* The drag handle belongs to a bottom sheet; a centred card has no drag. */
+  .j-action-sheet .j-action-handle { display: none; }
+}
+
 /* ── Sheet drag handle ── */
 .j-sheet-handle {
   width: 40px; height: 4px; border-radius: 99px;

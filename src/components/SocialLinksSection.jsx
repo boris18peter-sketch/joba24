@@ -10,7 +10,7 @@ import GoldBadge from '@/components/GoldBadge';
 import HomeCtaBanner from '@/components/HomeCtaBanner';
 import SocialConnectSheet, { PLATFORMS } from '@/components/SocialConnectSheet';
 import { isUserVerified } from '@/lib/utils';
-import { cleanSocialHandle, displaySocialHandle } from '@/lib/socialProfileUrl';
+import { displaySocialHandle } from '@/lib/socialProfileUrl';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -33,8 +33,13 @@ export default function SocialLinksSection({ user }) {
     queryClient.invalidateQueries({ queryKey: ['me'] });
   };
 
-  const verifiedPlatforms = PLATFORMS.filter(p => user?.[`${p.key}_username`] && user?.[`${p.key}_verified`]);
-  const isConnected = verifiedPlatforms.length > 0;
+  // ── EVERY CONNECTED NETWORK, NOT ONLY THE VERIFIED ONE ────────────────────
+  // This list used to hold verified platforms only, so a member who connected
+  // three networks saw exactly one of them on their own profile: the other two
+  // were connected, stored, and simply not rendered. The profile shows what is
+  // connected; the badge says which of them has been verified.
+  const connectedPlatforms = PLATFORMS.filter(p => user?.[`${p.key}_username`]);
+  const isConnected = connectedPlatforms.length > 0;
   const isKycVerified = isUserVerified(user);
 
   // ── NOT CONNECTED: THE BANNER IS THE WHOLE BLOCK ──────────────────────────
@@ -98,8 +103,9 @@ export default function SocialLinksSection({ user }) {
 
         {isConnected && (
           <div style={{ padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {verifiedPlatforms.map(p => {
+            {connectedPlatforms.map(p => {
               const username = user[`${p.key}_username`];
+              const isVerified = !!user[`${p.key}_verified`];
               const isConfirming = confirmDisconnect === p.key;
               if (isConfirming) {
                 return (
@@ -122,13 +128,19 @@ export default function SocialLinksSection({ user }) {
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {cleanSocialHandle(username) ? `@${cleanSocialHandle(username)}` : displaySocialHandle(username)}
+                      {displaySocialHandle(username)}
                     </div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginTop: 1 }}>{p.label}</div>
                   </div>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
-                    <ShieldCheck size={11} color="#d97706" /> {t('pp_verified')}
-                  </span>
+                  {isVerified ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
+                      <ShieldCheck size={11} color="#d97706" /> {t('pp_verified')}
+                    </span>
+                  ) : (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-3)', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
+                      {t('sl_pending_verify')}
+                    </span>
+                  )}
                   <button onClick={() => setConfirmDisconnect(p.key)} disabled={loading}
                     style={{ width: 26, height: 26, borderRadius: 8, background: 'transparent', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                     <X size={12} color="var(--text-3)" />
@@ -204,7 +216,7 @@ function ManageSheet({ user, onClose, onDisconnect, loading, isKycVerified, t, i
                     <p.icon size={16} color="white" />
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{cleanSocialHandle(u) ? `@${cleanSocialHandle(u)}` : displaySocialHandle(u)}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{displaySocialHandle(u)}</div>
                     <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? t('sl_verified_check') : t('sl_pending_verify')}</div>
                   </div>
                 </div>

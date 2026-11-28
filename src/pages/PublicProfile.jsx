@@ -18,7 +18,7 @@ import { profileHeroBackground } from '@/lib/profileTier';
 import { getCategoryLabel } from '@/lib/categories';
 import { useProfessionalScope } from '@/lib/brand/professionalScope';
 import { getCityLabel } from '@/lib/cityLabels';
-import { socialProfileUrl, cleanSocialHandle, displaySocialHandle } from '@/lib/socialProfileUrl';
+import { socialProfileUrl, displaySocialHandle } from '@/lib/socialProfileUrl';
 import { openSocialProfile } from '@/lib/openSocialProfile';
 import { calculateTrustScore } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
@@ -76,7 +76,10 @@ export default function PublicProfile() {
   const completedCount = user.tasks_completed || completedTasks.length;
   const postedCount = postedTasks.length;
   const reviews = user.reviews || [];
-  const social = !!(user.instagram_verified || user.facebook_verified || user.tiktok_verified);
+  // Any CONNECTED network shows here, not only a verified one: a member who
+  // connected three networks had two of them silently missing from their own
+  // public profile. The tick is what says a network is verified.
+  const social = !!(user.instagram_username || user.facebook_username || user.tiktok_username);
   const verified = isUserVerified(user);
 
   const liveUser = {
@@ -198,7 +201,7 @@ export default function PublicProfile() {
           </div>
         )}
 
-        {/* SECTION 9 — SOCIAL NETWORKS (verified only) */}
+        {/* SECTION 9 — SOCIAL NETWORKS (every connected one) */}
         {social && (
           <div style={{ background: 'var(--brand-card-bg, var(--surface-2))', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
@@ -210,7 +213,7 @@ export default function PublicProfile() {
                 { key: 'instagram', label: 'Instagram', username: user.instagram_username, verified: user.instagram_verified, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
                 { key: 'facebook', label: 'Facebook', username: user.facebook_username, verified: user.facebook_verified, icon: Facebook, color: '#1877F2' },
                 { key: 'tiktok', label: 'TikTok', username: user.tiktok_username, verified: user.tiktok_verified, icon: Music2, color: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)' },
-              ].filter(p => p.username && p.verified).map(p => {
+              ].filter(p => p.username).map(p => {
                 const profileUrl = socialProfileUrl(p.key, p.username);
                 if (!profileUrl) return null;
                 return (
@@ -228,13 +231,15 @@ export default function PublicProfile() {
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {cleanSocialHandle(p.username) ? `@${cleanSocialHandle(p.username)}` : displaySocialHandle(p.username)}
+                      {displaySocialHandle(p.username)}
                     </div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginTop: 1 }}>{p.label}</div>
                   </div>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
-                    <ShieldCheck size={11} color="#d97706" /> {t('pp_verified')}
-                  </span>
+                  {p.verified && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
+                      <ShieldCheck size={11} color="#d97706" /> {t('pp_verified')}
+                    </span>
+                  )}
                 </a>
                 );
               })}

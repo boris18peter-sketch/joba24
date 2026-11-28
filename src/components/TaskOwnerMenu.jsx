@@ -64,13 +64,13 @@ export default function TaskOwnerMenu({ open, onClose, task, onCancel, meId }) {
   return (
     <>
       {open && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000001, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
-          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
+        <div className="j-action-overlay" style={{ position: 'fixed', inset: 0, zIndex: 1000001, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} className="j-action-sheet" style={{ width: '100%', maxWidth: 480, background: 'var(--sheet-bg)', border: '1px solid var(--border-1)', borderRadius: '28px 28px 0 0', boxShadow: '0 -16px 60px rgba(0,0,0,0.28)', padding: '20px 20px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', maxHeight: '90dvh', overflowY: 'auto', overscrollBehavior: 'contain', animation: 'sheetSlideUp 0.28s cubic-bezier(0.32,1.2,0.64,1) both' }} onClick={(e) => e.stopPropagation()}>
+            <div className="j-action-handle" style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-3)', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
             {(task.status === 'OPEN' || task.status === 'EXPIRED') &&
               <div onClick={() => { onClose(); window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/create-task?editId=${task.id}`); }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid var(--border-1)', cursor: 'pointer' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Pencil size={17} color="var(--brand-primary)" />
                   </div>
@@ -82,7 +82,7 @@ export default function TaskOwnerMenu({ open, onClose, task, onCancel, meId }) {
               </div>
             }
             <div onClick={handleCancel} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 13, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--color-danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <X size={17} color="var(--color-danger)" />
               </div>
               <div>
@@ -106,9 +106,9 @@ export default function TaskOwnerMenu({ open, onClose, task, onCancel, meId }) {
       )}
 
       {confirmDelete && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000002, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setConfirmDelete(false)}>
-          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
+        <div className="j-action-overlay" style={{ position: 'fixed', inset: 0, zIndex: 1000002, background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setConfirmDelete(false)}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} className="j-action-sheet" style={{ width: '100%', maxWidth: 480, background: 'var(--sheet-bg)', border: '1px solid var(--border-1)', borderRadius: '28px 28px 0 0', boxShadow: '0 -16px 60px rgba(0,0,0,0.28)', padding: '20px 20px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom))', maxHeight: '90dvh', overflowY: 'auto', overscrollBehavior: 'contain', animation: 'sheetSlideUp 0.28s cubic-bezier(0.32,1.2,0.64,1) both' }} onClick={(e) => e.stopPropagation()}>
+            <div className="j-action-handle" style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>{t('delete_task_title') || 'מחיקת משימה'}</div>
             <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 18 }}>{t('delete_task_confirm') || 'המשימה תימחק לצמיתות. לא ניתן לשחזר פעולה זו.'}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
