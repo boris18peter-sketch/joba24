@@ -751,10 +751,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
           {isMyPublished ? (
             task.status === 'OPEN' ? (
-              // The boost pill sits where the task-detail sheet puts it — at the
-              // END of the row (the left edge in Hebrew), same 54px column and
-              // same size — so the two screens are the same control in the same
-              // place.
+              // ── TWO EQUAL HALVES ────────────────────────────────────────────
+              // The boost used to be a 54px square sitting beside a full-width
+              // bar, so the row read as one long control with a small tile
+              // clipped onto its end. Both now take the same length, so the row
+              // is symmetric and the two actions are equally reachable.
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <ApplicantsGoldButton
@@ -765,7 +766,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   />
                 </div>
                 {boostAvailableCard && (
-                  <div style={{ width: 54, flexShrink: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <BoostPill task={task} size="md" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['allTasks'] }); }} />
                   </div>
                 )}
